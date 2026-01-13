@@ -90,3 +90,19 @@ function WMEventHandler:removeAllListeners(eventType)
         self.listeners = {}
     end
 end
+
+---Subscribe to an event (convenience method)
+---@param eventType string Event type constant
+---@param target table Target object (self)
+---@param callback function Method to call on target
+---@return number listenerId ID of the registered listener
+function WMEventHandler:subscribe(eventType, target, callback)
+    return self:addEventListener(eventType, callback, target)
+end
+
+---Unsubscribe from an event
+---@param eventType string Event type constant
+---@param listenerId number Listener ID
+function WMEventHandler:unsubscribe(eventType, listenerId)
+    self:removeEventListener(eventType, listenerId)
+end

@@ -2,6 +2,10 @@
     WorkflowManager - Workflow Executor
     Executes workflow steps and manages the state machine
 
+    Uses AutoDrive and Courseplay APIs for step execution:
+    - AutoDrive: StartDriving with callback for completion
+    - Courseplay: startCpAtLastWp/startCpAtFirstWp, poll getIsCpActive
+
     Author: WorkflowManager Team
 ]]
 
@@ -13,15 +17,58 @@ WMExecutor.activeWorkflows = {}
 WMExecutor.isInitialized = false
 
 -- Update interval for checking step completion (ms)
-WMExecutor.UPDATE_INTERVAL = 1000
+WMExecutor.UPDATE_INTERVAL = 500  -- Check twice per second for responsiveness
 WMExecutor.updateTimer = 0
+
+-- Callback tracking for AutoDrive completion
+WMExecutor.pendingADCallbacks = {}
 
 ---Initialize the executor
 function WMExecutor:init()
     self.activeWorkflows = {}
+    self.pendingADCallbacks = {}
     self.updateTimer = 0
     self.isInitialized = true
+
+    -- Register for AutoDrive destination listener (global completion notifications)
+    if AutoDrive and AutoDrive.registerDestinationListener then
+        AutoDrive:registerDestinationListener(self, self.onADDestinationReached)
+        WMLogger:debug("Registered AutoDrive destination listener")
+    end
+
+    -- Subscribe to internal events
+    WMEventHandler:subscribe(WMEventHandler.EVENT_AUTODRIVE_FINISHED, self, self.onADFinishedEvent)
+
     WMLogger:debug("WorkflowExecutor initialized")
+end
+
+---Callback when AutoDrive reaches destination (global listener)
+---@param success boolean Whether the route completed successfully
+function WMExecutor:onADDestinationReached(success)
+    WMLogger:debug("AutoDrive destination reached (global), success: %s", tostring(success))
+    -- This is called for ALL AD completions, we handle specific ones via the callback system
+end
+
+---Handle AutoDrive finished event from our integration
+---@param eventData table Event data with vehicle and success
+function WMExecutor:onADFinishedEvent(eventData)
+    if eventData == nil or eventData.vehicle == nil then
+        return
+    end
+
+    -- Find the workflow that was waiting for this vehicle
+    for workflowId, activeData in pairs(self.activeWorkflows) do
+        local workflow = activeData.workflow
+        if workflow.vehicle == eventData.vehicle and
+           activeData.waitingForCompletion and
+           activeData.currentStepType == WorkflowManager.STEP_AUTODRIVE then
+
+            WMLogger:info("AutoDrive step completed for workflow %s (via callback)", workflow.name)
+            activeData.waitingForCompletion = false
+            self:onStepCompleted(workflow)
+            return
+        end
+    end
 end
 
 ---Start executing a workflow
@@ -197,20 +244,35 @@ function WMExecutor:executeCurrentStep(workflow)
 
     -- Execute based on step type
     if step.type == WorkflowManager.STEP_AUTODRIVE then
+        -- AutoDrive: Use startRoute which internally uses StartDriving with callback
         local success = ADIntegration:startRoute(workflow.vehicle, step.target, step.action)
         if success then
             activeData.waitingForCompletion = true
             activeData.currentStepType = WorkflowManager.STEP_AUTODRIVE
+            WMLogger:debug("AutoDrive step started, waiting for completion callback")
         else
             self:handleStepError(workflow, "Failed to start AutoDrive route: " .. step.target)
         end
+
     elseif step.type == WorkflowManager.STEP_COURSEPLAY then
-        local success = CPIntegration:startCourse(workflow.vehicle, step.target, step.action)
+        -- Courseplay: Vehicle must have a course loaded
+        -- The 'target' field is informational - CP uses the vehicle's loaded course
+        if not CPIntegration:hasCourse(workflow.vehicle) then
+            self:handleStepError(workflow, "Vehicle has no Courseplay course loaded for step: " .. step.target)
+            return
+        end
+
+        -- Determine start position based on action
+        local startAtFirst = (step.action == "first" or step.action == "start")
+        local success = CPIntegration:startFieldWork(workflow.vehicle, startAtFirst)
+
         if success then
             activeData.waitingForCompletion = true
             activeData.currentStepType = WorkflowManager.STEP_COURSEPLAY
+            activeData.cpWasRunning = true  -- Track that we started CP
+            WMLogger:debug("Courseplay step started, polling for completion")
         else
-            self:handleStepError(workflow, "Failed to start Courseplay course: " .. step.target)
+            self:handleStepError(workflow, "Failed to start Courseplay field work")
         end
     else
         self:handleStepError(workflow, "Unknown step type: " .. tostring(step.type))
@@ -243,7 +305,8 @@ function WMExecutor:pauseCurrentStep(workflow)
     if step.type == WorkflowManager.STEP_AUTODRIVE then
         ADIntegration:pauseRoute(workflow.vehicle)
     elseif step.type == WorkflowManager.STEP_COURSEPLAY then
-        CPIntegration:pauseCourse(workflow.vehicle)
+        -- Use holdCourse for CP (temporary pause)
+        CPIntegration:holdCourse(workflow.vehicle, nil)  -- nil = indefinite freeze
     end
 end
 
@@ -345,9 +408,26 @@ function WMExecutor:update(dt)
 
             -- Check completion based on current step type
             if activeData.currentStepType == WorkflowManager.STEP_AUTODRIVE then
+                -- AutoDrive: Check if route is complete (polling fallback, callbacks preferred)
                 isComplete = ADIntegration:isRouteComplete(workflow.vehicle)
+
             elseif activeData.currentStepType == WorkflowManager.STEP_COURSEPLAY then
-                isComplete = CPIntegration:isCourseComplete(workflow.vehicle)
+                -- Courseplay: Check if CP is no longer running
+                -- We need to detect transition from running -> not running
+                local cpRunning = CPIntegration:isRunning(workflow.vehicle)
+
+                if activeData.cpWasRunning and not cpRunning then
+                    -- CP was running and now stopped = completed
+                    isComplete = true
+                    WMLogger:debug("Courseplay step completed (was running, now stopped)")
+                elseif not cpRunning and not activeData.cpWasRunning then
+                    -- CP never started or failed to start
+                    WMLogger:warning("Courseplay never started for workflow %s", workflow.name)
+                    isComplete = true  -- Treat as complete to avoid hanging
+                end
+
+                -- Update tracking
+                activeData.cpWasRunning = cpRunning
             end
 
             if isComplete then

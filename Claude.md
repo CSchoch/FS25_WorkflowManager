@@ -158,11 +158,11 @@ Workflow = {
 
 ### Milestone 2: Core Functionality
 
-* [ ] Implement WorkflowManager
-* [ ] Implement XML read/write
-* [ ] Implement basic WorkflowExecutor
-* [ ] Integrate AutoDrive (start/stop)
-* [ ] Integrate Courseplay (start/stop)
+* [x] Implement WorkflowManager
+* [x] Implement XML read/write
+* [x] Implement basic WorkflowExecutor
+* [x] Integrate AutoDrive (start/stop)
+* [x] Integrate Courseplay (start/stop)
 
 ### Milestone 3: Basic GUI
 
@@ -288,7 +288,7 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 
 ---
 
-**Status**: Phase 1 – Milestone 1 COMPLETE, ready for Milestone 2
+**Status**: Phase 1 – Milestone 2 COMPLETE, ready for Milestone 3 (GUI)
 **Last updated**: 2026-01-13
 
 ## Implementation Progress
@@ -309,11 +309,18 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
   - Courseplay CpAIWorker, CpAIFieldWorker, CpCourseManager analyzed
   - Integration code updated with correct API calls
   - Full documentation in docs/API_Analysis.md
+- **Milestone 2: Core Functionality (2026-01-13)**:
+  - WorkflowManager: Create, delete, assign vehicles, start/stop/pause/resume
+  - WorkflowStorage: XML save/load with savegame integration, import/export
+  - WorkflowExecutor: Step execution state machine, AD/CP completion detection
+  - AutoDrive Integration: StartDriving with callback, HoldDriving, route management
+  - Courseplay Integration: startCpAtLastWp/FirstWp, freeze/unfreeze, status polling
+  - EventHandler: Event subscription system for workflow state changes
 
 ### In Progress
-- Milestone 2: Core Functionality
+- Milestone 3: Basic GUI
 
 ### Pending
 - modIcon.dds creation
-- XML GUI layouts
+- XML GUI layouts (WorkflowManagerGUI.xml, WorkflowEditorGUI.xml)
 - In-game testing
