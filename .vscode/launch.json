@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Note: FS25 Debugging",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "echo",
+            "runtimeArgs": [
+                "FS25 mods cannot be debugged directly from VS Code.",
+                "Use the in-game console and log files for debugging.",
+                "Log file location: Documents/My Games/FarmingSimulator2025/log.txt"
+            ],
+            "console": "integratedTerminal"
+        }
+    ]
+}

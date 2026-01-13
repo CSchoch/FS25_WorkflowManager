@@ -1,0 +1,59 @@
+{
+    "files.associations": {
+        "*.lua": "lua"
+    },
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": false,
+    "files.encoding": "utf8",
+    "files.eol": "\n",
+    "editor.formatOnSave": false,
+    "editor.wordWrap": "off",
+    "Lua.diagnostics.globals": [
+        "g_currentModDirectory",
+        "g_currentModName",
+        "g_currentMission",
+        "g_modManager",
+        "g_inputBinding",
+        "g_i18n",
+        "g_gui",
+        "g_vehicleTypeManager",
+        "g_placeableTypeManager",
+        "g_specializationManager",
+        "g_placeableSpecializationManager",
+        "g_courseplayManager",
+        "AutoDrive",
+        "Courseplay",
+        "Utils",
+        "Logging",
+        "XMLFile",
+        "InputAction",
+        "GS_PRIO_NORMAL",
+        "EventIds",
+        "DialogElement",
+        "TypeManager",
+        "Mission00",
+        "source",
+        "fileExists",
+        "getDate",
+        "getTimeSec",
+        "getViewDistanceCoeff",
+        "addModEventListener",
+        "setTextColor",
+        "setTextBold",
+        "renderText",
+        "print",
+        "collectgarbage"
+    ],
+    "Lua.diagnostics.disable": [
+        "lowercase-global",
+        "undefined-global"
+    ],
+    "Lua.workspace.library": [],
+    "Lua.workspace.checkThirdParty": false,
+    "Lua.runtime.version": "Lua 5.1",
+    "search.exclude": {
+        "**/FS25_AutoDrive/**": true,
+        "**/FS25_Courseplay/**": true
+    }
+}

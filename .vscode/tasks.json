@@ -1,0 +1,59 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Open FS25 Log",
+            "type": "shell",
+            "command": "code",
+            "args": [
+                "${env:USERPROFILE}/Documents/My Games/FarmingSimulator2025/log.txt"
+            ],
+            "problemMatcher": [],
+            "group": "none",
+            "presentation": {
+                "reveal": "never"
+            }
+        },
+        {
+            "label": "Tail FS25 Log (PowerShell)",
+            "type": "shell",
+            "command": "Get-Content",
+            "args": [
+                "-Path",
+                "${env:USERPROFILE}/Documents/My Games/FarmingSimulator2025/log.txt",
+                "-Wait",
+                "-Tail",
+                "50"
+            ],
+            "problemMatcher": [],
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            },
+            "isBackground": true
+        },
+        {
+            "label": "Validate XML Files",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-Command",
+                "Get-ChildItem -Path '${workspaceFolder}' -Filter '*.xml' -Recurse | ForEach-Object { Write-Host \"Checking: $($_.FullName)\"; try { [xml](Get-Content $_.FullName) | Out-Null; Write-Host \"  OK\" -ForegroundColor Green } catch { Write-Host \"  ERROR: $_\" -ForegroundColor Red } }"
+            ],
+            "problemMatcher": [],
+            "group": "test"
+        },
+        {
+            "label": "Count Lines of Code",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-Command",
+                "(Get-ChildItem -Path '${workspaceFolder}/src' -Filter '*.lua' -Recurse | Get-Content | Measure-Object -Line).Lines"
+            ],
+            "problemMatcher": [],
+            "group": "none"
+        }
+    ]
+}

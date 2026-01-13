@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<l10n>
+    <texts>
+        <!-- Action texts -->
+        <text name="action_WM_TOGGLE_GUI" text="Workflow Manager umschalten"/>
+        <text name="action_WM_START_WORKFLOW" text="Workflow starten"/>
+        <text name="action_WM_STOP_WORKFLOW" text="Workflow stoppen"/>
+
+        <!-- GUI texts -->
+        <text name="wm_title" text="Workflow Manager"/>
+        <text name="wm_editor_title" text="Workflow bearbeiten"/>
+        <text name="wm_new" text="Neu"/>
+        <text name="wm_edit" text="Bearbeiten"/>
+        <text name="wm_delete" text="Loeschen"/>
+        <text name="wm_start" text="Starten"/>
+        <text name="wm_stop" text="Stoppen"/>
+        <text name="wm_pause" text="Pausieren"/>
+        <text name="wm_resume" text="Fortsetzen"/>
+        <text name="wm_save" text="Speichern"/>
+        <text name="wm_cancel" text="Abbrechen"/>
+        <text name="wm_close" text="Schliessen"/>
+
+        <!-- Table headers -->
+        <text name="wm_header_name" text="Workflow-Name"/>
+        <text name="wm_header_vehicle" text="Fahrzeug"/>
+        <text name="wm_header_steps" text="Schritte"/>
+        <text name="wm_header_status" text="Status"/>
+
+        <!-- Step editor -->
+        <text name="wm_step_type" text="Typ"/>
+        <text name="wm_step_target" text="Ziel"/>
+        <text name="wm_step_action" text="Aktion"/>
+        <text name="wm_add_step" text="Schritt hinzufuegen"/>
+        <text name="wm_remove_step" text="Schritt entfernen"/>
+        <text name="wm_move_up" text="Nach oben"/>
+        <text name="wm_move_down" text="Nach unten"/>
+
+        <!-- Step types -->
+        <text name="wm_type_autodrive" text="AutoDrive"/>
+        <text name="wm_type_courseplay" text="Courseplay"/>
+
+        <!-- Status texts -->
+        <text name="wm_status_ready" text="Bereit"/>
+        <text name="wm_status_running" text="Laeuft"/>
+        <text name="wm_status_paused" text="Pausiert"/>
+        <text name="wm_status_completed" text="Abgeschlossen"/>
+        <text name="wm_status_error" text="Fehler"/>
+
+        <!-- Messages -->
+        <text name="wm_no_workflows" text="Noch keine Workflows erstellt"/>
+        <text name="wm_no_steps" text="Keine Schritte definiert"/>
+        <text name="wm_no_vehicle" text="Kein Fahrzeug zugewiesen"/>
+        <text name="wm_workflow_started" text="Workflow gestartet: %s"/>
+        <text name="wm_workflow_stopped" text="Workflow gestoppt: %s"/>
+        <text name="wm_workflow_completed" text="Workflow abgeschlossen: %s"/>
+        <text name="wm_workflow_error" text="Workflow-Fehler: %s"/>
+        <text name="wm_step_started" text="Starte Schritt %d: %s"/>
+        <text name="wm_step_completed" text="Schritt %d abgeschlossen"/>
+
+        <!-- Errors -->
+        <text name="wm_error_no_autodrive" text="AutoDrive nicht verfuegbar"/>
+        <text name="wm_error_no_courseplay" text="Courseplay nicht verfuegbar"/>
+        <text name="wm_error_no_vehicle" text="Kein Fahrzeug dem Workflow zugewiesen"/>
+        <text name="wm_error_no_steps" text="Workflow hat keine Schritte"/>
+        <text name="wm_error_target_not_found" text="Ziel nicht gefunden: %s"/>
+    </texts>
+</l10n>

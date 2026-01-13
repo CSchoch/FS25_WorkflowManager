@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    WorkflowManager - Sample Test Workflows
+    Use these for testing and development
+
+    Copy this file to your savegame folder as "workflowManager.xml" to test loading
+-->
+<WorkflowManager>
+    <workflows>
+        <!-- Simple two-field harvest workflow -->
+        <workflow id="test_harvest_001" name="Test: Harvest Fields 1-2" currentStep="1" status="ready">
+            <step type="autodrive" target="Farm_to_Field1" action="drive"/>
+            <step type="courseplay" target="Field1_Harvest" action="harvest"/>
+            <step type="autodrive" target="Field1_to_Field2" action="drive"/>
+            <step type="courseplay" target="Field2_Harvest" action="harvest"/>
+            <step type="autodrive" target="Field2_to_Farm" action="drive"/>
+        </workflow>
+
+        <!-- Simple cultivation workflow -->
+        <workflow id="test_cultivate_001" name="Test: Cultivate Field 3" currentStep="1" status="ready">
+            <step type="autodrive" target="Farm_to_Field3" action="drive"/>
+            <step type="courseplay" target="Field3_Cultivate" action="cultivate"/>
+            <step type="autodrive" target="Field3_to_Farm" action="drive"/>
+        </workflow>
+
+        <!-- Multi-field seeding workflow -->
+        <workflow id="test_seeding_001" name="Test: Seed Fields 4-6" currentStep="1" status="ready">
+            <step type="autodrive" target="Farm_to_Field4" action="drive"/>
+            <step type="courseplay" target="Field4_Seeding" action="sow"/>
+            <step type="autodrive" target="Field4_to_Field5" action="drive"/>
+            <step type="courseplay" target="Field5_Seeding" action="sow"/>
+            <step type="autodrive" target="Field5_to_Field6" action="drive"/>
+            <step type="courseplay" target="Field6_Seeding" action="sow"/>
+            <step type="autodrive" target="Field6_to_Farm" action="drive"/>
+        </workflow>
+
+        <!-- Paused workflow for testing resume -->
+        <workflow id="test_paused_001" name="Test: Paused Workflow" currentStep="2" status="paused">
+            <step type="autodrive" target="Route_A" action="drive"/>
+            <step type="courseplay" target="Course_A" action="fieldwork"/>
+            <step type="autodrive" target="Route_B" action="drive"/>
+        </workflow>
+    </workflows>
+</WorkflowManager>

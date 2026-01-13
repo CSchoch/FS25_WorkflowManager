@@ -1,0 +1,319 @@
+# LS25 Workflow Manager – Development Documentation
+
+## Project Overview
+
+A mod for Farming Simulator 25 that combines AutoDrive and Courseplay to create automated workflows. The mod allows multiple fields to be processed sequentially by using AutoDrive for transport between fields and Courseplay for the actual field work.
+
+## Project Goals
+
+### Phase 1: Core Functionality (MVP)
+
+* Linking AutoDrive routes with Courseplay courses
+* Simple workflow: Field 1 → Field 2
+* GUI for workflow creation (tabular view)
+* Storage of workflows in XML (per savegame)
+* Automatic switching between AutoDrive and Courseplay
+
+### Phase 2: Advanced Features
+
+* Queue system for multiple vehicles
+* Support for more than 2 fields per workflow
+* Advanced workflow options (conditions, pauses, etc.)
+* Master-detail UI for more complex workflows
+
+## Technical Stack
+
+* **Language**: Lua (LS25-compatible)
+* **Integration**: AutoDrive API, Courseplay API
+* **UI Framework**: LS25 GUI system
+* **Data Storage**: XML (in the savegame folder)
+* **Mod Structure**: Standard LS25 ModDesc.xml
+
+## Architecture Concept
+
+### Main Components
+
+1. **WorkflowManager** (Core)
+
+   * Manages all workflows
+   * Loads/saves workflows from/to XML
+   * Coordinates execution
+
+2. **WorkflowExecutor**
+
+   * Executes individual workflows
+   * Switches between AutoDrive and Courseplay
+   * Monitors progress
+
+3. **WorkflowGUI**
+
+   * Tabular view of workflow steps
+   * Create/edit/delete workflows
+   * Assign vehicles to workflows
+
+4. **IntegrationLayer**
+
+   * AutoDrive integration (start/stop routes)
+   * Courseplay integration (start/stop courses)
+   * Event handling between the mods
+
+### Data Structure
+
+```lua
+Workflow = {
+    id = "workflow_001",
+    name = "Harvest wheat – fields 1–2",
+    vehicle = vehicleId,
+    steps = {
+        {
+            type = "autodrive",  -- "autodrive" or "courseplay"
+            target = "Route_Field1",  -- AutoDrive route or Courseplay course
+            action = "drive"
+        },
+        {
+            type = "courseplay",
+            target = "Field1_Harvest",
+            action = "harvest"
+        },
+        {
+            type = "autodrive",
+            target = "Route_Field2",
+            action = "drive"
+        },
+        {
+            type = "courseplay",
+            target = "Field2_Harvest",
+            action = "harvest"
+        }
+    },
+    currentStep = 1,
+    status = "ready"  -- "ready", "running", "paused", "completed"
+}
+```
+
+### XML Structure (Savegame)
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<WorkflowManager>
+    <workflows>
+        <workflow id="workflow_001" name="Harvest wheat – fields 1–2" vehicle="vehicle_123" currentStep="1" status="ready">
+            <step type="autodrive" target="Route_Field1" action="drive"/>
+            <step type="courseplay" target="Field1_Harvest" action="harvest"/>
+            <step type="autodrive" target="Route_Field2" action="drive"/>
+            <step type="courseplay" target="Field2_Harvest" action="harvest"/>
+        </workflow>
+    </workflows>
+</WorkflowManager>
+```
+
+## GUI Concept
+
+### Main Tabular View
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Workflow Manager                                         [X]     │
+├─────────────────────────────────────────────────────────────────┤
+│ [New] [Edit] [Delete] [Start] [Stop]                            │
+├─────────────────────────────────────────────────────────────────┤
+│ Workflow Name          │ Vehicle       │ Steps │ Status          │
+├────────────────────────┼───────────────┼───────┼─────────────────┤
+│ Harvest wheat 1–2      │ Combine       │ 4     │ Ready           │
+│ Harvest corn 3–5       │ Forage harv.  │ 6     │ Running (2/6)   │
+│ Spread slurry          │ Tractor 1     │ 8     │ Paused          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Workflow Editor (Detail View)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Edit workflow: Harvest wheat 1–2                          [X]    │
+├─────────────────────────────────────────────────────────────────┤
+│ Name: [Harvest wheat 1–2____________________________]           │
+│ Vehicle: [Combine XL ▼]                                         │
+├─────────────────────────────────────────────────────────────────┤
+│ Steps:                      [▲] [▼] [+] [-]                     │
+├─────────────────────────────────────────────────────────────────┤
+│ # │ Type       │ Target                │ Action                 │
+├───┼────────────┼───────────────────────┼────────────────────────┤
+│ 1 │ AutoDrive  │ Route_Field1          │ Drive                  │
+│ 2 │ Courseplay │ Field1_Harvest        │ Harvest                │
+│ 3 │ AutoDrive  │ Route_Field2          │ Drive                  │
+│ 4 │ Courseplay │ Field2_Harvest        │ Harvest                │
+├─────────────────────────────────────────────────────────────────┤
+│                              [Save] [Cancel]                    │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Development Roadmap
+
+### Milestone 1: Project Setup
+
+* [x] Create ModDesc.xml
+* [x] Set up basic Lua file structure
+* [x] Set up development environment
+* [x] Analyze AutoDrive & Courseplay APIs
+
+### Milestone 2: Core Functionality
+
+* [ ] Implement WorkflowManager
+* [ ] Implement XML read/write
+* [ ] Implement basic WorkflowExecutor
+* [ ] Integrate AutoDrive (start/stop)
+* [ ] Integrate Courseplay (start/stop)
+
+### Milestone 3: Basic GUI
+
+* [ ] Main window with workflow list
+* [ ] Workflow editor (detail view)
+* [ ] Add/remove steps
+* [ ] Start/stop workflows
+
+### Milestone 4: Testing & Refinement
+
+* [ ] In-game testing (Field 1 → Field 2)
+* [ ] Implement error handling
+* [ ] Performance optimization
+* [ ] Documentation
+
+### Milestone 5: Phase 2 Features
+
+* [ ] Queue system
+* [ ] Support for 3+ fields
+* [ ] Advanced conditions
+* [ ] Improve master-detail UI
+
+## API Integration
+
+### AutoDrive (Analyzed)
+
+Key functions from `ExternalInterface.lua`:
+
+* **Start route**: `AutoDrive:StartDriving(vehicle, destinationID, unloadDestinationID, callBackObject, callBackFunction, callBackArg)`
+* **Pause route**: `AutoDrive:HoldDriving(vehicle)`
+* **Get destinations**: `AutoDrive:GetAvailableDestinations()` - returns `{markerID = {name, x, y, z, id}}`
+* **Check active**: `vehicle.ad.stateModule:isActive()`
+* **Completion callback**: Pass callback to `StartDriving()` or use `registerDestinationListener()`
+* **Mode constants**: `MODE_DRIVETO=1`, `MODE_PICKUPANDDELIVER=2`, `MODE_DELIVERTO=3`, etc.
+
+### Courseplay (Analyzed)
+
+Key functions from `CpAIWorker.lua` and `CpAIFieldWorker.lua`:
+
+* **Check available**: `g_Courseplay ~= nil`
+* **Start field work**: `vehicle:startCpAtLastWp()` or `vehicle:startCpAtFirstWp()`
+* **Toggle start/stop**: `vehicle:cpStartStopDriver(isStartedByHud)`
+* **Stop**: `vehicle:stopCurrentAIJob(AIMessageSuccessStoppedByUser.new())`
+* **Check active**: `vehicle:getIsCpActive()`
+* **Check field work**: `vehicle:getIsCpFieldWorkActive()`
+* **Has course**: `vehicle:hasCpCourse()`
+* **Completion**: Listen for `onCpFinished` event or poll `getIsCpActive()`
+* **Harvester status**: `getIsCpHarvesterWaitingForUnload()`, `getIsCpHarvesterManeuvering()`
+
+Full API documentation: `docs/API_Analysis.md`
+
+## File Structure
+
+```
+FS25_WorkflowManager/
+├── modDesc.xml                      # ✓ Created
+├── modIcon.dds                      # TODO: Create icon
+├── README.md
+├── .vscode/                         # ✓ VS Code workspace config
+│   ├── settings.json                # ✓ Lua globals, file associations
+│   ├── launch.json                  # ✓ Debug info
+│   └── tasks.json                   # ✓ Log viewing, XML validation
+├── src/
+│   ├── DevConfig.lua                # ✓ Development configuration
+│   ├── WorkflowManager.lua          # ✓ Main class & entry point
+│   ├── WorkflowExecutor.lua         # ✓ Execution engine
+│   ├── WorkflowStorage.lua          # ✓ XML read/write
+│   ├── gui/
+│   │   ├── WorkflowManagerGUI.lua   # ✓ Main GUI
+│   │   ├── WorkflowEditorGUI.lua    # ✓ Editor GUI
+│   │   └── elements/                # UI components (future)
+│   ├── integration/
+│   │   ├── AutoDriveIntegration.lua # ✓ AD API wrapper
+│   │   └── CourseplayIntegration.lua # ✓ CP API wrapper
+│   └── utils/
+│       ├── Logger.lua               # ✓ Logging utility (dev mode aware)
+│       ├── EventHandler.lua         # ✓ Event system
+│       └── DebugUtil.lua            # ✓ Debug utilities & overlay
+├── translations/
+│   ├── translation_en.xml           # ✓ English translations
+│   └── translation_de.xml           # ✓ German translations
+├── testdata/
+│   └── sample_workflows.xml         # ✓ Test workflow examples
+├── docs/
+│   └── API_Analysis.md              # ✓ AD/CP API documentation
+└── xml/
+    └── gui/
+        ├── WorkflowManagerGUI.xml   # TODO: GUI layout
+        └── WorkflowEditorGUI.xml    # TODO: GUI layout
+```
+
+## Development Notes
+
+### Key Considerations
+
+1. **Event synchronization**: How do we reliably detect when AutoDrive/Courseplay has finished?
+2. **Error handling**: What happens if a step fails?
+3. **Vehicle state**: How do we ensure the vehicle is in the correct state?
+4. **Savegame compatibility**: Workflows must be correctly restored when loading a savegame
+
+### Next Steps
+
+1. ~~Create ModDesc.xml template~~ ✓
+2. ~~Implement basic WorkflowManager class~~ ✓
+3. ~~Create simple GUI for workflow list~~ ✓
+4. ~~Analyze AutoDrive and Courseplay scripts for actual API calls~~ ✓
+5. Create modIcon.dds (64x64 icon)
+6. Create XML GUI layouts for proper FS25 GUI integration
+7. Test in-game loading and basic functionality
+8. ~~Refine integration with actual AD/CP API methods~~ ✓
+
+## Resources
+
+* LS25 Modding Documentation: [https://gdn.giants-software.com/](https://gdn.giants-software.com/)
+* AutoDrive GitHub: [[https://github.com/Stephan-S/FS25_AutoDrive](https://github.com/Stephan-S/FS25_AutoDrive)]
+* Courseplay GitHub: [https://github.com/Courseplay/Courseplay_FS25](https://github.com/Courseplay/Courseplay_FS25)
+* LS25 Forum: [https://forum.giants-software.com/](https://forum.giants-software.com/)
+
+## Contact & Collaboration
+
+This project is being developed in collaboration with Claude Code.
+All AutoDrive and Courseplay scripts will be provided for analysis.
+
+---
+
+**Status**: Phase 1 – Milestone 1 COMPLETE, ready for Milestone 2
+**Last updated**: 2026-01-13
+
+## Implementation Progress
+
+### Completed
+- modDesc.xml with FS25 descVersion 105
+- Full Lua file structure with 12 core modules
+- Translation files (EN/DE)
+- Input action bindings (Alt+W, Ctrl+Alt+W, Shift+Alt+W)
+- Development environment:
+  - VS Code workspace configuration (settings, tasks, launch)
+  - DevConfig.lua for debug/release mode switching
+  - DebugUtil.lua with FPS counter, state logging, debug overlay
+  - Enhanced Logger with API call and state change tracking
+  - Sample test workflows XML for development testing
+- **API Analysis Complete (2026-01-13)**:
+  - AutoDrive ExternalInterface.lua fully analyzed
+  - Courseplay CpAIWorker, CpAIFieldWorker, CpCourseManager analyzed
+  - Integration code updated with correct API calls
+  - Full documentation in docs/API_Analysis.md
+
+### In Progress
+- Milestone 2: Core Functionality
+
+### Pending
+- modIcon.dds creation
+- XML GUI layouts
+- In-game testing

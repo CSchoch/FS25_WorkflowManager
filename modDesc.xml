@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<modDesc descVersion="105">
+    <author>WorkflowManager Team</author>
+    <title>
+        <en>Workflow Manager</en>
+        <de>Workflow Manager</de>
+    </title>
+    <description>
+        <en>
+<![CDATA[Combines AutoDrive and Courseplay to create automated workflows.
+Create sequences of field work tasks: use AutoDrive for transport between fields and Courseplay for the actual field work.
+
+Features:
+- Link AutoDrive routes with Courseplay courses
+- Create multi-field workflows
+- GUI for workflow creation and management
+- Automatic switching between AutoDrive and Courseplay
+
+Requirements: AutoDrive, Courseplay
+]]>
+        </en>
+        <de>
+<![CDATA[Kombiniert AutoDrive und Courseplay zu automatisierten Arbeitsablaeufen.
+Erstellen Sie Sequenzen von Feldarbeiten: AutoDrive fuer den Transport zwischen Feldern und Courseplay fuer die eigentliche Feldarbeit.
+
+Funktionen:
+- Verknuepfung von AutoDrive-Routen mit Courseplay-Kursen
+- Erstellung von Multi-Feld-Workflows
+- GUI zur Workflow-Erstellung und -Verwaltung
+- Automatisches Umschalten zwischen AutoDrive und Courseplay
+
+Voraussetzungen: AutoDrive, Courseplay
+]]>
+        </de>
+    </description>
+    <version>1.0.0.0</version>
+    <multiplayer supported="true" />
+    <iconFilename>modIcon.dds</iconFilename>
+
+    <extraSourceFiles>
+        <sourceFile filename="src/WorkflowManager.lua" />
+    </extraSourceFiles>
+
+    <l10n filenamePrefix="translations/translation" />
+
+    <actions>
+        <action name="WM_TOGGLE_GUI" />
+        <action name="WM_START_WORKFLOW" />
+        <action name="WM_STOP_WORKFLOW" />
+    </actions>
+
+    <inputBinding>
+        <actionBinding action="WM_TOGGLE_GUI">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_lalt KEY_w" />
+        </actionBinding>
+        <actionBinding action="WM_START_WORKFLOW">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lalt KEY_w" />
+        </actionBinding>
+        <actionBinding action="WM_STOP_WORKFLOW">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_lshift KEY_lalt KEY_w" />
+        </actionBinding>
+    </inputBinding>
+</modDesc>
