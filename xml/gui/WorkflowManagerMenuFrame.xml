@@ -1,71 +1,42 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
-<GUI>
-    <!-- Workflow Manager Menu Frame - Tab in InGameMenu -->
-    <Frame profile="baseDefaultFrame" name="workflowManagerMenuFrame" class="WMMenuFrame"
-           onCreate="onCreate" onOpen="onFrameOpen" onClose="onFrameClose">
+<GUI name="WorkflowManagerMenuFrame" class="WMMenuFrame"
+     onCreate="onCreate" onOpen="onFrameOpen" onClose="onFrameClose">
+
+    <!-- Use FrameElement instead of Frame -->
+    <FrameElement profile="baseDefaultFrame" name="workflowManagerMenuFrame">
 
         <!-- Header with title -->
-        <BoxLayout profile="fs25_frameHeader" name="header">
-            <Text profile="fs25_frameTitle" text="$l10n_wm_title" name="title"/>
-        </BoxLayout>
+        <BoxLayoutElement name="header" alignmentX="left" alignmentY="top">
+            <TextElement text="$l10n_wm_title" name="title" textSize="0.025"/>
+        </BoxLayoutElement>
 
         <!-- Content area -->
-        <BoxLayout profile="fs25_frameContent" name="content" alignmentX="left" alignmentY="top">
+        <BoxLayoutElement name="content" alignmentX="left" alignmentY="top" layoutDirection="vertical">
 
             <!-- Toolbar buttons -->
-            <BoxLayout profile="fs25_buttonRow" name="toolbar" alignmentX="left">
-                <Button profile="fs25_button" id="buttonNew" text="$l10n_wm_button_new"
-                        onClick="onClickNew" inputAction="MENU_EXTRA_1">
-                    <Icon sliceId="iconNew"/>
-                </Button>
-                <Button profile="fs25_button" id="buttonEdit" text="$l10n_wm_button_edit"
-                        onClick="onClickEdit" inputAction="MENU_EXTRA_2">
-                    <Icon sliceId="iconEdit"/>
-                </Button>
-                <Button profile="fs25_button" id="buttonDelete" text="$l10n_wm_button_delete"
-                        onClick="onClickDelete" inputAction="MENU_EXTRA_3">
-                    <Icon sliceId="iconDelete"/>
-                </Button>
-                <Button profile="fs25_button" id="buttonStart" text="$l10n_wm_button_start"
-                        onClick="onClickStart" inputAction="MENU_ACTIVATE">
-                    <Icon sliceId="iconPlay"/>
-                </Button>
-                <Button profile="fs25_button" id="buttonStop" text="$l10n_wm_button_stop"
-                        onClick="onClickStop" inputAction="MENU_CANCEL">
-                    <Icon sliceId="iconStop"/>
-                </Button>
-            </BoxLayout>
+            <BoxLayoutElement name="toolbar" alignmentX="left" layoutDirection="horizontal">
+                <ButtonElement id="buttonNew" text="$l10n_wm_button_new" onClick="onClickNew"/>
+                <ButtonElement id="buttonEdit" text="$l10n_wm_button_edit" onClick="onClickEdit"/>
+                <ButtonElement id="buttonDelete" text="$l10n_wm_button_delete" onClick="onClickDelete"/>
+                <ButtonElement id="buttonStart" text="$l10n_wm_button_start" onClick="onClickStart"/>
+                <ButtonElement id="buttonStop" text="$l10n_wm_button_stop" onClick="onClickStop"/>
+            </BoxLayoutElement>
 
-            <!-- Workflow list with headers -->
-            <BoxLayout profile="fs25_tableContainer" name="tableContainer" alignmentX="left">
-                <!-- Table header row -->
-                <BoxLayout profile="fs25_tableHeader" name="tableHeader">
-                    <Text profile="fs25_tableHeaderCell" text="$l10n_wm_header_name" size="0.35 1"/>
-                    <Text profile="fs25_tableHeaderCell" text="$l10n_wm_header_vehicle" size="0.25 1"/>
-                    <Text profile="fs25_tableHeaderCell" text="$l10n_wm_header_steps" size="0.15 1"/>
-                    <Text profile="fs25_tableHeaderCell" text="$l10n_wm_header_status" size="0.25 1"/>
-                </BoxLayout>
-
-                <!-- Scrollable workflow list -->
-                <SmoothList profile="fs25_smoothList" id="workflowList" name="workflowList"
-                            onSelectionChanged="onListSelectionChanged"
-                            dataSource="self" cellSource="self">
-                    <ListItem profile="fs25_listItem" name="workflowListItem">
-                        <BoxLayout profile="fs25_tableRow">
-                            <Text profile="fs25_tableCell" name="workflowName" size="0.35 1"/>
-                            <Text profile="fs25_tableCell" name="workflowVehicle" size="0.25 1"/>
-                            <Text profile="fs25_tableCell" name="workflowSteps" size="0.15 1" textAlignment="center"/>
-                            <Text profile="fs25_tableCell" name="workflowStatus" size="0.25 1"/>
-                        </BoxLayout>
-                    </ListItem>
-                </SmoothList>
-            </BoxLayout>
+            <!-- Workflow list -->
+            <ListElement id="workflowList" name="workflowList" onSelectionChanged="onListSelectionChanged">
+                <ListItemElement name="workflowListItem">
+                    <TextElement name="workflowName"/>
+                    <TextElement name="workflowVehicle"/>
+                    <TextElement name="workflowSteps"/>
+                    <TextElement name="workflowStatus"/>
+                </ListItemElement>
+            </ListElement>
 
             <!-- Empty state message -->
-            <Text profile="fs25_infoText" name="emptyMessage" text="$l10n_wm_no_workflows"
-                  visible="false" alignmentX="center" alignmentY="center"/>
+            <TextElement name="emptyMessage" text="$l10n_wm_no_workflows" visible="false"/>
 
-        </BoxLayout>
+        </BoxLayoutElement>
 
-    </Frame>
+    </FrameElement>
+
 </GUI>

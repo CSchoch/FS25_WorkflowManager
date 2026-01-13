@@ -87,6 +87,9 @@ function CPIntegration:checkAvailability()
     local cpExists = rawget(_G, "Courseplay") ~= nil
     local cpManagerExists = rawget(_G, "g_cpManager") ~= nil
 
+    -- FS25 Courseplay might use "CP" or other short names
+    local cpShortExists = rawget(_G, "CP") ~= nil
+
     -- Also check if loaded as mod (FS25 style)
     local modLoaded = false
     if g_modManager ~= nil then
@@ -101,17 +104,42 @@ function CPIntegration:checkAvailability()
 
     -- Debug: log what we find (more detailed on first few attempts)
     if self.checkAttempts <= 3 then
-        WMLogger:debug("Courseplay check #%d: g_Courseplay=%s (type=%s), Courseplay=%s, g_cpManager=%s, modLoaded=%s, missionCP=%s",
+        WMLogger:debug("Courseplay check #%d: g_Courseplay=%s, Courseplay=%s (type=%s), CP=%s, modLoaded=%s",
             self.checkAttempts,
             tostring(cpGlobalExists),
-            type(rawget(_G, "g_Courseplay")),
             tostring(cpExists),
-            tostring(cpManagerExists),
-            tostring(modLoaded),
-            tostring(missionCP))
+            type(rawget(_G, "Courseplay")),
+            tostring(cpShortExists),
+            tostring(modLoaded))
+
+        -- On first check, scan globals for anything with "Courseplay" or "CP"
+        if self.checkAttempts == 1 then
+            WMLogger:debug("Scanning globals for Courseplay-related entries...")
+            for k, v in pairs(_G) do
+                if type(k) == "string" and (k:find("Courseplay") or k:find("courseplay") or k:find("^[Cc][Pp]")) then
+                    WMLogger:debug("  Found global: %s (type=%s)", k, type(v))
+                end
+            end
+        end
     end
 
-    if cpGlobalExists or cpExists or cpManagerExists or missionCP then
+    -- Check all possible globals
+    if cpGlobalExists then
+        WMLogger:info("Courseplay detected via 'g_Courseplay' global!")
+        return true
+    end
+
+    if cpExists then
+        WMLogger:info("Courseplay detected via 'Courseplay' global!")
+        return true
+    end
+
+    if cpShortExists then
+        WMLogger:info("Courseplay detected via 'CP' global!")
+        return true
+    end
+
+    if cpManagerExists or missionCP then
         WMLogger:info("Courseplay detected!")
         return true
     end

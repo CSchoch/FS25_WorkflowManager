@@ -10,7 +10,9 @@
 ---@class WMMenuFrame
 WMMenuFrame = {}
 
-local WMMenuFrame_mt = Class(WMMenuFrame, TabbedMenuFrameElement)
+-- Try to use TabbedMenuFrameElement if available, otherwise fall back to a simple table
+local baseClass = TabbedMenuFrameElement or FrameElement or {}
+local WMMenuFrame_mt = Class(WMMenuFrame, baseClass)
 
 WMMenuFrame.CONTROLS = {
     "workflowList",
@@ -23,13 +25,31 @@ WMMenuFrame.CONTROLS = {
 
 ---Create new menu frame instance
 function WMMenuFrame.new(target)
-    local self = TabbedMenuFrameElement.new(target, WMMenuFrame_mt)
+    local self
+
+    -- Try to create with proper base class
+    if TabbedMenuFrameElement ~= nil and TabbedMenuFrameElement.new ~= nil then
+        self = TabbedMenuFrameElement.new(target, WMMenuFrame_mt)
+    elseif FrameElement ~= nil and FrameElement.new ~= nil then
+        self = FrameElement.new(target, WMMenuFrame_mt)
+    else
+        -- Fallback: create simple table
+        self = setmetatable({}, WMMenuFrame_mt)
+        self.target = target
+    end
 
     self.workflows = {}
     self.selectedIndex = 0
     self.hasCustomMenuButtons = true
 
-    self:registerControls(WMMenuFrame.CONTROLS)
+    -- Only call registerControls if it exists
+    if self.registerControls ~= nil then
+        self:registerControls(WMMenuFrame.CONTROLS)
+    end
+
+    WMLogger:debug("WMMenuFrame created (base class: %s)",
+        TabbedMenuFrameElement ~= nil and "TabbedMenuFrameElement" or
+        (FrameElement ~= nil and "FrameElement" or "table"))
 
     return self
 end

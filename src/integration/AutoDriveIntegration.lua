@@ -92,6 +92,9 @@ function ADIntegration:checkAvailability()
     local adManagerExists = rawget(_G, "ADGraphManager") ~= nil
     local gAutodriveExists = rawget(_G, "g_autoDrive") ~= nil
 
+    -- FS25 AutoDrive uses "AD" as its main global
+    local adShortExists = rawget(_G, "AD") ~= nil
+
     -- Also check if loaded as mod (FS25 style)
     local modLoaded = false
     if g_modManager ~= nil then
@@ -106,17 +109,44 @@ function ADIntegration:checkAvailability()
 
     -- Debug: log what we find (more detailed on first few attempts)
     if self.checkAttempts <= 3 then
-        WMLogger:debug("AutoDrive check #%d: AutoDrive=%s (type=%s), ADGraphManager=%s, g_autoDrive=%s, modLoaded=%s, missionAD=%s",
+        WMLogger:debug("AutoDrive check #%d: AutoDrive=%s, AD=%s (type=%s), ADGraphManager=%s, modLoaded=%s",
             self.checkAttempts,
             tostring(adExists),
-            type(rawget(_G, "AutoDrive")),
+            tostring(adShortExists),
+            type(rawget(_G, "AD")),
             tostring(adManagerExists),
-            tostring(gAutodriveExists),
-            tostring(modLoaded),
-            tostring(missionAD))
+            tostring(modLoaded))
+
+        -- On first check, scan globals for anything with "AD" or "AutoDrive"
+        if self.checkAttempts == 1 then
+            WMLogger:debug("Scanning globals for AutoDrive-related entries...")
+            for k, v in pairs(_G) do
+                if type(k) == "string" and (k:find("AutoDrive") or k:find("^AD") or k:find("^ad")) then
+                    WMLogger:debug("  Found global: %s (type=%s)", k, type(v))
+                end
+            end
+        end
     end
 
-    if adExists or adManagerExists or gAutodriveExists or missionAD then
+    -- Check all possible globals
+    if adExists then
+        WMLogger:info("AutoDrive detected via 'AutoDrive' global!")
+        return true
+    end
+
+    if adShortExists then
+        WMLogger:info("AutoDrive detected via 'AD' global!")
+        -- Store reference for later use
+        AutoDrive = rawget(_G, "AD")
+        return true
+    end
+
+    if adManagerExists then
+        WMLogger:info("AutoDrive detected via 'ADGraphManager' global!")
+        return true
+    end
+
+    if gAutodriveExists or missionAD then
         WMLogger:info("AutoDrive detected!")
         return true
     end

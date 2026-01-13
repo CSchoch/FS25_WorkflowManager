@@ -102,17 +102,35 @@ end
 function WorkflowManager:setupInGameMenu()
     WMLogger:debug("Setting up InGameMenu integration...")
 
-    -- Create the menu frame instance
-    self.menuFrame = WMMenuFrame.new()
+    -- Check if required GUI classes exist
+    if g_gui == nil then
+        WMLogger:warning("g_gui not available, skipping InGameMenu integration")
+        return
+    end
+
+    -- Create the menu frame instance (with error handling)
+    local success, result = pcall(function()
+        return WMMenuFrame.new()
+    end)
+
+    if not success then
+        WMLogger:error("Failed to create menu frame: %s", tostring(result))
+        WMLogger:info("InGameMenu integration disabled - using standalone GUI only")
+        return
+    end
+
+    self.menuFrame = result
 
     -- Load the GUI from XML
     local xmlPath = Utils.getFilename("xml/gui/WorkflowManagerMenuFrame.xml", self.modDirectory)
-    local success, err = pcall(function()
+    success, result = pcall(function()
         g_gui:loadGui(xmlPath, "WorkflowManagerMenuFrame", self.menuFrame)
     end)
 
     if not success then
-        WMLogger:error("Failed to load menu frame XML: %s", tostring(err))
+        WMLogger:error("Failed to load menu frame XML: %s", tostring(result))
+        WMLogger:info("InGameMenu integration disabled - using standalone GUI only")
+        self.menuFrame = nil
         return
     end
 
@@ -143,16 +161,47 @@ function WorkflowManager:addPageToInGameMenu()
 
     WMLogger:info("Adding Workflow Manager page to InGameMenu...")
 
+    -- Debug: Log available methods on g_inGameMenu
+    WMLogger:debug("InGameMenu type: %s", type(g_inGameMenu))
+    if type(g_inGameMenu) == "table" then
+        local methods = {}
+        for k, v in pairs(g_inGameMenu) do
+            if type(v) == "function" then
+                table.insert(methods, k)
+            end
+        end
+        WMLogger:debug("InGameMenu methods: %s", table.concat(methods, ", "):sub(1, 200))
+    end
+
     local success, err = pcall(function()
         local inGameMenu = g_inGameMenu
 
+        -- Check what methods are available
+        local hasRegisterPage = inGameMenu.registerPage ~= nil
+        local hasAddPageTab = inGameMenu.addPageTab ~= nil
+        local hasPagingElement = inGameMenu.pagingElement ~= nil
+
+        WMLogger:debug("InGameMenu capabilities: registerPage=%s, addPageTab=%s, pagingElement=%s",
+            tostring(hasRegisterPage), tostring(hasAddPageTab), tostring(hasPagingElement))
+
+        if not hasRegisterPage or not hasAddPageTab then
+            WMLogger:warning("InGameMenu missing required methods, cannot add page")
+            return
+        end
+
         -- Add frame to the paging element
-        if inGameMenu.pagingElement ~= nil then
+        if hasPagingElement and inGameMenu.pagingElement.addElement then
             inGameMenu.pagingElement:addElement(self.menuFrame)
         end
 
         -- Register the page (position at end, always available)
-        local pageIndex = inGameMenu:getNumPages() + 1
+        local pageIndex = 99  -- Use high number to add at end
+        if inGameMenu.getNumPages then
+            pageIndex = inGameMenu:getNumPages() + 1
+        elseif hasPagingElement and inGameMenu.pagingElement.getPageCount then
+            pageIndex = inGameMenu.pagingElement:getPageCount() + 1
+        end
+
         local alwaysAvailable = function() return true end
         inGameMenu:registerPage(self.menuFrame, pageIndex, alwaysAvailable)
 
@@ -162,9 +211,13 @@ function WorkflowManager:addPageToInGameMenu()
         inGameMenu:addPageTab(self.menuFrame, iconPath, uvs)
 
         -- Update the page mapping
-        if inGameMenu.pagingElement ~= nil then
-            inGameMenu.pagingElement:updateAbsolutePosition()
-            inGameMenu.pagingElement:updatePageMapping()
+        if hasPagingElement then
+            if inGameMenu.pagingElement.updateAbsolutePosition then
+                inGameMenu.pagingElement:updateAbsolutePosition()
+            end
+            if inGameMenu.pagingElement.updatePageMapping then
+                inGameMenu.pagingElement:updatePageMapping()
+            end
         end
 
         -- Rebuild tab list
