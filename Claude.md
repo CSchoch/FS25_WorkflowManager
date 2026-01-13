@@ -166,10 +166,10 @@ Workflow = {
 
 ### Milestone 3: Basic GUI
 
-* [ ] Main window with workflow list
-* [ ] Workflow editor (detail view)
-* [ ] Add/remove steps
-* [ ] Start/stop workflows
+* [x] Main window with workflow list
+* [x] Workflow editor (detail view)
+* [x] Add/remove steps
+* [x] Start/stop workflows
 
 ### Milestone 4: Testing & Refinement
 
@@ -250,8 +250,8 @@ FS25_WorkflowManager/
 │   └── API_Analysis.md              # ✓ AD/CP API documentation
 └── xml/
     └── gui/
-        ├── WorkflowManagerGUI.xml   # TODO: GUI layout
-        └── WorkflowEditorGUI.xml    # TODO: GUI layout
+        ├── WorkflowManagerGUI.xml   # ✓ Main GUI layout
+        └── WorkflowEditorGUI.xml    # ✓ Editor GUI layout
 ```
 
 ## Development Notes
@@ -270,9 +270,11 @@ FS25_WorkflowManager/
 3. ~~Create simple GUI for workflow list~~ ✓
 4. ~~Analyze AutoDrive and Courseplay scripts for actual API calls~~ ✓
 5. Create modIcon.dds (64x64 icon)
-6. Create XML GUI layouts for proper FS25 GUI integration
+6. ~~Create XML GUI layouts for proper FS25 GUI integration~~ ✓
 7. Test in-game loading and basic functionality
 8. ~~Refine integration with actual AD/CP API methods~~ ✓
+9. In-game testing with Field 1 → Field 2 workflow
+10. Implement error handling and edge cases
 
 ## Resources
 
@@ -288,7 +290,7 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 
 ---
 
-**Status**: Phase 1 – Milestone 2 COMPLETE, ready for Milestone 3 (GUI)
+**Status**: Phase 1 – Milestone 3 COMPLETE, ready for Milestone 4 (Testing)
 **Last updated**: 2026-01-13
 
 ## Implementation Progress
@@ -317,10 +319,20 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
   - Courseplay Integration: startCpAtLastWp/FirstWp, freeze/unfreeze, status polling
   - EventHandler: Event subscription system for workflow state changes
 
+- **Milestone 3: Basic GUI (2026-01-13)**:
+  - WorkflowManagerGUI: Main window with workflow list, toolbar buttons, keyboard navigation
+  - WorkflowEditorGUI: Workflow editor with name/vehicle editing, step management
+  - XML GUI layouts created (WorkflowManagerGUI.xml, WorkflowEditorGUI.xml)
+  - Translation files updated with all GUI text keys (EN/DE)
+  - Input handling: keyboard shortcuts (N=New, S=Start, P=Pause, X=Stop, ESC=Close)
+  - Step management: Add/Remove steps, Move up/down, Visual step list
+  - Vehicle assignment with cycling through available vehicles
+
 ### In Progress
-- Milestone 3: Basic GUI
+- Milestone 4: Testing & Refinement
 
 ### Pending
 - modIcon.dds creation
-- XML GUI layouts (WorkflowManagerGUI.xml, WorkflowEditorGUI.xml)
-- In-game testing
+- In-game testing with actual AutoDrive and Courseplay
+- Performance optimization
+- Error handling improvements

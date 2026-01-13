@@ -74,6 +74,10 @@ function WorkflowManager:init()
     CPIntegration:init()
     WMDebugUtil:init()
 
+    -- Initialize GUI
+    WMManagerGUI:init()
+    WMEditorGUI:init()
+
     -- Register input actions
     self:registerInputActions()
 

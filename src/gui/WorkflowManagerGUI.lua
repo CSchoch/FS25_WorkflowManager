@@ -1,6 +1,7 @@
 --[[
     WorkflowManager - Main GUI
     Displays list of workflows and provides management controls
+    Uses FS25 GUI system with XML layouts
 
     Author: WorkflowManager Team
 ]]
@@ -10,14 +11,52 @@ WMManagerGUI = {}
 
 WMManagerGUI.isVisible = false
 WMManagerGUI.selectedWorkflowIndex = 0
+WMManagerGUI.isXmlGuiLoaded = false
 
--- GUI element references
-WMManagerGUI.guiElement = nil
+-- GUI element references (populated after XML load)
+WMManagerGUI.frame = nil
 WMManagerGUI.workflowList = nil
+WMManagerGUI.emptyListText = nil
+WMManagerGUI.statusText = nil
+
+-- List item data cache
+WMManagerGUI.listData = {}
 
 ---Initialize the GUI
 function WMManagerGUI:init()
-    WMLogger:debug("WorkflowManagerGUI initialized")
+    self.isVisible = false
+    self.selectedWorkflowIndex = 0
+    self.listData = {}
+
+    -- Try to load XML GUI
+    self:loadXmlGui()
+
+    WMLogger:debug("WorkflowManagerGUI initialized (XML loaded: %s)", tostring(self.isXmlGuiLoaded))
+end
+
+---Load the XML GUI layout
+function WMManagerGUI:loadXmlGui()
+    local xmlFile = Utils.getFilename("xml/gui/WorkflowManagerGUI.xml", WorkflowManager.modDirectory)
+
+    if xmlFile == nil or not fileExists(xmlFile) then
+        WMLogger:warning("GUI XML file not found: %s", tostring(xmlFile))
+        return
+    end
+
+    -- Register the frame element with the GUI system
+    if g_gui ~= nil then
+        -- Create frame from XML
+        local success = pcall(function()
+            g_gui:loadProfiles(xmlFile)
+        end)
+
+        if success then
+            self.isXmlGuiLoaded = true
+            WMLogger:debug("Loaded GUI profiles from XML")
+        else
+            WMLogger:debug("Could not load GUI profiles (using fallback rendering)")
+        end
+    end
 end
 
 ---Show the GUI
@@ -29,12 +68,12 @@ function WMManagerGUI:show()
     self.isVisible = true
     self:refresh()
 
-    -- Show GUI using FS25 GUI system
-    -- Note: Full implementation requires XML GUI definition
-    WMLogger:debug("WorkflowManagerGUI shown")
+    -- Disable input to game while GUI is shown
+    if g_inputBinding ~= nil then
+        g_inputBinding:setShowMouseCursor(true)
+    end
 
-    -- For now, use simple on-screen display
-    -- Full GUI will be implemented when XML layouts are created
+    WMLogger:debug("WorkflowManagerGUI shown")
 end
 
 ---Hide the GUI
@@ -44,6 +83,17 @@ function WMManagerGUI:hide()
     end
 
     self.isVisible = false
+
+    -- Re-enable game input
+    if g_inputBinding ~= nil then
+        g_inputBinding:setShowMouseCursor(false)
+    end
+
+    -- Also close editor if open
+    if WMEditorGUI.isVisible then
+        WMEditorGUI:close()
+    end
+
     WMLogger:debug("WorkflowManagerGUI hidden")
 end
 
@@ -64,10 +114,48 @@ function WMManagerGUI:refresh()
 
     -- Get all workflows
     local workflows = WorkflowManager:getAllWorkflows()
+    self.listData = workflows
 
-    -- Update list display
-    -- Full implementation will update GUI elements
+    -- Update status
     WMLogger:debug("Refreshed workflow list: %d workflows", #workflows)
+end
+
+---Get status text for a workflow
+---@param workflow table Workflow data
+---@return string statusText Formatted status text
+function WMManagerGUI:getStatusText(workflow)
+    local statusText = workflow.status or "unknown"
+
+    if workflow.status == WorkflowManager.STATUS_RUNNING then
+        statusText = string.format("%s (%d/%d)",
+            g_i18n:getText("wm_status_running"),
+            workflow.currentStep or 1,
+            #workflow.steps)
+    elseif workflow.status == WorkflowManager.STATUS_READY then
+        statusText = g_i18n:getText("wm_status_ready")
+    elseif workflow.status == WorkflowManager.STATUS_PAUSED then
+        statusText = g_i18n:getText("wm_status_paused")
+    elseif workflow.status == WorkflowManager.STATUS_COMPLETED then
+        statusText = g_i18n:getText("wm_status_completed")
+    elseif workflow.status == WorkflowManager.STATUS_ERROR then
+        statusText = g_i18n:getText("wm_status_error")
+    end
+
+    return statusText
+end
+
+---Get vehicle name for a workflow
+---@param workflow table Workflow data
+---@return string vehicleName Vehicle name or placeholder
+function WMManagerGUI:getVehicleName(workflow)
+    if workflow.vehicle ~= nil then
+        if workflow.vehicle.getName then
+            return workflow.vehicle:getName()
+        elseif workflow.vehicle.name then
+            return workflow.vehicle.name
+        end
+    end
+    return g_i18n:getText("wm_no_vehicle")
 end
 
 ---Handle workflow selection
@@ -77,12 +165,23 @@ function WMManagerGUI:onWorkflowSelected(index)
     WMLogger:debug("Selected workflow index: %d", index)
 end
 
+---Handle workflow selection changed (callback from GUI)
+function WMManagerGUI:onWorkflowSelectionChanged(list, section, index)
+    self:onWorkflowSelected(index)
+end
+
+---Handle workflow double click (callback from GUI)
+function WMManagerGUI:onWorkflowDoubleClick(list, section, index)
+    self:onWorkflowSelected(index)
+    self:onEditClick()
+end
+
 ---Handle "New" button click
-function WMManagerGUI:onNewClick()
+function WMManagerGUI:onClickNew()
     WMLogger:debug("New workflow button clicked")
 
     -- Create new workflow
-    local workflow = WorkflowManager:createWorkflow("New Workflow")
+    local workflow = WorkflowManager:createWorkflow(g_i18n:getText("wm_editor_title"))
 
     -- Open editor for the new workflow
     WMEditorGUI:openWorkflow(workflow)
@@ -91,7 +190,7 @@ function WMManagerGUI:onNewClick()
 end
 
 ---Handle "Edit" button click
-function WMManagerGUI:onEditClick()
+function WMManagerGUI:onClickEdit()
     if self.selectedWorkflowIndex <= 0 then
         WMLogger:warning("No workflow selected for editing")
         return
@@ -106,7 +205,7 @@ function WMManagerGUI:onEditClick()
 end
 
 ---Handle "Delete" button click
-function WMManagerGUI:onDeleteClick()
+function WMManagerGUI:onClickDelete()
     if self.selectedWorkflowIndex <= 0 then
         WMLogger:warning("No workflow selected for deletion")
         return
@@ -123,7 +222,7 @@ function WMManagerGUI:onDeleteClick()
 end
 
 ---Handle "Start" button click
-function WMManagerGUI:onStartClick()
+function WMManagerGUI:onClickStart()
     if self.selectedWorkflowIndex <= 0 then
         WMLogger:warning("No workflow selected to start")
         return
@@ -139,7 +238,7 @@ function WMManagerGUI:onStartClick()
 end
 
 ---Handle "Stop" button click
-function WMManagerGUI:onStopClick()
+function WMManagerGUI:onClickStop()
     if self.selectedWorkflowIndex <= 0 then
         WMLogger:warning("No workflow selected to stop")
         return
@@ -155,7 +254,7 @@ function WMManagerGUI:onStopClick()
 end
 
 ---Handle "Pause" button click
-function WMManagerGUI:onPauseClick()
+function WMManagerGUI:onClickPause()
     if self.selectedWorkflowIndex <= 0 then
         return
     end
@@ -173,51 +272,179 @@ function WMManagerGUI:onPauseClick()
     end
 end
 
+---Handle "Close" button click
+function WMManagerGUI:onClickClose()
+    self:hide()
+end
+
 ---Draw the GUI (called each frame when visible)
 function WMManagerGUI:draw()
     if not self.isVisible then
         return
     end
 
-    -- Simple text-based display for development
-    -- Will be replaced with proper GUI elements
-    local workflows = WorkflowManager:getAllWorkflows()
+    -- Draw semi-transparent background
+    setTextColor(0, 0, 0, 0.7)
+    local bgX, bgY = 0.25, 0.12
+    local bgW, bgH = 0.5, 0.76
+    renderOverlay(g_baseUIFilename, bgX, bgY, bgW, bgH)
 
-    -- Draw header
+    -- Reset text color
+    setTextColor(1, 1, 1, 1)
+
+    -- Draw border
+    local borderColor = {0.2, 0.6, 0.9, 1}
+    setTextColor(borderColor[1], borderColor[2], borderColor[3], borderColor[4])
+    renderOverlay(g_baseUIFilename, bgX, bgY, bgW, 0.003)           -- Bottom
+    renderOverlay(g_baseUIFilename, bgX, bgY + bgH - 0.003, bgW, 0.003)  -- Top
+    renderOverlay(g_baseUIFilename, bgX, bgY, 0.003, bgH)           -- Left
+    renderOverlay(g_baseUIFilename, bgX + bgW - 0.003, bgY, 0.003, bgH)  -- Right
+
+    -- Draw title bar
+    setTextColor(0.15, 0.15, 0.15, 1)
+    renderOverlay(g_baseUIFilename, bgX, bgY + bgH - 0.06, bgW, 0.06)
+
     setTextColor(1, 1, 1, 1)
     setTextBold(true)
-    renderText(0.3, 0.9, 0.025, "Workflow Manager")
+    renderText(bgX + 0.02, bgY + bgH - 0.045, 0.025, g_i18n:getText("wm_title"))
     setTextBold(false)
 
+    -- Draw close button hint
+    setTextColor(0.8, 0.8, 0.8, 1)
+    renderText(bgX + bgW - 0.08, bgY + bgH - 0.04, 0.018, "[X] ESC")
+
+    -- Draw toolbar
+    local toolbarY = bgY + bgH - 0.13
+    self:drawToolbar(bgX + 0.02, toolbarY)
+
+    -- Draw column headers
+    local headerY = toolbarY - 0.05
+    setTextColor(0.7, 0.7, 0.7, 1)
+    setTextBold(true)
+    renderText(bgX + 0.02, headerY, 0.016, g_i18n:getText("wm_header_name"))
+    renderText(bgX + 0.20, headerY, 0.016, g_i18n:getText("wm_header_vehicle"))
+    renderText(bgX + 0.35, headerY, 0.016, g_i18n:getText("wm_header_steps"))
+    renderText(bgX + 0.42, headerY, 0.016, g_i18n:getText("wm_header_status"))
+    setTextBold(false)
+
+    -- Draw separator line
+    setTextColor(0.4, 0.4, 0.4, 1)
+    renderOverlay(g_baseUIFilename, bgX + 0.01, headerY - 0.015, bgW - 0.02, 0.002)
+
     -- Draw workflow list
-    local y = 0.85
-    for i, workflow in ipairs(workflows) do
-        local statusText = workflow.status
-        if workflow.status == WorkflowManager.STATUS_RUNNING then
-            statusText = string.format("Running (%d/%d)", workflow.currentStep, #workflow.steps)
-        end
-
-        local color = {1, 1, 1, 1}
-        if i == self.selectedWorkflowIndex then
-            color = {0.2, 0.8, 0.2, 1}
-        end
-        setTextColor(color[1], color[2], color[3], color[4])
-
-        local text = string.format("%d. %s - %s [%s]",
-            i, workflow.name, statusText, #workflow.steps .. " steps")
-        renderText(0.3, y, 0.018, text)
-
-        y = y - 0.025
-    end
+    local listY = headerY - 0.04
+    local workflows = WorkflowManager:getAllWorkflows()
 
     if #workflows == 0 then
-        setTextColor(0.7, 0.7, 0.7, 1)
-        renderText(0.3, y, 0.018, "No workflows created yet")
+        setTextColor(0.6, 0.6, 0.6, 1)
+        renderText(bgX + 0.1, listY - 0.1, 0.018, g_i18n:getText("wm_no_workflows"))
+    else
+        for i, workflow in ipairs(workflows) do
+            self:drawWorkflowRow(bgX, listY, i, workflow)
+            listY = listY - 0.045
+
+            -- Stop if we've drawn too many
+            if i >= 12 then
+                break
+            end
+        end
     end
 
-    -- Draw controls hint
-    setTextColor(0.8, 0.8, 0.8, 1)
-    renderText(0.3, 0.15, 0.015, "Press Alt+W to close | Ctrl+Alt+W to start | Shift+Alt+W to stop")
+    -- Draw status bar
+    local statusY = bgY + 0.02
+    setTextColor(0.6, 0.6, 0.6, 1)
+    local statusInfo = string.format(g_i18n:getText("wm_workflows_count"), #workflows)
+    renderText(bgX + 0.02, statusY, 0.014, statusInfo)
+
+    -- Draw key hints
+    setTextColor(0.5, 0.5, 0.5, 1)
+    renderText(bgX + bgW - 0.22, statusY, 0.012, "Alt+W: Toggle | 1-9: Select")
+end
+
+---Draw toolbar buttons
+---@param x number X position
+---@param y number Y position
+function WMManagerGUI:drawToolbar(x, y)
+    local buttonW = 0.07
+    local buttonH = 0.04
+    local spacing = 0.01
+    local currentX = x
+
+    local buttons = {
+        {text = g_i18n:getText("wm_button_new"), action = "new", color = {0.2, 0.6, 0.2, 1}},
+        {text = g_i18n:getText("wm_button_edit"), action = "edit", color = {0.3, 0.5, 0.7, 1}},
+        {text = g_i18n:getText("wm_button_delete"), action = "delete", color = {0.7, 0.3, 0.3, 1}},
+        {text = g_i18n:getText("wm_button_start"), action = "start", color = {0.2, 0.7, 0.2, 1}},
+        {text = g_i18n:getText("wm_button_stop"), action = "stop", color = {0.7, 0.2, 0.2, 1}},
+        {text = g_i18n:getText("wm_button_pause"), action = "pause", color = {0.6, 0.6, 0.2, 1}},
+    }
+
+    for _, btn in ipairs(buttons) do
+        -- Button background
+        setTextColor(btn.color[1] * 0.6, btn.color[2] * 0.6, btn.color[3] * 0.6, 0.8)
+        renderOverlay(g_baseUIFilename, currentX, y, buttonW, buttonH)
+
+        -- Button text
+        setTextColor(1, 1, 1, 1)
+        local textX = currentX + buttonW * 0.5 - getTextWidth(0.014, btn.text) * 0.5
+        renderText(textX, y + buttonH * 0.3, 0.014, btn.text)
+
+        currentX = currentX + buttonW + spacing
+    end
+end
+
+---Draw a single workflow row
+---@param baseX number Base X position
+---@param y number Y position
+---@param index number Row index
+---@param workflow table Workflow data
+function WMManagerGUI:drawWorkflowRow(baseX, y, index, workflow)
+    local isSelected = (index == self.selectedWorkflowIndex)
+    local rowHeight = 0.04
+
+    -- Row background for selected
+    if isSelected then
+        setTextColor(0.2, 0.4, 0.6, 0.5)
+        renderOverlay(g_baseUIFilename, baseX + 0.01, y - rowHeight + 0.01, 0.48, rowHeight)
+    end
+
+    -- Row color based on status
+    local textColor = {1, 1, 1, 1}
+    if workflow.status == WorkflowManager.STATUS_RUNNING then
+        textColor = {0.3, 0.9, 0.3, 1}
+    elseif workflow.status == WorkflowManager.STATUS_PAUSED then
+        textColor = {0.9, 0.9, 0.3, 1}
+    elseif workflow.status == WorkflowManager.STATUS_ERROR then
+        textColor = {0.9, 0.3, 0.3, 1}
+    elseif workflow.status == WorkflowManager.STATUS_COMPLETED then
+        textColor = {0.5, 0.7, 0.9, 1}
+    end
+
+    setTextColor(textColor[1], textColor[2], textColor[3], textColor[4])
+
+    -- Draw workflow data
+    local textY = y - 0.01
+
+    -- Index + Name
+    local displayName = string.format("%d. %s", index, workflow.name or "Unnamed")
+    if string.len(displayName) > 20 then
+        displayName = string.sub(displayName, 1, 18) .. ".."
+    end
+    renderText(baseX + 0.02, textY, 0.015, displayName)
+
+    -- Vehicle
+    local vehicleName = self:getVehicleName(workflow)
+    if string.len(vehicleName) > 15 then
+        vehicleName = string.sub(vehicleName, 1, 13) .. ".."
+    end
+    renderText(baseX + 0.20, textY, 0.015, vehicleName)
+
+    -- Steps count
+    renderText(baseX + 0.35, textY, 0.015, tostring(#workflow.steps))
+
+    -- Status
+    local statusText = self:getStatusText(workflow)
+    renderText(baseX + 0.42, textY, 0.015, statusText)
 end
 
 ---Update function
@@ -227,6 +454,88 @@ function WMManagerGUI:update(dt)
         return
     end
 
-    -- Handle input for selection
-    -- Full implementation will use proper GUI input handling
+    -- Handle keyboard input for workflow selection
+    self:handleInput()
+end
+
+---Handle keyboard/mouse input
+function WMManagerGUI:handleInput()
+    -- Number keys 1-9 for quick selection
+    for i = 1, 9 do
+        if Input.isKeyPressed(Input["KEY_" .. tostring(i)]) then
+            local workflows = WorkflowManager:getAllWorkflows()
+            if i <= #workflows then
+                self:onWorkflowSelected(i)
+            end
+        end
+    end
+
+    -- ESC to close
+    if Input.isKeyPressed(Input.KEY_escape) then
+        -- Check if editor is open first
+        if WMEditorGUI.isVisible then
+            WMEditorGUI:close()
+        else
+            self:hide()
+        end
+    end
+
+    -- Enter to edit selected
+    if Input.isKeyPressed(Input.KEY_return) then
+        if self.selectedWorkflowIndex > 0 then
+            self:onEditClick()
+        end
+    end
+
+    -- Delete key
+    if Input.isKeyPressed(Input.KEY_delete) then
+        if self.selectedWorkflowIndex > 0 then
+            self:onClickDelete()
+        end
+    end
+
+    -- Arrow keys for navigation
+    if Input.isKeyPressed(Input.KEY_up) then
+        local workflows = WorkflowManager:getAllWorkflows()
+        if self.selectedWorkflowIndex > 1 then
+            self:onWorkflowSelected(self.selectedWorkflowIndex - 1)
+        elseif #workflows > 0 and self.selectedWorkflowIndex == 0 then
+            self:onWorkflowSelected(#workflows)
+        end
+    end
+
+    if Input.isKeyPressed(Input.KEY_down) then
+        local workflows = WorkflowManager:getAllWorkflows()
+        if self.selectedWorkflowIndex < #workflows then
+            self:onWorkflowSelected(self.selectedWorkflowIndex + 1)
+        elseif #workflows > 0 and self.selectedWorkflowIndex == 0 then
+            self:onWorkflowSelected(1)
+        end
+    end
+
+    -- N for new
+    if Input.isKeyPressed(Input.KEY_n) then
+        self:onClickNew()
+    end
+
+    -- S for start
+    if Input.isKeyPressed(Input.KEY_s) then
+        if self.selectedWorkflowIndex > 0 then
+            self:onClickStart()
+        end
+    end
+
+    -- P for pause/resume
+    if Input.isKeyPressed(Input.KEY_p) then
+        if self.selectedWorkflowIndex > 0 then
+            self:onClickPause()
+        end
+    end
+
+    -- X for stop
+    if Input.isKeyPressed(Input.KEY_x) then
+        if self.selectedWorkflowIndex > 0 then
+            self:onClickStop()
+        end
+    end
 end

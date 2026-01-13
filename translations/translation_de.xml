@@ -6,19 +6,22 @@
         <text name="action_WM_START_WORKFLOW" text="Workflow starten"/>
         <text name="action_WM_STOP_WORKFLOW" text="Workflow stoppen"/>
 
-        <!-- GUI texts -->
+        <!-- GUI titles -->
         <text name="wm_title" text="Workflow Manager"/>
         <text name="wm_editor_title" text="Workflow bearbeiten"/>
-        <text name="wm_new" text="Neu"/>
-        <text name="wm_edit" text="Bearbeiten"/>
-        <text name="wm_delete" text="Loeschen"/>
-        <text name="wm_start" text="Starten"/>
-        <text name="wm_stop" text="Stoppen"/>
-        <text name="wm_pause" text="Pausieren"/>
-        <text name="wm_resume" text="Fortsetzen"/>
-        <text name="wm_save" text="Speichern"/>
-        <text name="wm_cancel" text="Abbrechen"/>
-        <text name="wm_close" text="Schliessen"/>
+        <text name="wm_dialog_add_step" text="Schritt hinzufuegen"/>
+
+        <!-- Buttons -->
+        <text name="wm_button_new" text="Neu"/>
+        <text name="wm_button_edit" text="Bearbeiten"/>
+        <text name="wm_button_delete" text="Loeschen"/>
+        <text name="wm_button_start" text="Starten"/>
+        <text name="wm_button_stop" text="Stoppen"/>
+        <text name="wm_button_pause" text="Pausieren"/>
+        <text name="wm_button_resume" text="Fortsetzen"/>
+        <text name="wm_button_save" text="Speichern"/>
+        <text name="wm_button_cancel" text="Abbrechen"/>
+        <text name="wm_button_close" text="Schliessen"/>
 
         <!-- Table headers -->
         <text name="wm_header_name" text="Workflow-Name"/>
@@ -26,18 +29,31 @@
         <text name="wm_header_steps" text="Schritte"/>
         <text name="wm_header_status" text="Status"/>
 
-        <!-- Step editor -->
-        <text name="wm_step_type" text="Typ"/>
-        <text name="wm_step_target" text="Ziel"/>
-        <text name="wm_step_action" text="Aktion"/>
-        <text name="wm_add_step" text="Schritt hinzufuegen"/>
-        <text name="wm_remove_step" text="Schritt entfernen"/>
-        <text name="wm_move_up" text="Nach oben"/>
-        <text name="wm_move_down" text="Nach unten"/>
+        <!-- Editor labels -->
+        <text name="wm_editor_name" text="Name:"/>
+        <text name="wm_editor_vehicle" text="Fahrzeug:"/>
+        <text name="wm_editor_steps" text="Schritte"/>
+        <text name="wm_editor_type" text="Typ"/>
+        <text name="wm_editor_target" text="Ziel"/>
+        <text name="wm_editor_action" text="Aktion"/>
+        <text name="wm_editor_no_steps" text="Keine Schritte definiert. Klicken Sie +, um einen Schritt hinzuzufuegen."/>
+
+        <!-- Tooltips -->
+        <text name="wm_tooltip_moveup" text="Schritt nach oben"/>
+        <text name="wm_tooltip_movedown" text="Schritt nach unten"/>
+        <text name="wm_tooltip_addstep" text="Neuen Schritt hinzufuegen"/>
+        <text name="wm_tooltip_removestep" text="Ausgewaehlten Schritt entfernen"/>
 
         <!-- Step types -->
         <text name="wm_type_autodrive" text="AutoDrive"/>
         <text name="wm_type_courseplay" text="Courseplay"/>
+
+        <!-- Actions -->
+        <text name="wm_action_drive" text="Fahren"/>
+        <text name="wm_action_harvest" text="Ernten"/>
+        <text name="wm_action_fieldwork" text="Feldarbeit"/>
+        <text name="wm_action_first" text="Am ersten WP starten"/>
+        <text name="wm_action_last" text="Am letzten WP starten"/>
 
         <!-- Status texts -->
         <text name="wm_status_ready" text="Bereit"/>
@@ -47,8 +63,7 @@
         <text name="wm_status_error" text="Fehler"/>
 
         <!-- Messages -->
-        <text name="wm_no_workflows" text="Noch keine Workflows erstellt"/>
-        <text name="wm_no_steps" text="Keine Schritte definiert"/>
+        <text name="wm_no_workflows" text="Noch keine Workflows erstellt. Klicken Sie 'Neu', um einen zu erstellen."/>
         <text name="wm_no_vehicle" text="Kein Fahrzeug zugewiesen"/>
         <text name="wm_workflow_started" text="Workflow gestartet: %s"/>
         <text name="wm_workflow_stopped" text="Workflow gestoppt: %s"/>
@@ -56,6 +71,11 @@
         <text name="wm_workflow_error" text="Workflow-Fehler: %s"/>
         <text name="wm_step_started" text="Starte Schritt %d: %s"/>
         <text name="wm_step_completed" text="Schritt %d abgeschlossen"/>
+        <text name="wm_select_workflow" text="Waehlen Sie einen Workflow"/>
+        <text name="wm_workflows_count" text="%d Workflow(s)"/>
+
+        <!-- Vehicle dropdown -->
+        <text name="wm_select_vehicle" text="-- Fahrzeug waehlen --"/>
 
         <!-- Errors -->
         <text name="wm_error_no_autodrive" text="AutoDrive nicht verfuegbar"/>
@@ -63,5 +83,6 @@
         <text name="wm_error_no_vehicle" text="Kein Fahrzeug dem Workflow zugewiesen"/>
         <text name="wm_error_no_steps" text="Workflow hat keine Schritte"/>
         <text name="wm_error_target_not_found" text="Ziel nicht gefunden: %s"/>
+        <text name="wm_error_no_selection" text="Bitte waehlen Sie zuerst einen Workflow"/>
     </texts>
 </l10n>

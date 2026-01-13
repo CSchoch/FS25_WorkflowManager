@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    WorkflowManager - Main GUI Layout
+    Displays list of workflows with management controls
+-->
+<GUI>
+    <FrameElement name="WorkflowManagerFrame"
+        profile="baseDialogProfile"
+        position="0.3 0.15"
+        size="0.4 0.7"
+        inputMode="ADJUST_TO_CONTENT"
+        fadeBackgroundMode="FULLSCREEN">
+
+        <!-- Title bar -->
+        <BoxLayoutElement
+            alignmentX="left"
+            alignmentY="top"
+            position="0 0.94"
+            size="1 0.06"
+            layoutDirection="horizontal">
+
+            <TextElement name="titleText"
+                profile="baseHeaderProfile"
+                text="$l10n_wm_title"
+                textSize="0.022"
+                position="0.02 0.01"
+                size="0.7 0.05"/>
+
+            <ButtonElement name="closeButton"
+                profile="baseButtonSmallProfile"
+                position="0.9 0.005"
+                size="0.08 0.045"
+                text="X"
+                onClick="onClickClose"/>
+        </BoxLayoutElement>
+
+        <!-- Button toolbar -->
+        <BoxLayoutElement name="toolbar"
+            alignmentX="left"
+            alignmentY="top"
+            position="0.01 0.86"
+            size="0.98 0.07"
+            layoutDirection="horizontal">
+
+            <ButtonElement name="newButton"
+                profile="baseButtonProfile"
+                size="0.15 0.055"
+                text="$l10n_wm_button_new"
+                onClick="onClickNew"/>
+
+            <ButtonElement name="editButton"
+                profile="baseButtonProfile"
+                size="0.15 0.055"
+                text="$l10n_wm_button_edit"
+                onClick="onClickEdit"/>
+
+            <ButtonElement name="deleteButton"
+                profile="baseButtonProfile"
+                size="0.15 0.055"
+                text="$l10n_wm_button_delete"
+                onClick="onClickDelete"/>
+
+            <ButtonElement name="startButton"
+                profile="baseButtonProfile"
+                size="0.15 0.055"
+                text="$l10n_wm_button_start"
+                onClick="onClickStart"/>
+
+            <ButtonElement name="stopButton"
+                profile="baseButtonProfile"
+                size="0.15 0.055"
+                text="$l10n_wm_button_stop"
+                onClick="onClickStop"/>
+
+            <ButtonElement name="pauseButton"
+                profile="baseButtonProfile"
+                size="0.15 0.055"
+                text="$l10n_wm_button_pause"
+                onClick="onClickPause"/>
+        </BoxLayoutElement>
+
+        <!-- Column headers -->
+        <BoxLayoutElement name="listHeader"
+            alignmentX="left"
+            alignmentY="top"
+            position="0.01 0.79"
+            size="0.98 0.06"
+            layoutDirection="horizontal">
+
+            <TextElement
+                profile="baseTextProfile"
+                text="$l10n_wm_header_name"
+                textSize="0.016"
+                size="0.35 0.05"/>
+
+            <TextElement
+                profile="baseTextProfile"
+                text="$l10n_wm_header_vehicle"
+                textSize="0.016"
+                size="0.25 0.05"/>
+
+            <TextElement
+                profile="baseTextProfile"
+                text="$l10n_wm_header_steps"
+                textSize="0.016"
+                size="0.15 0.05"/>
+
+            <TextElement
+                profile="baseTextProfile"
+                text="$l10n_wm_header_status"
+                textSize="0.016"
+                size="0.23 0.05"/>
+        </BoxLayoutElement>
+
+        <!-- Workflow list -->
+        <ListElement name="workflowList"
+            profile="baseListProfile"
+            position="0.01 0.08"
+            size="0.98 0.70"
+            listItemHeight="0.055"
+            visibleItems="12"
+            onSelectionChanged="onWorkflowSelectionChanged"
+            onDoubleClick="onWorkflowDoubleClick"/>
+
+        <!-- Empty list message -->
+        <TextElement name="emptyListText"
+            profile="baseTextProfile"
+            text="$l10n_wm_no_workflows"
+            textColor="0.7 0.7 0.7 1"
+            textSize="0.018"
+            position="0.3 0.4"
+            size="0.4 0.05"
+            visible="false"/>
+
+        <!-- Status bar -->
+        <BoxLayoutElement name="statusBar"
+            alignmentX="left"
+            alignmentY="bottom"
+            position="0.01 0.01"
+            size="0.98 0.06"
+            layoutDirection="horizontal">
+
+            <TextElement name="statusText"
+                profile="baseTextProfile"
+                text=""
+                textSize="0.014"
+                textColor="0.8 0.8 0.8 1"
+                size="0.7 0.04"/>
+
+            <TextElement name="keyHintText"
+                profile="baseTextProfile"
+                text="Alt+W: Close"
+                textSize="0.012"
+                textColor="0.6 0.6 0.6 1"
+                size="0.28 0.04"
+                textAlignment="right"/>
+        </BoxLayoutElement>
+
+    </FrameElement>
+
+    <!-- List item template -->
+    <ListItemElement name="WorkflowListItemTemplate"
+        profile="baseListItemProfile"
+        size="1 0.055">
+
+        <BoxLayoutElement
+            layoutDirection="horizontal"
+            size="1 1">
+
+            <TextElement name="nameText"
+                profile="baseTextProfile"
+                textSize="0.016"
+                size="0.35 1"
+                textAlignment="left"/>
+
+            <TextElement name="vehicleText"
+                profile="baseTextProfile"
+                textSize="0.016"
+                size="0.25 1"
+                textAlignment="left"/>
+
+            <TextElement name="stepsText"
+                profile="baseTextProfile"
+                textSize="0.016"
+                size="0.15 1"
+                textAlignment="center"/>
+
+            <TextElement name="statusText"
+                profile="baseTextProfile"
+                textSize="0.016"
+                size="0.23 1"
+                textAlignment="left"/>
+        </BoxLayoutElement>
+
+    </ListItemElement>
+</GUI>
