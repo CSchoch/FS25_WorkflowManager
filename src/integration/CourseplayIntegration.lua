@@ -15,26 +15,113 @@ CPIntegration = {}
 
 CPIntegration.isInitialized = false
 CPIntegration.isAvailable = false
+CPIntegration.checkAttempts = 0
+CPIntegration.maxCheckAttempts = 10
+CPIntegration.checkInterval = 1000  -- ms between retry attempts
+CPIntegration.timeSinceLastCheck = 0
 
 ---Initialize the Courseplay integration
 function CPIntegration:init()
+    self.checkAttempts = 0
+    self.timeSinceLastCheck = 0
+
     -- Check if Courseplay is loaded
     self.isAvailable = self:checkAvailability()
 
     if self.isAvailable then
-        WMLogger:info("Courseplay integration initialized - Courseplay is available")
+        self:completeInitialization()
     else
-        WMLogger:warning("Courseplay integration initialized - Courseplay is NOT available")
+        WMLogger:info("Courseplay integration initialized - Courseplay not yet available, will retry")
     end
 
     self.isInitialized = true
 end
 
+---Complete initialization when Courseplay becomes available
+function CPIntegration:completeInitialization()
+    WMLogger:info("Courseplay integration initialized - Courseplay is available")
+end
+
+---Update function - checks for Courseplay availability if not yet found
+---@param dt number Delta time in milliseconds
+function CPIntegration:update(dt)
+    -- If already available, nothing to do
+    if self.isAvailable then
+        return
+    end
+
+    -- If we've exceeded max attempts, stop trying
+    if self.checkAttempts >= self.maxCheckAttempts then
+        -- Log once when we give up
+        if self.checkAttempts == self.maxCheckAttempts then
+            WMLogger:warning("Courseplay not found after %d attempts - giving up", self.maxCheckAttempts)
+            self.checkAttempts = self.checkAttempts + 1  -- Prevent repeated logging
+        end
+        return
+    end
+
+    -- Accumulate time
+    self.timeSinceLastCheck = self.timeSinceLastCheck + dt
+
+    -- Check at intervals
+    if self.timeSinceLastCheck >= self.checkInterval then
+        self.timeSinceLastCheck = 0
+        self.checkAttempts = self.checkAttempts + 1
+
+        self.isAvailable = self:checkAvailability()
+
+        if self.isAvailable then
+            self:completeInitialization()
+        else
+            WMLogger:debug("Courseplay check attempt %d/%d - not available yet",
+                self.checkAttempts, self.maxCheckAttempts)
+        end
+    end
+end
+
 ---Check if Courseplay mod is available
 ---@return boolean available True if Courseplay is loaded
 function CPIntegration:checkAvailability()
-    -- FS25 Courseplay uses g_Courseplay global
-    return g_Courseplay ~= nil
+    -- Check multiple possible globals that Courseplay might use
+    local cpGlobalExists = rawget(_G, "g_Courseplay") ~= nil
+    local cpExists = rawget(_G, "Courseplay") ~= nil
+    local cpManagerExists = rawget(_G, "g_cpManager") ~= nil
+
+    -- Also check if loaded as mod (FS25 style)
+    local modLoaded = false
+    if g_modManager ~= nil then
+        local cpMod = g_modManager:getModByName("FS25_Courseplay")
+        if cpMod ~= nil then
+            modLoaded = true
+        end
+    end
+
+    -- Check via g_currentMission (some mods attach there)
+    local missionCP = g_currentMission ~= nil and g_currentMission.courseplay ~= nil
+
+    -- Debug: log what we find (more detailed on first few attempts)
+    if self.checkAttempts <= 3 then
+        WMLogger:debug("Courseplay check #%d: g_Courseplay=%s (type=%s), Courseplay=%s, g_cpManager=%s, modLoaded=%s, missionCP=%s",
+            self.checkAttempts,
+            tostring(cpGlobalExists),
+            type(rawget(_G, "g_Courseplay")),
+            tostring(cpExists),
+            tostring(cpManagerExists),
+            tostring(modLoaded),
+            tostring(missionCP))
+    end
+
+    if cpGlobalExists or cpExists or cpManagerExists or missionCP then
+        WMLogger:info("Courseplay detected!")
+        return true
+    end
+
+    -- If mod is loaded but globals not yet available, keep trying
+    if modLoaded and self.checkAttempts <= self.maxCheckAttempts then
+        WMLogger:debug("Courseplay mod loaded but globals not yet available")
+    end
+
+    return false
 end
 
 ---Check if vehicle has Courseplay worker specialization

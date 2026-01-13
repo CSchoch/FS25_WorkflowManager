@@ -12,33 +12,121 @@ ADIntegration = {}
 
 ADIntegration.isInitialized = false
 ADIntegration.isAvailable = false
+ADIntegration.checkAttempts = 0
+ADIntegration.maxCheckAttempts = 10
+ADIntegration.checkInterval = 1000  -- ms between retry attempts
+ADIntegration.timeSinceLastCheck = 0
 
 -- Callback tracking for completion detection
 ADIntegration.pendingCallbacks = {}
 
 ---Initialize the AutoDrive integration
 function ADIntegration:init()
+    self.checkAttempts = 0
+    self.timeSinceLastCheck = 0
+
     -- Check if AutoDrive is loaded
     self.isAvailable = self:checkAvailability()
 
     if self.isAvailable then
-        WMLogger:info("AutoDrive integration initialized - AutoDrive is available")
-
-        -- Register as destination listener to get notifications when AD routes complete
-        if AutoDrive.registerDestinationListener then
-            AutoDrive:registerDestinationListener(self, self.onDestinationReached)
-        end
+        self:completeInitialization()
     else
-        WMLogger:warning("AutoDrive integration initialized - AutoDrive is NOT available")
+        WMLogger:info("AutoDrive integration initialized - AutoDrive not yet available, will retry")
     end
 
     self.isInitialized = true
 end
 
+---Complete initialization when AutoDrive becomes available
+function ADIntegration:completeInitialization()
+    WMLogger:info("AutoDrive integration initialized - AutoDrive is available")
+
+    -- Register as destination listener to get notifications when AD routes complete
+    if AutoDrive and AutoDrive.registerDestinationListener then
+        AutoDrive:registerDestinationListener(self, self.onDestinationReached)
+    end
+end
+
+---Update function - checks for AutoDrive availability if not yet found
+---@param dt number Delta time in milliseconds
+function ADIntegration:update(dt)
+    -- If already available, nothing to do
+    if self.isAvailable then
+        return
+    end
+
+    -- If we've exceeded max attempts, stop trying
+    if self.checkAttempts >= self.maxCheckAttempts then
+        -- Log once when we give up
+        if self.checkAttempts == self.maxCheckAttempts then
+            WMLogger:warning("AutoDrive not found after %d attempts - giving up", self.maxCheckAttempts)
+            self.checkAttempts = self.checkAttempts + 1  -- Prevent repeated logging
+        end
+        return
+    end
+
+    -- Accumulate time
+    self.timeSinceLastCheck = self.timeSinceLastCheck + dt
+
+    -- Check at intervals
+    if self.timeSinceLastCheck >= self.checkInterval then
+        self.timeSinceLastCheck = 0
+        self.checkAttempts = self.checkAttempts + 1
+
+        self.isAvailable = self:checkAvailability()
+
+        if self.isAvailable then
+            self:completeInitialization()
+        else
+            WMLogger:debug("AutoDrive check attempt %d/%d - not available yet",
+                self.checkAttempts, self.maxCheckAttempts)
+        end
+    end
+end
+
 ---Check if AutoDrive mod is available
 ---@return boolean available True if AutoDrive is loaded
 function ADIntegration:checkAvailability()
-    return AutoDrive ~= nil
+    -- Check multiple possible globals that AutoDrive might use
+    local adExists = rawget(_G, "AutoDrive") ~= nil
+    local adManagerExists = rawget(_G, "ADGraphManager") ~= nil
+    local gAutodriveExists = rawget(_G, "g_autoDrive") ~= nil
+
+    -- Also check if loaded as mod (FS25 style)
+    local modLoaded = false
+    if g_modManager ~= nil then
+        local adMod = g_modManager:getModByName("FS25_AutoDrive")
+        if adMod ~= nil then
+            modLoaded = true
+        end
+    end
+
+    -- Check via g_currentMission (some mods attach there)
+    local missionAD = g_currentMission ~= nil and g_currentMission.autoDrive ~= nil
+
+    -- Debug: log what we find (more detailed on first few attempts)
+    if self.checkAttempts <= 3 then
+        WMLogger:debug("AutoDrive check #%d: AutoDrive=%s (type=%s), ADGraphManager=%s, g_autoDrive=%s, modLoaded=%s, missionAD=%s",
+            self.checkAttempts,
+            tostring(adExists),
+            type(rawget(_G, "AutoDrive")),
+            tostring(adManagerExists),
+            tostring(gAutodriveExists),
+            tostring(modLoaded),
+            tostring(missionAD))
+    end
+
+    if adExists or adManagerExists or gAutodriveExists or missionAD then
+        WMLogger:info("AutoDrive detected!")
+        return true
+    end
+
+    -- If mod is loaded but globals not yet available, keep trying
+    if modLoaded and self.checkAttempts <= self.maxCheckAttempts then
+        WMLogger:debug("AutoDrive mod loaded but globals not yet available")
+    end
+
+    return false
 end
 
 ---Get list of available AutoDrive destinations/markers

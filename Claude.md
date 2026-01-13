@@ -221,6 +221,7 @@ FS25_WorkflowManager/
 ├── modDesc.xml                      # ✓ Created
 ├── modIcon.dds                      # TODO: Create icon
 ├── README.md
+├── CLAUDE.md                        # ✓ This documentation file
 ├── .vscode/                         # ✓ VS Code workspace config
 │   ├── settings.json                # ✓ Lua globals, file associations
 │   ├── launch.json                  # ✓ Debug info
@@ -231,12 +232,13 @@ FS25_WorkflowManager/
 │   ├── WorkflowExecutor.lua         # ✓ Execution engine
 │   ├── WorkflowStorage.lua          # ✓ XML read/write
 │   ├── gui/
-│   │   ├── WorkflowManagerGUI.lua   # ✓ Main GUI
-│   │   ├── WorkflowEditorGUI.lua    # ✓ Editor GUI
+│   │   ├── WorkflowManagerGUI.lua   # ✓ Main GUI (draw-based)
+│   │   ├── WorkflowEditorGUI.lua    # ✓ Editor GUI (draw-based)
+│   │   ├── WorkflowManagerMenuFrame.lua # ✓ ESC menu integration
 │   │   └── elements/                # UI components (future)
 │   ├── integration/
-│   │   ├── AutoDriveIntegration.lua # ✓ AD API wrapper
-│   │   └── CourseplayIntegration.lua # ✓ CP API wrapper
+│   │   ├── AutoDriveIntegration.lua # ✓ AD API wrapper (with retry logic)
+│   │   └── CourseplayIntegration.lua # ✓ CP API wrapper (with retry logic)
 │   └── utils/
 │       ├── Logger.lua               # ✓ Logging utility (dev mode aware)
 │       ├── EventHandler.lua         # ✓ Event system
@@ -251,7 +253,8 @@ FS25_WorkflowManager/
 └── xml/
     └── gui/
         ├── WorkflowManagerGUI.xml   # ✓ Main GUI layout
-        └── WorkflowEditorGUI.xml    # ✓ Editor GUI layout
+        ├── WorkflowEditorGUI.xml    # ✓ Editor GUI layout
+        └── WorkflowManagerMenuFrame.xml # ✓ ESC menu frame layout
 ```
 
 ## Development Notes
@@ -290,16 +293,16 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 
 ---
 
-**Status**: Phase 1 – Milestone 3 COMPLETE, ready for Milestone 4 (Testing)
+**Status**: Phase 1 – Milestone 4 IN PROGRESS (Testing & Debugging)
 **Last updated**: 2026-01-13
 
 ## Implementation Progress
 
 ### Completed
 - modDesc.xml with FS25 descVersion 105
-- Full Lua file structure with 12 core modules
+- Full Lua file structure with 13 core modules
 - Translation files (EN/DE)
-- Input action bindings (Alt+W, Ctrl+Alt+W, Shift+Alt+W)
+- Input action bindings (Alt+W, F9, Ctrl+Alt+W, Shift+Alt+W)
 - Development environment:
   - VS Code workspace configuration (settings, tasks, launch)
   - DevConfig.lua for debug/release mode switching
@@ -328,11 +331,61 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
   - Step management: Add/Remove steps, Move up/down, Visual step list
   - Vehicle assignment with cycling through available vehicles
 
+- **Milestone 4 Progress (2026-01-13)**:
+  - **Mouse Click Handling**: Added full mouse event handling to draw-based GUIs
+    - Mouse position tracking (mouseX, mouseY)
+    - Button area registration and hit detection
+    - Click handlers for all toolbar and editor buttons
+  - **ESC Menu Integration**: Added TabbedMenuFrameElement for InGameMenu
+    - WorkflowManagerMenuFrame.lua: Page class for ESC menu
+    - WorkflowManagerMenuFrame.xml: XML layout for menu frame
+    - Automatic page registration to g_inGameMenu after map load
+  - **Global Input Action Fix**: Changed to PlayerInputComponent hook pattern
+    - Hooks PlayerInputComponent.registerGlobalPlayerActionEvents (like Courseplay)
+    - This is the proper way to register inputs for non-vehicle mods in FS25
+    - Manual F9 key detection fallback in update loop for debugging
+  - **AD/CP Detection Improvements**:
+    - Added retry logic (10 attempts, 1 second intervals)
+    - Added g_modManager:getModByName() check
+    - Added g_currentMission attachment check
+    - Enhanced logging for first 3 attempts
+  - **Translation Fixes**: Added missing input_ prefixed keys for German
+
 ### In Progress
 - Milestone 4: Testing & Refinement
+  - Debugging AD/CP global detection (mods load but globals not found)
+  - Debugging input action callback not firing
+  - Testing ESC menu integration
+
+### Known Issues Being Debugged
+1. **AD/CP Globals Not Found**: AutoDrive and Courseplay mods are loaded but their globals (AutoDrive, g_Courseplay, etc.) are not detected after 10 retry attempts. Need to verify correct global names in FS25.
+2. **Input Action Callback**: WM_TOGGLE_GUI action registers successfully but callback never fires. Added PlayerInputComponent hook and manual F9 detection as workarounds.
+3. **ESC Menu Page**: May have profile compatibility issues - FS25 GUI profile names need verification.
 
 ### Pending
 - modIcon.dds creation
 - In-game testing with actual AutoDrive and Courseplay
 - Performance optimization
 - Error handling improvements
+
+## Debugging Guide
+
+### Log Messages to Watch For
+```
+[WorkflowManager] Menu frame loaded successfully
+[WorkflowManager] Adding Workflow Manager page to InGameMenu
+[WorkflowManager] Hooked PlayerInputComponent.registerGlobalPlayerActionEvents
+[WorkflowManager] Registered global input action WM_TOGGLE_GUI
+[WorkflowManager] AutoDrive check #1: AutoDrive=... modLoaded=...
+[WorkflowManager] Courseplay check #1: g_Courseplay=... modLoaded=...
+[WorkflowManager] F9 key detected via manual check!
+[WorkflowManager] onToggleGUI called!
+```
+
+### Testing Checklist
+- [ ] Full game restart (not just map reload)
+- [ ] Check log for menu frame loading
+- [ ] Press ESC and look for Workflow Manager tab
+- [ ] Press Alt+W or F9 to toggle GUI
+- [ ] Check if AD/CP detection shows "modLoaded=true"
+- [ ] Verify button clicks work in draw-based GUI

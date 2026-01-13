@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <l10n>
     <texts>
-        <!-- Action texts -->
+        <!-- Action texts (both formats needed) -->
         <text name="action_WM_TOGGLE_GUI" text="Toggle Workflow Manager"/>
         <text name="action_WM_START_WORKFLOW" text="Start Workflow"/>
         <text name="action_WM_STOP_WORKFLOW" text="Stop Workflow"/>
+        <text name="input_WM_TOGGLE_GUI" text="Toggle Workflow Manager"/>
+        <text name="input_WM_START_WORKFLOW" text="Start Workflow"/>
+        <text name="input_WM_STOP_WORKFLOW" text="Stop Workflow"/>
 
         <!-- GUI titles -->
         <text name="wm_title" text="Workflow Manager"/>
@@ -73,6 +76,9 @@
         <text name="wm_step_completed" text="Step %d completed"/>
         <text name="wm_select_workflow" text="Select a workflow"/>
         <text name="wm_workflows_count" text="%d workflow(s)"/>
+        <text name="wm_new_workflow_name" text="New Workflow"/>
+        <text name="wm_confirm_delete" text="Delete workflow '%s'?"/>
+        <text name="wm_tab_title" text="Workflows"/>
 
         <!-- Vehicle dropdown -->
         <text name="wm_select_vehicle" text="-- Select Vehicle --"/>

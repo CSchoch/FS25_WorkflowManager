@@ -22,11 +22,23 @@ WMManagerGUI.statusText = nil
 -- List item data cache
 WMManagerGUI.listData = {}
 
+-- Mouse tracking
+WMManagerGUI.mouseX = 0
+WMManagerGUI.mouseY = 0
+WMManagerGUI.wasMouseDown = false
+
+-- Button positions (set during draw)
+WMManagerGUI.buttonAreas = {}
+
 ---Initialize the GUI
 function WMManagerGUI:init()
     self.isVisible = false
     self.selectedWorkflowIndex = 0
     self.listData = {}
+    self.mouseX = 0
+    self.mouseY = 0
+    self.wasMouseDown = false
+    self.buttonAreas = {}
 
     -- Try to load XML GUI
     self:loadXmlGui()
@@ -370,6 +382,9 @@ function WMManagerGUI:drawToolbar(x, y)
     local spacing = 0.01
     local currentX = x
 
+    -- Clear button areas at start of draw
+    self.buttonAreas = {}
+
     local buttons = {
         {text = g_i18n:getText("wm_button_new"), action = "new", color = {0.2, 0.6, 0.2, 1}},
         {text = g_i18n:getText("wm_button_edit"), action = "edit", color = {0.3, 0.5, 0.7, 1}},
@@ -380,8 +395,12 @@ function WMManagerGUI:drawToolbar(x, y)
     }
 
     for _, btn in ipairs(buttons) do
-        -- Button background
-        setTextColor(btn.color[1] * 0.6, btn.color[2] * 0.6, btn.color[3] * 0.6, 0.8)
+        -- Check if mouse is hovering
+        local isHovered = self:isMouseInArea(currentX, y, buttonW, buttonH)
+
+        -- Button background (brighter if hovered)
+        local brightness = isHovered and 0.8 or 0.6
+        setTextColor(btn.color[1] * brightness, btn.color[2] * brightness, btn.color[3] * brightness, 0.9)
         renderOverlay(g_baseUIFilename, currentX, y, buttonW, buttonH)
 
         -- Button text
@@ -389,8 +408,28 @@ function WMManagerGUI:drawToolbar(x, y)
         local textX = currentX + buttonW * 0.5 - getTextWidth(0.014, btn.text) * 0.5
         renderText(textX, y + buttonH * 0.3, 0.014, btn.text)
 
+        -- Store button area for click detection
+        table.insert(self.buttonAreas, {
+            x = currentX,
+            y = y,
+            w = buttonW,
+            h = buttonH,
+            action = btn.action
+        })
+
         currentX = currentX + buttonW + spacing
     end
+end
+
+---Check if mouse is inside an area
+---@param x number Area X
+---@param y number Area Y
+---@param w number Area width
+---@param h number Area height
+---@return boolean isInside
+function WMManagerGUI:isMouseInArea(x, y, w, h)
+    return self.mouseX >= x and self.mouseX <= x + w and
+           self.mouseY >= y and self.mouseY <= y + h
 end
 
 ---Draw a single workflow row
@@ -454,8 +493,110 @@ function WMManagerGUI:update(dt)
         return
     end
 
+    -- Update mouse position
+    self:updateMousePosition()
+
     -- Handle keyboard input for workflow selection
     self:handleInput()
+end
+
+---Update mouse position from input
+function WMManagerGUI:updateMousePosition()
+    -- Get normalized mouse position (0-1 range)
+    if g_inputBinding ~= nil then
+        local mouseX, mouseY = g_inputBinding:getMousePosition()
+        if mouseX ~= nil and mouseY ~= nil then
+            self.mouseX = mouseX
+            self.mouseY = mouseY
+        end
+    end
+end
+
+---Handle mouse click on GUI elements
+---@param posX number Mouse X position (0-1)
+---@param posY number Mouse Y position (0-1)
+---@param isDown boolean Is mouse button down
+---@param isUp boolean Is mouse button up
+---@param button number Mouse button (1=left)
+function WMManagerGUI:onMouseEvent(posX, posY, isDown, isUp, button)
+    if not self.isVisible then
+        return
+    end
+
+    self.mouseX = posX
+    self.mouseY = posY
+
+    -- Only handle left mouse button
+    if button ~= 1 then
+        return
+    end
+
+    -- Handle click on button release
+    if isUp and self.wasMouseDown then
+        self:handleMouseClick(posX, posY)
+    end
+
+    self.wasMouseDown = isDown
+end
+
+---Handle mouse click at position
+---@param x number Mouse X
+---@param y number Mouse Y
+function WMManagerGUI:handleMouseClick(x, y)
+    -- Check toolbar buttons
+    for _, btn in ipairs(self.buttonAreas) do
+        if self:isMouseInArea(btn.x, btn.y, btn.w, btn.h) then
+            WMLogger:debug("Button clicked: %s", btn.action)
+            self:executeButtonAction(btn.action)
+            return
+        end
+    end
+
+    -- Check workflow list clicks
+    self:handleListClick(x, y)
+end
+
+---Execute a button action
+---@param action string Button action name
+function WMManagerGUI:executeButtonAction(action)
+    if action == "new" then
+        self:onClickNew()
+    elseif action == "edit" then
+        self:onClickEdit()
+    elseif action == "delete" then
+        self:onClickDelete()
+    elseif action == "start" then
+        self:onClickStart()
+    elseif action == "stop" then
+        self:onClickStop()
+    elseif action == "pause" then
+        self:onClickPause()
+    end
+end
+
+---Handle click on workflow list
+---@param x number Mouse X
+---@param y number Mouse Y
+function WMManagerGUI:handleListClick(x, y)
+    -- GUI dimensions matching draw()
+    local bgX, bgY = 0.25, 0.12
+    local bgW, bgH = 0.5, 0.76
+    local toolbarY = bgY + bgH - 0.13
+    local headerY = toolbarY - 0.05
+    local listStartY = headerY - 0.04
+    local rowHeight = 0.045
+
+    -- Check if click is in list area
+    if x >= bgX + 0.01 and x <= bgX + bgW - 0.01 then
+        local workflows = WorkflowManager:getAllWorkflows()
+        for i = 1, math.min(#workflows, 12) do
+            local rowY = listStartY - (i - 1) * rowHeight
+            if y >= rowY - rowHeight + 0.01 and y <= rowY + 0.01 then
+                self:onWorkflowSelected(i)
+                return
+            end
+        end
+    end
 end
 
 ---Handle keyboard/mouse input

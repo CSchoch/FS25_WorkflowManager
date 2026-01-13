@@ -27,6 +27,13 @@ WMEditorGUI.selectedVehicleIndex = 0
 WMEditorGUI.isEditingName = false
 WMEditorGUI.editedName = ""
 
+-- Mouse tracking
+WMEditorGUI.mouseX = 0
+WMEditorGUI.mouseY = 0
+WMEditorGUI.wasMouseDown = false
+WMEditorGUI.buttonAreas = {}
+WMEditorGUI.stepToolbarAreas = {}
+
 ---Initialize the editor GUI
 function WMEditorGUI:init()
     self.isVisible = false
@@ -679,6 +686,168 @@ function WMEditorGUI:handleAddStepDialogInput()
     for i = 1, math.min(9, #destinations) do
         if Input.isKeyPressed(Input["KEY_" .. tostring(i)]) then
             self.addStepTarget = destinations[i]
+        end
+    end
+end
+
+---Handle mouse click on GUI elements
+---@param posX number Mouse X position (0-1)
+---@param posY number Mouse Y position (0-1)
+---@param isDown boolean Is mouse button down
+---@param isUp boolean Is mouse button up
+---@param button number Mouse button (1=left)
+function WMEditorGUI:onMouseEvent(posX, posY, isDown, isUp, button)
+    if not self.isVisible then
+        return
+    end
+
+    self.mouseX = posX
+    self.mouseY = posY
+
+    -- Only handle left mouse button
+    if button ~= 1 then
+        return
+    end
+
+    -- Handle click on button release
+    if isUp and self.wasMouseDown then
+        self:handleMouseClick(posX, posY)
+    end
+
+    self.wasMouseDown = isDown
+end
+
+---Check if mouse is inside an area
+---@param x number Area X
+---@param y number Area Y
+---@param w number Area width
+---@param h number Area height
+---@return boolean isInside
+function WMEditorGUI:isMouseInArea(x, y, w, h)
+    return self.mouseX >= x and self.mouseX <= x + w and
+           self.mouseY >= y and self.mouseY <= y + h
+end
+
+---Handle mouse click at position
+---@param x number Mouse X
+---@param y number Mouse Y
+function WMEditorGUI:handleMouseClick(x, y)
+    -- If add step dialog is open, handle that first
+    if self.isAddStepDialogOpen then
+        self:handleAddStepDialogClick(x, y)
+        return
+    end
+
+    -- Check bottom buttons (Save/Cancel)
+    local bgX, bgY = 0.2, 0.08
+    local bgW, bgH = 0.6, 0.84
+    local btnY = bgY + 0.04
+    local buttonW = 0.12
+    local buttonH = 0.045
+    local spacing = 0.02
+    local btnX = bgX + 0.15
+
+    -- Save button
+    if self:isMouseInArea(btnX, btnY, buttonW, buttonH) then
+        self:saveAndClose()
+        return
+    end
+
+    -- Cancel button
+    if self:isMouseInArea(btnX + buttonW + spacing, btnY, buttonW, buttonH) then
+        self:cancelAndClose()
+        return
+    end
+
+    -- Check step toolbar
+    local toolbarX = bgX + 0.35
+    local toolbarY = bgY + bgH - 0.12 - 0.06 - 0.005
+    local buttonSize = 0.03
+    local btnSpacing = 0.005
+
+    -- Up button
+    if self:isMouseInArea(toolbarX, toolbarY, buttonSize, buttonSize) then
+        self:moveStepUp()
+        return
+    end
+    -- Down button
+    if self:isMouseInArea(toolbarX + buttonSize + btnSpacing, toolbarY, buttonSize, buttonSize) then
+        self:moveStepDown()
+        return
+    end
+    -- Add button
+    if self:isMouseInArea(toolbarX + 2 * (buttonSize + btnSpacing), toolbarY, buttonSize, buttonSize) then
+        self:openAddStepDialog()
+        return
+    end
+    -- Remove button
+    if self:isMouseInArea(toolbarX + 3 * (buttonSize + btnSpacing), toolbarY, buttonSize, buttonSize) then
+        self:removeSelectedStep()
+        return
+    end
+
+    -- Check step list clicks
+    self:handleStepListClick(x, y)
+end
+
+---Handle click on step list
+---@param x number Mouse X
+---@param y number Mouse Y
+function WMEditorGUI:handleStepListClick(x, y)
+    if self.currentWorkflow == nil then
+        return
+    end
+
+    local bgX, bgY = 0.2, 0.08
+    local bgH = 0.84
+    local propY = bgY + bgH - 0.12
+    propY = propY - 0.04  -- After name
+    propY = propY - 0.06  -- After vehicle
+    propY = propY - 0.04  -- After headers
+    propY = propY - 0.015 -- After separator
+    propY = propY - 0.03  -- Start of list
+    local rowHeight = 0.04
+
+    for i = 1, math.min(#self.currentWorkflow.steps, 10) do
+        local rowY = propY - (i - 1) * rowHeight
+        if self:isMouseInArea(bgX + 0.01, rowY - rowHeight + 0.01, 0.58, rowHeight) then
+            self.selectedStepIndex = i
+            return
+        end
+    end
+end
+
+---Handle click on add step dialog
+---@param x number Mouse X
+---@param y number Mouse Y
+function WMEditorGUI:handleAddStepDialogClick(x, y)
+    local dlgX, dlgY = 0.35, 0.3
+    local dlgW, dlgH = 0.3, 0.4
+    local btnY = dlgY + 0.04
+    local btnW = 0.08
+    local btnH = 0.04
+
+    -- OK button
+    if self:isMouseInArea(dlgX + 0.05, btnY, btnW, btnH) then
+        self:confirmAddStep()
+        return
+    end
+
+    -- Cancel button
+    if self:isMouseInArea(dlgX + 0.17, btnY, btnW, btnH) then
+        self:closeAddStepDialog()
+        return
+    end
+
+    -- Type toggle area
+    local fieldY = dlgY + dlgH - 0.12
+    if self:isMouseInArea(dlgX + 0.02, fieldY - 0.02, dlgW - 0.04, 0.04) then
+        if self.addStepType == "autodrive" then
+            self.addStepType = "courseplay"
+            self.addStepAction = "last"
+        else
+            self.addStepType = "autodrive"
+            self.addStepAction = "drive"
         end
     end
 end

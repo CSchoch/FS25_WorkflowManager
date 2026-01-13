@@ -3,7 +3,11 @@
     "allow": [
       "Bash(powershell -Command:*)",
       "Bash(dir /s /b \"C:\\\\Users\\\\Chef\\\\Documents\\\\My Games\\\\FarmingSimulator2025\\\\mods\\\\FS25_WorkflowManager\\\\temp_ad\\\\*.lua\")",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(dir \"C:\\\\Users\\\\Chef\\\\Documents\\\\My Games\\\\FarmingSimulator2025\\\\mods\" /b)",
+      "Bash(unzip:*)",
+      "Bash(find:*)",
+      "WebSearch"
     ]
   }
 }

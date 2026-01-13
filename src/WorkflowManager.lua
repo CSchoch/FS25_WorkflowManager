@@ -26,6 +26,7 @@ source(Utils.getFilename("src/integration/CourseplayIntegration.lua", g_currentM
 -- 5. GUI modules
 source(Utils.getFilename("src/gui/WorkflowManagerGUI.lua", g_currentModDirectory))
 source(Utils.getFilename("src/gui/WorkflowEditorGUI.lua", g_currentModDirectory))
+source(Utils.getFilename("src/gui/WorkflowManagerMenuFrame.lua", g_currentModDirectory))
 
 -- Initialize logger from dev config immediately after loading
 WMLogger:initFromDevConfig()
@@ -78,7 +79,10 @@ function WorkflowManager:init()
     WMManagerGUI:init()
     WMEditorGUI:init()
 
-    -- Register input actions
+    -- Setup InGameMenu integration
+    self:setupInGameMenu()
+
+    -- Register input actions (fallback for direct access)
     self:registerInputActions()
 
     self.isInitialized = true
@@ -93,28 +97,219 @@ function WorkflowManager:init()
     end
 end
 
+---Setup InGameMenu integration
+---Adds a "Workflow Manager" tab to the ESC menu
+function WorkflowManager:setupInGameMenu()
+    WMLogger:debug("Setting up InGameMenu integration...")
+
+    -- Create the menu frame instance
+    self.menuFrame = WMMenuFrame.new()
+
+    -- Load the GUI from XML
+    local xmlPath = Utils.getFilename("xml/gui/WorkflowManagerMenuFrame.xml", self.modDirectory)
+    local success, err = pcall(function()
+        g_gui:loadGui(xmlPath, "WorkflowManagerMenuFrame", self.menuFrame)
+    end)
+
+    if not success then
+        WMLogger:error("Failed to load menu frame XML: %s", tostring(err))
+        return
+    end
+
+    WMLogger:info("Menu frame loaded successfully")
+
+    -- Register to add tab to InGameMenu when it's ready
+    -- We need to wait until after the InGameMenu is initialized
+    if g_inGameMenu ~= nil then
+        self:addPageToInGameMenu()
+    else
+        -- Schedule for later when InGameMenu becomes available
+        WMLogger:debug("InGameMenu not ready, will add page later")
+        self.pendingMenuRegistration = true
+    end
+end
+
+---Add the Workflow Manager page to the InGameMenu
+function WorkflowManager:addPageToInGameMenu()
+    if g_inGameMenu == nil then
+        WMLogger:warning("Cannot add page to InGameMenu - g_inGameMenu is nil")
+        return false
+    end
+
+    if self.menuFrame == nil then
+        WMLogger:warning("Cannot add page to InGameMenu - menuFrame is nil")
+        return false
+    end
+
+    WMLogger:info("Adding Workflow Manager page to InGameMenu...")
+
+    local success, err = pcall(function()
+        local inGameMenu = g_inGameMenu
+
+        -- Add frame to the paging element
+        if inGameMenu.pagingElement ~= nil then
+            inGameMenu.pagingElement:addElement(self.menuFrame)
+        end
+
+        -- Register the page (position at end, always available)
+        local pageIndex = inGameMenu:getNumPages() + 1
+        local alwaysAvailable = function() return true end
+        inGameMenu:registerPage(self.menuFrame, pageIndex, alwaysAvailable)
+
+        -- Add a tab for the page with icon
+        local iconPath = Utils.getFilename("modIcon.dds", self.modDirectory)
+        local uvs = GuiUtils.getUVs({0, 0, 1, 1})
+        inGameMenu:addPageTab(self.menuFrame, iconPath, uvs)
+
+        -- Update the page mapping
+        if inGameMenu.pagingElement ~= nil then
+            inGameMenu.pagingElement:updateAbsolutePosition()
+            inGameMenu.pagingElement:updatePageMapping()
+        end
+
+        -- Rebuild tab list
+        if inGameMenu.rebuildTabList ~= nil then
+            inGameMenu:rebuildTabList()
+        end
+    end)
+
+    if success then
+        WMLogger:info("Successfully added Workflow Manager page to InGameMenu")
+        self.menuPageAdded = true
+        return true
+    else
+        WMLogger:error("Failed to add page to InGameMenu: %s", tostring(err))
+        return false
+    end
+end
+
 ---Register input action bindings
+---Uses PlayerInputComponent hook for global (non-vehicle) input actions
 function WorkflowManager:registerInputActions()
-    -- Register action events for key bindings defined in modDesc.xml
-    if g_inputBinding ~= nil then
+    WMLogger:debug("Setting up global input action registration...")
+
+    -- Hook into PlayerInputComponent to register global actions
+    -- This is the pattern Courseplay uses for non-vehicle mods
+    if PlayerInputComponent ~= nil and PlayerInputComponent.registerGlobalPlayerActionEvents ~= nil then
+        local originalFunc = PlayerInputComponent.registerGlobalPlayerActionEvents
+
+        PlayerInputComponent.registerGlobalPlayerActionEvents = function(playerInput, ...)
+            -- Call original function first
+            originalFunc(playerInput, ...)
+
+            -- Now register our global actions
+            WorkflowManager:registerGlobalActions()
+        end
+
+        WMLogger:info("Hooked PlayerInputComponent.registerGlobalPlayerActionEvents")
+    else
+        WMLogger:warning("PlayerInputComponent not available, trying direct registration")
+        -- Fallback: try direct registration (may not work for global mods)
+        self:registerGlobalActions()
+    end
+end
+
+---Register the actual global action events
+function WorkflowManager:registerGlobalActions()
+    if g_inputBinding == nil then
+        WMLogger:error("Cannot register input actions - g_inputBinding is nil")
+        return
+    end
+
+    -- Avoid double registration
+    if self.globalActionsRegistered then
+        return
+    end
+    self.globalActionsRegistered = true
+
+    WMLogger:debug("Registering global input actions...")
+
+    -- Register WM_TOGGLE_GUI
+    local success, result = pcall(function()
         local _, eventId = g_inputBinding:registerActionEvent(
-            InputAction.WM_TOGGLE_GUI,
+            "WM_TOGGLE_GUI",
             self,
             self.onToggleGUI,
-            false,
-            true,
-            false,
-            true
+            false,  -- triggerUp
+            true,   -- triggerDown
+            false,  -- triggerAlways
+            true    -- startActive
         )
-        if eventId ~= nil then
-            g_inputBinding:setActionEventTextPriority(eventId, GS_PRIO_NORMAL)
-            g_inputBinding:setActionEventText(eventId, g_i18n:getText("action_WM_TOGGLE_GUI"))
+        return eventId
+    end)
+
+    if success then
+        if result ~= nil then
+            g_inputBinding:setActionEventTextVisibility(result, true)
+            g_inputBinding:setActionEventTextPriority(result, GS_PRIO_NORMAL)
+            WMLogger:info("Registered global input action WM_TOGGLE_GUI (eventId: %s)", tostring(result))
+        else
+            WMLogger:warning("Input action WM_TOGGLE_GUI registered but eventId is nil")
+        end
+    else
+        WMLogger:error("Failed to register input action WM_TOGGLE_GUI: %s", tostring(result))
+    end
+
+    -- Register WM_START_WORKFLOW
+    success, result = pcall(function()
+        local _, eventId = g_inputBinding:registerActionEvent(
+            "WM_START_WORKFLOW",
+            self,
+            self.onStartWorkflowInput,
+            false, true, false, true
+        )
+        return eventId
+    end)
+    if success and result then
+        g_inputBinding:setActionEventTextVisibility(result, false)
+        WMLogger:debug("Registered WM_START_WORKFLOW")
+    end
+
+    -- Register WM_STOP_WORKFLOW
+    success, result = pcall(function()
+        local _, eventId = g_inputBinding:registerActionEvent(
+            "WM_STOP_WORKFLOW",
+            self,
+            self.onStopWorkflowInput,
+            false, true, false, true
+        )
+        return eventId
+    end)
+    if success and result then
+        g_inputBinding:setActionEventTextVisibility(result, false)
+        WMLogger:debug("Registered WM_STOP_WORKFLOW")
+    end
+end
+
+---Called when start workflow input is triggered
+function WorkflowManager:onStartWorkflowInput()
+    WMLogger:debug("Start workflow input triggered")
+    -- Start selected workflow if GUI is open
+    if WMManagerGUI.isVisible and WMManagerGUI.selectedWorkflowIndex > 0 then
+        local workflows = self:getAllWorkflows()
+        local workflow = workflows[WMManagerGUI.selectedWorkflowIndex]
+        if workflow then
+            self:startWorkflow(workflow.id)
+        end
+    end
+end
+
+---Called when stop workflow input is triggered
+function WorkflowManager:onStopWorkflowInput()
+    WMLogger:debug("Stop workflow input triggered")
+    -- Stop selected workflow if GUI is open
+    if WMManagerGUI.isVisible and WMManagerGUI.selectedWorkflowIndex > 0 then
+        local workflows = self:getAllWorkflows()
+        local workflow = workflows[WMManagerGUI.selectedWorkflowIndex]
+        if workflow then
+            self:stopWorkflow(workflow.id)
         end
     end
 end
 
 ---Toggle the main GUI visibility
 function WorkflowManager:onToggleGUI()
+    WMLogger:info("onToggleGUI called! Current visibility: %s", tostring(self.guiVisible))
     self.guiVisible = not self.guiVisible
     if self.guiVisible then
         WMManagerGUI:show()
@@ -320,12 +515,37 @@ function WorkflowManager:deleteMap()
     self.isInitialized = false
 end
 
+-- Track key state for manual detection
+WorkflowManager.lastF9State = false
+
 ---Called every frame
 ---@param dt number Delta time in milliseconds
 function WorkflowManager:update(dt)
     if not self.isInitialized then
         return
     end
+
+    -- Check for pending InGameMenu registration
+    if self.pendingMenuRegistration and g_inGameMenu ~= nil then
+        self.pendingMenuRegistration = false
+        self:addPageToInGameMenu()
+    end
+
+    -- Update integrations (retry detection if not yet available)
+    ADIntegration:update(dt)
+    CPIntegration:update(dt)
+
+    -- Manual F9 key detection as fallback (for debugging)
+    local f9Pressed = false
+    if Input ~= nil and Input.isKeyPressed ~= nil then
+        f9Pressed = Input.isKeyPressed(Input.KEY_F9)
+    end
+
+    if f9Pressed and not self.lastF9State then
+        WMLogger:info("F9 key detected via manual check!")
+        self:onToggleGUI()
+    end
+    self.lastF9State = f9Pressed
 
     WMExecutor:update(dt)
     WMDebugUtil:update(dt)
@@ -353,6 +573,13 @@ end
 
 ---Called on mouse events
 function WorkflowManager:mouseEvent(posX, posY, isDown, isUp, button)
+    if not self.isInitialized then
+        return
+    end
+
+    -- Forward mouse events to GUI
+    WMManagerGUI:onMouseEvent(posX, posY, isDown, isUp, button)
+    WMEditorGUI:onMouseEvent(posX, posY, isDown, isUp, button)
 end
 
 -- Register as mod event listener
