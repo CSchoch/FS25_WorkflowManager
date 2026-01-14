@@ -370,15 +370,15 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 ### Known Issues Being Debugged
 1. **AD/CP Globals Not Found**: AutoDrive and Courseplay mods are loaded but their globals (AutoDrive, g_Courseplay, etc.) are not detected after 10 retry attempts. Need to verify correct global names in FS25.
 2. **Input Action Callback**: WM_TOGGLE_GUI action registers successfully but callback never fires. Added PlayerInputComponent hook and manual F9 detection as workarounds.
-3. **Editor GUI Glass Background**: Editor overlay still showing glassy despite multiple fix attempts:
-   - Main GUI (F9) works correctly with solid background
-   - Editor GUI (New/Edit) still shows glassy background
-   - Attempted fixes: overlay sharing, UV reset, independent overlay creation
-   - Current approach: Editor creates own overlay, main GUI hides when editor opens
 
 ### Fixed Issues
 1. **~~Glass Background with Random Icons~~** (Fixed 2026-01-14): Main GUI overlay was rendering entire UI texture atlas. Fixed by creating `textures/white.png` (1x1 white pixel) and using fully opaque two-pass rendering.
 2. **~~Missing modIcon.dds Errors~~** (Fixed 2026-01-14): Commented out iconFilename reference in modDesc.xml.
+3. **~~Editor GUI Glass Background~~** (Fixed 2026-01-14): Editor overlay was glassy. Fixed by:
+   - Editor creates its own independent overlay from `white.png`
+   - Main GUI hides when editor opens (avoids overlay conflicts)
+   - Added `setOverlayUVs()` reset before drawing (0,0 to 1,1)
+   - Editor shows main GUI again when closing
 
 ### Pending
 - modIcon.dds creation
@@ -407,11 +407,11 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 ```
 
 ### Testing Checklist
-- [ ] Full game restart (not just map reload)
-- [ ] Press Alt+W or F9 to toggle GUI
-- [x] Verify main GUI has solid dark background (not glass with random icons) ✓ Fixed
-- [ ] Click "New" and verify editor has solid dark background (still glassy - debugging)
-- [ ] Check log for "Editor created overlay from:" message
+- [x] Full game restart (not just map reload)
+- [x] Press Alt+W or F9 to toggle GUI
+- [x] Verify main GUI has solid dark background ✓ Fixed
+- [x] Click "New" and verify editor has solid dark background ✓ Fixed
 - [ ] Check if AD/CP detection shows "modLoaded=true"
 - [ ] Verify button clicks work in draw-based GUI
 - [ ] Verify editor closes and returns to main GUI correctly
+- [ ] Test workflow creation and step management
