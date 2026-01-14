@@ -270,22 +270,17 @@ FS25_WorkflowManager/
 
 ### Next Steps
 
-1. ~~Create ModDesc.xml template~~ ✓
-2. ~~Implement basic WorkflowManager class~~ ✓
-3. ~~Create simple GUI for workflow list~~ ✓
-4. ~~Analyze AutoDrive and Courseplay scripts for actual API calls~~ ✓
-5. Create modIcon.dds (64x64 icon)
-6. ~~Create XML GUI layouts for proper FS25 GUI integration~~ ✓
-7. Test in-game loading and basic functionality
-8. ~~Refine integration with actual AD/CP API methods~~ ✓
-9. In-game testing with Field 1 → Field 2 workflow
-10. Implement error handling and edge cases
+1. Create modIcon.dds (64x64 icon)
+2. Test in-game loading and basic functionality
+3. In-game testing with Field 1 → Field 2 workflow
+4. Implement error handling and edge cases
 
 ## Resources
 
 * LS25 Modding Documentation: [https://gdn.giants-software.com/](https://gdn.giants-software.com/)
-* AutoDrive GitHub: [[https://github.com/Stephan-S/FS25_AutoDrive](https://github.com/Stephan-S/FS25_AutoDrive)]
-* Courseplay GitHub: [https://github.com/Courseplay/Courseplay_FS25](https://github.com/Courseplay/Courseplay_FS25)
+* AutoDrive local folder: [FS25_AutoDrive](FS25_AutoDrive)
+* Courseplay local folder: [FS25_Courseplay](FS25_Courseplay)
+* Better Contracts local folder: [FS25_BetterContracts](FS25_BetterContracts)
 * LS25 Forum: [https://forum.giants-software.com/](https://forum.giants-software.com/)
 
 ## Contact & Collaboration

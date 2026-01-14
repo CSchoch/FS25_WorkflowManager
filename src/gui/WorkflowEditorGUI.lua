@@ -139,6 +139,24 @@ function WMEditorGUI:cancelAndClose()
     self:close()
 end
 
+---Cleanup the GUI and release resources
+function WMEditorGUI:cleanup()
+    WMLogger:debug("WorkflowEditorGUI:cleanup() called")
+
+    -- Don't manually delete overlays - the game's cleanup system handles this
+    -- Just set to nil so we don't try to use them anymore
+    self.overlayId = nil
+
+    -- Reset state
+    self.isVisible = false
+    self.currentWorkflow = nil
+    self.selectedStepIndex = 0
+    self.isAddStepDialogOpen = false
+    self.availableVehicles = {}
+    self.buttonAreas = {}
+    self.stepToolbarAreas = {}
+end
+
 ---Refresh the list of available vehicles
 function WMEditorGUI:refreshVehicleList()
     self.availableVehicles = {}

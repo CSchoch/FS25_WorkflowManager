@@ -640,6 +640,21 @@ function WMManagerGUI:handleListClick(x, y)
     end
 end
 
+---Cleanup the GUI and release resources
+function WMManagerGUI:cleanup()
+    WMLogger:debug("WorkflowManagerGUI:cleanup() called")
+
+    -- Don't manually delete overlays - the game's cleanup system handles this
+    -- Just set to nil so we don't try to use them anymore
+    self.overlayId = nil
+
+    -- Reset state
+    self.isVisible = false
+    self.selectedWorkflowIndex = 0
+    self.listData = {}
+    self.buttonAreas = {}
+end
+
 ---Handle keyboard/mouse input
 function WMManagerGUI:handleInput()
     -- Number keys 1-9 for quick selection

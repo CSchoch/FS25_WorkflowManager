@@ -41,6 +41,7 @@ function WMMenuFrame.new(target)
     self.workflows = {}
     self.selectedIndex = 0
     self.hasCustomMenuButtons = true
+    self.isActive = true  -- Flag to prevent updates during cleanup
 
     -- Only call registerControls if it exists
     if self.registerControls ~= nil then
@@ -269,8 +270,39 @@ end
 
 ---Update method called each frame when visible
 function WMMenuFrame:update(dt)
-    WMMenuFrame:superClass().update(self, dt)
+    -- Skip update if we're being cleaned up
+    if not self.isActive then
+        return
+    end
+
+    -- Safely call parent update with nil checks
+    local superClass = WMMenuFrame:superClass()
+    if superClass ~= nil and superClass.update ~= nil then
+        local success, err = pcall(function()
+            superClass.update(self, dt)
+        end)
+        if not success then
+            -- Silently ignore errors during cleanup/shutdown
+            -- WMLogger:debug("WMMenuFrame update error (likely during cleanup): %s", tostring(err))
+        end
+    end
 
     -- Check for workflow status changes and refresh if needed
     -- This ensures the list stays up to date while viewing
+end
+
+---Cleanup method called when the frame is being destroyed
+function WMMenuFrame:delete()
+    WMLogger:debug("WMMenuFrame:delete() called")
+
+    -- Mark as inactive to prevent further updates
+    self.isActive = false
+
+    -- Call parent delete if available
+    local superClass = WMMenuFrame:superClass()
+    if superClass ~= nil and superClass.delete ~= nil then
+        pcall(function()
+            superClass.delete(self)
+        end)
+    end
 end

@@ -99,7 +99,16 @@ end
 
 ---Setup InGameMenu integration
 ---Adds a "Workflow Manager" tab to the ESC menu
+---NOTE: Currently disabled due to cleanup issues causing errors with other mods
 function WorkflowManager:setupInGameMenu()
+    -- DISABLED: InGameMenu integration causes state corruption during cleanup
+    -- that triggers errors in other mods like Courseplay.
+    -- Use standalone GUI (Alt+W or F9) instead.
+    -- TODO: Re-enable when proper page registration/unregistration is implemented
+    WMLogger:info("InGameMenu integration disabled - use Alt+W or F9 to open GUI")
+    return
+
+    --[[ Original implementation preserved for future use:
     WMLogger:debug("Setting up InGameMenu integration...")
 
     -- Check if required GUI classes exist
@@ -145,6 +154,7 @@ function WorkflowManager:setupInGameMenu()
         WMLogger:debug("InGameMenu not ready, will add page later")
         self.pendingMenuRegistration = true
     end
+    --]]
 end
 
 ---Add the Workflow Manager page to the InGameMenu
@@ -206,7 +216,8 @@ function WorkflowManager:addPageToInGameMenu()
         inGameMenu:registerPage(self.menuFrame, pageIndex, alwaysAvailable)
 
         -- Add a tab for the page with icon
-        local iconPath = Utils.getFilename("modIcon.dds", self.modDirectory)
+        -- Use our white.png texture as a placeholder icon
+        local iconPath = Utils.getFilename("textures/white.png", self.modDirectory)
         local uvs = GuiUtils.getUVs({0, 0, 1, 1})
         inGameMenu:addPageTab(self.menuFrame, iconPath, uvs)
 
@@ -563,9 +574,47 @@ end
 
 ---Called when map is deleted/unloaded
 function WorkflowManager:deleteMap()
-    WMLogger:info("Map unloading, saving workflows...")
-    self:saveWorkflows()
+    WMLogger:info("Map unloading, cleaning up...")
+
+    -- IMMEDIATELY set isInitialized to false to stop update/draw processing
     self.isInitialized = false
+
+    -- Save workflows
+    pcall(function()
+        self:saveWorkflows()
+    end)
+
+    -- Cleanup GUI resources (mark overlays as nil so they won't be used)
+    pcall(function()
+        if WMManagerGUI and WMManagerGUI.cleanup then
+            WMManagerGUI:cleanup()
+        end
+    end)
+
+    pcall(function()
+        if WMEditorGUI and WMEditorGUI.cleanup then
+            WMEditorGUI:cleanup()
+        end
+    end)
+
+    -- Cleanup menu frame if it exists (currently disabled, but kept for future use)
+    pcall(function()
+        if self.menuFrame ~= nil then
+            WMLogger:debug("Cleaning up menu frame...")
+            if self.menuFrame.delete then
+                self.menuFrame:delete()
+            end
+            self.menuFrame = nil
+        end
+    end)
+
+    -- Reset remaining state
+    self.guiVisible = false
+    self.menuPageAdded = false
+    self.pendingMenuRegistration = false
+    self.globalActionsRegistered = false
+
+    WMLogger:info("WorkflowManager cleanup completed")
 end
 
 -- Track key state for manual detection
