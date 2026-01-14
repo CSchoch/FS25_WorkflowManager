@@ -44,34 +44,21 @@ function WMEditorGUI:init()
     self.selectedStepIndex = 0
     self.availableVehicles = {}
 
-    -- Create overlay for rendering solid colors (same approach as main GUI)
+    -- Create own overlay from white.png texture
     self.overlayId = nil
 
-    -- First try: use our mod-local white texture
     if WorkflowManager.modDirectory ~= nil then
         local whiteTexture = WorkflowManager.modDirectory .. "textures/white.png"
         self.overlayId = createImageOverlay(whiteTexture)
         if self.overlayId ~= nil and self.overlayId ~= 0 then
-            WMLogger:debug("Editor created overlay from mod texture (ID: %s)", tostring(self.overlayId))
-        end
-    end
-
-    -- Fallback: use g_baseUIFilename with center UV sampling
-    if (self.overlayId == nil or self.overlayId == 0) then
-        local textureFile = g_baseUIFilename or g_baseHUDFilename
-        if textureFile ~= nil then
-            self.overlayId = createImageOverlay(textureFile)
-            if self.overlayId ~= nil and self.overlayId ~= 0 then
-                local u, v = 0.5, 0.5
-                local size = 0.001
-                setOverlayUVs(self.overlayId, u, v, u + size, v, u, v + size, u + size, v + size)
-                WMLogger:debug("Editor created overlay from UI atlas (ID: %s)", tostring(self.overlayId))
-            end
+            WMLogger:debug("Editor created overlay from: %s (ID: %s)", whiteTexture, tostring(self.overlayId))
+        else
+            WMLogger:error("Editor failed to create overlay from: %s", whiteTexture)
         end
     end
 
     if self.overlayId == nil or self.overlayId == 0 then
-        WMLogger:warning("Editor could not create overlay - GUI rendering may fail")
+        WMLogger:warning("Editor could not create overlay")
     end
 
     WMLogger:debug("WorkflowEditorGUI initialized")
@@ -82,6 +69,20 @@ end
 function WMEditorGUI:openWorkflow(workflow)
     if workflow == nil then
         WMLogger:error("Cannot open editor - workflow is nil")
+        return
+    end
+
+    -- Check if overlay exists, recreate if needed
+    if self.overlayId == nil or self.overlayId == 0 then
+        if WorkflowManager.modDirectory ~= nil then
+            local whiteTexture = WorkflowManager.modDirectory .. "textures/white.png"
+            self.overlayId = createImageOverlay(whiteTexture)
+            WMLogger:debug("Editor recreated overlay (ID: %s)", tostring(self.overlayId))
+        end
+    end
+
+    if self.overlayId == nil or self.overlayId == 0 then
+        WMLogger:error("Cannot open editor - no overlay available")
         return
     end
 
@@ -115,6 +116,10 @@ function WMEditorGUI:close()
     self.selectedStepIndex = 0
     self.isAddStepDialogOpen = false
 
+    -- Show main GUI again
+    WMManagerGUI.isVisible = true
+    WMManagerGUI:refresh()
+
     WMLogger:debug("Closed workflow editor")
 end
 
@@ -143,8 +148,7 @@ end
 function WMEditorGUI:cleanup()
     WMLogger:debug("WorkflowEditorGUI:cleanup() called")
 
-    -- Don't manually delete overlays - the game's cleanup system handles this
-    -- Just set to nil so we don't try to use them anymore
+    -- Just clear our reference - main GUI owns the overlay
     self.overlayId = nil
 
     -- Reset state
@@ -347,12 +351,16 @@ function WMEditorGUI:draw()
         return
     end
 
-    -- Ensure overlay exists
-    if self.overlayId == nil then
+    -- Use own overlay
+    if self.overlayId == nil or self.overlayId == 0 then
+        WMLogger:warning("Editor overlay missing during draw")
         return
     end
 
     local workflow = self.currentWorkflow
+
+    -- Reset UVs to use full texture (bottom-left, bottom-right, top-left, top-right)
+    setOverlayUVs(self.overlayId, 0, 0, 1, 0, 0, 1, 1, 1)
 
     -- Draw solid background (render twice for full opacity)
     local bgX, bgY = 0.2, 0.08

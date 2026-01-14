@@ -47,28 +47,16 @@ function WMManagerGUI:init()
     -- Use our mod's white.png texture (1x1 white pixel that can be tinted)
     self.overlayId = nil
 
-    -- First try: use our mod-local white texture
     if WorkflowManager.modDirectory ~= nil then
         local whiteTexture = WorkflowManager.modDirectory .. "textures/white.png"
         self.overlayId = createImageOverlay(whiteTexture)
         if self.overlayId ~= nil and self.overlayId ~= 0 then
             WMLogger:debug("Created overlay from mod texture: %s (ID: %s)", whiteTexture, tostring(self.overlayId))
+        else
+            WMLogger:error("Failed to create overlay from: %s", whiteTexture)
         end
-    end
-
-    -- Fallback: use g_baseUIFilename with center UV sampling
-    if (self.overlayId == nil or self.overlayId == 0) then
-        local textureFile = g_baseUIFilename or g_baseHUDFilename
-        if textureFile ~= nil then
-            self.overlayId = createImageOverlay(textureFile)
-            if self.overlayId ~= nil and self.overlayId ~= 0 then
-                -- Sample a tiny region from center of texture
-                local u, v = 0.5, 0.5
-                local size = 0.001
-                setOverlayUVs(self.overlayId, u, v, u + size, v, u, v + size, u + size, v + size)
-                WMLogger:debug("Created overlay from UI atlas (ID: %s)", tostring(self.overlayId))
-            end
-        end
+    else
+        WMLogger:error("WorkflowManager.modDirectory is nil!")
     end
 
     if self.overlayId == nil or self.overlayId == 0 then
@@ -230,10 +218,11 @@ function WMManagerGUI:onClickNew()
     -- Create new workflow
     local workflow = WorkflowManager:createWorkflow(g_i18n:getText("wm_editor_title"))
 
+    -- Hide main GUI while editor is open
+    self.isVisible = false
+
     -- Open editor for the new workflow
     WMEditorGUI:openWorkflow(workflow)
-
-    self:refresh()
 end
 
 ---Handle "Edit" button click
@@ -247,6 +236,9 @@ function WMManagerGUI:onClickEdit()
     local workflow = workflows[self.selectedWorkflowIndex]
 
     if workflow ~= nil then
+        -- Hide main GUI while editor is open
+        self.isVisible = false
+
         WMEditorGUI:openWorkflow(workflow)
     end
 end
@@ -334,6 +326,9 @@ function WMManagerGUI:draw()
     if self.overlayId == nil then
         return
     end
+
+    -- Reset UVs to use full texture (bottom-left, bottom-right, top-left, top-right)
+    setOverlayUVs(self.overlayId, 0, 0, 1, 0, 0, 1, 1, 1)
 
     -- Draw solid background (render twice for full opacity)
     local bgX, bgY = 0.25, 0.12
