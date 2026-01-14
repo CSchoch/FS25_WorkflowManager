@@ -34,12 +34,23 @@ WMEditorGUI.wasMouseDown = false
 WMEditorGUI.buttonAreas = {}
 WMEditorGUI.stepToolbarAreas = {}
 
+-- Overlay ID for rendering
+WMEditorGUI.overlayId = nil
+
 ---Initialize the editor GUI
 function WMEditorGUI:init()
     self.isVisible = false
     self.currentWorkflow = nil
     self.selectedStepIndex = 0
     self.availableVehicles = {}
+
+    -- Create overlay for rendering
+    if g_baseUIFilename ~= nil then
+        self.overlayId = createImageOverlay(g_baseUIFilename)
+        WMLogger:debug("Editor created overlay ID: %s", tostring(self.overlayId))
+    else
+        self.overlayId = createImageOverlay("dataS/menu/blank.png")
+    end
 
     WMLogger:debug("WorkflowEditorGUI initialized")
 end
@@ -296,26 +307,31 @@ function WMEditorGUI:draw()
         return
     end
 
+    -- Ensure overlay exists
+    if self.overlayId == nil then
+        return
+    end
+
     local workflow = self.currentWorkflow
 
     -- Draw semi-transparent background
     local bgX, bgY = 0.2, 0.08
     local bgW, bgH = 0.6, 0.84
 
-    setTextColor(0, 0, 0, 0.8)
-    renderOverlay(g_baseUIFilename, bgX, bgY, bgW, bgH)
+    setOverlayColor(self.overlayId, 0, 0, 0, 0.8)
+    renderOverlay(self.overlayId, bgX, bgY, bgW, bgH)
 
     -- Draw border
     local borderColor = {0.3, 0.7, 0.3, 1}
-    setTextColor(borderColor[1], borderColor[2], borderColor[3], borderColor[4])
-    renderOverlay(g_baseUIFilename, bgX, bgY, bgW, 0.003)
-    renderOverlay(g_baseUIFilename, bgX, bgY + bgH - 0.003, bgW, 0.003)
-    renderOverlay(g_baseUIFilename, bgX, bgY, 0.003, bgH)
-    renderOverlay(g_baseUIFilename, bgX + bgW - 0.003, bgY, 0.003, bgH)
+    setOverlayColor(self.overlayId, borderColor[1], borderColor[2], borderColor[3], borderColor[4])
+    renderOverlay(self.overlayId, bgX, bgY, bgW, 0.003)
+    renderOverlay(self.overlayId, bgX, bgY + bgH - 0.003, bgW, 0.003)
+    renderOverlay(self.overlayId, bgX, bgY, 0.003, bgH)
+    renderOverlay(self.overlayId, bgX + bgW - 0.003, bgY, 0.003, bgH)
 
     -- Draw title bar
-    setTextColor(0.15, 0.15, 0.15, 1)
-    renderOverlay(g_baseUIFilename, bgX, bgY + bgH - 0.06, bgW, 0.06)
+    setOverlayColor(self.overlayId, 0.15, 0.15, 0.15, 1)
+    renderOverlay(self.overlayId, bgX, bgY + bgH - 0.06, bgW, 0.06)
 
     setTextColor(1, 1, 1, 1)
     setTextBold(true)
@@ -372,8 +388,8 @@ function WMEditorGUI:draw()
 
     -- Separator
     propY = propY - 0.015
-    setTextColor(0.4, 0.4, 0.4, 1)
-    renderOverlay(g_baseUIFilename, bgX + 0.01, propY, bgW - 0.02, 0.002)
+    setOverlayColor(self.overlayId, 0.4, 0.4, 0.4, 1)
+    renderOverlay(self.overlayId, bgX + 0.01, propY, bgW - 0.02, 0.002)
 
     -- Steps list
     propY = propY - 0.03
@@ -417,8 +433,8 @@ function WMEditorGUI:drawStepToolbar(x, y)
     }
 
     for _, btn in ipairs(buttons) do
-        setTextColor(0.3, 0.3, 0.3, 0.8)
-        renderOverlay(g_baseUIFilename, currentX, y, buttonSize, buttonSize)
+        setOverlayColor(self.overlayId, 0.3, 0.3, 0.3, 0.8)
+        renderOverlay(self.overlayId, currentX, y, buttonSize, buttonSize)
 
         setTextColor(1, 1, 1, 1)
         local textX = currentX + buttonSize * 0.35
@@ -443,8 +459,8 @@ function WMEditorGUI:drawStepRow(baseX, y, index, step)
 
     -- Selection highlight
     if isSelected then
-        setTextColor(0.2, 0.5, 0.2, 0.4)
-        renderOverlay(g_baseUIFilename, baseX + 0.01, y - rowHeight + 0.01, 0.58, rowHeight)
+        setOverlayColor(self.overlayId, 0.2, 0.5, 0.2, 0.4)
+        renderOverlay(self.overlayId, baseX + 0.01, y - rowHeight + 0.01, 0.58, rowHeight)
     end
 
     -- Row color by type
@@ -485,16 +501,16 @@ function WMEditorGUI:drawBottomButtons(x, y)
     local spacing = 0.02
 
     -- Save button
-    setTextColor(0.2, 0.5, 0.2, 0.8)
-    renderOverlay(g_baseUIFilename, x, y, buttonW, buttonH)
+    setOverlayColor(self.overlayId, 0.2, 0.5, 0.2, 0.8)
+    renderOverlay(self.overlayId, x, y, buttonW, buttonH)
     setTextColor(1, 1, 1, 1)
     local saveText = g_i18n:getText("wm_button_save")
     renderText(x + buttonW * 0.5 - getTextWidth(0.016, saveText) * 0.5, y + buttonH * 0.3, 0.016, saveText)
 
     -- Cancel button
     local cancelX = x + buttonW + spacing
-    setTextColor(0.5, 0.3, 0.3, 0.8)
-    renderOverlay(g_baseUIFilename, cancelX, y, buttonW, buttonH)
+    setOverlayColor(self.overlayId, 0.5, 0.3, 0.3, 0.8)
+    renderOverlay(self.overlayId, cancelX, y, buttonW, buttonH)
     setTextColor(1, 1, 1, 1)
     local cancelText = g_i18n:getText("wm_button_cancel")
     renderText(cancelX + buttonW * 0.5 - getTextWidth(0.016, cancelText) * 0.5, y + buttonH * 0.3, 0.016, cancelText)
@@ -510,15 +526,15 @@ function WMEditorGUI:drawAddStepDialog()
     local dlgX, dlgY = 0.35, 0.3
     local dlgW, dlgH = 0.3, 0.4
 
-    setTextColor(0, 0, 0, 0.9)
-    renderOverlay(g_baseUIFilename, dlgX, dlgY, dlgW, dlgH)
+    setOverlayColor(self.overlayId, 0, 0, 0, 0.9)
+    renderOverlay(self.overlayId, dlgX, dlgY, dlgW, dlgH)
 
     -- Border
-    setTextColor(0.5, 0.8, 0.5, 1)
-    renderOverlay(g_baseUIFilename, dlgX, dlgY, dlgW, 0.003)
-    renderOverlay(g_baseUIFilename, dlgX, dlgY + dlgH - 0.003, dlgW, 0.003)
-    renderOverlay(g_baseUIFilename, dlgX, dlgY, 0.003, dlgH)
-    renderOverlay(g_baseUIFilename, dlgX + dlgW - 0.003, dlgY, 0.003, dlgH)
+    setOverlayColor(self.overlayId, 0.5, 0.8, 0.5, 1)
+    renderOverlay(self.overlayId, dlgX, dlgY, dlgW, 0.003)
+    renderOverlay(self.overlayId, dlgX, dlgY + dlgH - 0.003, dlgW, 0.003)
+    renderOverlay(self.overlayId, dlgX, dlgY, 0.003, dlgH)
+    renderOverlay(self.overlayId, dlgX + dlgW - 0.003, dlgY, 0.003, dlgH)
 
     -- Title
     setTextColor(1, 1, 1, 1)
@@ -561,14 +577,14 @@ function WMEditorGUI:drawAddStepDialog()
     local btnH = 0.04
 
     -- OK button
-    setTextColor(0.2, 0.5, 0.2, 0.8)
-    renderOverlay(g_baseUIFilename, dlgX + 0.05, btnY, btnW, btnH)
+    setOverlayColor(self.overlayId, 0.2, 0.5, 0.2, 0.8)
+    renderOverlay(self.overlayId, dlgX + 0.05, btnY, btnW, btnH)
     setTextColor(1, 1, 1, 1)
     renderText(dlgX + 0.07, btnY + 0.012, 0.014, "OK")
 
     -- Cancel button
-    setTextColor(0.5, 0.3, 0.3, 0.8)
-    renderOverlay(g_baseUIFilename, dlgX + 0.17, btnY, btnW, btnH)
+    setOverlayColor(self.overlayId, 0.5, 0.3, 0.3, 0.8)
+    renderOverlay(self.overlayId, dlgX + 0.17, btnY, btnW, btnH)
     setTextColor(1, 1, 1, 1)
     renderText(dlgX + 0.18, btnY + 0.012, 0.014, "Cancel")
 end

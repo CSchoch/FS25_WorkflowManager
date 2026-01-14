@@ -30,6 +30,9 @@ WMManagerGUI.wasMouseDown = false
 -- Button positions (set during draw)
 WMManagerGUI.buttonAreas = {}
 
+-- Overlay IDs (created once, used for rendering)
+WMManagerGUI.overlayId = nil
+
 ---Initialize the GUI
 function WMManagerGUI:init()
     self.isVisible = false
@@ -39,6 +42,16 @@ function WMManagerGUI:init()
     self.mouseY = 0
     self.wasMouseDown = false
     self.buttonAreas = {}
+
+    -- Create overlay for rendering (use base UI texture)
+    if g_baseUIFilename ~= nil then
+        self.overlayId = createImageOverlay(g_baseUIFilename)
+        WMLogger:debug("Created overlay ID: %s", tostring(self.overlayId))
+    else
+        WMLogger:warning("g_baseUIFilename not available, using fallback")
+        -- Try to create a simple overlay with the blank texture
+        self.overlayId = createImageOverlay("dataS/menu/blank.png")
+    end
 
     -- Try to load XML GUI
     self:loadXmlGui()
@@ -295,26 +308,28 @@ function WMManagerGUI:draw()
         return
     end
 
+    -- Ensure overlay exists
+    if self.overlayId == nil then
+        return
+    end
+
     -- Draw semi-transparent background
-    setTextColor(0, 0, 0, 0.7)
     local bgX, bgY = 0.25, 0.12
     local bgW, bgH = 0.5, 0.76
-    renderOverlay(g_baseUIFilename, bgX, bgY, bgW, bgH)
-
-    -- Reset text color
-    setTextColor(1, 1, 1, 1)
+    setOverlayColor(self.overlayId, 0, 0, 0, 0.7)
+    renderOverlay(self.overlayId, bgX, bgY, bgW, bgH)
 
     -- Draw border
     local borderColor = {0.2, 0.6, 0.9, 1}
-    setTextColor(borderColor[1], borderColor[2], borderColor[3], borderColor[4])
-    renderOverlay(g_baseUIFilename, bgX, bgY, bgW, 0.003)           -- Bottom
-    renderOverlay(g_baseUIFilename, bgX, bgY + bgH - 0.003, bgW, 0.003)  -- Top
-    renderOverlay(g_baseUIFilename, bgX, bgY, 0.003, bgH)           -- Left
-    renderOverlay(g_baseUIFilename, bgX + bgW - 0.003, bgY, 0.003, bgH)  -- Right
+    setOverlayColor(self.overlayId, borderColor[1], borderColor[2], borderColor[3], borderColor[4])
+    renderOverlay(self.overlayId, bgX, bgY, bgW, 0.003)           -- Bottom
+    renderOverlay(self.overlayId, bgX, bgY + bgH - 0.003, bgW, 0.003)  -- Top
+    renderOverlay(self.overlayId, bgX, bgY, 0.003, bgH)           -- Left
+    renderOverlay(self.overlayId, bgX + bgW - 0.003, bgY, 0.003, bgH)  -- Right
 
     -- Draw title bar
-    setTextColor(0.15, 0.15, 0.15, 1)
-    renderOverlay(g_baseUIFilename, bgX, bgY + bgH - 0.06, bgW, 0.06)
+    setOverlayColor(self.overlayId, 0.15, 0.15, 0.15, 1)
+    renderOverlay(self.overlayId, bgX, bgY + bgH - 0.06, bgW, 0.06)
 
     setTextColor(1, 1, 1, 1)
     setTextBold(true)
@@ -340,8 +355,8 @@ function WMManagerGUI:draw()
     setTextBold(false)
 
     -- Draw separator line
-    setTextColor(0.4, 0.4, 0.4, 1)
-    renderOverlay(g_baseUIFilename, bgX + 0.01, headerY - 0.015, bgW - 0.02, 0.002)
+    setOverlayColor(self.overlayId, 0.4, 0.4, 0.4, 1)
+    renderOverlay(self.overlayId, bgX + 0.01, headerY - 0.015, bgW - 0.02, 0.002)
 
     -- Draw workflow list
     local listY = headerY - 0.04
@@ -400,8 +415,8 @@ function WMManagerGUI:drawToolbar(x, y)
 
         -- Button background (brighter if hovered)
         local brightness = isHovered and 0.8 or 0.6
-        setTextColor(btn.color[1] * brightness, btn.color[2] * brightness, btn.color[3] * brightness, 0.9)
-        renderOverlay(g_baseUIFilename, currentX, y, buttonW, buttonH)
+        setOverlayColor(self.overlayId, btn.color[1] * brightness, btn.color[2] * brightness, btn.color[3] * brightness, 0.9)
+        renderOverlay(self.overlayId, currentX, y, buttonW, buttonH)
 
         -- Button text
         setTextColor(1, 1, 1, 1)
@@ -443,8 +458,8 @@ function WMManagerGUI:drawWorkflowRow(baseX, y, index, workflow)
 
     -- Row background for selected
     if isSelected then
-        setTextColor(0.2, 0.4, 0.6, 0.5)
-        renderOverlay(g_baseUIFilename, baseX + 0.01, y - rowHeight + 0.01, 0.48, rowHeight)
+        setOverlayColor(self.overlayId, 0.2, 0.4, 0.6, 0.5)
+        renderOverlay(self.overlayId, baseX + 0.01, y - rowHeight + 0.01, 0.48, rowHeight)
     end
 
     -- Row color based on status
