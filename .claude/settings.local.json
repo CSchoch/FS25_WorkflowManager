@@ -7,7 +7,8 @@
       "Bash(dir \"C:\\\\Users\\\\Chef\\\\Documents\\\\My Games\\\\FarmingSimulator2025\\\\mods\" /b)",
       "Bash(unzip:*)",
       "Bash(find:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(powershell -ExecutionPolicy Bypass -File create_white_png.ps1)"
     ]
   }
 }

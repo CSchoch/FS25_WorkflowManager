@@ -246,6 +246,8 @@ FS25_WorkflowManager/
 ├── translations/
 │   ├── translation_en.xml           # ✓ English translations
 │   └── translation_de.xml           # ✓ German translations
+├── textures/
+│   └── white.png                    # ✓ 1x1 white pixel for GUI backgrounds
 ├── testdata/
 │   └── sample_workflows.xml         # ✓ Test workflow examples
 ├── docs/
@@ -294,7 +296,7 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 ---
 
 **Status**: Phase 1 – Milestone 4 IN PROGRESS (Testing & Debugging)
-**Last updated**: 2026-01-13
+**Last updated**: 2026-01-14
 
 ## Implementation Progress
 
@@ -331,7 +333,7 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
   - Step management: Add/Remove steps, Move up/down, Visual step list
   - Vehicle assignment with cycling through available vehicles
 
-- **Milestone 4 Progress (2026-01-13)**:
+- **Milestone 4 Progress (2026-01-13 to 2026-01-14)**:
   - **Mouse Click Handling**: Added full mouse event handling to draw-based GUIs
     - Mouse position tracking (mouseX, mouseY)
     - Button area registration and hit detection
@@ -350,6 +352,15 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
     - Added g_currentMission attachment check
     - Enhanced logging for first 3 attempts
   - **Translation Fixes**: Added missing input_ prefixed keys for German
+  - **GUI Overlay Fix (2026-01-14)**: Fixed "glass background with random icons" issue
+    - Root cause: `createImageOverlay(g_baseUIFilename)` rendered entire UI texture atlas
+    - Solution: Created `textures/white.png` (1x1 white pixel) for solid color rendering
+    - Updated WorkflowManagerGUI.lua and WorkflowEditorGUI.lua to load mod-local texture
+    - Changed background rendering to fully opaque (alpha=1.0) with two-pass rendering
+    - First pass: solid dark color (0.05, 0.05, 0.08), second pass: slight depth overlay
+  - **ModIcon Fix (2026-01-14)**: Commented out iconFilename in modDesc.xml
+    - Prevents "Missing dds file" errors in ESC menu
+    - Game uses default icon until custom modIcon.dds is created
 
 ### In Progress
 - Milestone 4: Testing & Refinement
@@ -360,7 +371,10 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 ### Known Issues Being Debugged
 1. **AD/CP Globals Not Found**: AutoDrive and Courseplay mods are loaded but their globals (AutoDrive, g_Courseplay, etc.) are not detected after 10 retry attempts. Need to verify correct global names in FS25.
 2. **Input Action Callback**: WM_TOGGLE_GUI action registers successfully but callback never fires. Added PlayerInputComponent hook and manual F9 detection as workarounds.
-3. **ESC Menu Page**: May have profile compatibility issues - FS25 GUI profile names need verification.
+
+### Fixed Issues
+1. **~~Glass Background with Random Icons~~** (Fixed 2026-01-14): GUI overlay was rendering entire UI texture atlas. Fixed by creating `textures/white.png` (1x1 white pixel) and using fully opaque two-pass rendering.
+2. **~~Missing modIcon.dds Errors~~** (Fixed 2026-01-14): Commented out iconFilename reference in modDesc.xml.
 
 ### Pending
 - modIcon.dds creation
@@ -376,6 +390,7 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 [WorkflowManager] Adding Workflow Manager page to InGameMenu
 [WorkflowManager] Hooked PlayerInputComponent.registerGlobalPlayerActionEvents
 [WorkflowManager] Registered global input action WM_TOGGLE_GUI
+[WorkflowManager] Created overlay from mod texture: .../textures/white.png (ID: ...)
 [WorkflowManager] AutoDrive check #1: AutoDrive=... modLoaded=...
 [WorkflowManager] Courseplay check #1: g_Courseplay=... modLoaded=...
 [WorkflowManager] F9 key detected via manual check!
@@ -385,7 +400,8 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 ### Testing Checklist
 - [ ] Full game restart (not just map reload)
 - [ ] Check log for menu frame loading
-- [ ] Press ESC and look for Workflow Manager tab
+- [ ] Press ESC and look for Workflow Manager tab (no more modIcon.dds errors)
 - [ ] Press Alt+W or F9 to toggle GUI
+- [x] Verify GUI has solid dark background (not glass with random icons) ✓ Fixed
 - [ ] Check if AD/CP detection shows "modLoaded=true"
 - [ ] Verify button clicks work in draw-based GUI

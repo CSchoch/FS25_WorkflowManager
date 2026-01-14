@@ -44,12 +44,34 @@ function WMEditorGUI:init()
     self.selectedStepIndex = 0
     self.availableVehicles = {}
 
-    -- Create overlay for rendering
-    if g_baseUIFilename ~= nil then
-        self.overlayId = createImageOverlay(g_baseUIFilename)
-        WMLogger:debug("Editor created overlay ID: %s", tostring(self.overlayId))
-    else
-        self.overlayId = createImageOverlay("dataS/menu/blank.png")
+    -- Create overlay for rendering solid colors (same approach as main GUI)
+    self.overlayId = nil
+
+    -- First try: use our mod-local white texture
+    if WorkflowManager.modDirectory ~= nil then
+        local whiteTexture = WorkflowManager.modDirectory .. "textures/white.png"
+        self.overlayId = createImageOverlay(whiteTexture)
+        if self.overlayId ~= nil and self.overlayId ~= 0 then
+            WMLogger:debug("Editor created overlay from mod texture (ID: %s)", tostring(self.overlayId))
+        end
+    end
+
+    -- Fallback: use g_baseUIFilename with center UV sampling
+    if (self.overlayId == nil or self.overlayId == 0) then
+        local textureFile = g_baseUIFilename or g_baseHUDFilename
+        if textureFile ~= nil then
+            self.overlayId = createImageOverlay(textureFile)
+            if self.overlayId ~= nil and self.overlayId ~= 0 then
+                local u, v = 0.5, 0.5
+                local size = 0.001
+                setOverlayUVs(self.overlayId, u, v, u + size, v, u, v + size, u + size, v + size)
+                WMLogger:debug("Editor created overlay from UI atlas (ID: %s)", tostring(self.overlayId))
+            end
+        end
+    end
+
+    if self.overlayId == nil or self.overlayId == 0 then
+        WMLogger:warning("Editor could not create overlay - GUI rendering may fail")
     end
 
     WMLogger:debug("WorkflowEditorGUI initialized")
@@ -314,11 +336,15 @@ function WMEditorGUI:draw()
 
     local workflow = self.currentWorkflow
 
-    -- Draw semi-transparent background
+    -- Draw solid background (render twice for full opacity)
     local bgX, bgY = 0.2, 0.08
     local bgW, bgH = 0.6, 0.84
 
-    setOverlayColor(self.overlayId, 0, 0, 0, 0.8)
+    -- First pass: dark background
+    setOverlayColor(self.overlayId, 0.05, 0.05, 0.08, 1)
+    renderOverlay(self.overlayId, bgX, bgY, bgW, bgH)
+    -- Second pass: slight overlay for depth
+    setOverlayColor(self.overlayId, 0, 0, 0, 0.3)
     renderOverlay(self.overlayId, bgX, bgY, bgW, bgH)
 
     -- Draw border
@@ -522,11 +548,15 @@ end
 
 ---Draw the add step dialog
 function WMEditorGUI:drawAddStepDialog()
-    -- Dialog background
+    -- Dialog background (solid)
     local dlgX, dlgY = 0.35, 0.3
     local dlgW, dlgH = 0.3, 0.4
 
-    setOverlayColor(self.overlayId, 0, 0, 0, 0.9)
+    -- First pass: solid dark background
+    setOverlayColor(self.overlayId, 0.08, 0.08, 0.1, 1)
+    renderOverlay(self.overlayId, dlgX, dlgY, dlgW, dlgH)
+    -- Second pass for depth
+    setOverlayColor(self.overlayId, 0, 0, 0, 0.3)
     renderOverlay(self.overlayId, dlgX, dlgY, dlgW, dlgH)
 
     -- Border

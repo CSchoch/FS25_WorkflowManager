@@ -43,14 +43,36 @@ function WMManagerGUI:init()
     self.wasMouseDown = false
     self.buttonAreas = {}
 
-    -- Create overlay for rendering (use base UI texture)
-    if g_baseUIFilename ~= nil then
-        self.overlayId = createImageOverlay(g_baseUIFilename)
-        WMLogger:debug("Created overlay ID: %s", tostring(self.overlayId))
-    else
-        WMLogger:warning("g_baseUIFilename not available, using fallback")
-        -- Try to create a simple overlay with the blank texture
-        self.overlayId = createImageOverlay("dataS/menu/blank.png")
+    -- Create overlay for rendering solid colors
+    -- Use our mod's white.png texture (1x1 white pixel that can be tinted)
+    self.overlayId = nil
+
+    -- First try: use our mod-local white texture
+    if WorkflowManager.modDirectory ~= nil then
+        local whiteTexture = WorkflowManager.modDirectory .. "textures/white.png"
+        self.overlayId = createImageOverlay(whiteTexture)
+        if self.overlayId ~= nil and self.overlayId ~= 0 then
+            WMLogger:debug("Created overlay from mod texture: %s (ID: %s)", whiteTexture, tostring(self.overlayId))
+        end
+    end
+
+    -- Fallback: use g_baseUIFilename with center UV sampling
+    if (self.overlayId == nil or self.overlayId == 0) then
+        local textureFile = g_baseUIFilename or g_baseHUDFilename
+        if textureFile ~= nil then
+            self.overlayId = createImageOverlay(textureFile)
+            if self.overlayId ~= nil and self.overlayId ~= 0 then
+                -- Sample a tiny region from center of texture
+                local u, v = 0.5, 0.5
+                local size = 0.001
+                setOverlayUVs(self.overlayId, u, v, u + size, v, u, v + size, u + size, v + size)
+                WMLogger:debug("Created overlay from UI atlas (ID: %s)", tostring(self.overlayId))
+            end
+        end
+    end
+
+    if self.overlayId == nil or self.overlayId == 0 then
+        WMLogger:warning("Could not create overlay - GUI rendering may fail")
     end
 
     -- Try to load XML GUI
@@ -313,10 +335,14 @@ function WMManagerGUI:draw()
         return
     end
 
-    -- Draw semi-transparent background
+    -- Draw solid background (render twice for full opacity)
     local bgX, bgY = 0.25, 0.12
     local bgW, bgH = 0.5, 0.76
-    setOverlayColor(self.overlayId, 0, 0, 0, 0.7)
+    -- First pass: dark background
+    setOverlayColor(self.overlayId, 0.05, 0.05, 0.08, 1)
+    renderOverlay(self.overlayId, bgX, bgY, bgW, bgH)
+    -- Second pass: slight transparency for depth effect
+    setOverlayColor(self.overlayId, 0, 0, 0, 0.3)
     renderOverlay(self.overlayId, bgX, bgY, bgW, bgH)
 
     -- Draw border

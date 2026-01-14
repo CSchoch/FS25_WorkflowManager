@@ -35,7 +35,8 @@ Voraussetzungen: AutoDrive, Courseplay
     </description>
     <version>1.0.0.0</version>
     <multiplayer supported="true" />
-    <iconFilename>modIcon.dds</iconFilename>
+    <!-- iconFilename>modIcon.dds</iconFilename -->
+    <!-- Note: Create a 256x256 or 64x64 DDS icon using GIANTS Editor or image converter -->
 
     <extraSourceFiles>
         <sourceFile filename="src/WorkflowManager.lua" />
