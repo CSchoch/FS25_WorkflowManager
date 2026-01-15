@@ -669,10 +669,12 @@ function WMEditorGUI:drawStepDialog()
     local dlgX, dlgY = 0.30, 0.25
     local dlgW, dlgH = 0.40, 0.50
 
-    -- Background
+    -- Full-screen dimming overlay to block content behind
+    setOverlayColor(self.overlayId, 0, 0, 0, 0.85)
+    renderOverlay(self.overlayId, 0, 0, 1, 1)
+
+    -- Dialog background (fully opaque)
     setOverlayColor(self.overlayId, 0.08, 0.08, 0.1, 1)
-    renderOverlay(self.overlayId, dlgX, dlgY, dlgW, dlgH)
-    setOverlayColor(self.overlayId, 0, 0, 0, 0.3)
     renderOverlay(self.overlayId, dlgX, dlgY, dlgW, dlgH)
 
     -- Border
