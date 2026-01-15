@@ -1,9 +1,9 @@
 --[[
     WorkflowManager - Courseplay Courses Loader
-    Loads saved Courseplay courses from the user's modSettings directory
+    Loads saved Courseplay courses from the Courseplay API
 
-    Courses are stored in: [UserProfile]/modSettings/FS25_Courseplay/Courses/[MapId]/
-    Each course is an XML file with course data
+    Accesses course information through the Courseplay global object
+    rather than reading files directly from disk
 
     Author: WorkflowManager Team
 ]]
@@ -13,7 +13,6 @@ CPCoursesLoader = {}
 
 CPCoursesLoader.isInitialized = false
 CPCoursesLoader.courses = {}
-CPCoursesLoader.coursesDirectory = nil
 CPCoursesLoader.lastScanTime = 0
 CPCoursesLoader.scanInterval = 5000  -- Rescan every 5 seconds
 
@@ -23,170 +22,254 @@ function CPCoursesLoader:init()
     self.courses = {}
     self.lastScanTime = 0
 
-    -- Get the courses directory path
-    self.coursesDirectory = self:getCoursesDirectory()
-
-    if self.coursesDirectory then
-        WMLogger:info("Courseplay courses directory: %s", self.coursesDirectory)
-        -- Do initial scan
-        self:scanCourses()
-    else
-        WMLogger:warning("Could not determine Courseplay courses directory")
-    end
+    -- Do initial scan
+    self:scanCourses()
 end
 
----Get the Courseplay courses directory path
----@return string|nil directory Path to courses directory or nil
-function CPCoursesLoader:getCoursesDirectory()
-    -- Get user profile path
-    local userProfile = getUserProfileAppPath()
-    if not userProfile then
-        WMLogger:error("Could not get user profile path")
+---Get the Courseplay global object
+---@return table|nil courseplay Courseplay global object or nil
+function CPCoursesLoader:getCourseplayObject()
+    -- Check if Courseplay integration is available
+    if not CPIntegration or not CPIntegration.isAvailable then
         return nil
     end
 
-    -- Get current map ID
-    local mapId = nil
-    if g_currentMission and g_currentMission.missionInfo then
-        mapId = g_currentMission.missionInfo.mapId
-        if not mapId or mapId == "" then
-            -- Fallback: try to get from map title or filename
-            local mapTitle = g_currentMission.missionInfo.mapTitle
-            if mapTitle and mapTitle ~= "" then
-                -- Clean up map title to use as directory name
-                mapId = mapTitle:gsub("[^%w_]", "")
-            end
-        end
+    -- Try to get the Courseplay global object
+    -- In FS25, it's under FS25_Courseplay namespace
+    local courseplay = g_Courseplay
+    if not courseplay then
+        local fs25CP = FS25_Courseplay
+        courseplay = fs25CP and (fs25CP.g_Courseplay or fs25CP.Courseplay)
     end
 
-    if not mapId or mapId == "" then
-        WMLogger:error("Could not determine map ID")
-        return nil
-    end
-
-    -- Construct path: [UserProfile]/modSettings/FS25_Courseplay/Courses/[MapId]/
-    local coursesPath = userProfile .. "modSettings/FS25_Courseplay/Courses/" .. mapId .. "/"
-
-    return coursesPath
+    return courseplay
 end
 
----Scan the courses directory and load course names
+---Scan for available courses from Courseplay API
 function CPCoursesLoader:scanCourses()
-    if not self.coursesDirectory then
-        return
-    end
-
     self.courses = {}
 
-    -- Check if directory exists
-    if not fileExists(self.coursesDirectory) then
-        WMLogger:debug("Courseplay courses directory does not exist: %s", self.coursesDirectory)
+    -- Get Courseplay object
+    local courseplay = self:getCourseplayObject()
+    if not courseplay then
+        WMLogger:debug("Courseplay not available yet, cannot load courses")
         return
     end
 
-    -- Get all XML files in the directory
-    local files = self:getFilesInDirectory(self.coursesDirectory, ".xml")
+    -- Try different API patterns to access course storage
+    local courses = nil
 
-    if not files or #files == 0 then
-        WMLogger:debug("No course files found in: %s", self.coursesDirectory)
-        return
+    -- Pattern 1: courseStorage or courseManager property
+    if courseplay.courseStorage then
+        courses = self:extractCoursesFromStorage(courseplay.courseStorage)
+    elseif courseplay.courseManager then
+        courses = self:extractCoursesFromStorage(courseplay.courseManager)
+    elseif courseplay.CourseStorage then
+        courses = self:extractCoursesFromStorage(courseplay.CourseStorage)
+    elseif courseplay.CourseManager then
+        courses = self:extractCoursesFromStorage(courseplay.CourseManager)
     end
 
-    WMLogger:info("Found %d course file(s), parsing...", #files)
+    -- Pattern 2: FileSystem property
+    if not courses and courseplay.FileSystem then
+        courses = self:extractCoursesFromFileSystem(courseplay.FileSystem)
+    end
 
-    -- Parse each file to get course name
-    for _, filename in ipairs(files) do
-        local courseName = self:parseCourseName(filename)
-        if courseName then
-            table.insert(self.courses, courseName)
-            WMLogger:debug("Loaded course: %s", courseName)
+    -- Pattern 3: AssignedCoursesManager
+    if not courses and courseplay.assignedCoursesManager then
+        courses = self:extractCoursesFromAssignedManager(courseplay.assignedCoursesManager)
+    end
+
+    -- Pattern 4: Direct courses array/table
+    if not courses and courseplay.courses then
+        courses = self:extractCoursesFromTable(courseplay.courses)
+    end
+
+    -- Pattern 5: getCourses() method
+    if not courses and type(courseplay.getCourses) == "function" then
+        local success, result = pcall(courseplay.getCourses, courseplay)
+        if success and result then
+            courses = self:extractCoursesFromTable(result)
         end
     end
 
-    -- Sort courses alphabetically
-    table.sort(self.courses)
+    -- Pattern 6: getAllCourses() method
+    if not courses and type(courseplay.getAllCourses) == "function" then
+        local success, result = pcall(courseplay.getAllCourses, courseplay)
+        if success and result then
+            courses = self:extractCoursesFromTable(result)
+        end
+    end
 
-    WMLogger:info("Loaded %d Courseplay course(s)", #self.courses)
+    if courses and #courses > 0 then
+        self.courses = courses
+        table.sort(self.courses)
+        WMLogger:info("Loaded %d Courseplay course(s) from API", #self.courses)
+
+        -- Log first few courses for debugging
+        if WMDevConfig and WMDevConfig:isDevMode() then
+            for i = 1, math.min(5, #self.courses) do
+                WMLogger:debug("Course %d: %s", i, self.courses[i])
+            end
+        end
+    else
+        WMLogger:debug("No courses found via Courseplay API")
+
+        -- In dev mode, log available properties to help diagnose
+        if WMDevConfig and WMDevConfig:isDevMode() and courseplay then
+            self:logCourseplayStructure(courseplay)
+        end
+    end
 end
 
----Get all files with a specific extension in a directory
----@param directory string Directory path
----@param extension string File extension (e.g., ".xml")
----@return table files List of file paths
-function CPCoursesLoader:getFilesInDirectory(directory, extension)
-    local files = {}
-
-    -- Use Giants Engine file system API
-    -- FS25 uses fileExists, createFolder, and directory iteration
-
-    -- Try to iterate directory using FS25's file system
-    local i = 0
-    while true do
-        local filename = getXMLFileNameFromIdx(directory, i)
-        if not filename then
-            break
+---Log Courseplay object structure for debugging
+---@param courseplay table Courseplay object
+function CPCoursesLoader:logCourseplayStructure(courseplay)
+    WMLogger:debug("Courseplay object properties:")
+    local props = {}
+    for key, value in pairs(courseplay) do
+        local valueType = type(value)
+        if valueType == "table" then
+            table.insert(props, string.format("  %s: <table>", tostring(key)))
+        elseif valueType == "function" then
+            table.insert(props, string.format("  %s: <function>", tostring(key)))
+        else
+            table.insert(props, string.format("  %s: %s", tostring(key), tostring(value)))
         end
-
-        if filename:sub(-#extension) == extension then
-            table.insert(files, directory .. filename)
-        end
-
-        i = i + 1
     end
 
-    -- Alternative method: use LuaFileSystem if available
-    if #files == 0 and lfs then
-        for file in lfs.dir(directory) do
-            if file ~= "." and file ~= ".." then
-                local filepath = directory .. file
-                local attr = lfs.attributes(filepath)
-                if attr and attr.mode == "file" and file:sub(-#extension) == extension then
-                    table.insert(files, filepath)
-                end
+    -- Log up to 20 properties
+    for i = 1, math.min(20, #props) do
+        WMLogger:debug(props[i])
+    end
+
+    if #props > 20 then
+        WMLogger:debug("  ... (%d more properties)", #props - 20)
+    end
+end
+
+---Extract course names from a storage object
+---@param storage table Storage object
+---@return table|nil courses List of course names or nil
+function CPCoursesLoader:extractCoursesFromStorage(storage)
+    if not storage then
+        return nil
+    end
+
+    local courses = {}
+
+    -- Try common patterns for storage objects
+    -- Pattern 1: storage.courses (array/table)
+    if storage.courses then
+        local extracted = self:extractCoursesFromTable(storage.courses)
+        if extracted then
+            return extracted
+        end
+    end
+
+    -- Pattern 2: storage:getCourses() method
+    if type(storage.getCourses) == "function" then
+        local success, result = pcall(storage.getCourses, storage)
+        if success and result then
+            local extracted = self:extractCoursesFromTable(result)
+            if extracted then
+                return extracted
             end
         end
     end
 
-    return files
-end
-
----Parse a course file to extract the course name
----@param filepath string Path to course XML file
----@return string|nil courseName Course name or nil
-function CPCoursesLoader:parseCourseName(filepath)
-    -- Try to load the XML file
-    local xmlFile = loadXMLFile("courseFile", filepath)
-    if not xmlFile then
-        WMLogger:warning("Could not load course file: %s", filepath)
-        return nil
-    end
-
-    -- Try to get course name from XML
-    -- Courseplay course XML structure varies, try multiple common locations
-    local courseName = getXMLString(xmlFile, "course#name")
-
-    if not courseName or courseName == "" then
-        -- Try alternative path
-        courseName = getXMLString(xmlFile, "course.name#value")
-    end
-
-    if not courseName or courseName == "" then
-        -- Fallback: use filename without extension
-        local filename = filepath:match("([^/\\]+)%.xml$")
-        if filename then
-            courseName = filename
+    -- Pattern 3: storage:getAll() method
+    if type(storage.getAll) == "function" then
+        local success, result = pcall(storage.getAll, storage)
+        if success and result then
+            local extracted = self:extractCoursesFromTable(result)
+            if extracted then
+                return extracted
+            end
         end
     end
 
-    delete(xmlFile)
+    return nil
+end
 
-    return courseName
+---Extract course names from FileSystem object
+---@param fileSystem table FileSystem object
+---@return table|nil courses List of course names or nil
+function CPCoursesLoader:extractCoursesFromFileSystem(fileSystem)
+    if not fileSystem then
+        return nil
+    end
+
+    -- Try to get courses via FileSystem methods
+    if type(fileSystem.getCourses) == "function" then
+        local success, result = pcall(fileSystem.getCourses, fileSystem)
+        if success and result then
+            return self:extractCoursesFromTable(result)
+        end
+    end
+
+    if type(fileSystem.getLoadedCourses) == "function" then
+        local success, result = pcall(fileSystem.getLoadedCourses, fileSystem)
+        if success and result then
+            return self:extractCoursesFromTable(result)
+        end
+    end
+
+    return nil
+end
+
+---Extract course names from AssignedCoursesManager
+---@param manager table AssignedCoursesManager object
+---@return table|nil courses List of course names or nil
+function CPCoursesLoader:extractCoursesFromAssignedManager(manager)
+    if not manager then
+        return nil
+    end
+
+    if type(manager.getCourses) == "function" then
+        local success, result = pcall(manager.getCourses, manager)
+        if success and result then
+            return self:extractCoursesFromTable(result)
+        end
+    end
+
+    return nil
+end
+
+---Extract course names from a table/array
+---@param coursesTable table Table containing course data
+---@return table|nil courses List of course names or nil
+function CPCoursesLoader:extractCoursesFromTable(coursesTable)
+    if not coursesTable or type(coursesTable) ~= "table" then
+        return nil
+    end
+
+    local courses = {}
+
+    -- Check if it's an array of courses
+    for _, course in pairs(coursesTable) do
+        local courseName = nil
+
+        if type(course) == "string" then
+            -- Direct string
+            courseName = course
+        elseif type(course) == "table" then
+            -- Try different name properties
+            courseName = course.name or course.courseName or course.title or course.id
+        end
+
+        if courseName and type(courseName) == "string" and courseName ~= "" then
+            table.insert(courses, courseName)
+        end
+    end
+
+    return #courses > 0 and courses or nil
 end
 
 ---Update function - periodically rescan for new courses
 ---@param dt number Delta time in milliseconds
 function CPCoursesLoader:update(dt)
-    if not self.isInitialized or not self.coursesDirectory then
+    if not self.isInitialized then
         return
     end
 
