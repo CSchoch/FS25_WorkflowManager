@@ -125,26 +125,40 @@ Workflow = {
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Workflow Editor (Detail View)
+### Workflow Editor (Detail View) - Button-Based
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│ Edit workflow: Harvest wheat 1–2                          [X]    │
-├─────────────────────────────────────────────────────────────────┤
-│ Name: [Harvest wheat 1–2____________________________]           │
-│ Vehicle: [Combine XL ▼]                                         │
-├─────────────────────────────────────────────────────────────────┤
-│ Steps:                      [▲] [▼] [+] [-]                     │
-├─────────────────────────────────────────────────────────────────┤
-│ # │ Type       │ Target                │ Action                 │
-├───┼────────────┼───────────────────────┼────────────────────────┤
-│ 1 │ AutoDrive  │ Route_Field1          │ Drive                  │
-│ 2 │ Courseplay │ Field1_Harvest        │ Harvest                │
-│ 3 │ AutoDrive  │ Route_Field2          │ Drive                  │
-│ 4 │ Courseplay │ Field2_Harvest        │ Harvest                │
-├─────────────────────────────────────────────────────────────────┤
-│                              [Save] [Cancel]                    │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│ Edit Workflow                                                   [X]  │
+├──────────────────────────────────────────────────────────────────────┤
+│ Name:    [Harvest wheat 1–2________________________]                 │
+│                                                                      │
+│ Vehicle: [<] [      Combine XL      ] [>]  (1/5)                    │
+│                                                                      │
+│ Steps:   [+ Add] [- Remove] [Up] [Down]                             │
+├──────────────────────────────────────────────────────────────────────┤
+│ #  │ Type       │ Target              │ Action                       │
+├────┼────────────┼─────────────────────┼──────────────────────────────┤
+│ 1  │ AutoDrive  │ Route_Field1        │ drive                        │
+│ 2  │ Courseplay │ Field1_Course       │ harvest                      │
+│ 3  │ AutoDrive  │ Route_Field2        │ drive                        │
+│ 4  │ Courseplay │ Field2_Course       │ harvest     ← selected       │
+├──────────────────────────────────────────────────────────────────────┤
+│              [Save]                    [Cancel]                      │
+└──────────────────────────────────────────────────────────────────────┘
+
+Add Step Dialog:
+┌────────────────────────────────────────┐
+│ Add Step                               │
+├────────────────────────────────────────┤
+│ Type:   [AutoDrive] [Courseplay]       │
+│                                        │
+│ Target: [<] [Route_Field1    ] [>]     │
+│                                        │
+│ Action: [<] [drive           ] [>]     │
+├────────────────────────────────────────┤
+│       [Add]          [Cancel]          │
+└────────────────────────────────────────┘
 ```
 
 ## Development Roadmap
@@ -320,13 +334,13 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
   - EventHandler: Event subscription system for workflow state changes
 
 - **Milestone 3: Basic GUI (2026-01-13)**:
-  - WorkflowManagerGUI: Main window with workflow list, toolbar buttons, keyboard navigation
-  - WorkflowEditorGUI: Workflow editor with name/vehicle editing, step management
+  - WorkflowManagerGUI: Main window with workflow list, toolbar buttons
+  - WorkflowEditorGUI: Fully button-based workflow editor (rewritten 2026-01-15)
   - XML GUI layouts created (WorkflowManagerGUI.xml, WorkflowEditorGUI.xml)
   - Translation files updated with all GUI text keys (EN/DE)
-  - Input handling: keyboard shortcuts (N=New, S=Start, P=Pause, X=Stop, ESC=Close)
-  - Step management: Add/Remove steps, Move up/down, Visual step list
-  - Vehicle assignment with cycling through available vehicles
+  - All interactions are mouse-based (no keyboard shortcuts required)
+  - Step management: Add/Remove steps, Move up/down via buttons
+  - Vehicle assignment with < > navigation buttons
 
 - **Milestone 4 Progress (2026-01-13 to 2026-01-14)**:
   - **Mouse Click Handling**: Added full mouse event handling to draw-based GUIs
@@ -360,6 +374,14 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
   - **ModIcon Fix (2026-01-14)**: Commented out iconFilename in modDesc.xml
     - Prevents "Missing dds file" errors in ESC menu
     - Game uses default icon until custom modIcon.dds is created
+  - **Editor GUI Rewrite (2026-01-15)**: Complete rewrite with button-based interface
+    - Removed all keyboard shortcuts - fully mouse-driven
+    - Vehicle selection: < and > buttons to cycle through available vehicles
+    - Step toolbar: "+ Add", "- Remove", "Up", "Down" labeled buttons
+    - Add Step Dialog: Type selection (AutoDrive/Courseplay buttons), Target/Action with < > navigation
+    - Button hover effects with brightness increase and border highlight
+    - Layout constants for consistent positioning
+    - Close button (X) in title bar
 
 ### In Progress
 - Milestone 4: Testing & Refinement
@@ -412,6 +434,18 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 - [x] Verify main GUI has solid dark background ✓ Fixed
 - [x] Click "New" and verify editor has solid dark background ✓ Fixed
 - [ ] Check if AD/CP detection shows "modLoaded=true"
-- [ ] Verify button clicks work in draw-based GUI
+- [ ] Test editor button clicks:
+  - [ ] Vehicle < > buttons cycle through vehicles
+  - [ ] "+ Add" opens add step dialog
+  - [ ] "- Remove" removes selected step
+  - [ ] "Up/Down" move selected step
+  - [ ] Click on step row to select it
+  - [ ] "Save" and "Cancel" buttons work
+  - [ ] "X" close button works
+- [ ] Test Add Step Dialog:
+  - [ ] AutoDrive/Courseplay type selection
+  - [ ] Target < > navigation
+  - [ ] Action < > navigation
+  - [ ] Add and Cancel buttons
 - [ ] Verify editor closes and returns to main GUI correctly
 - [ ] Test workflow creation and step management

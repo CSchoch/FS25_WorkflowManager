@@ -501,7 +501,7 @@ function WMManagerGUI:drawWorkflowRow(baseX, y, index, workflow)
     local textY = y - 0.01
 
     -- Index + Name
-    local displayName = string.format("%d. %s", index, workflow.name or "Unnamed")
+    local displayName = string.format("%d. %s", index, workflow.name or g_i18n:getText("wm_unnamed"))
     if string.len(displayName) > 20 then
         displayName = string.sub(displayName, 1, 18) .. ".."
     end

@@ -25,6 +25,10 @@
         <text name="wm_button_save" text="Speichern"/>
         <text name="wm_button_cancel" text="Abbrechen"/>
         <text name="wm_button_close" text="Schliessen"/>
+        <text name="wm_button_add" text="Hinzu"/>
+        <text name="wm_button_remove" text="Entfernen"/>
+        <text name="wm_button_up" text="Hoch"/>
+        <text name="wm_button_down" text="Runter"/>
 
         <!-- Table headers -->
         <text name="wm_header_name" text="Workflow-Name"/>
@@ -77,11 +81,13 @@
         <text name="wm_select_workflow" text="Waehlen Sie einen Workflow"/>
         <text name="wm_workflows_count" text="%d Workflow(s)"/>
         <text name="wm_new_workflow_name" text="Neuer Workflow"/>
+        <text name="wm_unnamed" text="Unbenannt"/>
         <text name="wm_confirm_delete" text="Workflow '%s' loeschen?"/>
         <text name="wm_tab_title" text="Workflows"/>
 
         <!-- Vehicle dropdown -->
         <text name="wm_select_vehicle" text="-- Fahrzeug waehlen --"/>
+        <text name="wm_none" text="(keins)"/>
 
         <!-- Errors -->
         <text name="wm_error_no_autodrive" text="AutoDrive nicht verfuegbar"/>

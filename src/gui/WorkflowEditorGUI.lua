@@ -1,7 +1,7 @@
 --[[
     WorkflowManager - Workflow Editor GUI
     Allows editing workflow details and steps
-    Uses FS25 GUI system with XML layouts
+    Fully button-based interface (no keyboard shortcuts required)
 
     Author: WorkflowManager Team
 ]]
@@ -16,26 +16,39 @@ WMEditorGUI.isAddStepDialogOpen = false
 
 -- Add step dialog state
 WMEditorGUI.addStepType = "autodrive"
-WMEditorGUI.addStepTarget = ""
-WMEditorGUI.addStepAction = "drive"
+WMEditorGUI.addStepTargetIndex = 0
+WMEditorGUI.addStepActionIndex = 1
+WMEditorGUI.availableTargets = {}
 
 -- Available vehicles cache
 WMEditorGUI.availableVehicles = {}
 WMEditorGUI.selectedVehicleIndex = 0
 
 -- Editing state
-WMEditorGUI.isEditingName = false
 WMEditorGUI.editedName = ""
 
 -- Mouse tracking
 WMEditorGUI.mouseX = 0
 WMEditorGUI.mouseY = 0
 WMEditorGUI.wasMouseDown = false
-WMEditorGUI.buttonAreas = {}
-WMEditorGUI.stepToolbarAreas = {}
 
 -- Overlay ID for rendering
 WMEditorGUI.overlayId = nil
+
+-- Layout constants
+WMEditorGUI.LAYOUT = {
+    bgX = 0.15,
+    bgY = 0.08,
+    bgW = 0.7,
+    bgH = 0.84,
+    buttonW = 0.10,
+    buttonH = 0.04,
+    smallBtnW = 0.04,
+    smallBtnH = 0.035,
+    rowHeight = 0.045,
+    margin = 0.015,
+    spacing = 0.01
+}
 
 ---Initialize the editor GUI
 function WMEditorGUI:init()
@@ -134,9 +147,6 @@ function WMEditorGUI:saveAndClose()
         WMLogger:info("Saved workflow: %s", self.currentWorkflow.name)
     end
     self:close()
-
-    -- Refresh main GUI
-    WMManagerGUI:refresh()
 end
 
 ---Cancel changes and close
@@ -147,18 +157,12 @@ end
 ---Cleanup the GUI and release resources
 function WMEditorGUI:cleanup()
     WMLogger:debug("WorkflowEditorGUI:cleanup() called")
-
-    -- Just clear our reference - main GUI owns the overlay
     self.overlayId = nil
-
-    -- Reset state
     self.isVisible = false
     self.currentWorkflow = nil
     self.selectedStepIndex = 0
     self.isAddStepDialogOpen = false
     self.availableVehicles = {}
-    self.buttonAreas = {}
-    self.stepToolbarAreas = {}
 end
 
 ---Refresh the list of available vehicles
@@ -170,7 +174,6 @@ function WMEditorGUI:refreshVehicleList()
     end
 
     for _, vehicle in ipairs(g_currentMission.vehicles) do
-        -- Check if vehicle has AutoDrive or Courseplay
         local hasAD = vehicle.ad ~= nil
         local hasCP = vehicle.spec_cpAIWorker ~= nil or vehicle.spec_cpAIFieldWorker ~= nil
 
@@ -194,50 +197,37 @@ function WMEditorGUI:refreshVehicleList()
     WMLogger:debug("Found %d vehicles with AD/CP support", #self.availableVehicles)
 end
 
----Set workflow name
----@param name string New workflow name
-function WMEditorGUI:setWorkflowName(name)
-    self.editedName = name
-    if self.currentWorkflow ~= nil then
-        self.currentWorkflow.name = name
+---Cycle to previous vehicle
+function WMEditorGUI:prevVehicle()
+    if #self.availableVehicles == 0 then return end
+
+    self.selectedVehicleIndex = self.selectedVehicleIndex - 1
+    if self.selectedVehicleIndex < 0 then
+        self.selectedVehicleIndex = #self.availableVehicles
     end
+    self:applyVehicleSelection()
 end
 
----Assign vehicle to workflow by index
----@param index number Vehicle index in availableVehicles
-function WMEditorGUI:assignVehicleByIndex(index)
-    if self.currentWorkflow == nil then
-        return
+---Cycle to next vehicle
+function WMEditorGUI:nextVehicle()
+    if #self.availableVehicles == 0 then return end
+
+    self.selectedVehicleIndex = self.selectedVehicleIndex + 1
+    if self.selectedVehicleIndex > #self.availableVehicles then
+        self.selectedVehicleIndex = 0
     end
+    self:applyVehicleSelection()
+end
 
-    self.selectedVehicleIndex = index
+---Apply the current vehicle selection to the workflow
+function WMEditorGUI:applyVehicleSelection()
+    if self.currentWorkflow == nil then return end
 
-    if index > 0 and index <= #self.availableVehicles then
-        self.currentWorkflow.vehicle = self.availableVehicles[index].vehicle
-        WMLogger:debug("Assigned vehicle: %s", self.availableVehicles[index].name)
+    if self.selectedVehicleIndex > 0 and self.selectedVehicleIndex <= #self.availableVehicles then
+        self.currentWorkflow.vehicle = self.availableVehicles[self.selectedVehicleIndex].vehicle
     else
         self.currentWorkflow.vehicle = nil
-        WMLogger:debug("Cleared vehicle assignment")
     end
-end
-
----Add a new step to the workflow
----@param stepType string Step type (autodrive/courseplay)
----@param target string Target route/course name
----@param action string|nil Action type
-function WMEditorGUI:addStep(stepType, target, action)
-    if self.currentWorkflow == nil then
-        return
-    end
-
-    local step = {
-        type = stepType,
-        target = target,
-        action = action or "default"
-    }
-
-    table.insert(self.currentWorkflow.steps, step)
-    WMLogger:debug("Added step: %s -> %s", stepType, target)
 end
 
 ---Remove selected step
@@ -248,7 +238,6 @@ function WMEditorGUI:removeSelectedStep()
 
     table.remove(self.currentWorkflow.steps, self.selectedStepIndex)
 
-    -- Adjust selection
     if self.selectedStepIndex > #self.currentWorkflow.steps then
         self.selectedStepIndex = #self.currentWorkflow.steps
     end
@@ -288,48 +277,52 @@ function WMEditorGUI:moveStepDown()
     self.selectedStepIndex = self.selectedStepIndex + 1
 end
 
----Get available AutoDrive destinations
----@return table destinations List of destination names
-function WMEditorGUI:getAutoDriveDestinations()
-    local destinations = {}
+---Get available targets based on step type
+function WMEditorGUI:getAvailableTargets()
+    local targets = {}
 
-    if ADIntegration and ADIntegration.isAvailable then
-        local adDests = ADIntegration:getDestinations()
-        if adDests then
-            for _, dest in ipairs(adDests) do
-                table.insert(destinations, dest.name or dest)
+    if self.addStepType == "autodrive" then
+        -- Get AutoDrive destinations
+        if ADIntegration and ADIntegration.isAvailable then
+            local adDests = ADIntegration:getDestinations()
+            if adDests then
+                for _, dest in ipairs(adDests) do
+                    table.insert(targets, dest.name or tostring(dest))
+                end
             end
         end
+        -- Add some defaults if none found
+        if #targets == 0 then
+            table.insert(targets, "Route_Field1")
+            table.insert(targets, "Route_Field2")
+            table.insert(targets, "Route_Farm")
+        end
+    else
+        -- Courseplay courses - simplified
+        table.insert(targets, "Field1_Course")
+        table.insert(targets, "Field2_Course")
+        table.insert(targets, "Harvest_Course")
     end
 
-    return destinations
+    return targets
 end
 
----Get available Courseplay actions
----@return table actions List of action names
-function WMEditorGUI:getCourseplayActions()
-    return {
-        {id = "last", name = g_i18n:getText("wm_action_last")},
-        {id = "first", name = g_i18n:getText("wm_action_first")},
-        {id = "fieldwork", name = g_i18n:getText("wm_action_fieldwork")},
-        {id = "harvest", name = g_i18n:getText("wm_action_harvest")},
-    }
-end
-
----Get AutoDrive actions
----@return table actions List of action names
-function WMEditorGUI:getAutoDriveActions()
-    return {
-        {id = "drive", name = g_i18n:getText("wm_action_drive")},
-    }
+---Get available actions based on step type
+function WMEditorGUI:getAvailableActions()
+    if self.addStepType == "autodrive" then
+        return {"drive", "load", "unload"}
+    else
+        return {"fieldwork", "harvest", "cultivate", "sow"}
+    end
 end
 
 ---Open the add step dialog
 function WMEditorGUI:openAddStepDialog()
     self.isAddStepDialogOpen = true
     self.addStepType = "autodrive"
-    self.addStepTarget = ""
-    self.addStepAction = "drive"
+    self.addStepTargetIndex = 1
+    self.addStepActionIndex = 1
+    self.availableTargets = self:getAvailableTargets()
 end
 
 ---Close the add step dialog
@@ -339,9 +332,26 @@ end
 
 ---Confirm adding a step from the dialog
 function WMEditorGUI:confirmAddStep()
-    if self.addStepTarget ~= "" then
-        self:addStep(self.addStepType, self.addStepTarget, self.addStepAction)
+    if self.currentWorkflow == nil then
+        self:closeAddStepDialog()
+        return
     end
+
+    local targets = self:getAvailableTargets()
+    local actions = self:getAvailableActions()
+
+    local target = targets[self.addStepTargetIndex] or "default"
+    local action = actions[self.addStepActionIndex] or "default"
+
+    local step = {
+        type = self.addStepType,
+        target = target,
+        action = action
+    }
+
+    table.insert(self.currentWorkflow.steps, step)
+    WMLogger:debug("Added step: %s -> %s (%s)", self.addStepType, target, action)
+
     self:closeAddStepDialog()
 end
 
@@ -351,117 +361,143 @@ function WMEditorGUI:draw()
         return
     end
 
-    -- Use own overlay
     if self.overlayId == nil or self.overlayId == 0 then
         WMLogger:warning("Editor overlay missing during draw")
         return
     end
 
+    local L = self.LAYOUT
     local workflow = self.currentWorkflow
 
-    -- Reset UVs to use full texture (bottom-left, bottom-right, top-left, top-right)
+    -- Reset UVs
     setOverlayUVs(self.overlayId, 0, 0, 1, 0, 0, 1, 1, 1)
 
-    -- Draw solid background (render twice for full opacity)
-    local bgX, bgY = 0.2, 0.08
-    local bgW, bgH = 0.6, 0.84
-
-    -- First pass: dark background
+    -- Draw background
     setOverlayColor(self.overlayId, 0.05, 0.05, 0.08, 1)
-    renderOverlay(self.overlayId, bgX, bgY, bgW, bgH)
-    -- Second pass: slight overlay for depth
+    renderOverlay(self.overlayId, L.bgX, L.bgY, L.bgW, L.bgH)
     setOverlayColor(self.overlayId, 0, 0, 0, 0.3)
-    renderOverlay(self.overlayId, bgX, bgY, bgW, bgH)
+    renderOverlay(self.overlayId, L.bgX, L.bgY, L.bgW, L.bgH)
 
     -- Draw border
-    local borderColor = {0.3, 0.7, 0.3, 1}
-    setOverlayColor(self.overlayId, borderColor[1], borderColor[2], borderColor[3], borderColor[4])
-    renderOverlay(self.overlayId, bgX, bgY, bgW, 0.003)
-    renderOverlay(self.overlayId, bgX, bgY + bgH - 0.003, bgW, 0.003)
-    renderOverlay(self.overlayId, bgX, bgY, 0.003, bgH)
-    renderOverlay(self.overlayId, bgX + bgW - 0.003, bgY, 0.003, bgH)
+    setOverlayColor(self.overlayId, 0.3, 0.7, 0.3, 1)
+    renderOverlay(self.overlayId, L.bgX, L.bgY, L.bgW, 0.003)
+    renderOverlay(self.overlayId, L.bgX, L.bgY + L.bgH - 0.003, L.bgW, 0.003)
+    renderOverlay(self.overlayId, L.bgX, L.bgY, 0.003, L.bgH)
+    renderOverlay(self.overlayId, L.bgX + L.bgW - 0.003, L.bgY, 0.003, L.bgH)
 
     -- Draw title bar
     setOverlayColor(self.overlayId, 0.15, 0.15, 0.15, 1)
-    renderOverlay(self.overlayId, bgX, bgY + bgH - 0.06, bgW, 0.06)
+    renderOverlay(self.overlayId, L.bgX, L.bgY + L.bgH - 0.06, L.bgW, 0.06)
 
     setTextColor(1, 1, 1, 1)
     setTextBold(true)
-    renderText(bgX + 0.02, bgY + bgH - 0.045, 0.022, g_i18n:getText("wm_editor_title") .. ": " .. workflow.name)
+    renderText(L.bgX + L.margin, L.bgY + L.bgH - 0.042, 0.022, g_i18n:getText("wm_editor_title"))
     setTextBold(false)
 
-    -- Close hint
-    setTextColor(0.8, 0.8, 0.8, 1)
-    renderText(bgX + bgW - 0.08, bgY + bgH - 0.04, 0.016, "[ESC]")
+    -- Close button (X)
+    self:drawButton(L.bgX + L.bgW - 0.05, L.bgY + L.bgH - 0.05, 0.04, 0.04, "X", {0.6, 0.2, 0.2, 1})
 
-    -- Draw workflow properties
-    local propY = bgY + bgH - 0.12
+    local currentY = L.bgY + L.bgH - 0.10
 
-    -- Name field
+    -- === NAME SECTION ===
+    currentY = currentY - 0.02
     setTextColor(0.8, 0.8, 0.8, 1)
-    renderText(bgX + 0.02, propY, 0.016, g_i18n:getText("wm_editor_name"))
+    renderText(L.bgX + L.margin, currentY, 0.016, g_i18n:getText("wm_editor_name") .. ":")
+
+    -- Name display box
+    setOverlayColor(self.overlayId, 0.1, 0.1, 0.12, 1)
+    renderOverlay(self.overlayId, L.bgX + 0.12, currentY - 0.008, 0.30, 0.03)
     setTextColor(1, 1, 1, 1)
-    renderText(bgX + 0.12, propY, 0.016, self.editedName)
-    setTextColor(0.5, 0.5, 0.5, 1)
-    renderText(bgX + 0.45, propY, 0.012, "[Press F2 to edit]")
+    local displayName = self.editedName
+    if string.len(displayName) > 25 then
+        displayName = string.sub(displayName, 1, 23) .. ".."
+    end
+    renderText(L.bgX + 0.13, currentY, 0.016, displayName)
 
-    propY = propY - 0.04
+    -- Edit name button
+    self:drawButton(L.bgX + 0.43, currentY - 0.008, 0.06, 0.03, g_i18n:getText("wm_button_edit"), {0.3, 0.5, 0.7, 1})
 
-    -- Vehicle field
+    -- === VEHICLE SECTION ===
+    currentY = currentY - 0.05
     setTextColor(0.8, 0.8, 0.8, 1)
-    renderText(bgX + 0.02, propY, 0.016, g_i18n:getText("wm_editor_vehicle"))
+    renderText(L.bgX + L.margin, currentY, 0.016, g_i18n:getText("wm_editor_vehicle") .. ":")
+
+    -- Prev button
+    self:drawButton(L.bgX + 0.12, currentY - 0.008, L.smallBtnW, L.smallBtnH, "<", {0.3, 0.3, 0.5, 1})
+
+    -- Vehicle name display
+    setOverlayColor(self.overlayId, 0.1, 0.1, 0.12, 1)
+    renderOverlay(self.overlayId, L.bgX + 0.17, currentY - 0.008, 0.25, 0.03)
 
     local vehicleText = g_i18n:getText("wm_no_vehicle")
     if self.selectedVehicleIndex > 0 and self.selectedVehicleIndex <= #self.availableVehicles then
         vehicleText = self.availableVehicles[self.selectedVehicleIndex].name
     end
+    if string.len(vehicleText) > 22 then
+        vehicleText = string.sub(vehicleText, 1, 20) .. ".."
+    end
     setTextColor(1, 1, 1, 1)
-    renderText(bgX + 0.12, propY, 0.016, vehicleText)
-    setTextColor(0.5, 0.5, 0.5, 1)
-    renderText(bgX + 0.45, propY, 0.012, "[V: cycle vehicles]")
+    renderText(L.bgX + 0.18, currentY, 0.015, vehicleText)
 
-    -- Steps section header
-    propY = propY - 0.06
+    -- Next button
+    self:drawButton(L.bgX + 0.43, currentY - 0.008, L.smallBtnW, L.smallBtnH, ">", {0.3, 0.3, 0.5, 1})
+
+    -- Vehicle count
+    setTextColor(0.5, 0.5, 0.5, 1)
+    local countText = string.format("(%d/%d)", self.selectedVehicleIndex, #self.availableVehicles)
+    renderText(L.bgX + 0.48, currentY, 0.012, countText)
+
+    -- === STEPS SECTION ===
+    currentY = currentY - 0.06
     setTextColor(1, 1, 1, 1)
     setTextBold(true)
-    renderText(bgX + 0.02, propY, 0.018, g_i18n:getText("wm_editor_steps"))
+    renderText(L.bgX + L.margin, currentY, 0.018, g_i18n:getText("wm_editor_steps"))
     setTextBold(false)
 
-    -- Step toolbar
-    self:drawStepToolbar(bgX + 0.35, propY - 0.005)
+    -- Step toolbar buttons
+    local toolbarX = L.bgX + 0.20
+    self:drawButton(toolbarX, currentY - 0.01, 0.08, L.smallBtnH, "+ " .. g_i18n:getText("wm_button_add"), {0.2, 0.5, 0.2, 1})
+    self:drawButton(toolbarX + 0.09, currentY - 0.01, 0.10, L.smallBtnH, "- " .. g_i18n:getText("wm_button_remove"), {0.5, 0.2, 0.2, 1})
+    self:drawButton(toolbarX + 0.20, currentY - 0.01, 0.06, L.smallBtnH, g_i18n:getText("wm_button_up"), {0.3, 0.3, 0.5, 1})
+    self:drawButton(toolbarX + 0.27, currentY - 0.01, 0.07, L.smallBtnH, g_i18n:getText("wm_button_down"), {0.3, 0.3, 0.5, 1})
 
     -- Column headers
-    propY = propY - 0.04
+    currentY = currentY - 0.05
     setTextColor(0.7, 0.7, 0.7, 1)
-    renderText(bgX + 0.02, propY, 0.014, "#")
-    renderText(bgX + 0.06, propY, 0.014, g_i18n:getText("wm_editor_type"))
-    renderText(bgX + 0.18, propY, 0.014, g_i18n:getText("wm_editor_target"))
-    renderText(bgX + 0.42, propY, 0.014, g_i18n:getText("wm_editor_action"))
+    renderText(L.bgX + 0.02, currentY, 0.014, "#")
+    renderText(L.bgX + 0.05, currentY, 0.014, g_i18n:getText("wm_editor_type"))
+    renderText(L.bgX + 0.18, currentY, 0.014, g_i18n:getText("wm_editor_target"))
+    renderText(L.bgX + 0.45, currentY, 0.014, g_i18n:getText("wm_editor_action"))
 
     -- Separator
-    propY = propY - 0.015
+    currentY = currentY - 0.015
     setOverlayColor(self.overlayId, 0.4, 0.4, 0.4, 1)
-    renderOverlay(self.overlayId, bgX + 0.01, propY, bgW - 0.02, 0.002)
+    renderOverlay(self.overlayId, L.bgX + 0.01, currentY, L.bgW - 0.02, 0.002)
 
     -- Steps list
-    propY = propY - 0.03
+    currentY = currentY - 0.01
+    local stepsStartY = currentY
+
     if #workflow.steps == 0 then
-        setTextColor(0.6, 0.6, 0.6, 1)
-        renderText(bgX + 0.15, propY - 0.05, 0.016, g_i18n:getText("wm_editor_no_steps"))
+        setTextColor(0.5, 0.5, 0.5, 1)
+        renderText(L.bgX + 0.20, currentY - 0.05, 0.016, g_i18n:getText("wm_editor_no_steps"))
     else
         for i, step in ipairs(workflow.steps) do
-            self:drawStepRow(bgX, propY, i, step)
-            propY = propY - 0.04
+            currentY = currentY - L.rowHeight
+            self:drawStepRow(L.bgX, currentY, i, step)
 
-            if i >= 10 then
+            if i >= 8 then
                 break
             end
         end
     end
 
-    -- Bottom buttons
-    local btnY = bgY + 0.04
-    self:drawBottomButtons(bgX + 0.15, btnY)
+    -- === BOTTOM BUTTONS ===
+    local bottomY = L.bgY + 0.02
+    local centerX = L.bgX + L.bgW / 2
+
+    self:drawButton(centerX - 0.22, bottomY, L.buttonW, L.buttonH, g_i18n:getText("wm_button_save"), {0.2, 0.6, 0.2, 1})
+    self:drawButton(centerX - 0.06, bottomY, L.buttonW, L.buttonH, g_i18n:getText("wm_button_cancel"), {0.6, 0.3, 0.3, 1})
 
     -- Draw add step dialog if open
     if self.isAddStepDialogOpen then
@@ -469,35 +505,36 @@ function WMEditorGUI:draw()
     end
 end
 
----Draw step toolbar buttons
+---Draw a button
 ---@param x number X position
 ---@param y number Y position
-function WMEditorGUI:drawStepToolbar(x, y)
-    local buttonSize = 0.03
-    local spacing = 0.005
-    local currentX = x
+---@param w number Width
+---@param h number Height
+---@param text string Button text
+---@param color table RGBA color
+function WMEditorGUI:drawButton(x, y, w, h, text, color)
+    local isHovered = self:isMouseInArea(x, y, w, h)
+    local brightness = isHovered and 1.2 or 1.0
 
-    local buttons = {
-        {text = "^", hint = "Up", action = "up"},
-        {text = "v", hint = "Down", action = "down"},
-        {text = "+", hint = "Add", action = "add"},
-        {text = "-", hint = "Remove", action = "remove"},
-    }
+    setOverlayColor(self.overlayId,
+        math.min(color[1] * brightness, 1),
+        math.min(color[2] * brightness, 1),
+        math.min(color[3] * brightness, 1),
+        color[4])
+    renderOverlay(self.overlayId, x, y, w, h)
 
-    for _, btn in ipairs(buttons) do
-        setOverlayColor(self.overlayId, 0.3, 0.3, 0.3, 0.8)
-        renderOverlay(self.overlayId, currentX, y, buttonSize, buttonSize)
-
-        setTextColor(1, 1, 1, 1)
-        local textX = currentX + buttonSize * 0.35
-        renderText(textX, y + buttonSize * 0.25, 0.016, btn.text)
-
-        currentX = currentX + buttonSize + spacing
+    -- Border when hovered
+    if isHovered then
+        setOverlayColor(self.overlayId, 1, 1, 1, 0.3)
+        renderOverlay(self.overlayId, x, y, w, 0.002)
+        renderOverlay(self.overlayId, x, y + h - 0.002, w, 0.002)
+        renderOverlay(self.overlayId, x, y, 0.002, h)
+        renderOverlay(self.overlayId, x + w - 0.002, y, 0.002, h)
     end
 
-    -- Keyboard hints
-    setTextColor(0.5, 0.5, 0.5, 1)
-    renderText(currentX + 0.01, y + 0.008, 0.010, "[+/-/U/D]")
+    setTextColor(1, 1, 1, 1)
+    local textWidth = getTextWidth(0.014, text)
+    renderText(x + (w - textWidth) / 2, y + h * 0.3, 0.014, text)
 end
 
 ---Draw a single step row
@@ -506,82 +543,56 @@ end
 ---@param index number Step index
 ---@param step table Step data
 function WMEditorGUI:drawStepRow(baseX, y, index, step)
+    local L = self.LAYOUT
     local isSelected = (index == self.selectedStepIndex)
-    local rowHeight = 0.035
+    local rowHeight = L.rowHeight - 0.005
 
-    -- Selection highlight
+    -- Row background
     if isSelected then
-        setOverlayColor(self.overlayId, 0.2, 0.5, 0.2, 0.4)
-        renderOverlay(self.overlayId, baseX + 0.01, y - rowHeight + 0.01, 0.58, rowHeight)
+        setOverlayColor(self.overlayId, 0.2, 0.5, 0.2, 0.5)
+    else
+        setOverlayColor(self.overlayId, 0.1, 0.1, 0.12, 0.5)
     end
+    renderOverlay(self.overlayId, baseX + 0.01, y, L.bgW - 0.02, rowHeight)
 
     -- Row color by type
     local textColor = {1, 1, 1, 1}
     if step.type == WorkflowManager.STEP_AUTODRIVE then
-        textColor = {0.4, 0.7, 1, 1}  -- Blue for AutoDrive
+        textColor = {0.4, 0.7, 1, 1}
     elseif step.type == WorkflowManager.STEP_COURSEPLAY then
-        textColor = {0.4, 1, 0.4, 1}  -- Green for Courseplay
+        textColor = {0.4, 1, 0.4, 1}
     end
 
     setTextColor(textColor[1], textColor[2], textColor[3], textColor[4])
 
+    local textY = y + rowHeight * 0.3
+
     -- Step number
-    renderText(baseX + 0.02, y, 0.014, tostring(index))
+    renderText(baseX + 0.02, textY, 0.014, tostring(index))
 
     -- Type
-    local typeText = step.type == WorkflowManager.STEP_AUTODRIVE and
-        g_i18n:getText("wm_type_autodrive") or g_i18n:getText("wm_type_courseplay")
-    renderText(baseX + 0.06, y, 0.014, typeText)
+    local typeText = step.type == WorkflowManager.STEP_AUTODRIVE and g_i18n:getText("wm_type_autodrive") or g_i18n:getText("wm_type_courseplay")
+    renderText(baseX + 0.05, textY, 0.014, typeText)
 
-    -- Target (truncate if too long)
+    -- Target
     local target = step.target or ""
-    if string.len(target) > 25 then
-        target = string.sub(target, 1, 23) .. ".."
+    if string.len(target) > 20 then
+        target = string.sub(target, 1, 18) .. ".."
     end
-    renderText(baseX + 0.18, y, 0.014, target)
+    renderText(baseX + 0.18, textY, 0.014, target)
 
     -- Action
-    renderText(baseX + 0.42, y, 0.014, step.action or "default")
-end
-
----Draw bottom action buttons
----@param x number X position
----@param y number Y position
-function WMEditorGUI:drawBottomButtons(x, y)
-    local buttonW = 0.12
-    local buttonH = 0.045
-    local spacing = 0.02
-
-    -- Save button
-    setOverlayColor(self.overlayId, 0.2, 0.5, 0.2, 0.8)
-    renderOverlay(self.overlayId, x, y, buttonW, buttonH)
-    setTextColor(1, 1, 1, 1)
-    local saveText = g_i18n:getText("wm_button_save")
-    renderText(x + buttonW * 0.5 - getTextWidth(0.016, saveText) * 0.5, y + buttonH * 0.3, 0.016, saveText)
-
-    -- Cancel button
-    local cancelX = x + buttonW + spacing
-    setOverlayColor(self.overlayId, 0.5, 0.3, 0.3, 0.8)
-    renderOverlay(self.overlayId, cancelX, y, buttonW, buttonH)
-    setTextColor(1, 1, 1, 1)
-    local cancelText = g_i18n:getText("wm_button_cancel")
-    renderText(cancelX + buttonW * 0.5 - getTextWidth(0.016, cancelText) * 0.5, y + buttonH * 0.3, 0.016, cancelText)
-
-    -- Keyboard hints
-    setTextColor(0.5, 0.5, 0.5, 1)
-    renderText(x + 0.3, y + 0.015, 0.012, "[Enter: Save] [ESC: Cancel]")
+    renderText(baseX + 0.45, textY, 0.014, step.action or "default")
 end
 
 ---Draw the add step dialog
 function WMEditorGUI:drawAddStepDialog()
-    -- Dialog background (solid)
-    local dlgX, dlgY = 0.35, 0.3
-    local dlgW, dlgH = 0.3, 0.4
+    local dlgX, dlgY = 0.30, 0.25
+    local dlgW, dlgH = 0.40, 0.50
 
-    -- First pass: solid dark background
+    -- Background
     setOverlayColor(self.overlayId, 0.08, 0.08, 0.1, 1)
     renderOverlay(self.overlayId, dlgX, dlgY, dlgW, dlgH)
-    -- Second pass for depth
     setOverlayColor(self.overlayId, 0, 0, 0, 0.3)
     renderOverlay(self.overlayId, dlgX, dlgY, dlgW, dlgH)
 
@@ -595,54 +606,71 @@ function WMEditorGUI:drawAddStepDialog()
     -- Title
     setTextColor(1, 1, 1, 1)
     setTextBold(true)
-    renderText(dlgX + 0.02, dlgY + dlgH - 0.05, 0.020, g_i18n:getText("wm_dialog_add_step"))
+    renderText(dlgX + 0.02, dlgY + dlgH - 0.045, 0.020, g_i18n:getText("wm_dialog_add_step"))
     setTextBold(false)
 
-    local fieldY = dlgY + dlgH - 0.12
+    local fieldY = dlgY + dlgH - 0.10
 
-    -- Step type
+    -- === STEP TYPE ===
     setTextColor(0.8, 0.8, 0.8, 1)
     renderText(dlgX + 0.02, fieldY, 0.016, g_i18n:getText("wm_editor_type") .. ":")
-    setTextColor(1, 1, 1, 1)
-    local typeText = self.addStepType == "autodrive" and
-        g_i18n:getText("wm_type_autodrive") or g_i18n:getText("wm_type_courseplay")
-    renderText(dlgX + 0.10, fieldY, 0.016, typeText)
-    setTextColor(0.5, 0.5, 0.5, 1)
-    renderText(dlgX + 0.22, fieldY, 0.012, "[T: toggle]")
 
-    fieldY = fieldY - 0.06
+    -- Type buttons
+    local adColor = self.addStepType == "autodrive" and {0.3, 0.5, 0.7, 1} or {0.2, 0.2, 0.25, 1}
+    local cpColor = self.addStepType == "courseplay" and {0.3, 0.6, 0.3, 1} or {0.2, 0.2, 0.25, 1}
 
-    -- Target
+    self:drawButton(dlgX + 0.12, fieldY - 0.008, 0.12, 0.035, g_i18n:getText("wm_type_autodrive"), adColor)
+    self:drawButton(dlgX + 0.25, fieldY - 0.008, 0.12, 0.035, g_i18n:getText("wm_type_courseplay"), cpColor)
+
+    -- === TARGET ===
+    fieldY = fieldY - 0.07
     setTextColor(0.8, 0.8, 0.8, 1)
     renderText(dlgX + 0.02, fieldY, 0.016, g_i18n:getText("wm_editor_target") .. ":")
+
+    local targets = self:getAvailableTargets()
+
+    -- Prev target button
+    self:drawButton(dlgX + 0.12, fieldY - 0.008, 0.04, 0.035, "<", {0.3, 0.3, 0.5, 1})
+
+    -- Target display
+    setOverlayColor(self.overlayId, 0.1, 0.1, 0.12, 1)
+    renderOverlay(self.overlayId, dlgX + 0.17, fieldY - 0.008, 0.18, 0.035)
+
+    local targetText = targets[self.addStepTargetIndex] or g_i18n:getText("wm_none")
+    if string.len(targetText) > 18 then
+        targetText = string.sub(targetText, 1, 16) .. ".."
+    end
     setTextColor(1, 1, 1, 1)
-    local targetDisplay = self.addStepTarget ~= "" and self.addStepTarget or "(none)"
-    renderText(dlgX + 0.10, fieldY, 0.016, targetDisplay)
+    renderText(dlgX + 0.18, fieldY, 0.014, targetText)
 
-    fieldY = fieldY - 0.06
+    -- Next target button
+    self:drawButton(dlgX + 0.36, fieldY - 0.008, 0.04, 0.035, ">", {0.3, 0.3, 0.5, 1})
 
-    -- Action
+    -- === ACTION ===
+    fieldY = fieldY - 0.07
     setTextColor(0.8, 0.8, 0.8, 1)
     renderText(dlgX + 0.02, fieldY, 0.016, g_i18n:getText("wm_editor_action") .. ":")
-    setTextColor(1, 1, 1, 1)
-    renderText(dlgX + 0.10, fieldY, 0.016, self.addStepAction)
 
-    -- Dialog buttons
-    local btnY = dlgY + 0.04
-    local btnW = 0.08
-    local btnH = 0.04
+    local actions = self:getAvailableActions()
 
-    -- OK button
-    setOverlayColor(self.overlayId, 0.2, 0.5, 0.2, 0.8)
-    renderOverlay(self.overlayId, dlgX + 0.05, btnY, btnW, btnH)
-    setTextColor(1, 1, 1, 1)
-    renderText(dlgX + 0.07, btnY + 0.012, 0.014, "OK")
+    -- Prev action button
+    self:drawButton(dlgX + 0.12, fieldY - 0.008, 0.04, 0.035, "<", {0.3, 0.3, 0.5, 1})
 
-    -- Cancel button
-    setOverlayColor(self.overlayId, 0.5, 0.3, 0.3, 0.8)
-    renderOverlay(self.overlayId, dlgX + 0.17, btnY, btnW, btnH)
+    -- Action display
+    setOverlayColor(self.overlayId, 0.1, 0.1, 0.12, 1)
+    renderOverlay(self.overlayId, dlgX + 0.17, fieldY - 0.008, 0.18, 0.035)
+
+    local actionText = actions[self.addStepActionIndex] or "default"
     setTextColor(1, 1, 1, 1)
-    renderText(dlgX + 0.18, btnY + 0.012, 0.014, "Cancel")
+    renderText(dlgX + 0.18, fieldY, 0.014, actionText)
+
+    -- Next action button
+    self:drawButton(dlgX + 0.36, fieldY - 0.008, 0.04, 0.035, ">", {0.3, 0.3, 0.5, 1})
+
+    -- === DIALOG BUTTONS ===
+    local btnY = dlgY + 0.03
+    self:drawButton(dlgX + 0.08, btnY, 0.10, 0.045, g_i18n:getText("wm_button_add"), {0.2, 0.6, 0.2, 1})
+    self:drawButton(dlgX + 0.22, btnY, 0.10, 0.045, g_i18n:getText("wm_button_cancel"), {0.6, 0.3, 0.3, 1})
 end
 
 ---Update function
@@ -651,115 +679,7 @@ function WMEditorGUI:update(dt)
     if not self.isVisible then
         return
     end
-
-    self:handleInput()
-end
-
----Handle keyboard/mouse input
-function WMEditorGUI:handleInput()
-    if self.isAddStepDialogOpen then
-        self:handleAddStepDialogInput()
-        return
-    end
-
-    -- ESC to close
-    if Input.isKeyPressed(Input.KEY_escape) then
-        self:cancelAndClose()
-        return
-    end
-
-    -- Enter to save
-    if Input.isKeyPressed(Input.KEY_return) then
-        self:saveAndClose()
-        return
-    end
-
-    -- V to cycle vehicles
-    if Input.isKeyPressed(Input.KEY_v) then
-        local nextIndex = self.selectedVehicleIndex + 1
-        if nextIndex > #self.availableVehicles then
-            nextIndex = 0  -- None
-        end
-        self:assignVehicleByIndex(nextIndex)
-    end
-
-    -- Step selection with number keys
-    for i = 1, 9 do
-        if Input.isKeyPressed(Input["KEY_" .. tostring(i)]) then
-            if self.currentWorkflow and i <= #self.currentWorkflow.steps then
-                self.selectedStepIndex = i
-            end
-        end
-    end
-
-    -- Arrow keys for step navigation
-    if Input.isKeyPressed(Input.KEY_up) then
-        if self.currentWorkflow and self.selectedStepIndex > 1 then
-            self.selectedStepIndex = self.selectedStepIndex - 1
-        end
-    end
-
-    if Input.isKeyPressed(Input.KEY_down) then
-        if self.currentWorkflow and self.selectedStepIndex < #self.currentWorkflow.steps then
-            self.selectedStepIndex = self.selectedStepIndex + 1
-        elseif self.currentWorkflow and self.selectedStepIndex == 0 and #self.currentWorkflow.steps > 0 then
-            self.selectedStepIndex = 1
-        end
-    end
-
-    -- + to add step (opens dialog)
-    if Input.isKeyPressed(Input.KEY_KP_add) or Input.isKeyPressed(Input.KEY_equals) then
-        self:openAddStepDialog()
-    end
-
-    -- - to remove step
-    if Input.isKeyPressed(Input.KEY_KP_subtract) or Input.isKeyPressed(Input.KEY_minus) then
-        self:removeSelectedStep()
-    end
-
-    -- U to move up
-    if Input.isKeyPressed(Input.KEY_u) then
-        self:moveStepUp()
-    end
-
-    -- D to move down
-    if Input.isKeyPressed(Input.KEY_d) then
-        self:moveStepDown()
-    end
-end
-
----Handle input for add step dialog
-function WMEditorGUI:handleAddStepDialogInput()
-    -- ESC to close dialog
-    if Input.isKeyPressed(Input.KEY_escape) then
-        self:closeAddStepDialog()
-        return
-    end
-
-    -- Enter to confirm
-    if Input.isKeyPressed(Input.KEY_return) then
-        self:confirmAddStep()
-        return
-    end
-
-    -- T to toggle type
-    if Input.isKeyPressed(Input.KEY_t) then
-        if self.addStepType == "autodrive" then
-            self.addStepType = "courseplay"
-            self.addStepAction = "last"
-        else
-            self.addStepType = "autodrive"
-            self.addStepAction = "drive"
-        end
-    end
-
-    -- Number keys to select target (simplified for now)
-    local destinations = self:getAutoDriveDestinations()
-    for i = 1, math.min(9, #destinations) do
-        if Input.isKeyPressed(Input["KEY_" .. tostring(i)]) then
-            self.addStepTarget = destinations[i]
-        end
-    end
+    -- No keyboard handling needed - all button based
 end
 
 ---Handle mouse click on GUI elements
@@ -776,12 +696,10 @@ function WMEditorGUI:onMouseEvent(posX, posY, isDown, isUp, button)
     self.mouseX = posX
     self.mouseY = posY
 
-    -- Only handle left mouse button
     if button ~= 1 then
         return
     end
 
-    -- Handle click on button release
     if isUp and self.wasMouseDown then
         self:handleMouseClick(posX, posY)
     end
@@ -800,65 +718,112 @@ function WMEditorGUI:isMouseInArea(x, y, w, h)
            self.mouseY >= y and self.mouseY <= y + h
 end
 
+---Open the text input dialog to edit the workflow name
+function WMEditorGUI:openNameEditDialog()
+    if g_gui and g_gui.showTextInputDialog then
+        g_gui:showTextInputDialog({
+            title = g_i18n:getText("wm_editor_name"),
+            text = self.editedName,
+            maxCharacters = 50,
+            confirmText = g_i18n:getText("wm_button_save"),
+            callback = function(text, confirmed)
+                if confirmed and text ~= nil then
+                    self.editedName = text
+                    if self.currentWorkflow then
+                        self.currentWorkflow.name = text
+                    end
+                    WMLogger:debug("Name changed to: %s", text)
+                end
+            end
+        })
+    else
+        WMLogger:warning("Text input dialog not available")
+    end
+end
+
 ---Handle mouse click at position
 ---@param x number Mouse X
 ---@param y number Mouse Y
 function WMEditorGUI:handleMouseClick(x, y)
+    local L = self.LAYOUT
+
     -- If add step dialog is open, handle that first
     if self.isAddStepDialogOpen then
         self:handleAddStepDialogClick(x, y)
         return
     end
 
-    -- Check bottom buttons (Save/Cancel)
-    local bgX, bgY = 0.2, 0.08
-    local bgW, bgH = 0.6, 0.84
-    local btnY = bgY + 0.04
-    local buttonW = 0.12
-    local buttonH = 0.045
-    local spacing = 0.02
-    local btnX = bgX + 0.15
+    -- Close button (X)
+    if self:isMouseInArea(L.bgX + L.bgW - 0.05, L.bgY + L.bgH - 0.05, 0.04, 0.04) then
+        self:cancelAndClose()
+        return
+    end
+
+    local currentY = L.bgY + L.bgH - 0.10 - 0.02
+
+    -- Edit name button
+    if self:isMouseInArea(L.bgX + 0.43, currentY - 0.008, 0.06, 0.03) then
+        self:openNameEditDialog()
+        return
+    end
+
+    -- Vehicle prev button
+    if self:isMouseInArea(L.bgX + 0.12, currentY - 0.05 - 0.008, L.smallBtnW, L.smallBtnH) then
+        self:prevVehicle()
+        return
+    end
+
+    -- Vehicle next button
+    if self:isMouseInArea(L.bgX + 0.43, currentY - 0.05 - 0.008, L.smallBtnW, L.smallBtnH) then
+        self:nextVehicle()
+        return
+    end
+
+    -- Step toolbar buttons
+    local toolbarY = currentY - 0.05 - 0.06 - 0.01
+    local toolbarX = L.bgX + 0.20
+
+    -- Add step button
+    if self:isMouseInArea(toolbarX, toolbarY, 0.08, L.smallBtnH) then
+        self:openAddStepDialog()
+        return
+    end
+
+    -- Remove step button
+    if self:isMouseInArea(toolbarX + 0.09, toolbarY, 0.10, L.smallBtnH) then
+        self:removeSelectedStep()
+        return
+    end
+
+    -- Move up button
+    if self:isMouseInArea(toolbarX + 0.20, toolbarY, 0.06, L.smallBtnH) then
+        self:moveStepUp()
+        return
+    end
+
+    -- Move down button
+    if self:isMouseInArea(toolbarX + 0.27, toolbarY, 0.07, L.smallBtnH) then
+        self:moveStepDown()
+        return
+    end
+
+    -- Bottom buttons
+    local bottomY = L.bgY + 0.02
+    local centerX = L.bgX + L.bgW / 2
 
     -- Save button
-    if self:isMouseInArea(btnX, btnY, buttonW, buttonH) then
+    if self:isMouseInArea(centerX - 0.22, bottomY, L.buttonW, L.buttonH) then
         self:saveAndClose()
         return
     end
 
     -- Cancel button
-    if self:isMouseInArea(btnX + buttonW + spacing, btnY, buttonW, buttonH) then
+    if self:isMouseInArea(centerX - 0.06, bottomY, L.buttonW, L.buttonH) then
         self:cancelAndClose()
         return
     end
 
-    -- Check step toolbar
-    local toolbarX = bgX + 0.35
-    local toolbarY = bgY + bgH - 0.12 - 0.06 - 0.005
-    local buttonSize = 0.03
-    local btnSpacing = 0.005
-
-    -- Up button
-    if self:isMouseInArea(toolbarX, toolbarY, buttonSize, buttonSize) then
-        self:moveStepUp()
-        return
-    end
-    -- Down button
-    if self:isMouseInArea(toolbarX + buttonSize + btnSpacing, toolbarY, buttonSize, buttonSize) then
-        self:moveStepDown()
-        return
-    end
-    -- Add button
-    if self:isMouseInArea(toolbarX + 2 * (buttonSize + btnSpacing), toolbarY, buttonSize, buttonSize) then
-        self:openAddStepDialog()
-        return
-    end
-    -- Remove button
-    if self:isMouseInArea(toolbarX + 3 * (buttonSize + btnSpacing), toolbarY, buttonSize, buttonSize) then
-        self:removeSelectedStep()
-        return
-    end
-
-    -- Check step list clicks
+    -- Step list clicks
     self:handleStepListClick(x, y)
 end
 
@@ -870,19 +835,12 @@ function WMEditorGUI:handleStepListClick(x, y)
         return
     end
 
-    local bgX, bgY = 0.2, 0.08
-    local bgH = 0.84
-    local propY = bgY + bgH - 0.12
-    propY = propY - 0.04  -- After name
-    propY = propY - 0.06  -- After vehicle
-    propY = propY - 0.04  -- After headers
-    propY = propY - 0.015 -- After separator
-    propY = propY - 0.03  -- Start of list
-    local rowHeight = 0.04
+    local L = self.LAYOUT
+    local stepsStartY = L.bgY + L.bgH - 0.10 - 0.02 - 0.05 - 0.06 - 0.05 - 0.015 - 0.01
 
-    for i = 1, math.min(#self.currentWorkflow.steps, 10) do
-        local rowY = propY - (i - 1) * rowHeight
-        if self:isMouseInArea(bgX + 0.01, rowY - rowHeight + 0.01, 0.58, rowHeight) then
+    for i = 1, math.min(#self.currentWorkflow.steps, 8) do
+        local rowY = stepsStartY - (i * L.rowHeight)
+        if self:isMouseInArea(L.bgX + 0.01, rowY, L.bgW - 0.02, L.rowHeight - 0.005) then
             self.selectedStepIndex = i
             return
         end
@@ -893,33 +851,71 @@ end
 ---@param x number Mouse X
 ---@param y number Mouse Y
 function WMEditorGUI:handleAddStepDialogClick(x, y)
-    local dlgX, dlgY = 0.35, 0.3
-    local dlgW, dlgH = 0.3, 0.4
-    local btnY = dlgY + 0.04
-    local btnW = 0.08
-    local btnH = 0.04
+    local dlgX, dlgY = 0.30, 0.25
+    local dlgW, dlgH = 0.40, 0.50
+    local fieldY = dlgY + dlgH - 0.10
 
-    -- OK button
-    if self:isMouseInArea(dlgX + 0.05, btnY, btnW, btnH) then
+    -- Type buttons
+    if self:isMouseInArea(dlgX + 0.12, fieldY - 0.008, 0.12, 0.035) then
+        self.addStepType = "autodrive"
+        self.addStepTargetIndex = 1
+        self.addStepActionIndex = 1
+        return
+    end
+    if self:isMouseInArea(dlgX + 0.25, fieldY - 0.008, 0.12, 0.035) then
+        self.addStepType = "courseplay"
+        self.addStepTargetIndex = 1
+        self.addStepActionIndex = 1
+        return
+    end
+
+    -- Target navigation
+    fieldY = fieldY - 0.07
+    local targets = self:getAvailableTargets()
+
+    if self:isMouseInArea(dlgX + 0.12, fieldY - 0.008, 0.04, 0.035) then
+        self.addStepTargetIndex = self.addStepTargetIndex - 1
+        if self.addStepTargetIndex < 1 then
+            self.addStepTargetIndex = #targets
+        end
+        return
+    end
+    if self:isMouseInArea(dlgX + 0.36, fieldY - 0.008, 0.04, 0.035) then
+        self.addStepTargetIndex = self.addStepTargetIndex + 1
+        if self.addStepTargetIndex > #targets then
+            self.addStepTargetIndex = 1
+        end
+        return
+    end
+
+    -- Action navigation
+    fieldY = fieldY - 0.07
+    local actions = self:getAvailableActions()
+
+    if self:isMouseInArea(dlgX + 0.12, fieldY - 0.008, 0.04, 0.035) then
+        self.addStepActionIndex = self.addStepActionIndex - 1
+        if self.addStepActionIndex < 1 then
+            self.addStepActionIndex = #actions
+        end
+        return
+    end
+    if self:isMouseInArea(dlgX + 0.36, fieldY - 0.008, 0.04, 0.035) then
+        self.addStepActionIndex = self.addStepActionIndex + 1
+        if self.addStepActionIndex > #actions then
+            self.addStepActionIndex = 1
+        end
+        return
+    end
+
+    -- Dialog buttons
+    local btnY = dlgY + 0.03
+
+    if self:isMouseInArea(dlgX + 0.08, btnY, 0.10, 0.045) then
         self:confirmAddStep()
         return
     end
-
-    -- Cancel button
-    if self:isMouseInArea(dlgX + 0.17, btnY, btnW, btnH) then
+    if self:isMouseInArea(dlgX + 0.22, btnY, 0.10, 0.045) then
         self:closeAddStepDialog()
         return
-    end
-
-    -- Type toggle area
-    local fieldY = dlgY + dlgH - 0.12
-    if self:isMouseInArea(dlgX + 0.02, fieldY - 0.02, dlgW - 0.04, 0.04) then
-        if self.addStepType == "autodrive" then
-            self.addStepType = "courseplay"
-            self.addStepAction = "last"
-        else
-            self.addStepType = "autodrive"
-            self.addStepAction = "drive"
-        end
     end
 end
