@@ -108,6 +108,11 @@ function WorkflowManager:loadTextInputDialog()
         return
     end
 
+    -- Load GUI profiles first
+    local profilesPath = Utils.getFilename("xml/gui/guiProfiles.xml", self.modDirectory)
+    g_gui:loadProfiles(profilesPath)
+    WMLogger:debug("Loaded GUI profiles from: %s", profilesPath)
+
     -- Create dialog instance
     self.textInputDialog = WMTextInputDialog.new()
 

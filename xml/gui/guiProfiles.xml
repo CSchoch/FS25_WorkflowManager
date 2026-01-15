@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<GUIProfiles>
+    <Profile name="wm_dialogContentContainer" extends="fs25_dialogContentContainer">
+        <flowDirection value="vertical"/>
+        <elementSpacing value="10px"/>
+        <alignmentX value="center"/>
+        <position value="4px -10px"/>
+        <absoluteSizeOffset value="21px 30px"/>
+    </Profile>
+
+    <Profile name="wm_hBox" extends="emptyPanel" with="anchorTopCenter">
+        <flowDirection value="horizontal"/>
+        <alignmentX value="center"/>
+        <alignmentY value="middle"/>
+        <elementSpacing value="20px"/>
+    </Profile>
+
+    <Profile name="wm_dialogTitle" extends="baseReference" with="anchorTopStretchingX">
+        <textBold value="true"/>
+        <textLayoutMode value="resize"/>
+        <textMaxNumLines value="1"/>
+        <textSize value="24px"/>
+        <textUpperCase value="true"/>
+        <size value="100% 40px"/>
+    </Profile>
+
+    <Profile name="wm_dialogTitleLineSeparator" extends="fs25_lineSeparatorTop">
+        <absoluteSizeOffset value="100px 0"/>
+    </Profile>
+
+    <Profile name="wm_dialogButtonBox" extends="fs25_dialogButtonBox">
+        <absoluteSizeOffset value="0px 0px"/>
+        <position value="0px 0px"/>
+    </Profile>
+
+    <Profile name="wm_dialogButtonBoxBottom" extends="wm_dialogButtonBox" with="anchorBottomStretchingX">
+        <position value="-6px 32px"/>
+        <absoluteSizeOffset value="20px 0"/>
+    </Profile>
+</GUIProfiles>

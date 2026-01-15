@@ -2,25 +2,27 @@
 <GUI onOpen="onOpen" onClose="onClose" onCreate="onCreate">
     <GuiElement profile="newLayer"/>
     <Bitmap profile="dialogFullscreenBg"/>
-    <GuiElement profile="fs25_dialogBg" size="600px 200px">
+    <GuiElement profile="fs25_dialogBg" size="600px 240px">
         <ThreePartBitmap profile="fs25_dialogBgMiddleSmall"/>
         <ThreePartBitmap profile="fs25_dialogBgTopSmall"/>
         <ThreePartBitmap profile="fs25_dialogBgBottom"/>
 
-        <BoxLayout profile="fs25_dialogContentContainer">
-            <Text profile="fs25_dialogTitle" id="titleElement" text="Name"/>
+        <BoxLayout profile="wm_dialogContentContainer">
+            <Text profile="wm_dialogTitle" id="titleElement" text="Name"/>
 
-            <ThreePartBitmap profile="fs25_dialogTitleLineSeparator"/>
+            <ThreePartBitmap profile="wm_dialogTitleLineSeparator"/>
 
-            <TextInput profile="fs25_dialogTextInput" id="textInputElement" onEnterPressed="onEnterPressed" onEscPressed="onEscPressed" enterWhenClickOutside="false" focusInit="onOpen" maxCharacters="50">
-                <ThreePartBitmap profile="fs25_textInputBg"/>
-                <Bitmap profile="fs25_textInputIconBox">
-                    <Bitmap profile="fs25_textInputIcon"/>
-                </Bitmap>
-            </TextInput>
+            <BoxLayout profile="wm_hBox" absoluteSizeOffset="0 100px">
+                <TextInput profile="fs25_dialogTextInput" id="textInputElement" onEnterPressed="onEnterPressed" onEscPressed="onEscPressed" enterWhenClickOutside="false" focusInit="onOpen" maxCharacters="50">
+                    <ThreePartBitmap profile="fs25_textInputBg"/>
+                    <Bitmap profile="fs25_textInputIconBox">
+                        <Bitmap profile="fs25_textInputIcon"/>
+                    </Bitmap>
+                </TextInput>
+            </BoxLayout>
         </BoxLayout>
 
-        <BoxLayout profile="fs25_dialogButtonBox">
+        <BoxLayout profile="wm_dialogButtonBoxBottom">
             <Button profile="buttonOK" id="okButton" text="$l10n_button_ok" onClick="onClickOk"/>
             <Bitmap profile="fs25_dialogButtonBoxSeparator"/>
             <Button profile="buttonBack" id="cancelButton" text="$l10n_button_back" onClick="onClickBack"/>
