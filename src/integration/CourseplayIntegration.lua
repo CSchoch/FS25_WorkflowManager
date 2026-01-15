@@ -82,15 +82,12 @@ end
 ---Check if Courseplay mod is available
 ---@return boolean available True if Courseplay is loaded
 function CPIntegration:checkAvailability()
-    -- Check multiple possible globals that Courseplay might use
-    local cpGlobalExists = rawget(_G, "g_Courseplay") ~= nil
-    local cpExists = rawget(_G, "Courseplay") ~= nil
-    local cpManagerExists = rawget(_G, "g_cpManager") ~= nil
+    -- FS25 namespaces mod globals under FS25_<ModName>
+    -- The actual g_Courseplay is at FS25_Courseplay.g_Courseplay
+    local fs25CP = FS25_Courseplay
+    local cpFromNamespace = fs25CP and (fs25CP.g_Courseplay or fs25CP.Courseplay)
 
-    -- FS25 Courseplay might use "CP" or other short names
-    local cpShortExists = rawget(_G, "CP") ~= nil
-
-    -- Also check if loaded as mod (FS25 style)
+    -- Check if loaded as mod (for retry logging)
     local modLoaded = false
     if g_modManager ~= nil then
         local cpMod = g_modManager:getModByName("FS25_Courseplay")
@@ -99,48 +96,20 @@ function CPIntegration:checkAvailability()
         end
     end
 
-    -- Check via g_currentMission (some mods attach there)
-    local missionCP = g_currentMission ~= nil and g_currentMission.courseplay ~= nil
-
-    -- Debug: log what we find (more detailed on first few attempts)
-    if self.checkAttempts <= 3 then
-        WMLogger:debug("Courseplay check #%d: g_Courseplay=%s, Courseplay=%s (type=%s), CP=%s, modLoaded=%s",
+    -- Debug: log what we find (only on retry attempts)
+    if self.checkAttempts >= 1 and self.checkAttempts <= 3 then
+        WMLogger:debug("Courseplay check #%d: FS25_Courseplay=%s, .g_Courseplay=%s, modLoaded=%s",
             self.checkAttempts,
-            tostring(cpGlobalExists),
-            tostring(cpExists),
-            type(rawget(_G, "Courseplay")),
-            tostring(cpShortExists),
+            tostring(fs25CP ~= nil),
+            tostring(cpFromNamespace ~= nil),
             tostring(modLoaded))
-
-        -- On first check, scan globals for anything with "Courseplay" or "CP"
-        if self.checkAttempts == 1 then
-            WMLogger:debug("Scanning globals for Courseplay-related entries...")
-            for k, v in pairs(_G) do
-                if type(k) == "string" and (k:find("Courseplay") or k:find("courseplay") or k:find("^[Cc][Pp]")) then
-                    WMLogger:debug("  Found global: %s (type=%s)", k, type(v))
-                end
-            end
-        end
     end
 
-    -- Check all possible globals
-    if cpGlobalExists then
-        WMLogger:info("Courseplay detected via 'g_Courseplay' global!")
-        return true
-    end
-
-    if cpExists then
-        WMLogger:info("Courseplay detected via 'Courseplay' global!")
-        return true
-    end
-
-    if cpShortExists then
-        WMLogger:info("Courseplay detected via 'CP' global!")
-        return true
-    end
-
-    if cpManagerExists or missionCP then
-        WMLogger:info("Courseplay detected!")
+    -- Check FS25 namespaced global (the only working method in FS25)
+    if cpFromNamespace then
+        WMLogger:info("Courseplay detected via FS25_Courseplay namespace!")
+        -- Store reference globally for convenience
+        g_Courseplay = cpFromNamespace
         return true
     end
 

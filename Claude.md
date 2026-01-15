@@ -305,7 +305,7 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 ---
 
 **Status**: Phase 1 – Milestone 4 IN PROGRESS (Testing & Debugging)
-**Last updated**: 2026-01-14
+**Last updated**: 2026-01-15
 
 ## Implementation Progress
 
@@ -385,13 +385,12 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 
 ### In Progress
 - Milestone 4: Testing & Refinement
-  - Debugging AD/CP global detection (mods load but globals not found)
-  - Debugging input action callback not firing
-  - Testing ESC menu integration
+  - Testing workflow execution with actual AD/CP vehicles
+  - Debugging input action callback not firing (Alt+W, F9 workaround via manual key check works)
+  - Testing ESC menu integration (currently disabled)
 
 ### Known Issues Being Debugged
-1. **AD/CP Globals Not Found**: AutoDrive and Courseplay mods are loaded but their globals (AutoDrive, g_Courseplay, etc.) are not detected after 10 retry attempts. Need to verify correct global names in FS25.
-2. **Input Action Callback**: WM_TOGGLE_GUI action registers successfully but callback never fires. Added PlayerInputComponent hook and manual F9 detection as workarounds.
+1. **Input Action Callback**: WM_TOGGLE_GUI action registers successfully but callback never fires. Added PlayerInputComponent hook and manual F9 detection as workarounds.
 
 ### Fixed Issues
 1. **~~Glass Background with Random Icons~~** (Fixed 2026-01-14): Main GUI overlay was rendering entire UI texture atlas. Fixed by creating `textures/white.png` (1x1 white pixel) and using fully opaque two-pass rendering.
@@ -401,6 +400,10 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
    - Main GUI hides when editor opens (avoids overlay conflicts)
    - Added `setOverlayUVs()` reset before drawing (0,0 to 1,1)
    - Editor shows main GUI again when closing
+4. **~~AD/CP Globals Not Found~~** (Fixed 2026-01-15): AutoDrive and Courseplay mods were loaded but globals not detected. Root cause: FS25 namespaces ALL mod globals under `FS25_<ModName>`. Direct access like `AutoDrive` or `g_Courseplay` does NOT work. Fix:
+   - AutoDrive: Access via `FS25_AutoDrive.AutoDrive`
+   - Courseplay: Access via `FS25_Courseplay.g_Courseplay`
+   - This is the ONLY working method in FS25 - direct global access is not available cross-mod
 
 ### Pending
 - modIcon.dds creation

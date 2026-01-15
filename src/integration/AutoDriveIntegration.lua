@@ -87,15 +87,12 @@ end
 ---Check if AutoDrive mod is available
 ---@return boolean available True if AutoDrive is loaded
 function ADIntegration:checkAvailability()
-    -- Check multiple possible globals that AutoDrive might use
-    local adExists = rawget(_G, "AutoDrive") ~= nil
-    local adManagerExists = rawget(_G, "ADGraphManager") ~= nil
-    local gAutodriveExists = rawget(_G, "g_autoDrive") ~= nil
+    -- FS25 namespaces mod globals under FS25_<ModName>
+    -- The actual AutoDrive table is at FS25_AutoDrive.AutoDrive
+    local fs25AD = FS25_AutoDrive
+    local adFromNamespace = fs25AD and fs25AD.AutoDrive
 
-    -- FS25 AutoDrive uses "AD" as its main global
-    local adShortExists = rawget(_G, "AD") ~= nil
-
-    -- Also check if loaded as mod (FS25 style)
+    -- Check if loaded as mod (for retry logging)
     local modLoaded = false
     if g_modManager ~= nil then
         local adMod = g_modManager:getModByName("FS25_AutoDrive")
@@ -104,50 +101,20 @@ function ADIntegration:checkAvailability()
         end
     end
 
-    -- Check via g_currentMission (some mods attach there)
-    local missionAD = g_currentMission ~= nil and g_currentMission.autoDrive ~= nil
-
-    -- Debug: log what we find (more detailed on first few attempts)
-    if self.checkAttempts <= 3 then
-        WMLogger:debug("AutoDrive check #%d: AutoDrive=%s, AD=%s (type=%s), ADGraphManager=%s, modLoaded=%s",
+    -- Debug: log what we find (only on retry attempts)
+    if self.checkAttempts >= 1 and self.checkAttempts <= 3 then
+        WMLogger:debug("AutoDrive check #%d: FS25_AutoDrive=%s, .AutoDrive=%s, modLoaded=%s",
             self.checkAttempts,
-            tostring(adExists),
-            tostring(adShortExists),
-            type(rawget(_G, "AD")),
-            tostring(adManagerExists),
+            tostring(fs25AD ~= nil),
+            tostring(adFromNamespace ~= nil),
             tostring(modLoaded))
-
-        -- On first check, scan globals for anything with "AD" or "AutoDrive"
-        if self.checkAttempts == 1 then
-            WMLogger:debug("Scanning globals for AutoDrive-related entries...")
-            for k, v in pairs(_G) do
-                if type(k) == "string" and (k:find("AutoDrive") or k:find("^AD") or k:find("^ad")) then
-                    WMLogger:debug("  Found global: %s (type=%s)", k, type(v))
-                end
-            end
-        end
     end
 
-    -- Check all possible globals
-    if adExists then
-        WMLogger:info("AutoDrive detected via 'AutoDrive' global!")
-        return true
-    end
-
-    if adShortExists then
-        WMLogger:info("AutoDrive detected via 'AD' global!")
-        -- Store reference for later use
-        AutoDrive = rawget(_G, "AD")
-        return true
-    end
-
-    if adManagerExists then
-        WMLogger:info("AutoDrive detected via 'ADGraphManager' global!")
-        return true
-    end
-
-    if gAutodriveExists or missionAD then
-        WMLogger:info("AutoDrive detected!")
+    -- Check FS25 namespaced global (the only working method in FS25)
+    if adFromNamespace then
+        WMLogger:info("AutoDrive detected via FS25_AutoDrive.AutoDrive!")
+        -- Store reference in global AutoDrive for API calls
+        AutoDrive = adFromNamespace
         return true
     end
 
