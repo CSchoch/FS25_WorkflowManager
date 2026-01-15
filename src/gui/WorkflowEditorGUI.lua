@@ -845,6 +845,12 @@ function WMEditorGUI:handleMouseClick(x, y)
 
     local currentY = L.bgY + L.bgH - 0.10 - 0.02
 
+    -- Name field click (opens edit dialog)
+    if self:isMouseInArea(L.bgX + 0.12, currentY - 0.008, 0.30, 0.03) then
+        self:openNameEditDialog()
+        return
+    end
+
     -- Edit name button
     if self:isMouseInArea(L.bgX + 0.43, currentY - 0.008, 0.06, 0.03) then
         self:openNameEditDialog()
