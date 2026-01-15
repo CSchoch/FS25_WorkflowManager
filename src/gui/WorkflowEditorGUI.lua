@@ -450,6 +450,12 @@ function WMEditorGUI:draw()
     -- Reset UVs
     setOverlayUVs(self.overlayId, 0, 0, 1, 0, 0, 1, 1, 1)
 
+    -- If step dialog is open, only draw the dialog (skip editor content)
+    if self.isAddStepDialogOpen or self.isEditStepDialogOpen then
+        self:drawStepDialog()
+        return
+    end
+
     -- Draw background
     setOverlayColor(self.overlayId, 0.05, 0.05, 0.08, 1)
     renderOverlay(self.overlayId, L.bgX, L.bgY, L.bgW, L.bgH)
@@ -577,11 +583,6 @@ function WMEditorGUI:draw()
 
     self:drawButton(centerX - 0.22, bottomY, L.buttonW, L.buttonH, g_i18n:getText("wm_button_save"), {0.2, 0.6, 0.2, 1})
     self:drawButton(centerX - 0.06, bottomY, L.buttonW, L.buttonH, g_i18n:getText("wm_button_cancel"), {0.6, 0.3, 0.3, 1})
-
-    -- Draw step dialog if open (add or edit)
-    if self.isAddStepDialogOpen or self.isEditStepDialogOpen then
-        self:drawStepDialog()
-    end
 end
 
 ---Draw a button
