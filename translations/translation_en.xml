@@ -13,6 +13,7 @@
         <text name="wm_title" text="Workflow Manager"/>
         <text name="wm_editor_title" text="Edit Workflow"/>
         <text name="wm_dialog_add_step" text="Add Step"/>
+        <text name="wm_dialog_edit_step" text="Edit Step"/>
 
         <!-- Buttons -->
         <text name="wm_button_new" text="New"/>

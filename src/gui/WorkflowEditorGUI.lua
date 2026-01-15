@@ -13,8 +13,10 @@ WMEditorGUI.isVisible = false
 WMEditorGUI.currentWorkflow = nil
 WMEditorGUI.selectedStepIndex = 0
 WMEditorGUI.isAddStepDialogOpen = false
+WMEditorGUI.isEditStepDialogOpen = false
+WMEditorGUI.editingStepIndex = 0
 
--- Add step dialog state
+-- Add/Edit step dialog state
 WMEditorGUI.addStepType = "autodrive"
 WMEditorGUI.addStepTargetIndex = 0
 WMEditorGUI.addStepActionIndex = 1
@@ -319,21 +321,72 @@ end
 ---Open the add step dialog
 function WMEditorGUI:openAddStepDialog()
     self.isAddStepDialogOpen = true
+    self.isEditStepDialogOpen = false
+    self.editingStepIndex = 0
     self.addStepType = "autodrive"
     self.addStepTargetIndex = 1
     self.addStepActionIndex = 1
     self.availableTargets = self:getAvailableTargets()
 end
 
----Close the add step dialog
-function WMEditorGUI:closeAddStepDialog()
+---Open the edit step dialog for the selected step
+function WMEditorGUI:openEditStepDialog()
+    if self.currentWorkflow == nil or self.selectedStepIndex <= 0 then
+        return
+    end
+
+    local step = self.currentWorkflow.steps[self.selectedStepIndex]
+    if step == nil then
+        return
+    end
+
     self.isAddStepDialogOpen = false
+    self.isEditStepDialogOpen = true
+    self.editingStepIndex = self.selectedStepIndex
+
+    -- Pre-populate with current step values
+    self.addStepType = step.type or "autodrive"
+
+    -- Find target index
+    local targets = self:getAvailableTargets()
+    self.addStepTargetIndex = 1
+    for i, target in ipairs(targets) do
+        if target == step.target then
+            self.addStepTargetIndex = i
+            break
+        end
+    end
+
+    -- Find action index
+    local actions = self:getAvailableActions()
+    self.addStepActionIndex = 1
+    for i, action in ipairs(actions) do
+        if action == step.action then
+            self.addStepActionIndex = i
+            break
+        end
+    end
+
+    self.availableTargets = targets
+    WMLogger:debug("Opened edit dialog for step %d", self.selectedStepIndex)
+end
+
+---Close the step dialog (add or edit)
+function WMEditorGUI:closeStepDialog()
+    self.isAddStepDialogOpen = false
+    self.isEditStepDialogOpen = false
+    self.editingStepIndex = 0
+end
+
+---Close the add step dialog (legacy, calls closeStepDialog)
+function WMEditorGUI:closeAddStepDialog()
+    self:closeStepDialog()
 end
 
 ---Confirm adding a step from the dialog
 function WMEditorGUI:confirmAddStep()
     if self.currentWorkflow == nil then
-        self:closeAddStepDialog()
+        self:closeStepDialog()
         return
     end
 
@@ -352,7 +405,32 @@ function WMEditorGUI:confirmAddStep()
     table.insert(self.currentWorkflow.steps, step)
     WMLogger:debug("Added step: %s -> %s (%s)", self.addStepType, target, action)
 
-    self:closeAddStepDialog()
+    self:closeStepDialog()
+end
+
+---Confirm editing a step from the dialog
+function WMEditorGUI:confirmEditStep()
+    if self.currentWorkflow == nil or self.editingStepIndex <= 0 then
+        self:closeStepDialog()
+        return
+    end
+
+    local step = self.currentWorkflow.steps[self.editingStepIndex]
+    if step == nil then
+        self:closeStepDialog()
+        return
+    end
+
+    local targets = self:getAvailableTargets()
+    local actions = self:getAvailableActions()
+
+    step.type = self.addStepType
+    step.target = targets[self.addStepTargetIndex] or "default"
+    step.action = actions[self.addStepActionIndex] or "default"
+
+    WMLogger:debug("Edited step %d: %s -> %s (%s)", self.editingStepIndex, step.type, step.target, step.action)
+
+    self:closeStepDialog()
 end
 
 ---Draw the editor GUI
@@ -455,11 +533,12 @@ function WMEditorGUI:draw()
     setTextBold(false)
 
     -- Step toolbar buttons
-    local toolbarX = L.bgX + 0.20
-    self:drawButton(toolbarX, currentY - 0.01, 0.08, L.smallBtnH, "+ " .. g_i18n:getText("wm_button_add"), {0.2, 0.5, 0.2, 1})
-    self:drawButton(toolbarX + 0.09, currentY - 0.01, 0.10, L.smallBtnH, "- " .. g_i18n:getText("wm_button_remove"), {0.5, 0.2, 0.2, 1})
-    self:drawButton(toolbarX + 0.20, currentY - 0.01, 0.06, L.smallBtnH, g_i18n:getText("wm_button_up"), {0.3, 0.3, 0.5, 1})
-    self:drawButton(toolbarX + 0.27, currentY - 0.01, 0.07, L.smallBtnH, g_i18n:getText("wm_button_down"), {0.3, 0.3, 0.5, 1})
+    local toolbarX = L.bgX + 0.12
+    self:drawButton(toolbarX, currentY - 0.01, 0.07, L.smallBtnH, "+ " .. g_i18n:getText("wm_button_add"), {0.2, 0.5, 0.2, 1})
+    self:drawButton(toolbarX + 0.08, currentY - 0.01, 0.07, L.smallBtnH, g_i18n:getText("wm_button_edit"), {0.3, 0.5, 0.7, 1})
+    self:drawButton(toolbarX + 0.16, currentY - 0.01, 0.09, L.smallBtnH, "- " .. g_i18n:getText("wm_button_remove"), {0.5, 0.2, 0.2, 1})
+    self:drawButton(toolbarX + 0.26, currentY - 0.01, 0.06, L.smallBtnH, g_i18n:getText("wm_button_up"), {0.3, 0.3, 0.5, 1})
+    self:drawButton(toolbarX + 0.33, currentY - 0.01, 0.07, L.smallBtnH, g_i18n:getText("wm_button_down"), {0.3, 0.3, 0.5, 1})
 
     -- Column headers
     currentY = currentY - 0.05
@@ -499,9 +578,9 @@ function WMEditorGUI:draw()
     self:drawButton(centerX - 0.22, bottomY, L.buttonW, L.buttonH, g_i18n:getText("wm_button_save"), {0.2, 0.6, 0.2, 1})
     self:drawButton(centerX - 0.06, bottomY, L.buttonW, L.buttonH, g_i18n:getText("wm_button_cancel"), {0.6, 0.3, 0.3, 1})
 
-    -- Draw add step dialog if open
-    if self.isAddStepDialogOpen then
-        self:drawAddStepDialog()
+    -- Draw step dialog if open (add or edit)
+    if self.isAddStepDialogOpen or self.isEditStepDialogOpen then
+        self:drawStepDialog()
     end
 end
 
@@ -585,8 +664,8 @@ function WMEditorGUI:drawStepRow(baseX, y, index, step)
     renderText(baseX + 0.45, textY, 0.014, step.action or "default")
 end
 
----Draw the add step dialog
-function WMEditorGUI:drawAddStepDialog()
+---Draw the step dialog (add or edit mode)
+function WMEditorGUI:drawStepDialog()
     local dlgX, dlgY = 0.30, 0.25
     local dlgW, dlgH = 0.40, 0.50
 
@@ -603,10 +682,11 @@ function WMEditorGUI:drawAddStepDialog()
     renderOverlay(self.overlayId, dlgX, dlgY, 0.003, dlgH)
     renderOverlay(self.overlayId, dlgX + dlgW - 0.003, dlgY, 0.003, dlgH)
 
-    -- Title
+    -- Title (different for add vs edit)
+    local titleText = self.isEditStepDialogOpen and g_i18n:getText("wm_dialog_edit_step") or g_i18n:getText("wm_dialog_add_step")
     setTextColor(1, 1, 1, 1)
     setTextBold(true)
-    renderText(dlgX + 0.02, dlgY + dlgH - 0.045, 0.020, g_i18n:getText("wm_dialog_add_step"))
+    renderText(dlgX + 0.02, dlgY + dlgH - 0.045, 0.020, titleText)
     setTextBold(false)
 
     local fieldY = dlgY + dlgH - 0.10
@@ -669,7 +749,8 @@ function WMEditorGUI:drawAddStepDialog()
 
     -- === DIALOG BUTTONS ===
     local btnY = dlgY + 0.03
-    self:drawButton(dlgX + 0.08, btnY, 0.10, 0.045, g_i18n:getText("wm_button_add"), {0.2, 0.6, 0.2, 1})
+    local confirmText = self.isEditStepDialogOpen and g_i18n:getText("wm_button_save") or g_i18n:getText("wm_button_add")
+    self:drawButton(dlgX + 0.08, btnY, 0.10, 0.045, confirmText, {0.2, 0.6, 0.2, 1})
     self:drawButton(dlgX + 0.22, btnY, 0.10, 0.045, g_i18n:getText("wm_button_cancel"), {0.6, 0.3, 0.3, 1})
 end
 
@@ -747,9 +828,9 @@ end
 function WMEditorGUI:handleMouseClick(x, y)
     local L = self.LAYOUT
 
-    -- If add step dialog is open, handle that first
-    if self.isAddStepDialogOpen then
-        self:handleAddStepDialogClick(x, y)
+    -- If step dialog is open (add or edit), handle that first
+    if self.isAddStepDialogOpen or self.isEditStepDialogOpen then
+        self:handleStepDialogClick(x, y)
         return
     end
 
@@ -781,28 +862,34 @@ function WMEditorGUI:handleMouseClick(x, y)
 
     -- Step toolbar buttons
     local toolbarY = currentY - 0.05 - 0.06 - 0.01
-    local toolbarX = L.bgX + 0.20
+    local toolbarX = L.bgX + 0.12
 
     -- Add step button
-    if self:isMouseInArea(toolbarX, toolbarY, 0.08, L.smallBtnH) then
+    if self:isMouseInArea(toolbarX, toolbarY, 0.07, L.smallBtnH) then
         self:openAddStepDialog()
         return
     end
 
+    -- Edit step button
+    if self:isMouseInArea(toolbarX + 0.08, toolbarY, 0.07, L.smallBtnH) then
+        self:openEditStepDialog()
+        return
+    end
+
     -- Remove step button
-    if self:isMouseInArea(toolbarX + 0.09, toolbarY, 0.10, L.smallBtnH) then
+    if self:isMouseInArea(toolbarX + 0.16, toolbarY, 0.09, L.smallBtnH) then
         self:removeSelectedStep()
         return
     end
 
     -- Move up button
-    if self:isMouseInArea(toolbarX + 0.20, toolbarY, 0.06, L.smallBtnH) then
+    if self:isMouseInArea(toolbarX + 0.26, toolbarY, 0.06, L.smallBtnH) then
         self:moveStepUp()
         return
     end
 
     -- Move down button
-    if self:isMouseInArea(toolbarX + 0.27, toolbarY, 0.07, L.smallBtnH) then
+    if self:isMouseInArea(toolbarX + 0.33, toolbarY, 0.07, L.smallBtnH) then
         self:moveStepDown()
         return
     end
@@ -847,10 +934,10 @@ function WMEditorGUI:handleStepListClick(x, y)
     end
 end
 
----Handle click on add step dialog
+---Handle click on step dialog (add or edit)
 ---@param x number Mouse X
 ---@param y number Mouse Y
-function WMEditorGUI:handleAddStepDialogClick(x, y)
+function WMEditorGUI:handleStepDialogClick(x, y)
     local dlgX, dlgY = 0.30, 0.25
     local dlgW, dlgH = 0.40, 0.50
     local fieldY = dlgY + dlgH - 0.10
@@ -911,11 +998,16 @@ function WMEditorGUI:handleAddStepDialogClick(x, y)
     local btnY = dlgY + 0.03
 
     if self:isMouseInArea(dlgX + 0.08, btnY, 0.10, 0.045) then
-        self:confirmAddStep()
+        -- Confirm button - add or edit based on mode
+        if self.isEditStepDialogOpen then
+            self:confirmEditStep()
+        else
+            self:confirmAddStep()
+        end
         return
     end
     if self:isMouseInArea(dlgX + 0.22, btnY, 0.10, 0.045) then
-        self:closeAddStepDialog()
+        self:closeStepDialog()
         return
     end
 end
