@@ -300,10 +300,23 @@ function WMEditorGUI:getAvailableTargets()
             table.insert(targets, "Route_Farm")
         end
     else
-        -- Courseplay courses - simplified
-        table.insert(targets, "Field1_Course")
-        table.insert(targets, "Field2_Course")
-        table.insert(targets, "Harvest_Course")
+        -- Courseplay courses - load from saved courses
+        if CPCoursesLoader and CPCoursesLoader.isInitialized then
+            local courses = CPCoursesLoader:getCourses()
+            if courses and #courses > 0 then
+                for _, course in ipairs(courses) do
+                    table.insert(targets, course)
+                end
+            else
+                -- No courses found - show placeholder
+                table.insert(targets, "<No courses found>")
+            end
+        else
+            -- Fallback if loader not available
+            table.insert(targets, "Field1_Course")
+            table.insert(targets, "Field2_Course")
+            table.insert(targets, "Harvest_Course")
+        end
     end
 
     return targets
