@@ -27,6 +27,7 @@ source(Utils.getFilename("src/integration/CourseplayIntegration.lua", g_currentM
 source(Utils.getFilename("src/gui/WorkflowManagerGUI.lua", g_currentModDirectory))
 source(Utils.getFilename("src/gui/WorkflowEditorGUI.lua", g_currentModDirectory))
 source(Utils.getFilename("src/gui/WorkflowManagerMenuFrame.lua", g_currentModDirectory))
+source(Utils.getFilename("src/gui/WMTextInputDialog.lua", g_currentModDirectory))
 
 -- Initialize logger from dev config immediately after loading
 WMLogger:initFromDevConfig()
@@ -79,6 +80,9 @@ function WorkflowManager:init()
     WMManagerGUI:init()
     WMEditorGUI:init()
 
+    -- Load text input dialog
+    self:loadTextInputDialog()
+
     -- Setup InGameMenu integration
     self:setupInGameMenu()
 
@@ -95,6 +99,51 @@ function WorkflowManager:init()
             table.insert(self.workflows, testWorkflow)
         end
     end
+end
+
+---Load the text input dialog for name editing
+function WorkflowManager:loadTextInputDialog()
+    if g_gui == nil then
+        WMLogger:warning("g_gui not available, cannot load text input dialog")
+        return
+    end
+
+    -- Create dialog instance
+    self.textInputDialog = WMTextInputDialog.new()
+
+    -- Load the GUI from XML
+    local xmlPath = Utils.getFilename("xml/gui/TextInputDialog.xml", self.modDirectory)
+    local success, result = pcall(function()
+        g_gui:loadGui(xmlPath, "WMTextInputDialog", self.textInputDialog)
+    end)
+
+    if success then
+        WMLogger:info("Text input dialog loaded successfully")
+    else
+        WMLogger:warning("Failed to load text input dialog: %s", tostring(result))
+        self.textInputDialog = nil
+    end
+end
+
+---Show the text input dialog
+---@param title string Dialog title
+---@param text string Initial text value
+---@param callback function Callback function(text, confirmed)
+---@param target table Callback target object (optional)
+function WorkflowManager:showTextInputDialog(title, text, callback, target)
+    if self.textInputDialog == nil then
+        WMLogger:warning("Text input dialog not available")
+        if callback then
+            callback(text, false)
+        end
+        return
+    end
+
+    self.textInputDialog:setTitle(title)
+    self.textInputDialog:setText(text)
+    self.textInputDialog:setCallback(callback, target)
+
+    g_gui:showDialog("WMTextInputDialog")
 end
 
 ---Setup InGameMenu integration

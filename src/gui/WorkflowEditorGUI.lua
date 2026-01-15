@@ -804,25 +804,19 @@ end
 
 ---Open the text input dialog to edit the workflow name
 function WMEditorGUI:openNameEditDialog()
-    if g_gui and g_gui.showTextInputDialog then
-        g_gui:showTextInputDialog({
-            title = g_i18n:getText("wm_editor_name"),
-            text = self.editedName,
-            maxCharacters = 50,
-            confirmText = g_i18n:getText("wm_button_save"),
-            callback = function(text, confirmed)
-                if confirmed and text ~= nil then
-                    self.editedName = text
-                    if self.currentWorkflow then
-                        self.currentWorkflow.name = text
-                    end
-                    WMLogger:debug("Name changed to: %s", text)
+    WorkflowManager:showTextInputDialog(
+        g_i18n:getText("wm_editor_name"),
+        self.editedName,
+        function(text, confirmed)
+            if confirmed and text ~= nil and text ~= "" then
+                self.editedName = text
+                if self.currentWorkflow then
+                    self.currentWorkflow.name = text
                 end
+                WMLogger:debug("Name changed to: %s", text)
             end
-        })
-    else
-        WMLogger:warning("Text input dialog not available")
-    end
+        end
+    )
 end
 
 ---Handle mouse click at position
