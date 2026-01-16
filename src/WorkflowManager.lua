@@ -23,6 +23,7 @@ source(Utils.getFilename("src/WorkflowExecutor.lua", g_currentModDirectory))
 source(Utils.getFilename("src/integration/AutoDriveIntegration.lua", g_currentModDirectory))
 source(Utils.getFilename("src/integration/CourseplayIntegration.lua", g_currentModDirectory))
 source(Utils.getFilename("src/integration/CourseplayCoursesLoader.lua", g_currentModDirectory))
+source(Utils.getFilename("src/integration/CourseplayVehiclesLoader.lua", g_currentModDirectory))
 
 -- 5. GUI modules
 source(Utils.getFilename("src/gui/WorkflowManagerGUI.lua", g_currentModDirectory))
@@ -76,6 +77,7 @@ function WorkflowManager:init()
     ADIntegration:init()
     CPIntegration:init()
     CPCoursesLoader:init()
+    CPVehiclesLoader:init()
     WMDebugUtil:init()
 
     -- Initialize GUI
@@ -693,6 +695,7 @@ function WorkflowManager:update(dt)
     ADIntegration:update(dt)
     CPIntegration:update(dt)
     CPCoursesLoader:update(dt)
+    CPVehiclesLoader:update(dt)
 
     -- Manual F9 key detection as fallback (for debugging)
     local f9Pressed = false
