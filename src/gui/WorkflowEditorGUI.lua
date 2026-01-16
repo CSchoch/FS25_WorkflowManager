@@ -169,34 +169,41 @@ end
 
 ---Refresh the list of available vehicles
 function WMEditorGUI:refreshVehicleList()
-    self.availableVehicles = {}
+    -- Use the centralized vehicle loader instead of scanning ourselves
+    if CPVehiclesLoader and CPVehiclesLoader.isInitialized then
+        self.availableVehicles = CPVehiclesLoader:getVehicles()
+        WMLogger:debug("Loaded %d vehicles from CPVehiclesLoader", #self.availableVehicles)
+    else
+        -- Fallback: scan vehicles directly if loader not available
+        self.availableVehicles = {}
 
-    if g_currentMission == nil or g_currentMission.vehicles == nil then
-        return
-    end
-
-    for _, vehicle in ipairs(g_currentMission.vehicles) do
-        local hasAD = vehicle.ad ~= nil
-        local hasCP = vehicle.spec_cpAIWorker ~= nil or vehicle.spec_cpAIFieldWorker ~= nil
-
-        if hasAD or hasCP then
-            local name = "Unknown Vehicle"
-            if vehicle.getName then
-                name = vehicle:getName()
-            elseif vehicle.name then
-                name = vehicle.name
-            end
-
-            table.insert(self.availableVehicles, {
-                vehicle = vehicle,
-                name = name,
-                hasAD = hasAD,
-                hasCP = hasCP
-            })
+        if g_currentMission == nil or g_currentMission.vehicles == nil then
+            return
         end
-    end
 
-    WMLogger:debug("Found %d vehicles with AD/CP support", #self.availableVehicles)
+        for _, vehicle in ipairs(g_currentMission.vehicles) do
+            local hasAD = vehicle.ad ~= nil
+            local hasCP = vehicle.spec_cpAIWorker ~= nil or vehicle.spec_cpAIFieldWorker ~= nil
+
+            if hasAD or hasCP then
+                local name = "Unknown Vehicle"
+                if vehicle.getName then
+                    name = vehicle:getName()
+                elseif vehicle.name then
+                    name = vehicle.name
+                end
+
+                table.insert(self.availableVehicles, {
+                    vehicle = vehicle,
+                    name = name,
+                    hasAD = hasAD,
+                    hasCP = hasCP
+                })
+            end
+        end
+
+        WMLogger:debug("Found %d vehicles with AD/CP support (fallback)", #self.availableVehicles)
+    end
 end
 
 ---Cycle to previous vehicle
