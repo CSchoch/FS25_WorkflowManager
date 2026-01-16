@@ -127,8 +127,8 @@ function ADIntegration:checkAvailability()
 end
 
 ---Get list of available AutoDrive destinations/markers
----Uses the official AutoDrive:GetAvailableDestinations() API
----@return table destinations List of {id, name, x, y, z} tables
+---Uses ADGraphManager to get markers with their group names
+---@return table destinations List of {id, name, displayName, group, x, y, z} tables, sorted by displayName
 function ADIntegration:getDestinations()
     local destinations = {}
 
@@ -136,52 +136,85 @@ function ADIntegration:getDestinations()
         return destinations
     end
 
-    WMLogger:apiCall("AutoDrive", "GetAvailableDestinations")
+    WMLogger:apiCall("AutoDrive", "GetDestinations")
 
-    -- Use official API from ExternalInterface.lua
-    if AutoDrive.GetAvailableDestinations then
+    -- Try to get ADGraphManager for group support
+    local graphManager = nil
+    if ADGraphManager then
+        graphManager = ADGraphManager
+    elseif FS25_AutoDrive and FS25_AutoDrive.ADGraphManager then
+        graphManager = FS25_AutoDrive.ADGraphManager
+    end
+
+    -- Method 1: Use ADGraphManager with group support (preferred)
+    if graphManager and graphManager.getMapMarkers and graphManager.getWayPointById then
+        local markers = graphManager:getMapMarkers()
+        if markers then
+            for _, marker in pairs(markers) do
+                local point = graphManager:getWayPointById(marker.id)
+                local groupName = marker.group or "All"
+                local markerName = marker.name or ""
+
+                -- Create display name with group prefix (skip "All" group prefix)
+                local displayName = markerName
+                if groupName ~= "All" and groupName ~= "" then
+                    displayName = groupName .. "/" .. markerName
+                end
+
+                table.insert(destinations, {
+                    id = marker.id or marker.markerIndex,
+                    name = markerName,
+                    displayName = displayName,
+                    group = groupName,
+                    x = point and point.x or 0,
+                    y = point and point.y or 0,
+                    z = point and point.z or 0
+                })
+            end
+        end
+    -- Method 2: Fallback to official API (no group info)
+    elseif AutoDrive and AutoDrive.GetAvailableDestinations then
         local adDestinations = AutoDrive:GetAvailableDestinations()
         if adDestinations then
             for markerID, marker in pairs(adDestinations) do
                 table.insert(destinations, {
                     id = markerID,
                     name = marker.name,
+                    displayName = marker.name,
+                    group = "All",
                     x = marker.x,
                     y = marker.y,
                     z = marker.z
                 })
             end
         end
-    -- Fallback to direct access
-    elseif ADGraphManager and ADGraphManager.getMapMarkers then
-        for markerID, marker in pairs(ADGraphManager:getMapMarkers()) do
-            table.insert(destinations, {
-                id = markerID,
-                name = marker.name
-            })
-        end
     end
+
+    -- Sort destinations by displayName for consistent ordering (groups first, then name)
+    table.sort(destinations, function(a, b)
+        return (a.displayName or "") < (b.displayName or "")
+    end)
 
     WMLogger:debug("Found %d AutoDrive destinations", #destinations)
     return destinations
 end
 
 ---Get destination names only (for dropdown lists)
----@return table names List of destination name strings
+---@return table names List of destination display names (with group prefix)
 function ADIntegration:getDestinationNames()
     local names = {}
     local destinations = self:getDestinations()
 
     for _, dest in ipairs(destinations) do
-        table.insert(names, dest.name)
+        table.insert(names, dest.displayName or dest.name)
     end
 
     return names
 end
 
----Get destination/marker by name
----@param name string Destination name
----@return table|nil marker Marker data {id, name} or nil
+---Get destination/marker by name or displayName
+---@param name string Destination name or displayName (with group prefix)
+---@return table|nil marker Marker data {id, name, displayName, group} or nil
 function ADIntegration:getDestinationByName(name)
     if not self.isAvailable then
         return nil
@@ -189,7 +222,8 @@ function ADIntegration:getDestinationByName(name)
 
     local destinations = self:getDestinations()
     for _, dest in ipairs(destinations) do
-        if dest.name == name then
+        -- Match by displayName (with group prefix) or plain name
+        if dest.displayName == name or dest.name == name then
             return dest
         end
     end

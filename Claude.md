@@ -203,7 +203,7 @@ Add Step Dialog:
 
 ### AutoDrive (Analyzed)
 
-Key functions from `ExternalInterface.lua`:
+Key functions from `ExternalInterface.lua` and `GraphManager.lua`:
 
 * **Start route**: `AutoDrive:StartDriving(vehicle, destinationID, unloadDestinationID, callBackObject, callBackFunction, callBackArg)`
 * **Pause route**: `AutoDrive:HoldDriving(vehicle)`
@@ -211,6 +211,13 @@ Key functions from `ExternalInterface.lua`:
 * **Check active**: `vehicle.ad.stateModule:isActive()`
 * **Completion callback**: Pass callback to `StartDriving()` or use `registerDestinationListener()`
 * **Mode constants**: `MODE_DRIVETO=1`, `MODE_PICKUPANDDELIVER=2`, `MODE_DELIVERTO=3`, etc.
+
+**Destination Groups/Folders** (from `GraphManager.lua`):
+* **Marker structure**: Each marker has `{id, markerIndex, name, group}` - `group` defaults to `"All"`
+* **Get all groups**: `ADGraphManager:getGroups()` - returns `{groupName = groupID, ...}`
+* **Get markers in group**: `ADGraphManager:getMapMarkersInGroup(groupName)` - returns markers in specific group
+* **Get all markers**: `ADGraphManager:getMapMarkers()` - returns all markers with group info
+* **Get waypoint**: `ADGraphManager:getWayPointById(markerID)` - returns `{x, y, z}` coordinates
 
 ### Courseplay (Analyzed)
 
@@ -251,8 +258,9 @@ FS25_WorkflowManager/
 │   │   ├── WorkflowManagerMenuFrame.lua # ✓ ESC menu integration
 │   │   └── elements/                # UI components (future)
 │   ├── integration/
-│   │   ├── AutoDriveIntegration.lua # ✓ AD API wrapper (with retry logic)
-│   │   └── CourseplayIntegration.lua # ✓ CP API wrapper (with retry logic)
+│   │   ├── AutoDriveIntegration.lua # ✓ AD API wrapper (with retry logic, group/folder support)
+│   │   ├── CourseplayIntegration.lua # ✓ CP API wrapper (with retry logic)
+│   │   └── CourseplayCoursesLoader.lua # ✓ CP saved courses loader (folder support)
 │   └── utils/
 │       ├── Logger.lua               # ✓ Logging utility (dev mode aware)
 │       ├── EventHandler.lua         # ✓ Event system
@@ -292,9 +300,9 @@ FS25_WorkflowManager/
 ## Resources
 
 * LS25 Modding Documentation: [https://gdn.giants-software.com/](https://gdn.giants-software.com/)
-* AutoDrive local folder: [FS25_AutoDrive](FS25_AutoDrive)
-* Courseplay local folder: [FS25_Courseplay](FS25_Courseplay)
-* Better Contracts local folder: [FS25_BetterContracts](FS25_BetterContracts)
+* AutoDrive source: `c:\Users\Chef\Documents\My Games\FarmingSimulator2025\mods\FS25_AutoDrive`
+* Courseplay source: `c:\Users\Chef\Documents\My Games\FarmingSimulator2025\mods\FS25_Courseplay`
+* Better Contracts source [FS25_BetterContracts](FS25_BetterContracts)
 * LS25 Forum: [https://forum.giants-software.com/](https://forum.giants-software.com/)
 
 ## Contact & Collaboration
@@ -305,7 +313,7 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 ---
 
 **Status**: Phase 1 – Milestone 4 IN PROGRESS (Testing & Debugging)
-**Last updated**: 2026-01-15
+**Last updated**: 2026-01-16
 
 ## Implementation Progress
 
@@ -382,6 +390,12 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
     - Button hover effects with brightness increase and border highlight
     - Layout constants for consistent positioning
     - Close button (X) in title bar
+  - **Folder/Group Support for Targets (2026-01-16)**:
+    - AutoDrive destinations now show with group prefix (e.g., `"Farm/Silo"`, `"Fields/Field1"`)
+    - Uses `ADGraphManager:getMapMarkers()` to get markers with group info
+    - Destinations in "All" group shown without prefix
+    - Courseplay courses already supported folders via `CourseplayCoursesLoader`
+    - All targets sorted alphabetically by display name
 
 ### In Progress
 - Milestone 4: Testing & Refinement
@@ -433,19 +447,22 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 - [x] Press Alt+W or F9 to toggle GUI ✓ Alt+W confirmed working (2026-01-15)
 - [x] Verify main GUI has solid dark background ✓ Fixed
 - [x] Click "New" and verify editor has solid dark background ✓ Fixed
-- [ ] Check if AD/CP detection shows "modLoaded=true"
-- [ ] Test editor button clicks:
-  - [ ] Vehicle < > buttons cycle through vehicles
-  - [ ] "+ Add" opens add step dialog
-  - [ ] "- Remove" removes selected step
-  - [ ] "Up/Down" move selected step
-  - [ ] Click on step row to select it
-  - [ ] "Save" and "Cancel" buttons work
-  - [ ] "X" close button works
-- [ ] Test Add Step Dialog:
-  - [ ] AutoDrive/Courseplay type selection
-  - [ ] Target < > navigation
-  - [ ] Action < > navigation
-  - [ ] Add and Cancel buttons
-- [ ] Verify editor closes and returns to main GUI correctly
-- [ ] Test workflow creation and step management
+- [x] Check if AD/CP detection shows "modLoaded=true" ✓ Working (2026-01-16)
+- [x] Test editor button clicks:
+  - [x] Vehicle < > buttons cycle through vehicles
+  - [x] "+ Add" opens add step dialog
+  - [x] "- Remove" removes selected step
+  - [x] "Up/Down" move selected step
+  - [x] Click on step row to select it
+  - [x] "Save" and "Cancel" buttons work
+  - [x] "X" close button works
+- [x] Test Add Step Dialog:
+  - [x] AutoDrive/Courseplay type selection
+  - [x] Target < > navigation (with folder/group support)
+  - [x] Action < > navigation
+  - [x] Add and Cancel buttons
+- [x] Verify editor closes and returns to main GUI correctly
+- [x] Test workflow creation and step management
+- [x] Verify AD destinations show with group/folder prefix ✓ Working (2026-01-16)
+- [x] Verify CP courses show with folder prefix ✓ Working (2026-01-16)
+- [x] Verify targets are sorted alphabetically ✓ Working (2026-01-16)

@@ -280,27 +280,30 @@ function WMEditorGUI:moveStepDown()
 end
 
 ---Get available targets based on step type
+---@return table targets List of target names (with folder prefixes for organization)
 function WMEditorGUI:getAvailableTargets()
     local targets = {}
 
     if self.addStepType == "autodrive" then
-        -- Get AutoDrive destinations
+        -- Get AutoDrive destinations (with group/folder support)
         if ADIntegration and ADIntegration.isAvailable then
             local adDests = ADIntegration:getDestinations()
             if adDests then
                 for _, dest in ipairs(adDests) do
-                    table.insert(targets, dest.name or tostring(dest))
+                    -- Use displayName which includes group prefix (e.g., "GroupName/MarkerName")
+                    table.insert(targets, dest.displayName or dest.name or tostring(dest))
                 end
             end
         end
         -- Add some defaults if none found
         if #targets == 0 then
-            table.insert(targets, "Route_Field1")
-            table.insert(targets, "Route_Field2")
-            table.insert(targets, "Route_Farm")
+            table.insert(targets, "Farm/Silo")
+            table.insert(targets, "Farm/Workshop")
+            table.insert(targets, "Field1")
+            table.insert(targets, "Field2")
         end
     else
-        -- Courseplay courses - load from saved courses
+        -- Courseplay courses - load from saved courses (already includes folder paths)
         if CPCoursesLoader and CPCoursesLoader.isInitialized then
             local courses = CPCoursesLoader:getCourses()
             if courses and #courses > 0 then
@@ -313,9 +316,9 @@ function WMEditorGUI:getAvailableTargets()
             end
         else
             -- Fallback if loader not available
-            table.insert(targets, "Field1_Course")
-            table.insert(targets, "Field2_Course")
-            table.insert(targets, "Harvest_Course")
+            table.insert(targets, "Harvest/Field1_Course")
+            table.insert(targets, "Harvest/Field2_Course")
+            table.insert(targets, "Cultivate/Field1_Course")
         end
     end
 
@@ -737,7 +740,7 @@ function WMEditorGUI:drawStepDialog()
         targetText = string.sub(targetText, 1, 38) .. ".."
     end
     setTextColor(1, 1, 1, 1)
-    renderText(dlgX + 0.18, fieldY, 0.14, targetText)
+    renderText(dlgX + 0.18, fieldY, 0.014, targetText)
 
     -- Next target button
     self:drawButton(dlgX + 0.36, fieldY - 0.008, 0.04, 0.035, ">", {0.3, 0.3, 0.5, 1})
