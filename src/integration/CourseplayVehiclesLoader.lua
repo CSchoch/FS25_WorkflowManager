@@ -31,10 +31,36 @@ function CPVehiclesLoader:scanVehicles()
     self.vehicles = {}
 
     -- Check if mission is available
-    if not g_currentMission or not g_currentMission.vehicles then
-        WMLogger:debug("Mission not available yet, cannot load vehicles")
+    if not g_currentMission then
+        WMLogger:debug("g_currentMission not available yet")
         return
     end
+
+    -- FS25 uses vehicleSystem.vehicles or direct vehicles table
+    local missionVehicles = g_currentMission.vehicles
+    if not missionVehicles and g_currentMission.vehicleSystem then
+        missionVehicles = g_currentMission.vehicleSystem.vehicles
+    end
+
+    if not missionVehicles then
+        WMLogger:debug("No vehicles table found in mission (vehicles=%s, vehicleSystem=%s)",
+            tostring(g_currentMission.vehicles ~= nil),
+            tostring(g_currentMission.vehicleSystem ~= nil))
+        return
+    end
+
+    -- Count vehicles in table
+    local vehicleCount = 0
+    for _ in pairs(missionVehicles) do
+        vehicleCount = vehicleCount + 1
+    end
+
+    if vehicleCount == 0 then
+        WMLogger:debug("Mission vehicles table is empty")
+        return
+    end
+
+    WMLogger:debug("Found %d vehicles in mission, scanning...", vehicleCount)
 
     -- Try to get vehicles from Courseplay API first
     local vehicles = self:getVehiclesFromCourseplayAPI()
@@ -109,12 +135,31 @@ end
 function CPVehiclesLoader:getVehiclesFromMission()
     local vehicles = {}
 
-    for _, vehicle in ipairs(g_currentMission.vehicles) do
+    -- Get vehicles table (FS25 may use vehicleSystem)
+    local missionVehicles = g_currentMission.vehicles
+    if not missionVehicles and g_currentMission.vehicleSystem then
+        missionVehicles = g_currentMission.vehicleSystem.vehicles
+    end
+
+    if not missionVehicles then
+        return vehicles
+    end
+
+    local totalCount = 0
+    local includedCount = 0
+    for _, vehicle in pairs(missionVehicles) do
+        totalCount = totalCount + 1
         local vehicleInfo = self:createVehicleInfo(vehicle)
-        if vehicleInfo and (vehicleInfo.hasCP or vehicleInfo.hasAD) then
-            table.insert(vehicles, vehicleInfo)
+        if vehicleInfo then
+            -- Only include vehicles with BOTH AutoDrive AND Courseplay support
+            if vehicleInfo.hasAD and vehicleInfo.hasCP then
+                table.insert(vehicles, vehicleInfo)
+                includedCount = includedCount + 1
+            end
         end
     end
+
+    WMLogger:debug("Processed %d vehicles, included %d with AD+CP", totalCount, includedCount)
 
     -- Sort by name
     table.sort(vehicles, function(a, b)
@@ -133,8 +178,22 @@ function CPVehiclesLoader:createVehicleInfo(vehicle)
     end
 
     -- Check for AutoDrive and Courseplay support
+    -- FS25: AD uses vehicle.ad, CP uses spec_cpAIWorker or similar
     local hasAD = vehicle.ad ~= nil
-    local hasCP = CPIntegration and CPIntegration:hasSpec(vehicle)
+    local hasCP = false
+
+    -- Check for Courseplay support via multiple patterns
+    if CPIntegration and CPIntegration.hasSpec then
+        hasCP = CPIntegration:hasSpec(vehicle)
+    end
+
+    -- Fallback: check for CP-related specs directly
+    if not hasCP then
+        hasCP = vehicle.spec_cpAIWorker ~= nil or
+                vehicle.spec_cpAIFieldWorker ~= nil or
+                vehicle.spec_cpCourseManager ~= nil or
+                (vehicle.getCpDriveStrategy ~= nil)
+    end
 
     -- Get vehicle name
     local name = "Unknown Vehicle"
@@ -144,9 +203,18 @@ function CPVehiclesLoader:createVehicleInfo(vehicle)
         name = vehicle.name
     end
 
+    -- Debug log first few vehicles to understand structure
+    if WMDevConfig and WMDevConfig:isDevMode() and not self.debuggedVehicleTypes then
+        WMLogger:debug("Vehicle '%s': hasAD=%s, hasCP=%s, type=%s",
+            name,
+            tostring(hasAD),
+            tostring(hasCP),
+            tostring(vehicle.typeName or "unknown"))
+    end
+
     -- Get current course name if available
     local currentCourse = nil
-    if hasCP and CPIntegration and CPIntegration:getCurrentCourseName then
+    if hasCP and CPIntegration and CPIntegration.getCurrentCourseName then
         currentCourse = CPIntegration:getCurrentCourseName(vehicle)
     end
 

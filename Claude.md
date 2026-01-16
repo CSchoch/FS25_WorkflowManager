@@ -260,7 +260,8 @@ FS25_WorkflowManager/
 │   ├── integration/
 │   │   ├── AutoDriveIntegration.lua # ✓ AD API wrapper (with retry logic, group/folder support)
 │   │   ├── CourseplayIntegration.lua # ✓ CP API wrapper (with retry logic)
-│   │   └── CourseplayCoursesLoader.lua # ✓ CP saved courses loader (folder support)
+│   │   ├── CourseplayCoursesLoader.lua # ✓ CP saved courses loader (folder support)
+│   │   └── CourseplayVehiclesLoader.lua # ✓ Vehicle loader (AD+CP filter)
 │   └── utils/
 │       ├── Logger.lua               # ✓ Logging utility (dev mode aware)
 │       ├── EventHandler.lua         # ✓ Event system
@@ -415,6 +416,12 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
    - Courseplay: Access via `FS25_Courseplay.g_Courseplay`
    - This is the ONLY working method in FS25 - direct global access is not available cross-mod
 5. **~~Input Action Callback Not Firing~~** (Fixed 2026-01-15): Alt+W hotkey now works correctly via PlayerInputComponent hook pattern
+6. **~~Vehicle Loading Not Working~~** (Fixed 2026-01-16): Vehicles not detected from mission. Fixed by:
+   - Added fallback check for `g_currentMission.vehicleSystem.vehicles`
+   - Added multiple CP detection patterns (`spec_cpAIWorker`, `spec_cpAIFieldWorker`, etc.)
+   - Filter now requires BOTH AD and CP support for workflow-compatible vehicles
+   - Added detailed debug logging for vehicle scanning
+7. **~~Syntax Error in CourseplayVehiclesLoader~~** (Fixed 2026-01-16): Line 149 used `:` instead of `.` when checking if function exists
 
 ### Pending
 - modIcon.dds creation
@@ -440,6 +447,10 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 [WorkflowManager] New workflow button clicked
 [WorkflowManager] Opened editor for workflow: ...
 [WorkflowManager] Closed workflow editor
+[WorkflowManager] Found X vehicles in mission, scanning...
+[WorkflowManager] Vehicle 'Name': hasAD=true, hasCP=true, type=tractor
+[WorkflowManager] Processed X vehicles, included Y with AD+CP
+[WorkflowManager] Loaded X Courseplay-compatible vehicle(s)
 ```
 
 ### Testing Checklist
@@ -466,3 +477,4 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 - [x] Verify AD destinations show with group/folder prefix ✓ Working (2026-01-16)
 - [x] Verify CP courses show with folder prefix ✓ Working (2026-01-16)
 - [x] Verify targets are sorted alphabetically ✓ Working (2026-01-16)
+- [x] Verify vehicle loading shows only AD+CP vehicles ✓ Working (2026-01-16)
