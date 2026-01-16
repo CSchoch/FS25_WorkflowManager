@@ -59,20 +59,15 @@ function CPCoursesLoader:scanCourses()
     -- Try different API patterns to access course storage
     local courses = nil
 
-    -- Pattern 1: courseStorage or courseManager property
+    -- Pattern 1: courseStorage is a FileSystem object
+    -- It has rootDirectoryView and currentDirectoryView with getEntries() method
     if courseplay.courseStorage then
-        courses = self:extractCoursesFromStorage(courseplay.courseStorage)
-    elseif courseplay.courseManager then
-        courses = self:extractCoursesFromStorage(courseplay.courseManager)
-    elseif courseplay.CourseStorage then
-        courses = self:extractCoursesFromStorage(courseplay.CourseStorage)
-    elseif courseplay.CourseManager then
-        courses = self:extractCoursesFromStorage(courseplay.CourseManager)
+        courses = self:extractCoursesFromFileSystem(courseplay.courseStorage)
     end
 
-    -- Pattern 2: FileSystem property
-    if not courses and courseplay.FileSystem then
-        courses = self:extractCoursesFromFileSystem(courseplay.FileSystem)
+    -- Pattern 2: Direct courseManager property (legacy fallback)
+    if not courses and courseplay.courseManager then
+        courses = self:extractCoursesFromStorage(courseplay.courseManager)
     end
 
     -- Pattern 3: AssignedCoursesManager
@@ -88,14 +83,6 @@ function CPCoursesLoader:scanCourses()
     -- Pattern 5: getCourses() method
     if not courses and type(courseplay.getCourses) == "function" then
         local success, result = pcall(courseplay.getCourses, courseplay)
-        if success and result then
-            courses = self:extractCoursesFromTable(result)
-        end
-    end
-
-    -- Pattern 6: getAllCourses() method
-    if not courses and type(courseplay.getAllCourses) == "function" then
-        local success, result = pcall(courseplay.getAllCourses, courseplay)
         if success and result then
             courses = self:extractCoursesFromTable(result)
         end
@@ -193,6 +180,7 @@ function CPCoursesLoader:extractCoursesFromStorage(storage)
 end
 
 ---Extract course names from FileSystem object
+---Courseplay's FileSystem has rootDirectoryView with getEntries() that returns files and directories
 ---@param fileSystem table FileSystem object
 ---@return table|nil courses List of course names or nil
 function CPCoursesLoader:extractCoursesFromFileSystem(fileSystem)
@@ -200,22 +188,291 @@ function CPCoursesLoader:extractCoursesFromFileSystem(fileSystem)
         return nil
     end
 
-    -- Try to get courses via FileSystem methods
-    if type(fileSystem.getCourses) == "function" then
+    local courses = {}
+
+    -- Method 1: FileSystem with DirectoryView structure (Courseplay's actual structure)
+    -- FileSystem has rootDirectoryView and currentDirectoryView
+    local directoryView = fileSystem.currentDirectoryView or fileSystem.rootDirectoryView
+    if directoryView then
+        WMLogger:debug("Found FileSystem with DirectoryView")
+        WMLogger:debug("  currentDirectoryView: %s", tostring(fileSystem.currentDirectoryView ~= nil))
+        WMLogger:debug("  rootDirectoryView: %s", tostring(fileSystem.rootDirectoryView ~= nil))
+
+        -- Log directory name if available
+        if directoryView.name then
+            WMLogger:debug("  directoryView.name: %s", tostring(directoryView.name))
+        end
+        if type(directoryView.getName) == "function" then
+            local success, name = pcall(directoryView.getName, directoryView)
+            if success then
+                WMLogger:debug("  directoryView:getName(): %s", tostring(name))
+            end
+        end
+
+        -- Log available properties on directoryView
+        WMLogger:debug("  directoryView properties:")
+        for key, value in pairs(directoryView) do
+            local valueType = type(value)
+            if valueType == "table" then
+                local count = 0
+                for _ in pairs(value) do count = count + 1 end
+                WMLogger:debug("    %s: <table> (%d items)", tostring(key), count)
+            elseif valueType == "function" then
+                WMLogger:debug("    %s: <function>", tostring(key))
+            elseif valueType ~= "function" then
+                WMLogger:debug("    %s: %s", tostring(key), tostring(value))
+            end
+        end
+
+        self:collectCoursesFromDirectoryView(directoryView, courses, 0, "")
+    end
+
+    -- Method 2: FileSystem with rootDirectory (raw Directory object)
+    if #courses == 0 and fileSystem.rootDirectory then
+        WMLogger:debug("Trying rootDirectory...")
+        self:collectCoursesFromDirectory(fileSystem.rootDirectory, courses, 0, "")
+    end
+
+    -- Method 3: Try legacy methods
+    if #courses == 0 and type(fileSystem.getCourses) == "function" then
         local success, result = pcall(fileSystem.getCourses, fileSystem)
         if success and result then
-            return self:extractCoursesFromTable(result)
+            local extracted = self:extractCoursesFromTable(result)
+            if extracted then
+                return extracted
+            end
         end
     end
 
-    if type(fileSystem.getLoadedCourses) == "function" then
+    if #courses == 0 and type(fileSystem.getLoadedCourses) == "function" then
         local success, result = pcall(fileSystem.getLoadedCourses, fileSystem)
         if success and result then
-            return self:extractCoursesFromTable(result)
+            local extracted = self:extractCoursesFromTable(result)
+            if extracted then
+                return extracted
+            end
         end
     end
 
-    return nil
+    return #courses > 0 and courses or nil
+end
+
+---Recursively collect courses from a DirectoryView
+---@param directoryView table DirectoryView object
+---@param courses table Table to add course names to
+---@param depth number Current recursion depth
+---@param folderPath string Current folder path for prefixing course names
+function CPCoursesLoader:collectCoursesFromDirectoryView(directoryView, courses, depth, folderPath)
+    if not directoryView or depth > 10 then
+        return
+    end
+
+    -- Try to refresh the directory view first
+    if type(directoryView.refresh) == "function" then
+        pcall(directoryView.refresh, directoryView)
+    end
+
+    -- Get current directory name for building path
+    local currentDirName = ""
+    if type(directoryView.getName) == "function" then
+        local success, result = pcall(directoryView.getName, directoryView)
+        if success and result then
+            currentDirName = result
+        end
+    elseif directoryView.name then
+        currentDirName = directoryView.name
+    end
+
+    -- Build the new folder path (skip root-level names like "Singleplayer")
+    local newFolderPath = folderPath
+    if depth > 0 and currentDirName ~= "" then
+        if newFolderPath ~= "" then
+            newFolderPath = newFolderPath .. "/" .. currentDirName
+        else
+            newFolderPath = currentDirName
+        end
+    end
+
+    -- Get entries (files and subdirectories)
+    local entries = nil
+    if type(directoryView.getEntries) == "function" then
+        local success, result = pcall(directoryView.getEntries, directoryView)
+        if success then
+            entries = result
+            WMLogger:debug("DirectoryView:getEntries() returned %d entries at depth %d (path: %s)",
+                entries and #entries or 0, depth, newFolderPath)
+        else
+            WMLogger:debug("DirectoryView:getEntries() failed: %s", tostring(result))
+        end
+    end
+
+    -- Also try fileViews and directoryViews arrays directly
+    if (not entries or #entries == 0) and directoryView.fileViews then
+        WMLogger:debug("Trying directoryView.fileViews directly, count: %d",
+            directoryView.fileViews and #directoryView.fileViews or 0)
+        if directoryView.fileViews and #directoryView.fileViews > 0 then
+            for _, fileView in ipairs(directoryView.fileViews) do
+                local name = nil
+                if type(fileView.getName) == "function" then
+                    local success, result = pcall(fileView.getName, fileView)
+                    if success then
+                        name = result
+                    end
+                elseif fileView.name then
+                    name = fileView.name
+                end
+
+                if name and type(name) == "string" and name ~= "" then
+                    local courseName = name:gsub("%.xml$", "")
+                    if courseName ~= "" then
+                        -- Add folder path prefix if available
+                        if newFolderPath ~= "" then
+                            courseName = newFolderPath .. "/" .. courseName
+                        end
+                        table.insert(courses, courseName)
+                        WMLogger:debug("Found course from fileViews: %s", courseName)
+                    end
+                end
+            end
+        end
+
+        -- Also recurse into directoryViews
+        if directoryView.directoryViews then
+            for _, subDirView in ipairs(directoryView.directoryViews) do
+                self:collectCoursesFromDirectoryView(subDirView, courses, depth + 1, newFolderPath)
+            end
+        end
+        return
+    end
+
+    if not entries then
+        return
+    end
+
+    for _, entry in pairs(entries) do
+        if entry then
+            local isDir = false
+            if type(entry.isDirectory) == "function" then
+                local success, result = pcall(entry.isDirectory, entry)
+                if success then
+                    isDir = result
+                end
+            end
+
+            if isDir then
+                -- Recurse into subdirectory
+                self:collectCoursesFromDirectoryView(entry, courses, depth + 1, newFolderPath)
+            else
+                -- It's a file (course)
+                local name = nil
+                if type(entry.getName) == "function" then
+                    local success, result = pcall(entry.getName, entry)
+                    if success then
+                        name = result
+                    end
+                elseif entry.name then
+                    name = entry.name
+                end
+
+                if name and type(name) == "string" and name ~= "" then
+                    -- Remove .xml extension if present
+                    local courseName = name:gsub("%.xml$", "")
+                    if courseName ~= "" then
+                        -- Add folder path prefix if available
+                        if newFolderPath ~= "" then
+                            courseName = newFolderPath .. "/" .. courseName
+                        end
+                        table.insert(courses, courseName)
+                    end
+                end
+            end
+        end
+    end
+end
+
+---Recursively collect courses from a Directory object
+---@param directory table Directory object
+---@param courses table Table to add course names to
+---@param depth number Current recursion depth
+---@param folderPath string Current folder path for prefixing course names
+function CPCoursesLoader:collectCoursesFromDirectory(directory, courses, depth, folderPath)
+    if not directory or depth > 10 then
+        return
+    end
+
+    -- Get current directory name for building path
+    local currentDirName = ""
+    if type(directory.getName) == "function" then
+        local success, result = pcall(directory.getName, directory)
+        if success and result then
+            currentDirName = result
+        end
+    elseif directory.name then
+        currentDirName = directory.name
+    end
+
+    -- Build the new folder path (skip root-level names)
+    local newFolderPath = folderPath
+    if depth > 0 and currentDirName ~= "" then
+        if newFolderPath ~= "" then
+            newFolderPath = newFolderPath .. "/" .. currentDirName
+        else
+            newFolderPath = currentDirName
+        end
+    end
+
+    -- Get entries from directory
+    local entries = nil
+    if directory.entries then
+        entries = directory.entries
+    elseif type(directory.getEntries) == "function" then
+        local success, result = pcall(directory.getEntries, directory, true, true)
+        if success then
+            entries = result
+        end
+    end
+
+    if not entries then
+        return
+    end
+
+    for _, entry in pairs(entries) do
+        if entry then
+            local isDir = false
+            if type(entry.isDirectory) == "function" then
+                local success, result = pcall(entry.isDirectory, entry)
+                if success then
+                    isDir = result
+                end
+            end
+
+            if isDir then
+                -- Recurse into subdirectory
+                self:collectCoursesFromDirectory(entry, courses, depth + 1, newFolderPath)
+            else
+                -- It's a file (course)
+                local name = entry.name
+                if type(entry.getName) == "function" then
+                    local success, result = pcall(entry.getName, entry)
+                    if success then
+                        name = result
+                    end
+                end
+
+                if name and type(name) == "string" and name ~= "" then
+                    -- Remove .xml extension if present
+                    local courseName = name:gsub("%.xml$", "")
+                    if courseName ~= "" then
+                        -- Add folder path prefix if available
+                        if newFolderPath ~= "" then
+                            courseName = newFolderPath .. "/" .. courseName
+                        end
+                        table.insert(courses, courseName)
+                    end
+                end
+            end
+        end
+    end
 end
 
 ---Extract course names from AssignedCoursesManager

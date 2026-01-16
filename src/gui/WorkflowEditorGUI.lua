@@ -669,8 +669,8 @@ function WMEditorGUI:drawStepRow(baseX, y, index, step)
 
     -- Target
     local target = step.target or ""
-    if string.len(target) > 20 then
-        target = string.sub(target, 1, 18) .. ".."
+    if string.len(target) > 40 then
+        target = string.sub(target, 1, 38) .. ".."
     end
     renderText(baseX + 0.18, textY, 0.014, target)
 
@@ -733,11 +733,11 @@ function WMEditorGUI:drawStepDialog()
     renderOverlay(self.overlayId, dlgX + 0.17, fieldY - 0.008, 0.18, 0.035)
 
     local targetText = targets[self.addStepTargetIndex] or g_i18n:getText("wm_none")
-    if string.len(targetText) > 18 then
-        targetText = string.sub(targetText, 1, 16) .. ".."
+    if string.len(targetText) > 40 then
+        targetText = string.sub(targetText, 1, 38) .. ".."
     end
     setTextColor(1, 1, 1, 1)
-    renderText(dlgX + 0.18, fieldY, 0.014, targetText)
+    renderText(dlgX + 0.18, fieldY, 0.14, targetText)
 
     -- Next target button
     self:drawButton(dlgX + 0.36, fieldY - 0.008, 0.04, 0.035, ">", {0.3, 0.3, 0.5, 1})
