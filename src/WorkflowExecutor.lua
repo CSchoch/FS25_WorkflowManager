@@ -92,8 +92,8 @@ function WMExecutor:startWorkflow(workflow)
         return false
     end
 
-    -- Start from beginning or current step
-    workflow.currentStep = workflow.currentStep or 1
+    -- Always start from beginning (reset to step 1)
+    workflow.currentStep = 1
     workflow.status = WorkflowManager.STATUS_RUNNING
 
     -- Add to active workflows
@@ -245,20 +245,44 @@ function WMExecutor:executeCurrentStep(workflow)
     -- Execute based on step type
     if step.type == WorkflowManager.STEP_AUTODRIVE then
         -- AutoDrive: Use startRoute which internally uses StartDriving with callback
+        WMLogger:info("Starting AutoDrive step - vehicle: %s, target: %s, action: %s",
+            workflow.vehicle and (workflow.vehicle.getName and workflow.vehicle:getName() or "unknown") or "nil",
+            step.target or "nil",
+            step.action or "nil")
+
         local success = ADIntegration:startRoute(workflow.vehicle, step.target, step.action)
         if success then
             activeData.waitingForCompletion = true
             activeData.currentStepType = WorkflowManager.STEP_AUTODRIVE
-            WMLogger:debug("AutoDrive step started, waiting for completion callback")
+            WMLogger:info("AutoDrive step started successfully, waiting for completion")
         else
-            self:handleStepError(workflow, "Failed to start AutoDrive route: " .. step.target)
+            self:handleStepError(workflow, "Failed to start AutoDrive route: " .. (step.target or "nil"))
         end
 
     elseif step.type == WorkflowManager.STEP_COURSEPLAY then
-        -- Courseplay: Vehicle must have a course loaded
-        -- The 'target' field is informational - CP uses the vehicle's loaded course
+        -- Courseplay: The 'target' field specifies which course to load
+        WMLogger:info("Starting Courseplay step - vehicle: %s, course: %s, action: %s",
+            workflow.vehicle and (workflow.vehicle.getName and workflow.vehicle:getName() or "unknown") or "nil",
+            step.target or "nil",
+            step.action or "nil")
+
+        -- Check if vehicle has the course loaded, if not try to load it
         if not CPIntegration:hasCourse(workflow.vehicle) then
-            self:handleStepError(workflow, "Vehicle has no Courseplay course loaded for step: " .. step.target)
+            WMLogger:info("No course loaded on vehicle, attempting to load: %s", step.target)
+            local loadSuccess = CPIntegration:loadCourse(workflow.vehicle, step.target)
+            if not loadSuccess then
+                self:handleStepError(workflow, "Failed to load Courseplay course: " .. (step.target or "nil"))
+                return
+            end
+        else
+            -- Course is loaded - check if it's the right one
+            local currentCourse = CPIntegration:getCurrentCourseName(workflow.vehicle)
+            WMLogger:debug("Vehicle already has course loaded: %s", currentCourse or "unknown")
+        end
+
+        -- Verify course is now loaded
+        if not CPIntegration:hasCourse(workflow.vehicle) then
+            self:handleStepError(workflow, "Vehicle has no Courseplay course loaded for step: " .. (step.target or "nil"))
             return
         end
 
@@ -270,7 +294,7 @@ function WMExecutor:executeCurrentStep(workflow)
             activeData.waitingForCompletion = true
             activeData.currentStepType = WorkflowManager.STEP_COURSEPLAY
             activeData.cpWasRunning = true  -- Track that we started CP
-            WMLogger:debug("Courseplay step started, polling for completion")
+            WMLogger:info("Courseplay step started successfully, polling for completion")
         else
             self:handleStepError(workflow, "Failed to start Courseplay field work")
         end

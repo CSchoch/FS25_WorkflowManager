@@ -146,14 +146,28 @@ function ADIntegration:getDestinations()
         graphManager = FS25_AutoDrive.ADGraphManager
     end
 
-    -- Method 1: Use ADGraphManager with group support (preferred)
-    if graphManager and graphManager.getMapMarkers and graphManager.getWayPointById then
-        local markers = graphManager:getMapMarkers()
-        if markers then
-            for _, marker in pairs(markers) do
-                local point = graphManager:getWayPointById(marker.id)
-                local groupName = marker.group or "All"
+    -- Use GetAvailableDestinations for correct IDs that work with StartDriving
+    -- Then enrich with group info from getMapMarkers if available
+    if AutoDrive and AutoDrive.GetAvailableDestinations then
+        local adDestinations = AutoDrive:GetAvailableDestinations()
+
+        -- Build a lookup table for group info from graphManager
+        local groupLookup = {}
+        if graphManager and graphManager.getMapMarkers then
+            local markers = graphManager:getMapMarkers()
+            if markers then
+                for _, marker in pairs(markers) do
+                    if marker.name then
+                        groupLookup[marker.name] = marker.group or "All"
+                    end
+                end
+            end
+        end
+
+        if adDestinations then
+            for markerID, marker in pairs(adDestinations) do
                 local markerName = marker.name or ""
+                local groupName = groupLookup[markerName] or "All"
 
                 -- Create display name with group prefix (skip "All" group prefix)
                 local displayName = markerName
@@ -162,29 +176,38 @@ function ADIntegration:getDestinations()
                 end
 
                 table.insert(destinations, {
-                    id = marker.id or marker.markerIndex,
+                    id = markerID,  -- This is the correct ID for StartDriving
+                    name = markerName,
+                    displayName = displayName,
+                    group = groupName,
+                    x = marker.x,
+                    y = marker.y,
+                    z = marker.z
+                })
+            end
+        end
+    -- Fallback: Use graphManager only (less reliable for StartDriving IDs)
+    elseif graphManager and graphManager.getMapMarkers and graphManager.getWayPointById then
+        local markers = graphManager:getMapMarkers()
+        if markers then
+            for _, marker in pairs(markers) do
+                local point = graphManager:getWayPointById(marker.id)
+                local groupName = marker.group or "All"
+                local markerName = marker.name or ""
+
+                local displayName = markerName
+                if groupName ~= "All" and groupName ~= "" then
+                    displayName = groupName .. "/" .. markerName
+                end
+
+                table.insert(destinations, {
+                    id = marker.markerIndex,  -- Use markerIndex
                     name = markerName,
                     displayName = displayName,
                     group = groupName,
                     x = point and point.x or 0,
                     y = point and point.y or 0,
                     z = point and point.z or 0
-                })
-            end
-        end
-    -- Method 2: Fallback to official API (no group info)
-    elseif AutoDrive and AutoDrive.GetAvailableDestinations then
-        local adDestinations = AutoDrive:GetAvailableDestinations()
-        if adDestinations then
-            for markerID, marker in pairs(adDestinations) do
-                table.insert(destinations, {
-                    id = markerID,
-                    name = marker.name,
-                    displayName = marker.name,
-                    group = "All",
-                    x = marker.x,
-                    y = marker.y,
-                    z = marker.z
                 })
             end
         end
@@ -281,6 +304,8 @@ end
 ---@param action string|nil Action type (optional): "drive", "load", "unload"
 ---@return boolean success True if route started successfully
 function ADIntegration:startRoute(vehicle, targetName, action)
+    WMLogger:debug("ADIntegration:startRoute called - target: %s, action: %s", tostring(targetName), tostring(action))
+
     if not self.isAvailable then
         WMLogger:error("Cannot start AutoDrive route - AutoDrive not available")
         return false
@@ -291,16 +316,21 @@ function ADIntegration:startRoute(vehicle, targetName, action)
         return false
     end
 
+    WMLogger:debug("Vehicle passed to startRoute: %s", vehicle.getName and vehicle:getName() or "unknown")
+
     -- Check if vehicle has AutoDrive spec
     if vehicle.ad == nil then
-        WMLogger:error("Vehicle does not have AutoDrive specialization")
+        WMLogger:error("Vehicle does not have AutoDrive specialization (vehicle.ad is nil)")
         return false
     end
 
-    -- Check if already active
+    WMLogger:debug("Vehicle has AutoDrive spec, stateModule: %s", tostring(vehicle.ad.stateModule ~= nil))
+
+    -- Check if already active - stop existing AD first so workflow can take control
     if self:isRunning(vehicle) then
-        WMLogger:warning("AutoDrive is already active for this vehicle")
-        return false
+        WMLogger:info("AutoDrive already active - stopping current route to start new one")
+        self:stopRoute(vehicle)
+        -- Small delay might be needed, but try to continue
     end
 
     -- Find the target marker
@@ -310,32 +340,62 @@ function ADIntegration:startRoute(vehicle, targetName, action)
         return false
     end
 
-    WMLogger:info("Starting AutoDrive route to: %s (ID: %d)", targetName, targetMarker.id)
-    WMLogger:apiCall("AutoDrive", "StartDriving", vehicle, targetMarker.id)
+    WMLogger:info("Starting AutoDrive route to: %s (markerID: %d)", targetName, targetMarker.id)
 
     -- Use the official StartDriving API with callback
     if AutoDrive.StartDriving then
-        -- Set mode to DRIVETO (mode 1)
+        WMLogger:debug("AutoDrive.StartDriving exists, calling it...")
+
+        -- Pre-set the first marker on the vehicle's stateModule
+        -- This ensures the target is properly configured before starting
         if vehicle.ad.stateModule then
-            vehicle.ad.stateModule:setMode(AutoDrive.MODE_DRIVETO or 1)
-            vehicle.ad.stateModule:setFirstMarker(targetMarker.id)
+            WMLogger:debug("Pre-setting firstMarker to %d on stateModule", targetMarker.id)
+            if vehicle.ad.stateModule.setFirstMarker then
+                vehicle.ad.stateModule:setFirstMarker(targetMarker.id)
+            end
+            -- Also try setFirstMarkerId if available
+            if vehicle.ad.stateModule.setFirstMarkerId then
+                vehicle.ad.stateModule:setFirstMarkerId(targetMarker.id)
+            end
         end
 
         -- Track pending callback
         self.pendingCallbacks[vehicle] = true
 
         -- Start driving with callback for completion notification
-        AutoDrive:StartDriving(
-            vehicle,
-            targetMarker.id,      -- destinationID
-            -1,                    -- unloadDestinationID (-1 = none)
-            ADIntegration,         -- callBackObject
-            ADIntegration.onRouteCompleteCallback, -- callBackFunction
-            vehicle                -- callBackArg
-        )
+        WMLogger:debug("Calling AutoDrive:StartDriving(vehicle, %d, -1, callback...)", targetMarker.id)
+        local success, errorMsg = pcall(function()
+            AutoDrive:StartDriving(
+                vehicle,
+                targetMarker.id,      -- destinationID
+                -1,                    -- unloadDestinationID (-1 = none)
+                ADIntegration,         -- callBackObject
+                ADIntegration.onRouteCompleteCallback, -- callBackFunction
+                vehicle                -- callBackArg
+            )
+        end)
 
-        WMLogger:stateChange("AutoDrive", nil, "started")
-        return true
+        if success then
+            WMLogger:info("AutoDrive:StartDriving called successfully")
+
+            -- Debug: Check vehicle state after starting
+            if vehicle.ad and vehicle.ad.stateModule then
+                local sm = vehicle.ad.stateModule
+                local isActive = sm.isActive and sm:isActive() or false
+                local mode = sm.getMode and sm:getMode() or "?"
+                local firstMarker = sm.getFirstMarker and sm:getFirstMarker() or "?"
+                local firstMarkerName = sm.getFirstMarkerName and sm:getFirstMarkerName() or "?"
+                WMLogger:debug("AD state after start: active=%s, mode=%s, firstMarker=%s (%s)",
+                    tostring(isActive), tostring(mode), tostring(firstMarker), tostring(firstMarkerName))
+            end
+
+            WMLogger:stateChange("AutoDrive", nil, "started")
+            return true
+        else
+            WMLogger:error("AutoDrive:StartDriving failed: %s", tostring(errorMsg))
+            self.pendingCallbacks[vehicle] = nil
+            return false
+        end
     end
 
     -- Fallback: Try direct mode start

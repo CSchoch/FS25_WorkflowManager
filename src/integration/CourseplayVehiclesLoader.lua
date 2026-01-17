@@ -60,7 +60,11 @@ function CPVehiclesLoader:scanVehicles()
         return
     end
 
-    WMLogger:debug("Found %d vehicles in mission, scanning...", vehicleCount)
+    -- Only log on first scan or if count changed
+    if not self.lastVehicleCount or self.lastVehicleCount ~= vehicleCount then
+        WMLogger:debug("Scanning %d vehicles in mission", vehicleCount)
+        self.lastVehicleCount = vehicleCount
+    end
 
     -- Try to get vehicles from Courseplay API first
     local vehicles = self:getVehiclesFromCourseplayAPI()
@@ -72,20 +76,11 @@ function CPVehiclesLoader:scanVehicles()
 
     if vehicles and #vehicles > 0 then
         self.vehicles = vehicles
-        WMLogger:info("Loaded %d Courseplay-compatible vehicle(s)", #self.vehicles)
-
-        -- Log first few vehicles for debugging
-        if WMDevConfig and WMDevConfig:isDevMode() then
-            for i = 1, math.min(3, #self.vehicles) do
-                WMLogger:debug("Vehicle %d: %s (hasAD=%s, hasCP=%s)",
-                    i,
-                    self.vehicles[i].name,
-                    tostring(self.vehicles[i].hasAD),
-                    tostring(self.vehicles[i].hasCP))
-            end
+        -- Only log if count changed
+        if not self.lastCompatibleCount or self.lastCompatibleCount ~= #self.vehicles then
+            WMLogger:debug("Found %d AD+CP compatible vehicles", #self.vehicles)
+            self.lastCompatibleCount = #self.vehicles
         end
-    else
-        WMLogger:debug("No Courseplay-compatible vehicles found")
     end
 end
 
@@ -159,7 +154,6 @@ function CPVehiclesLoader:getVehiclesFromMission()
         end
     end
 
-    WMLogger:debug("Processed %d vehicles, included %d with AD+CP", totalCount, includedCount)
 
     -- Sort by name
     table.sort(vehicles, function(a, b)
@@ -203,14 +197,6 @@ function CPVehiclesLoader:createVehicleInfo(vehicle)
         name = vehicle.name
     end
 
-    -- Debug log first few vehicles to understand structure
-    if WMDevConfig and WMDevConfig:isDevMode() and not self.debuggedVehicleTypes then
-        WMLogger:debug("Vehicle '%s': hasAD=%s, hasCP=%s, type=%s",
-            name,
-            tostring(hasAD),
-            tostring(hasCP),
-            tostring(vehicle.typeName or "unknown"))
-    end
 
     -- Get current course name if available
     local currentCourse = nil

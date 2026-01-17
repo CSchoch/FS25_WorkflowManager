@@ -314,7 +314,7 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 ---
 
 **Status**: Phase 1 – Milestone 4 IN PROGRESS (Testing & Debugging)
-**Last updated**: 2026-01-16
+**Last updated**: 2026-01-17
 
 ## Implementation Progress
 
@@ -422,10 +422,14 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
    - Filter now requires BOTH AD and CP support for workflow-compatible vehicles
    - Added detailed debug logging for vehicle scanning
 7. **~~Syntax Error in CourseplayVehiclesLoader~~** (Fixed 2026-01-16): Line 149 used `:` instead of `.` when checking if function exists
+8. **~~Courseplay Course Loading Failed~~** (Fixed 2026-01-17): Loading saved courses onto vehicles failed with "attempt to call a nil value" at FileSystem.lua:130. Root cause: We were calling `entity:load(vehicle)` directly, but `File:load()` is an internal API expecting `(xmlSchema, xmlBaseKey, lambda, class, ...)`. Fix:
+   - Use the proper public API: `vehicle:appendLoadedCpCourse(entity)`
+   - This is the same method used by Courseplay's CpCourseManagerFrame GUI
+   - The vehicle method internally calls `file:load()` with correct parameters
 
 ### Pending
 - modIcon.dds creation
-- In-game testing with actual AutoDrive and Courseplay
+- Full workflow execution testing (AD → CP → AD sequences)
 - Performance optimization
 - Error handling improvements
 

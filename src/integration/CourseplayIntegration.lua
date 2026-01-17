@@ -171,6 +171,309 @@ function CPIntegration:getCurrentCourseName(vehicle)
     return nil
 end
 
+---Load a course onto a vehicle by name
+---@param vehicle table Vehicle to load course onto
+---@param courseName string Course name (may include folder path like "Folder/CourseName")
+---@return boolean success True if course was loaded
+function CPIntegration:loadCourse(vehicle, courseName)
+    if not self.isAvailable then
+        WMLogger:error("Cannot load course - Courseplay not available")
+        return false
+    end
+
+    if vehicle == nil then
+        WMLogger:error("Cannot load course - vehicle is nil")
+        return false
+    end
+
+    if courseName == nil or courseName == "" then
+        WMLogger:error("Cannot load course - course name is empty")
+        return false
+    end
+
+    WMLogger:info("Loading Courseplay course: %s", courseName)
+
+    -- Get Courseplay object
+    local courseplay = g_Courseplay
+    if not courseplay then
+        local fs25CP = FS25_Courseplay
+        courseplay = fs25CP and (fs25CP.g_Courseplay or fs25CP.Courseplay)
+    end
+
+    if not courseplay then
+        WMLogger:error("Cannot load course - g_Courseplay not found")
+        return false
+    end
+
+    -- Try to load via courseStorage (FileSystem pattern)
+    if courseplay.courseStorage then
+        local success = self:loadCourseFromStorage(vehicle, courseplay.courseStorage, courseName)
+        if success then
+            return true
+        end
+    end
+
+    -- Try direct vehicle method if available
+    if vehicle.loadCpCourse then
+        WMLogger:debug("Trying vehicle:loadCpCourse('%s')", courseName)
+        local success, err = pcall(vehicle.loadCpCourse, vehicle, courseName)
+        if success then
+            WMLogger:info("Course loaded via loadCpCourse")
+            return true
+        else
+            WMLogger:debug("loadCpCourse failed: %s", tostring(err))
+        end
+    end
+
+    -- Try setCpCourse method
+    if vehicle.setCpCourse then
+        WMLogger:debug("Trying vehicle:setCpCourse('%s')", courseName)
+        local success, err = pcall(vehicle.setCpCourse, vehicle, courseName)
+        if success then
+            WMLogger:info("Course loaded via setCpCourse")
+            return true
+        else
+            WMLogger:debug("setCpCourse failed: %s", tostring(err))
+        end
+    end
+
+    WMLogger:error("Could not load course '%s' - no working API found", courseName)
+    return false
+end
+
+---Load a course from the Courseplay file storage
+---@param vehicle table Vehicle to load course onto
+---@param storage table Courseplay courseStorage object
+---@param courseName string Course name to find and load
+---@return boolean success True if loaded
+function CPIntegration:loadCourseFromStorage(vehicle, storage, courseName)
+    if not storage then
+        return false
+    end
+
+    -- Extract folder path and course name from "Folder/CourseName" format
+    local folderPath, baseName = "", courseName
+    local lastSlash = courseName:match(".*/()")
+    if lastSlash then
+        folderPath = courseName:sub(1, lastSlash - 2)
+        baseName = courseName:sub(lastSlash)
+    end
+
+    WMLogger:debug("Looking for course - folder: '%s', name: '%s'", folderPath, baseName)
+
+    -- Try to find and load the course using DirectoryView
+    local directoryView = storage.currentDirectoryView or storage.rootDirectoryView
+    if not directoryView then
+        return false
+    end
+
+    -- Navigate to folder if needed
+    if folderPath ~= "" then
+        directoryView = self:navigateToFolder(directoryView, folderPath)
+        if not directoryView then
+            WMLogger:debug("Could not navigate to folder: %s", folderPath)
+            return false
+        end
+    end
+
+    -- Find the course entry
+    if type(directoryView.getEntries) == "function" then
+        local success, entries = pcall(directoryView.getEntries, directoryView)
+        if success and entries then
+            for _, entry in pairs(entries) do
+                local entryName = entry.name or (type(entry.getName) == "function" and entry:getName()) or ""
+                if entryName == baseName then
+                    -- Found the course, try to load it
+                    WMLogger:debug("Found course entry: %s", entryName)
+
+                    -- Log available methods/properties on entry for debugging
+                    WMLogger:debug("Entry properties:")
+                    for key, value in pairs(entry) do
+                        local valueType = type(value)
+                        if valueType == "function" then
+                            WMLogger:debug("  %s: <function>", tostring(key))
+                        elseif valueType == "table" then
+                            WMLogger:debug("  %s: <table>", tostring(key))
+                        else
+                            WMLogger:debug("  %s: %s", tostring(key), tostring(value))
+                        end
+                    end
+
+                    -- Try entry:load(vehicle) pattern
+                    if type(entry.load) == "function" then
+                        WMLogger:debug("Trying entry:load(vehicle)")
+                        local loadSuccess, loadErr = pcall(entry.load, entry, vehicle)
+                        if loadSuccess then
+                            WMLogger:info("Course loaded via entry:load()")
+                            return true
+                        else
+                            WMLogger:debug("entry:load failed: %s", tostring(loadErr))
+                        end
+                    end
+
+                    -- Try entry:loadCourse(vehicle) pattern
+                    if type(entry.loadCourse) == "function" then
+                        WMLogger:debug("Trying entry:loadCourse(vehicle)")
+                        local loadSuccess, loadErr = pcall(entry.loadCourse, entry, vehicle)
+                        if loadSuccess then
+                            WMLogger:info("Course loaded via entry:loadCourse()")
+                            return true
+                        else
+                            WMLogger:debug("entry:loadCourse failed: %s", tostring(loadErr))
+                        end
+                    end
+
+                    -- Try vehicle methods with entry
+                    if vehicle.loadCpCourseFromFile then
+                        WMLogger:debug("Trying vehicle:loadCpCourseFromFile(entry)")
+                        local loadSuccess, loadErr = pcall(vehicle.loadCpCourseFromFile, vehicle, entry)
+                        if loadSuccess then
+                            WMLogger:info("Course loaded via loadCpCourseFromFile")
+                            return true
+                        else
+                            WMLogger:debug("loadCpCourseFromFile failed: %s", tostring(loadErr))
+                        end
+                    end
+
+                    -- Try vehicle:loadCourse(entry) pattern
+                    if vehicle.loadCourse then
+                        WMLogger:debug("Trying vehicle:loadCourse(entry)")
+                        local loadSuccess, loadErr = pcall(vehicle.loadCourse, vehicle, entry)
+                        if loadSuccess then
+                            WMLogger:info("Course loaded via vehicle:loadCourse(entry)")
+                            return true
+                        else
+                            WMLogger:debug("vehicle:loadCourse failed: %s", tostring(loadErr))
+                        end
+                    end
+
+                    -- Try spec_cpCourseManager if available
+                    if vehicle.spec_cpCourseManager then
+                        WMLogger:debug("Vehicle has spec_cpCourseManager")
+                        local courseManager = vehicle.spec_cpCourseManager
+                        if courseManager.loadCourse then
+                            WMLogger:debug("Trying courseManager:loadCourse(entry)")
+                            local loadSuccess, loadErr = pcall(courseManager.loadCourse, courseManager, entry)
+                            if loadSuccess then
+                                WMLogger:info("Course loaded via spec_cpCourseManager:loadCourse")
+                                return true
+                            else
+                                WMLogger:debug("courseManager:loadCourse failed: %s", tostring(loadErr))
+                            end
+                        end
+                        if courseManager.setCourse then
+                            WMLogger:debug("Trying courseManager:setCourse(entry)")
+                            local loadSuccess, loadErr = pcall(courseManager.setCourse, courseManager, entry)
+                            if loadSuccess then
+                                WMLogger:info("Course loaded via spec_cpCourseManager:setCourse")
+                                return true
+                            else
+                                WMLogger:debug("courseManager:setCourse failed: %s", tostring(loadErr))
+                            end
+                        end
+                    end
+
+                    -- Try with course data if entry has it
+                    if entry.course or entry.waypoints then
+                        local courseData = entry.course or entry
+                        if vehicle.setCpFieldWorkCourse then
+                            WMLogger:debug("Trying vehicle:setCpFieldWorkCourse(courseData)")
+                            local loadSuccess = pcall(vehicle.setCpFieldWorkCourse, vehicle, courseData)
+                            if loadSuccess then
+                                WMLogger:info("Course loaded via setCpFieldWorkCourse")
+                                return true
+                            end
+                        end
+                    end
+
+                    -- Try using entry.entity (the File object)
+                    -- The correct API is vehicle:appendLoadedCpCourse(file) as used by CpCourseManagerFrame
+                    if entry.entity then
+                        WMLogger:debug("Entry has 'entity' property (File object)")
+                        local entity = entry.entity
+
+                        -- The proper Courseplay API: vehicle:appendLoadedCpCourse(file)
+                        -- This is how CpCourseManagerFrame loads courses
+                        if vehicle.appendLoadedCpCourse then
+                            WMLogger:debug("Trying vehicle:appendLoadedCpCourse(entity)")
+                            local loadSuccess, loadErr = pcall(vehicle.appendLoadedCpCourse, vehicle, entity)
+                            if loadSuccess then
+                                WMLogger:info("Course loaded via appendLoadedCpCourse()")
+                                return true
+                            else
+                                WMLogger:debug("appendLoadedCpCourse failed: %s", tostring(loadErr))
+                            end
+                        end
+
+                        -- Fallback: Try vehicle methods with entity
+                        if vehicle.setCpFieldWorkCourse then
+                            WMLogger:debug("Trying vehicle:setCpFieldWorkCourse(entity)")
+                            local loadSuccess, loadErr = pcall(vehicle.setCpFieldWorkCourse, vehicle, entity)
+                            if loadSuccess then
+                                WMLogger:info("Course loaded via setCpFieldWorkCourse(entity)")
+                                return true
+                            else
+                                WMLogger:debug("setCpFieldWorkCourse(entity) failed: %s", tostring(loadErr))
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    return false
+end
+
+---Navigate to a folder in the DirectoryView
+---@param directoryView table Starting directory view
+---@param folderPath string Path like "Folder1/Folder2"
+---@return table|nil targetView The target directory view or nil
+function CPIntegration:navigateToFolder(directoryView, folderPath)
+    local current = directoryView
+    local parts = {}
+
+    for part in folderPath:gmatch("[^/]+") do
+        table.insert(parts, part)
+    end
+
+    for _, folderName in ipairs(parts) do
+        if type(current.getEntries) ~= "function" then
+            return nil
+        end
+
+        local success, entries = pcall(current.getEntries, current)
+        if not success or not entries then
+            return nil
+        end
+
+        local found = false
+        for _, entry in pairs(entries) do
+            local entryName = entry.name or (type(entry.getName) == "function" and entry:getName()) or ""
+            local isDirectory = entry.isDirectory or (type(entry.getIsDirectory) == "function" and entry:getIsDirectory())
+
+            if entryName == folderName and isDirectory then
+                -- Enter this directory
+                if type(entry.getView) == "function" then
+                    current = entry:getView()
+                elseif entry.directoryView then
+                    current = entry.directoryView
+                else
+                    current = entry
+                end
+                found = true
+                break
+            end
+        end
+
+        if not found then
+            return nil
+        end
+    end
+
+    return current
+end
+
 ---Start Courseplay field work for a vehicle
 ---Uses the actual FS25 CP API: startCpAtLastWp() or startCpAtFirstWp()
 ---@param vehicle table Vehicle to control
