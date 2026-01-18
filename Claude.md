@@ -67,29 +67,51 @@ Workflow = {
     steps = {
         {
             type = "autodrive",  -- "autodrive" or "courseplay"
-            target = "Route_Field1",  -- AutoDrive route or Courseplay course
-            action = "drive"
+            target = "Route_Field1",  -- AutoDrive destination or Courseplay course
+            action = "drive",  -- AutoDrive: drive, pickup_deliver, deliver, load, unload
+            -- AutoDrive-specific parameters (optional):
+            unloadTarget = "Silo",  -- Second destination for pickup_deliver mode
+            fillType = "WHEAT"  -- Fill type for cargo filtering
         },
         {
             type = "courseplay",
             target = "Field1_Harvest",
-            action = "harvest"
+            action = "fieldwork"  -- Courseplay: fieldwork, bale_collect
         },
         {
             type = "autodrive",
-            target = "Route_Field2",
-            action = "drive"
+            target = "Farm/Silo",  -- Destination with group prefix
+            action = "pickup_deliver",  -- Load at target, deliver to unloadTarget
+            unloadTarget = "Sell/BGA",
+            fillType = "SILAGE"
         },
         {
             type = "courseplay",
             target = "Field2_Harvest",
-            action = "harvest"
+            action = "fieldwork"
         }
     },
     currentStep = 1,
     status = "ready"  -- "ready", "running", "paused", "completed"
 }
 ```
+
+#### AutoDrive Actions/Modes
+
+| Action           | Mode                      | Targets | Description                                                   | First Target Label | Second Target Label | Fruit Selection |
+| ---------------- | ------------------------- | ------- | ------------------------------------------------------------- | ------------------ | ------------------- | --------------- |
+| `drive`          | MODE_DRIVETO (1)          | 1       | Simple point-to-point navigation                              | Target             | –                   | NO              |
+| `unload`         | MODE_UNLOAD (5)           | 2       | Unload combine                                                | Unload             | Target              | NO              |
+| `pickup_deliver` | MODE_PICKUPANDDELIVER (2) | 2       | Load at target (Pickup), deliver to unloadTarget (Deliver To) | Pickup             | Deliver To          | YES             |
+| `deliver`        | MODE_DELIVERTO (3)        | 1       | Start at target, deliver to unloadTarget (Deliver To)         | Target             | –                   | NO              |
+| `load`           | MODE_LOAD (4)             | 2       | Load at target (Load At), return to unloadTarget (Return To)  | Return To          | Load At             | YES             |
+
+#### Courseplay Actions (FS25)
+
+| Action         | Description                                         |
+| -------------- | --------------------------------------------------- |
+| `fieldwork`    | Field work (harvesting, cultivating, seeding, etc.) |
+| `bale_collect` | Load/wrap bales                                     |
 
 ### XML Structure (Savegame)
 
@@ -99,9 +121,9 @@ Workflow = {
     <workflows>
         <workflow id="workflow_001" name="Harvest wheat – fields 1–2" vehicle="vehicle_123" currentStep="1" status="ready">
             <step type="autodrive" target="Route_Field1" action="drive"/>
-            <step type="courseplay" target="Field1_Harvest" action="harvest"/>
-            <step type="autodrive" target="Route_Field2" action="drive"/>
-            <step type="courseplay" target="Field2_Harvest" action="harvest"/>
+            <step type="courseplay" target="Field1_Harvest" action="fieldwork"/>
+            <step type="autodrive" target="Farm/Silo" action="pickup_deliver" unloadTarget="Sell/BGA" fillType="WHEAT"/>
+            <step type="courseplay" target="Field2_Harvest" action="fieldwork"/>
         </workflow>
     </workflows>
 </WorkflowManager>
@@ -397,6 +419,21 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
     - Destinations in "All" group shown without prefix
     - Courseplay courses already supported folders via `CourseplayCoursesLoader`
     - All targets sorted alphabetically by display name
+  - **AutoDrive Advanced Modes Support (2026-01-17)**:
+    - Implemented all AutoDrive modes: drive, pickup_deliver, deliver, load, unload
+    - Added `unloadTarget` parameter for pickup_deliver mode (two-destination workflows)
+    - Added `fillType` parameter for cargo type filtering
+    - Updated step data structure with optional AD-specific fields
+    - Updated WorkflowStorage to save/load new parameters in XML
+    - Updated AutoDriveIntegration:startRoute() to accept mode, unloadTarget, fillType
+    - Added action-to-mode mapping (drive→DRIVETO, pickup_deliver→PICKUPANDDELIVER, etc.)
+    - Updated WorkflowExecutor to pass all parameters to AD integration
+    - Extended Add Step Dialog with new fields:
+      - Mode selector with display names (Drive To, Pickup & Deliver, etc.)
+      - Unload Target selector (shown only for pickup_deliver mode)
+      - Fill Type selector with all game fill types from g_fillTypeManager
+    - Added translations for all new UI elements (EN/DE)
+    - Dialog dynamically shows/hides fields based on selected mode
 
 ### In Progress
 - Milestone 4: Testing & Refinement
@@ -482,3 +519,9 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 - [x] Verify CP courses show with folder prefix ✓ Working (2026-01-16)
 - [x] Verify targets are sorted alphabetically ✓ Working (2026-01-16)
 - [x] Verify vehicle loading shows only AD+CP vehicles ✓ Working (2026-01-16)
+- [ ] Test AutoDrive Advanced Modes (2026-01-17):
+  - [ ] Mode selector cycles through: Drive To, Pickup & Deliver, Deliver, Load, Unload
+  - [ ] Unload Target field appears only when "Pickup & Deliver" is selected
+  - [ ] Fill Type field shows all available fill types from game
+  - [ ] Test pickup_deliver workflow: load at target, deliver to unloadTarget
+  - [ ] Verify unloadTarget and fillType are saved/loaded correctly in XML

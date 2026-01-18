@@ -44,7 +44,16 @@
         <text name="wm_editor_type" text="Type"/>
         <text name="wm_editor_target" text="Target"/>
         <text name="wm_editor_action" text="Action"/>
+        <text name="wm_editor_mode" text="Mode"/>
+        <text name="wm_editor_pickup_target" text="Pickup"/>
+        <text name="wm_editor_load_target" text="Load At"/>
+        <text name="wm_editor_unload_first" text="Unload"/>
+        <text name="wm_editor_unload_target" text="Deliver To"/>
+        <text name="wm_editor_return_target" text="Return To"/>
+        <text name="wm_editor_fill_type" text="Fill Type"/>
         <text name="wm_editor_no_steps" text="No steps defined. Click + to add a step."/>
+
+
 
         <!-- Tooltips -->
         <text name="wm_tooltip_moveup" text="Move step up"/>
@@ -56,10 +65,16 @@
         <text name="wm_type_autodrive" text="AutoDrive"/>
         <text name="wm_type_courseplay" text="Courseplay"/>
 
-        <!-- Actions -->
-        <text name="wm_action_drive" text="Drive"/>
-        <text name="wm_action_harvest" text="Harvest"/>
+        <!-- Actions / AutoDrive Modes -->
+        <text name="wm_action_drive" text="Drive To"/>
+        <text name="wm_action_pickup_deliver" text="Pickup and Deliver"/>
+        <text name="wm_action_deliver" text="Deliver"/>
+        <text name="wm_action_load" text="Load"/>
+        <text name="wm_action_unload" text="Unload Combine"/>
+
+        <!-- Courseplay Actions -->
         <text name="wm_action_fieldwork" text="Field Work"/>
+        <text name="wm_action_bale_collect" text="Bale Collect"/>
         <text name="wm_action_first" text="Start at First WP"/>
         <text name="wm_action_last" text="Start at Last WP"/>
 

@@ -22,6 +22,11 @@ WMEditorGUI.addStepTargetIndex = 0
 WMEditorGUI.addStepActionIndex = 1
 WMEditorGUI.availableTargets = {}
 
+-- AutoDrive advanced mode parameters
+WMEditorGUI.addStepUnloadTargetIndex = 0
+WMEditorGUI.addStepFillTypeIndex = 0
+WMEditorGUI.availableFillTypes = {}
+
 -- Available vehicles cache
 WMEditorGUI.availableVehicles = {}
 WMEditorGUI.selectedVehicleIndex = 0
@@ -333,12 +338,79 @@ function WMEditorGUI:getAvailableTargets()
 end
 
 ---Get available actions based on step type
+---AutoDrive actions map to AD modes:
+---  drive -> MODE_DRIVETO (simple point-to-point)
+---  pickup_deliver -> MODE_PICKUPANDDELIVER (load at first, unload at second)
+---  deliver -> MODE_DELIVERTO (deliver already-loaded cargo)
+---  load -> MODE_LOAD (load at specific location)
+---  unload -> MODE_UNLOAD (unload at specific location)
+---Courseplay actions (FS25 currently supports):
+---  fieldwork -> General field work (harvesting, cultivating, etc.)
+---  bale_collect -> Load/wrap bales
 function WMEditorGUI:getAvailableActions()
     if self.addStepType == "autodrive" then
-        return {"drive", "load", "unload"}
+        return {"drive", "pickup_deliver", "deliver", "load", "unload"}
     else
-        return {"fieldwork", "harvest", "cultivate", "sow"}
+        return {"fieldwork", "bale_collect"}
     end
+end
+
+---Get display name for an action
+---@param action string Action name
+---@return string displayName Localized display name
+function WMEditorGUI:getActionDisplayName(action)
+    local actionDisplayNames = {
+        -- AutoDrive modes
+        drive = g_i18n:getText("wm_action_drive") or "Drive To",
+        pickup_deliver = g_i18n:getText("wm_action_pickup_deliver") or "Pickup & Deliver",
+        deliver = g_i18n:getText("wm_action_deliver") or "Deliver",
+        load = g_i18n:getText("wm_action_load") or "Load",
+        unload = g_i18n:getText("wm_action_unload") or "Unload",
+        -- Courseplay actions
+        fieldwork = g_i18n:getText("wm_action_fieldwork") or "Field Work",
+        bale_collect = g_i18n:getText("wm_action_bale_collect") or "Bale Collect"
+    }
+    return actionDisplayNames[action] or action
+end
+
+---Check if current action requires a second target
+---AutoDrive modes with 2 targets: unload, pickup_deliver, load
+---AutoDrive modes with 1 target: drive, deliver
+---@return boolean needsSecondTarget
+function WMEditorGUI:currentActionNeedsUnloadTarget()
+    if self.addStepType ~= "autodrive" then
+        return false
+    end
+    local actions = self:getAvailableActions()
+    local currentAction = actions[self.addStepActionIndex]
+    return currentAction == "unload" or currentAction == "pickup_deliver" or currentAction == "load"
+end
+
+---Check if current action supports fill type / fruit selection
+---Only pickup_deliver and load modes support fruit selection
+---@return boolean needsFillType
+function WMEditorGUI:currentActionNeedsFillType()
+    if self.addStepType ~= "autodrive" then
+        return false
+    end
+    local actions = self:getAvailableActions()
+    local currentAction = actions[self.addStepActionIndex]
+    return currentAction == "pickup_deliver" or currentAction == "load"
+end
+
+---Get available fill types
+---@return table fillTypes List of fill type names with "None" as first option
+function WMEditorGUI:getAvailableFillTypes()
+    local fillTypes = {g_i18n:getText("wm_none") or "(None)"}
+
+    if ADIntegration and ADIntegration.isAvailable then
+        local adFillTypes = ADIntegration:getFillTypeNames()
+        for _, name in ipairs(adFillTypes) do
+            table.insert(fillTypes, name)
+        end
+    end
+
+    return fillTypes
 end
 
 ---Open the add step dialog
@@ -349,7 +421,10 @@ function WMEditorGUI:openAddStepDialog()
     self.addStepType = "autodrive"
     self.addStepTargetIndex = 1
     self.addStepActionIndex = 1
+    self.addStepUnloadTargetIndex = 0  -- 0 = not set
+    self.addStepFillTypeIndex = 1  -- 1 = "(None)"
     self.availableTargets = self:getAvailableTargets()
+    self.availableFillTypes = self:getAvailableFillTypes()
 end
 
 ---Open the edit step dialog for the selected step
@@ -390,6 +465,29 @@ function WMEditorGUI:openEditStepDialog()
         end
     end
 
+    -- Find unload target index (if set)
+    self.addStepUnloadTargetIndex = 0
+    if step.unloadTarget ~= nil and step.unloadTarget ~= "" then
+        for i, target in ipairs(targets) do
+            if target == step.unloadTarget then
+                self.addStepUnloadTargetIndex = i
+                break
+            end
+        end
+    end
+
+    -- Find fill type index (if set)
+    self.availableFillTypes = self:getAvailableFillTypes()
+    self.addStepFillTypeIndex = 1  -- Default to "(None)"
+    if step.fillType ~= nil and step.fillType ~= "" then
+        for i, ft in ipairs(self.availableFillTypes) do
+            if ft == step.fillType then
+                self.addStepFillTypeIndex = i
+                break
+            end
+        end
+    end
+
     self.availableTargets = targets
     WMLogger:debug("Opened edit dialog for step %d", self.selectedStepIndex)
 end
@@ -415,6 +513,7 @@ function WMEditorGUI:confirmAddStep()
 
     local targets = self:getAvailableTargets()
     local actions = self:getAvailableActions()
+    local fillTypes = self:getAvailableFillTypes()
 
     local target = targets[self.addStepTargetIndex] or "default"
     local action = actions[self.addStepActionIndex] or "default"
@@ -425,8 +524,31 @@ function WMEditorGUI:confirmAddStep()
         action = action
     }
 
+    -- Add AutoDrive-specific parameters
+    if self.addStepType == "autodrive" then
+        -- Second target (for unload, pickup_deliver, load modes)
+        if self:currentActionNeedsUnloadTarget() and self.addStepUnloadTargetIndex > 0 then
+            step.unloadTarget = targets[self.addStepUnloadTargetIndex]
+        end
+
+        -- Fill type (only for pickup_deliver and load modes)
+        if self:currentActionNeedsFillType() and self.addStepFillTypeIndex > 1 then
+            -- Get the actual fill type name (not the display title)
+            if ADIntegration and ADIntegration.isAvailable then
+                local adFillTypes = ADIntegration:getAvailableFillTypes()
+                -- Index is offset by 1 because we have "(None)" at index 1
+                local ftData = adFillTypes[self.addStepFillTypeIndex - 1]
+                if ftData then
+                    step.fillType = ftData.name
+                end
+            end
+        end
+    end
+
     table.insert(self.currentWorkflow.steps, step)
-    WMLogger:debug("Added step: %s -> %s (%s)", self.addStepType, target, action)
+    WMLogger:debug("Added step: %s -> %s (%s), unload: %s, fillType: %s",
+        self.addStepType, target, action,
+        step.unloadTarget or "nil", step.fillType or "nil")
 
     self:closeStepDialog()
 end
@@ -446,12 +568,44 @@ function WMEditorGUI:confirmEditStep()
 
     local targets = self:getAvailableTargets()
     local actions = self:getAvailableActions()
+    local fillTypes = self:getAvailableFillTypes()
 
     step.type = self.addStepType
     step.target = targets[self.addStepTargetIndex] or "default"
     step.action = actions[self.addStepActionIndex] or "default"
 
-    WMLogger:debug("Edited step %d: %s -> %s (%s)", self.editingStepIndex, step.type, step.target, step.action)
+    -- Update AutoDrive-specific parameters
+    if self.addStepType == "autodrive" then
+        -- Second target (for unload, pickup_deliver, load modes)
+        if self:currentActionNeedsUnloadTarget() and self.addStepUnloadTargetIndex > 0 then
+            step.unloadTarget = targets[self.addStepUnloadTargetIndex]
+        else
+            step.unloadTarget = nil
+        end
+
+        -- Fill type (only for pickup_deliver and load modes)
+        if self:currentActionNeedsFillType() and self.addStepFillTypeIndex > 1 then
+            -- Get the actual fill type name (not the display title)
+            if ADIntegration and ADIntegration.isAvailable then
+                local adFillTypes = ADIntegration:getAvailableFillTypes()
+                -- Index is offset by 1 because we have "(None)" at index 1
+                local ftData = adFillTypes[self.addStepFillTypeIndex - 1]
+                if ftData then
+                    step.fillType = ftData.name
+                end
+            end
+        else
+            step.fillType = nil
+        end
+    else
+        -- Clear AD-specific fields for non-AD steps
+        step.unloadTarget = nil
+        step.fillType = nil
+    end
+
+    WMLogger:debug("Edited step %d: %s -> %s (%s), unload: %s, fillType: %s",
+        self.editingStepIndex, step.type, step.target, step.action,
+        step.unloadTarget or "nil", step.fillType or "nil")
 
     self:closeStepDialog()
 end
@@ -690,8 +844,8 @@ end
 
 ---Draw the step dialog (add or edit mode)
 function WMEditorGUI:drawStepDialog()
-    local dlgX, dlgY = 0.30, 0.25
-    local dlgW, dlgH = 0.40, 0.50
+    local dlgX, dlgY = 0.25, 0.15
+    local dlgW, dlgH = 0.50, 0.70
 
     -- Full-screen dimming overlay to block content behind
     setOverlayColor(self.overlayId, 0, 0, 0, 0.85)
@@ -728,34 +882,11 @@ function WMEditorGUI:drawStepDialog()
     self:drawButton(dlgX + 0.12, fieldY - 0.008, 0.12, 0.035, g_i18n:getText("wm_type_autodrive"), adColor)
     self:drawButton(dlgX + 0.25, fieldY - 0.008, 0.12, 0.035, g_i18n:getText("wm_type_courseplay"), cpColor)
 
-    -- === TARGET ===
-    fieldY = fieldY - 0.07
+    -- === ACTION / MODE (now above Target) ===
+    fieldY = fieldY - 0.06
     setTextColor(0.8, 0.8, 0.8, 1)
-    renderText(dlgX + 0.02, fieldY, 0.016, g_i18n:getText("wm_editor_target") .. ":")
-
-    local targets = self:getAvailableTargets()
-
-    -- Prev target button
-    self:drawButton(dlgX + 0.12, fieldY - 0.008, 0.04, 0.035, "<", {0.3, 0.3, 0.5, 1})
-
-    -- Target display
-    setOverlayColor(self.overlayId, 0.1, 0.1, 0.12, 1)
-    renderOverlay(self.overlayId, dlgX + 0.17, fieldY - 0.008, 0.18, 0.035)
-
-    local targetText = targets[self.addStepTargetIndex] or g_i18n:getText("wm_none")
-    if string.len(targetText) > 40 then
-        targetText = string.sub(targetText, 1, 38) .. ".."
-    end
-    setTextColor(1, 1, 1, 1)
-    renderText(dlgX + 0.18, fieldY, 0.014, targetText)
-
-    -- Next target button
-    self:drawButton(dlgX + 0.36, fieldY - 0.008, 0.04, 0.035, ">", {0.3, 0.3, 0.5, 1})
-
-    -- === ACTION ===
-    fieldY = fieldY - 0.07
-    setTextColor(0.8, 0.8, 0.8, 1)
-    renderText(dlgX + 0.02, fieldY, 0.016, g_i18n:getText("wm_editor_action") .. ":")
+    local actionLabel = self.addStepType == "autodrive" and (g_i18n:getText("wm_editor_mode") or "Mode") or (g_i18n:getText("wm_editor_action") or "Action")
+    renderText(dlgX + 0.02, fieldY, 0.016, actionLabel .. ":")
 
     local actions = self:getAvailableActions()
 
@@ -764,20 +895,122 @@ function WMEditorGUI:drawStepDialog()
 
     -- Action display
     setOverlayColor(self.overlayId, 0.1, 0.1, 0.12, 1)
-    renderOverlay(self.overlayId, dlgX + 0.17, fieldY - 0.008, 0.18, 0.035)
+    renderOverlay(self.overlayId, dlgX + 0.17, fieldY - 0.008, 0.25, 0.035)
 
-    local actionText = actions[self.addStepActionIndex] or "default"
+    local actionText = self:getActionDisplayName(actions[self.addStepActionIndex] or "default")
     setTextColor(1, 1, 1, 1)
     renderText(dlgX + 0.18, fieldY, 0.014, actionText)
 
     -- Next action button
-    self:drawButton(dlgX + 0.36, fieldY - 0.008, 0.04, 0.035, ">", {0.3, 0.3, 0.5, 1})
+    self:drawButton(dlgX + 0.43, fieldY - 0.008, 0.04, 0.035, ">", {0.3, 0.3, 0.5, 1})
+
+    -- === TARGET (Primary destination) ===
+    -- Labels based on mode:
+    --   drive: Target | unload: Unload | pickup_deliver: Pickup | deliver: Target | load: Return To
+    fieldY = fieldY - 0.06
+    setTextColor(0.8, 0.8, 0.8, 1)
+    local targetLabel = g_i18n:getText("wm_editor_target") or "Target"
+    if self.addStepType == "autodrive" then
+        local currentAction = actions[self.addStepActionIndex]
+        if currentAction == "unload" then
+            targetLabel = g_i18n:getText("wm_editor_unload_first") or "Unload"
+        elseif currentAction == "pickup_deliver" then
+            targetLabel = g_i18n:getText("wm_editor_pickup_target") or "Pickup"
+        elseif currentAction == "load" then
+            targetLabel = g_i18n:getText("wm_editor_return_target") or "Return To"
+        end
+        -- drive and deliver use default "Target"
+    end
+    renderText(dlgX + 0.02, fieldY, 0.016, targetLabel .. ":")
+
+    local targets = self:getAvailableTargets()
+
+    -- Prev target button
+    self:drawButton(dlgX + 0.12, fieldY - 0.008, 0.04, 0.035, "<", {0.3, 0.3, 0.5, 1})
+
+    -- Target display
+    setOverlayColor(self.overlayId, 0.1, 0.1, 0.12, 1)
+    renderOverlay(self.overlayId, dlgX + 0.17, fieldY - 0.008, 0.25, 0.035)
+
+    local targetText = targets[self.addStepTargetIndex] or g_i18n:getText("wm_none")
+    if string.len(targetText) > 30 then
+        targetText = string.sub(targetText, 1, 28) .. ".."
+    end
+    setTextColor(1, 1, 1, 1)
+    renderText(dlgX + 0.18, fieldY, 0.014, targetText)
+
+    -- Next target button
+    self:drawButton(dlgX + 0.43, fieldY - 0.008, 0.04, 0.035, ">", {0.3, 0.3, 0.5, 1})
+
+    -- === SECOND TARGET (for modes requiring 2 targets: unload, pickup_deliver, load) ===
+    if self.addStepType == "autodrive" and self:currentActionNeedsUnloadTarget() then
+        fieldY = fieldY - 0.06
+        setTextColor(0.8, 0.8, 0.8, 1)
+
+        -- Label depends on mode:
+        --   unload: Target | pickup_deliver: Deliver To | load: Load At
+        local actions = self:getAvailableActions()
+        local currentAction = actions[self.addStepActionIndex]
+        local secondTargetLabel = g_i18n:getText("wm_editor_unload_target") or "Deliver To"
+        if currentAction == "unload" then
+            secondTargetLabel = g_i18n:getText("wm_editor_target") or "Target"
+        elseif currentAction == "load" then
+            secondTargetLabel = g_i18n:getText("wm_editor_load_target") or "Load At"
+        end
+        renderText(dlgX + 0.02, fieldY, 0.016, secondTargetLabel .. ":")
+
+        -- Prev unload target button
+        self:drawButton(dlgX + 0.12, fieldY - 0.008, 0.04, 0.035, "<", {0.3, 0.3, 0.5, 1})
+
+        -- Unload target display
+        setOverlayColor(self.overlayId, 0.1, 0.1, 0.12, 1)
+        renderOverlay(self.overlayId, dlgX + 0.17, fieldY - 0.008, 0.25, 0.035)
+
+        local unloadText = g_i18n:getText("wm_none") or "(Not Set)"
+        if self.addStepUnloadTargetIndex > 0 and self.addStepUnloadTargetIndex <= #targets then
+            unloadText = targets[self.addStepUnloadTargetIndex]
+        end
+        if string.len(unloadText) > 30 then
+            unloadText = string.sub(unloadText, 1, 28) .. ".."
+        end
+        setTextColor(1, 1, 1, 1)
+        renderText(dlgX + 0.18, fieldY, 0.014, unloadText)
+
+        -- Next unload target button
+        self:drawButton(dlgX + 0.43, fieldY - 0.008, 0.04, 0.035, ">", {0.3, 0.3, 0.5, 1})
+    end
+
+    -- === FILL TYPE (only for pickup_deliver and load modes) ===
+    if self.addStepType == "autodrive" and self:currentActionNeedsFillType() then
+        fieldY = fieldY - 0.06
+        setTextColor(0.8, 0.8, 0.8, 1)
+        renderText(dlgX + 0.02, fieldY, 0.016, (g_i18n:getText("wm_editor_fill_type") or "Fill Type") .. ":")
+
+        local fillTypes = self:getAvailableFillTypes()
+
+        -- Prev fill type button
+        self:drawButton(dlgX + 0.12, fieldY - 0.008, 0.04, 0.035, "<", {0.3, 0.3, 0.5, 1})
+
+        -- Fill type display
+        setOverlayColor(self.overlayId, 0.1, 0.1, 0.12, 1)
+        renderOverlay(self.overlayId, dlgX + 0.17, fieldY - 0.008, 0.25, 0.035)
+
+        local fillTypeText = fillTypes[self.addStepFillTypeIndex] or g_i18n:getText("wm_none") or "(None)"
+        if string.len(fillTypeText) > 30 then
+            fillTypeText = string.sub(fillTypeText, 1, 28) .. ".."
+        end
+        setTextColor(1, 1, 1, 1)
+        renderText(dlgX + 0.18, fieldY, 0.014, fillTypeText)
+
+        -- Next fill type button
+        self:drawButton(dlgX + 0.43, fieldY - 0.008, 0.04, 0.035, ">", {0.3, 0.3, 0.5, 1})
+    end
 
     -- === DIALOG BUTTONS ===
     local btnY = dlgY + 0.03
     local confirmText = self.isEditStepDialogOpen and g_i18n:getText("wm_button_save") or g_i18n:getText("wm_button_add")
-    self:drawButton(dlgX + 0.08, btnY, 0.10, 0.045, confirmText, {0.2, 0.6, 0.2, 1})
-    self:drawButton(dlgX + 0.22, btnY, 0.10, 0.045, g_i18n:getText("wm_button_cancel"), {0.6, 0.3, 0.3, 1})
+    self:drawButton(dlgX + 0.10, btnY, 0.12, 0.045, confirmText, {0.2, 0.6, 0.2, 1})
+    self:drawButton(dlgX + 0.28, btnY, 0.12, 0.045, g_i18n:getText("wm_button_cancel"), {0.6, 0.3, 0.3, 1})
 end
 
 ---Update function
@@ -964,8 +1197,8 @@ end
 ---@param x number Mouse X
 ---@param y number Mouse Y
 function WMEditorGUI:handleStepDialogClick(x, y)
-    local dlgX, dlgY = 0.30, 0.25
-    local dlgW, dlgH = 0.40, 0.50
+    local dlgX, dlgY = 0.25, 0.15
+    local dlgW, dlgH = 0.50, 0.70
     local fieldY = dlgY + dlgH - 0.10
 
     -- Type buttons
@@ -973,36 +1206,21 @@ function WMEditorGUI:handleStepDialogClick(x, y)
         self.addStepType = "autodrive"
         self.addStepTargetIndex = 1
         self.addStepActionIndex = 1
+        self.addStepUnloadTargetIndex = 0
+        self.addStepFillTypeIndex = 1
         return
     end
     if self:isMouseInArea(dlgX + 0.25, fieldY - 0.008, 0.12, 0.035) then
         self.addStepType = "courseplay"
         self.addStepTargetIndex = 1
         self.addStepActionIndex = 1
+        self.addStepUnloadTargetIndex = 0
+        self.addStepFillTypeIndex = 1
         return
     end
 
-    -- Target navigation
-    fieldY = fieldY - 0.07
-    local targets = self:getAvailableTargets()
-
-    if self:isMouseInArea(dlgX + 0.12, fieldY - 0.008, 0.04, 0.035) then
-        self.addStepTargetIndex = self.addStepTargetIndex - 1
-        if self.addStepTargetIndex < 1 then
-            self.addStepTargetIndex = #targets
-        end
-        return
-    end
-    if self:isMouseInArea(dlgX + 0.36, fieldY - 0.008, 0.04, 0.035) then
-        self.addStepTargetIndex = self.addStepTargetIndex + 1
-        if self.addStepTargetIndex > #targets then
-            self.addStepTargetIndex = 1
-        end
-        return
-    end
-
-    -- Action navigation
-    fieldY = fieldY - 0.07
+    -- Action/Mode navigation (now above Target)
+    fieldY = fieldY - 0.06
     local actions = self:getAvailableActions()
 
     if self:isMouseInArea(dlgX + 0.12, fieldY - 0.008, 0.04, 0.035) then
@@ -1012,7 +1230,7 @@ function WMEditorGUI:handleStepDialogClick(x, y)
         end
         return
     end
-    if self:isMouseInArea(dlgX + 0.36, fieldY - 0.008, 0.04, 0.035) then
+    if self:isMouseInArea(dlgX + 0.43, fieldY - 0.008, 0.04, 0.035) then
         self.addStepActionIndex = self.addStepActionIndex + 1
         if self.addStepActionIndex > #actions then
             self.addStepActionIndex = 1
@@ -1020,10 +1238,70 @@ function WMEditorGUI:handleStepDialogClick(x, y)
         return
     end
 
+    -- Target navigation
+    fieldY = fieldY - 0.06
+    local targets = self:getAvailableTargets()
+
+    if self:isMouseInArea(dlgX + 0.12, fieldY - 0.008, 0.04, 0.035) then
+        self.addStepTargetIndex = self.addStepTargetIndex - 1
+        if self.addStepTargetIndex < 1 then
+            self.addStepTargetIndex = #targets
+        end
+        return
+    end
+    if self:isMouseInArea(dlgX + 0.43, fieldY - 0.008, 0.04, 0.035) then
+        self.addStepTargetIndex = self.addStepTargetIndex + 1
+        if self.addStepTargetIndex > #targets then
+            self.addStepTargetIndex = 1
+        end
+        return
+    end
+
+    -- Second target navigation (for unload, pickup_deliver, load modes)
+    if self.addStepType == "autodrive" and self:currentActionNeedsUnloadTarget() then
+        fieldY = fieldY - 0.06
+
+        if self:isMouseInArea(dlgX + 0.12, fieldY - 0.008, 0.04, 0.035) then
+            self.addStepUnloadTargetIndex = self.addStepUnloadTargetIndex - 1
+            if self.addStepUnloadTargetIndex < 0 then
+                self.addStepUnloadTargetIndex = #targets
+            end
+            return
+        end
+        if self:isMouseInArea(dlgX + 0.43, fieldY - 0.008, 0.04, 0.035) then
+            self.addStepUnloadTargetIndex = self.addStepUnloadTargetIndex + 1
+            if self.addStepUnloadTargetIndex > #targets then
+                self.addStepUnloadTargetIndex = 0
+            end
+            return
+        end
+    end
+
+    -- Fill type navigation (only for pickup_deliver and load modes)
+    if self.addStepType == "autodrive" and self:currentActionNeedsFillType() then
+        fieldY = fieldY - 0.06
+        local fillTypes = self:getAvailableFillTypes()
+
+        if self:isMouseInArea(dlgX + 0.12, fieldY - 0.008, 0.04, 0.035) then
+            self.addStepFillTypeIndex = self.addStepFillTypeIndex - 1
+            if self.addStepFillTypeIndex < 1 then
+                self.addStepFillTypeIndex = #fillTypes
+            end
+            return
+        end
+        if self:isMouseInArea(dlgX + 0.43, fieldY - 0.008, 0.04, 0.035) then
+            self.addStepFillTypeIndex = self.addStepFillTypeIndex + 1
+            if self.addStepFillTypeIndex > #fillTypes then
+                self.addStepFillTypeIndex = 1
+            end
+            return
+        end
+    end
+
     -- Dialog buttons
     local btnY = dlgY + 0.03
 
-    if self:isMouseInArea(dlgX + 0.08, btnY, 0.10, 0.045) then
+    if self:isMouseInArea(dlgX + 0.10, btnY, 0.12, 0.045) then
         -- Confirm button - add or edit based on mode
         if self.isEditStepDialogOpen then
             self:confirmEditStep()
@@ -1032,7 +1310,7 @@ function WMEditorGUI:handleStepDialogClick(x, y)
         end
         return
     end
-    if self:isMouseInArea(dlgX + 0.22, btnY, 0.10, 0.045) then
+    if self:isMouseInArea(dlgX + 0.28, btnY, 0.12, 0.045) then
         self:closeStepDialog()
         return
     end

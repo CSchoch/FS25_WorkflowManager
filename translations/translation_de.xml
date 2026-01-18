@@ -44,6 +44,13 @@
         <text name="wm_editor_type" text="Typ"/>
         <text name="wm_editor_target" text="Ziel"/>
         <text name="wm_editor_action" text="Aktion"/>
+        <text name="wm_editor_mode" text="Modus"/>
+        <text name="wm_editor_pickup_target" text="Abholung"/>
+        <text name="wm_editor_load_target" text="Beladen bei"/>
+        <text name="wm_editor_unload_first" text="Entladen"/>
+        <text name="wm_editor_unload_target" text="Liefern an"/>
+        <text name="wm_editor_return_target" text="Zurueck zu"/>
+        <text name="wm_editor_fill_type" text="Fuelltyp"/>
         <text name="wm_editor_no_steps" text="Keine Schritte definiert. Klicken Sie +, um einen Schritt hinzuzufuegen."/>
 
         <!-- Tooltips -->
@@ -56,10 +63,16 @@
         <text name="wm_type_autodrive" text="AutoDrive"/>
         <text name="wm_type_courseplay" text="Courseplay"/>
 
-        <!-- Actions -->
-        <text name="wm_action_drive" text="Fahren"/>
-        <text name="wm_action_harvest" text="Ernten"/>
+        <!-- Actions / AutoDrive Modes -->
+        <text name="wm_action_drive" text="Fahren zu"/>
+        <text name="wm_action_pickup_deliver" text="Abholen und Liefern"/>
+        <text name="wm_action_deliver" text="Abladen"/>
+        <text name="wm_action_load" text="Abholen"/>
+        <text name="wm_action_unload" text="Drescher abfahren"/>
+
+        <!-- Courseplay Actions -->
         <text name="wm_action_fieldwork" text="Feldarbeit"/>
+        <text name="wm_action_bale_collect" text="Ballen sammeln"/>
         <text name="wm_action_first" text="Am ersten WP starten"/>
         <text name="wm_action_last" text="Am letzten WP starten"/>
 

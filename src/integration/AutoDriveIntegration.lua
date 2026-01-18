@@ -297,14 +297,97 @@ function ADIntegration.onRouteCompleteCallback(vehicle)
     })
 end
 
+---Map action string to AutoDrive mode constant
+---@param action string Action type: "drive", "pickup_deliver", "deliver", "load", "unload"
+---@return number mode AutoDrive mode constant
+function ADIntegration:actionToMode(action)
+    local modes = self:getModes()
+    local actionModeMap = {
+        drive = modes.DRIVETO,
+        pickup_deliver = modes.PICKUPANDDELIVER,
+        deliver = modes.DELIVERTO,
+        load = modes.LOAD,
+        unload = modes.UNLOAD
+    }
+    return actionModeMap[action] or modes.DRIVETO
+end
+
+---Check if action requires a second target
+---AutoDrive modes with 2 targets: unload, pickup_deliver, load
+---AutoDrive modes with 1 target: drive, deliver
+---@param action string Action type
+---@return boolean needsSecondTarget True if action requires a second target
+function ADIntegration:actionNeedsUnloadTarget(action)
+    return action == "unload" or action == "pickup_deliver" or action == "load"
+end
+
+---Check if action supports fill type / fruit selection
+---Only pickup_deliver and load modes support fruit selection
+---@param action string Action type
+---@return boolean needsFillType True if action supports fill type selection
+function ADIntegration:actionNeedsFillType(action)
+    return action == "pickup_deliver" or action == "load"
+end
+
+---Get available fill types from the game
+---@return table fillTypes List of {index, name, title} tables
+function ADIntegration:getAvailableFillTypes()
+    local fillTypes = {}
+
+    if g_fillTypeManager == nil then
+        WMLogger:debug("g_fillTypeManager not available")
+        return fillTypes
+    end
+
+    local allFillTypes = g_fillTypeManager:getFillTypes()
+    if allFillTypes == nil then
+        return fillTypes
+    end
+
+    for index, fillType in ipairs(allFillTypes) do
+        -- Skip non-transportable types
+        if fillType.name ~= "UNKNOWN" and fillType.name ~= "AIR" then
+            table.insert(fillTypes, {
+                index = index,
+                name = fillType.name,
+                title = fillType.title or fillType.name
+            })
+        end
+    end
+
+    -- Sort by title for consistent ordering
+    table.sort(fillTypes, function(a, b)
+        return (a.title or "") < (b.title or "")
+    end)
+
+    WMLogger:debug("Found %d fill types", #fillTypes)
+    return fillTypes
+end
+
+---Get fill type names only (for dropdown lists)
+---@return table names List of fill type display names
+function ADIntegration:getFillTypeNames()
+    local names = {}
+    local fillTypes = self:getAvailableFillTypes()
+
+    for _, ft in ipairs(fillTypes) do
+        table.insert(names, ft.title or ft.name)
+    end
+
+    return names
+end
+
 ---Start an AutoDrive route for a vehicle
 ---Uses AutoDrive:StartDriving() from ExternalInterface.lua
 ---@param vehicle table Vehicle to control
 ---@param targetName string Target destination name
----@param action string|nil Action type (optional): "drive", "load", "unload"
+---@param action string|nil Action type: "drive", "pickup_deliver", "deliver", "load", "unload"
+---@param unloadTargetName string|nil Second destination for pickup_deliver mode
+---@param fillType string|nil Fill type name for filtering (optional)
 ---@return boolean success True if route started successfully
-function ADIntegration:startRoute(vehicle, targetName, action)
-    WMLogger:debug("ADIntegration:startRoute called - target: %s, action: %s", tostring(targetName), tostring(action))
+function ADIntegration:startRoute(vehicle, targetName, action, unloadTargetName, fillType)
+    WMLogger:debug("ADIntegration:startRoute called - target: %s, action: %s, unloadTarget: %s, fillType: %s",
+        tostring(targetName), tostring(action), tostring(unloadTargetName), tostring(fillType))
 
     if not self.isAvailable then
         WMLogger:error("Cannot start AutoDrive route - AutoDrive not available")
@@ -340,22 +423,72 @@ function ADIntegration:startRoute(vehicle, targetName, action)
         return false
     end
 
-    WMLogger:info("Starting AutoDrive route to: %s (markerID: %d)", targetName, targetMarker.id)
+    -- Determine the mode based on action
+    local mode = self:actionToMode(action or "drive")
+    WMLogger:info("Using AutoDrive mode %d for action '%s'", mode, action or "drive")
+
+    -- Resolve unload destination ID
+    local unloadDestinationID = -1  -- Default: no second destination
+
+    -- For pickup_deliver mode, we need an unload target
+    if self:actionNeedsUnloadTarget(action) then
+        if unloadTargetName ~= nil and unloadTargetName ~= "" then
+            local unloadMarker = self:getDestinationByName(unloadTargetName)
+            if unloadMarker ~= nil then
+                unloadDestinationID = unloadMarker.id
+                WMLogger:info("Unload destination: %s (markerID: %d)", unloadTargetName, unloadDestinationID)
+            else
+                WMLogger:warning("Unload destination not found: %s, using default", unloadTargetName)
+            end
+        else
+            WMLogger:warning("Pickup & Deliver mode requires unload target, but none provided")
+        end
+    end
+
+    WMLogger:info("Starting AutoDrive route to: %s (markerID: %d), unloadDest: %d",
+        targetName, targetMarker.id, unloadDestinationID)
 
     -- Use the official StartDriving API with callback
     if AutoDrive.StartDriving then
         WMLogger:debug("AutoDrive.StartDriving exists, calling it...")
 
-        -- Pre-set the first marker on the vehicle's stateModule
-        -- This ensures the target is properly configured before starting
+        -- Pre-set the markers and mode on the vehicle's stateModule
         if vehicle.ad.stateModule then
-            WMLogger:debug("Pre-setting firstMarker to %d on stateModule", targetMarker.id)
+            WMLogger:debug("Pre-setting firstMarker to %d, mode to %d", targetMarker.id, mode)
+
+            -- Set mode first
+            if vehicle.ad.stateModule.setMode then
+                vehicle.ad.stateModule:setMode(mode)
+            end
+
+            -- Set first marker (pickup/start location)
             if vehicle.ad.stateModule.setFirstMarker then
                 vehicle.ad.stateModule:setFirstMarker(targetMarker.id)
             end
-            -- Also try setFirstMarkerId if available
             if vehicle.ad.stateModule.setFirstMarkerId then
                 vehicle.ad.stateModule:setFirstMarkerId(targetMarker.id)
+            end
+
+            -- Set second marker (unload/delivery location) if provided
+            if unloadDestinationID > 0 then
+                if vehicle.ad.stateModule.setSecondMarker then
+                    vehicle.ad.stateModule:setSecondMarker(unloadDestinationID)
+                end
+                if vehicle.ad.stateModule.setSecondMarkerId then
+                    vehicle.ad.stateModule:setSecondMarkerId(unloadDestinationID)
+                end
+            end
+
+            -- Set fill type if provided (for selective loading)
+            if fillType ~= nil and fillType ~= "" then
+                if vehicle.ad.stateModule.setFillType then
+                    -- Find fill type index
+                    local fillTypeIndex = g_fillTypeManager:getFillTypeIndexByName(fillType)
+                    if fillTypeIndex ~= nil then
+                        vehicle.ad.stateModule:setFillType(fillTypeIndex)
+                        WMLogger:debug("Set fill type to %s (index: %d)", fillType, fillTypeIndex)
+                    end
+                end
             end
         end
 
@@ -363,12 +496,13 @@ function ADIntegration:startRoute(vehicle, targetName, action)
         self.pendingCallbacks[vehicle] = true
 
         -- Start driving with callback for completion notification
-        WMLogger:debug("Calling AutoDrive:StartDriving(vehicle, %d, -1, callback...)", targetMarker.id)
+        WMLogger:debug("Calling AutoDrive:StartDriving(vehicle, %d, %d, callback...)",
+            targetMarker.id, unloadDestinationID)
         local success, errorMsg = pcall(function()
             AutoDrive:StartDriving(
                 vehicle,
-                targetMarker.id,      -- destinationID
-                -1,                    -- unloadDestinationID (-1 = none)
+                targetMarker.id,       -- destinationID (pickup/start location)
+                unloadDestinationID,   -- unloadDestinationID (-1=none, -2=refuel, -3=park, >0=marker)
                 ADIntegration,         -- callBackObject
                 ADIntegration.onRouteCompleteCallback, -- callBackFunction
                 vehicle                -- callBackArg
@@ -376,17 +510,19 @@ function ADIntegration:startRoute(vehicle, targetName, action)
         end)
 
         if success then
-            WMLogger:info("AutoDrive:StartDriving called successfully")
+            WMLogger:info("AutoDrive:StartDriving called successfully (mode: %d)", mode)
 
             -- Debug: Check vehicle state after starting
             if vehicle.ad and vehicle.ad.stateModule then
                 local sm = vehicle.ad.stateModule
                 local isActive = sm.isActive and sm:isActive() or false
-                local mode = sm.getMode and sm:getMode() or "?"
+                local currentMode = sm.getMode and sm:getMode() or "?"
                 local firstMarker = sm.getFirstMarker and sm:getFirstMarker() or "?"
                 local firstMarkerName = sm.getFirstMarkerName and sm:getFirstMarkerName() or "?"
-                WMLogger:debug("AD state after start: active=%s, mode=%s, firstMarker=%s (%s)",
-                    tostring(isActive), tostring(mode), tostring(firstMarker), tostring(firstMarkerName))
+                local secondMarker = sm.getSecondMarker and sm:getSecondMarker() or "?"
+                WMLogger:debug("AD state after start: active=%s, mode=%s, firstMarker=%s (%s), secondMarker=%s",
+                    tostring(isActive), tostring(currentMode), tostring(firstMarker),
+                    tostring(firstMarkerName), tostring(secondMarker))
             end
 
             WMLogger:stateChange("AutoDrive", nil, "started")
@@ -400,8 +536,11 @@ function ADIntegration:startRoute(vehicle, targetName, action)
 
     -- Fallback: Try direct mode start
     if vehicle.ad.stateModule and vehicle.ad.stateModule.getCurrentMode then
-        vehicle.ad.stateModule:setMode(AutoDrive.MODE_DRIVETO or 1)
+        vehicle.ad.stateModule:setMode(mode)
         vehicle.ad.stateModule:setFirstMarker(targetMarker.id)
+        if unloadDestinationID > 0 and vehicle.ad.stateModule.setSecondMarker then
+            vehicle.ad.stateModule:setSecondMarker(unloadDestinationID)
+        end
         vehicle.ad.stateModule:getCurrentMode():start()
         return true
     end

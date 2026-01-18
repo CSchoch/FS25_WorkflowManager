@@ -68,6 +68,14 @@ function WMStorage:saveWorkflows(workflows)
             xmlFile:setString(stepKey .. "#type", step.type)
             xmlFile:setString(stepKey .. "#target", step.target)
             xmlFile:setString(stepKey .. "#action", step.action or "default")
+
+            -- AutoDrive advanced mode parameters
+            if step.unloadTarget ~= nil and step.unloadTarget ~= "" then
+                xmlFile:setString(stepKey .. "#unloadTarget", step.unloadTarget)
+            end
+            if step.fillType ~= nil and step.fillType ~= "" then
+                xmlFile:setString(stepKey .. "#fillType", step.fillType)
+            end
         end
     end
 
@@ -137,7 +145,10 @@ function WMStorage:loadWorkflows()
             local step = {
                 type = stepType,
                 target = xmlFile:getString(stepKey .. "#target", ""),
-                action = xmlFile:getString(stepKey .. "#action", "default")
+                action = xmlFile:getString(stepKey .. "#action", "default"),
+                -- AutoDrive advanced mode parameters
+                unloadTarget = xmlFile:getString(stepKey .. "#unloadTarget"),
+                fillType = xmlFile:getString(stepKey .. "#fillType")
             }
 
             table.insert(workflow.steps, step)
@@ -202,6 +213,14 @@ function WMStorage:exportWorkflow(workflow, filename)
         xmlFile:setString(stepKey .. "#type", step.type)
         xmlFile:setString(stepKey .. "#target", step.target)
         xmlFile:setString(stepKey .. "#action", step.action or "default")
+
+        -- AutoDrive advanced mode parameters
+        if step.unloadTarget ~= nil and step.unloadTarget ~= "" then
+            xmlFile:setString(stepKey .. "#unloadTarget", step.unloadTarget)
+        end
+        if step.fillType ~= nil and step.fillType ~= "" then
+            xmlFile:setString(stepKey .. "#fillType", step.fillType)
+        end
     end
 
     xmlFile:save()
@@ -248,7 +267,10 @@ function WMStorage:importWorkflow(filename)
         local step = {
             type = stepType,
             target = xmlFile:getString(stepKey .. "#target", ""),
-            action = xmlFile:getString(stepKey .. "#action", "default")
+            action = xmlFile:getString(stepKey .. "#action", "default"),
+            -- AutoDrive advanced mode parameters
+            unloadTarget = xmlFile:getString(stepKey .. "#unloadTarget"),
+            fillType = xmlFile:getString(stepKey .. "#fillType")
         }
 
         table.insert(workflow.steps, step)

@@ -245,12 +245,21 @@ function WMExecutor:executeCurrentStep(workflow)
     -- Execute based on step type
     if step.type == WorkflowManager.STEP_AUTODRIVE then
         -- AutoDrive: Use startRoute which internally uses StartDriving with callback
-        WMLogger:info("Starting AutoDrive step - vehicle: %s, target: %s, action: %s",
+        -- Pass all step parameters including unloadTarget and fillType
+        WMLogger:info("Starting AutoDrive step - vehicle: %s, target: %s, action: %s, unloadTarget: %s, fillType: %s",
             workflow.vehicle and (workflow.vehicle.getName and workflow.vehicle:getName() or "unknown") or "nil",
             step.target or "nil",
-            step.action or "nil")
+            step.action or "nil",
+            step.unloadTarget or "nil",
+            step.fillType or "nil")
 
-        local success = ADIntegration:startRoute(workflow.vehicle, step.target, step.action)
+        local success = ADIntegration:startRoute(
+            workflow.vehicle,
+            step.target,
+            step.action,
+            step.unloadTarget,
+            step.fillType
+        )
         if success then
             activeData.waitingForCompletion = true
             activeData.currentStepType = WorkflowManager.STEP_AUTODRIVE
