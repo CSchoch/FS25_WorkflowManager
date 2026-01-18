@@ -103,6 +103,11 @@ function WMManagerGUI:show()
     self.isVisible = true
     self:refresh()
 
+    -- Load data cache for AD destinations and CP courses (only loaded once per GUI session)
+    if WMEditorGUI and not WMEditorGUI.dataCacheLoaded then
+        WMEditorGUI:loadDataCache()
+    end
+
     -- Disable input to game while GUI is shown
     if g_inputBinding ~= nil then
         g_inputBinding:setShowMouseCursor(true)
@@ -127,6 +132,11 @@ function WMManagerGUI:hide()
     -- Also close editor if open
     if WMEditorGUI.isVisible then
         WMEditorGUI:close()
+    end
+
+    -- Clear data cache so it refreshes on next open
+    if WMEditorGUI then
+        WMEditorGUI:clearDataCache()
     end
 
     WMLogger:debug("WorkflowManagerGUI hidden")

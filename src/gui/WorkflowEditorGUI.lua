@@ -31,6 +31,12 @@ WMEditorGUI.availableFillTypes = {}
 WMEditorGUI.availableVehicles = {}
 WMEditorGUI.selectedVehicleIndex = 0
 
+-- Cached data for AD destinations and CP courses (loaded once when GUI opens)
+WMEditorGUI.cachedADDestinations = nil  -- Cached AutoDrive destinations
+WMEditorGUI.cachedCPCourses = nil       -- Cached Courseplay courses
+WMEditorGUI.cachedFillTypes = nil       -- Cached fill types
+WMEditorGUI.dataCacheLoaded = false     -- Flag to indicate if cache is loaded
+
 -- Editing state
 WMEditorGUI.editedName = ""
 
@@ -63,6 +69,12 @@ function WMEditorGUI:init()
     self.currentWorkflow = nil
     self.selectedStepIndex = 0
     self.availableVehicles = {}
+
+    -- Initialize cache as empty (will be loaded when main GUI opens)
+    self.cachedADDestinations = nil
+    self.cachedCPCourses = nil
+    self.cachedFillTypes = nil
+    self.dataCacheLoaded = false
 
     -- Create own overlay from white.png texture
     self.overlayId = nil
@@ -170,6 +182,69 @@ function WMEditorGUI:cleanup()
     self.selectedStepIndex = 0
     self.isAddStepDialogOpen = false
     self.availableVehicles = {}
+
+    -- Clear data cache
+    self.cachedADDestinations = nil
+    self.cachedCPCourses = nil
+    self.cachedFillTypes = nil
+    self.dataCacheLoaded = false
+end
+
+---Load all data caches (AD destinations, CP courses, fill types)
+---This should be called once when the main GUI opens
+function WMEditorGUI:loadDataCache()
+    WMLogger:debug("Loading data cache for AD destinations and CP courses...")
+
+    -- Load AutoDrive destinations
+    self.cachedADDestinations = {}
+    if ADIntegration and ADIntegration.isAvailable then
+        local adDests = ADIntegration:getDestinations()
+        if adDests then
+            for _, dest in ipairs(adDests) do
+                table.insert(self.cachedADDestinations, dest.displayName or dest.name or tostring(dest))
+            end
+        end
+        WMLogger:debug("Cached %d AutoDrive destinations", #self.cachedADDestinations)
+    else
+        WMLogger:debug("AutoDrive not available, no destinations cached")
+    end
+
+    -- Load Courseplay courses
+    self.cachedCPCourses = {}
+    if CPCoursesLoader and CPCoursesLoader.isInitialized then
+        local courses = CPCoursesLoader:getCourses()
+        if courses and #courses > 0 then
+            for _, course in ipairs(courses) do
+                table.insert(self.cachedCPCourses, course)
+            end
+        end
+        WMLogger:debug("Cached %d Courseplay courses", #self.cachedCPCourses)
+    else
+        WMLogger:debug("CPCoursesLoader not available, no courses cached")
+    end
+
+    -- Load fill types
+    self.cachedFillTypes = {g_i18n:getText("wm_none") or "(None)"}
+    if ADIntegration and ADIntegration.isAvailable then
+        local adFillTypes = ADIntegration:getFillTypeNames()
+        for _, name in ipairs(adFillTypes) do
+            table.insert(self.cachedFillTypes, name)
+        end
+        WMLogger:debug("Cached %d fill types", #self.cachedFillTypes - 1)  -- -1 for "(None)"
+    end
+
+    self.dataCacheLoaded = true
+    WMLogger:info("Data cache loaded: %d AD destinations, %d CP courses, %d fill types",
+        #self.cachedADDestinations, #self.cachedCPCourses, #self.cachedFillTypes - 1)
+end
+
+---Clear the data cache (called when GUI closes)
+function WMEditorGUI:clearDataCache()
+    self.cachedADDestinations = nil
+    self.cachedCPCourses = nil
+    self.cachedFillTypes = nil
+    self.dataCacheLoaded = false
+    WMLogger:debug("Data cache cleared")
 end
 
 ---Refresh the list of available vehicles
@@ -291,46 +366,33 @@ function WMEditorGUI:moveStepDown()
     self.selectedStepIndex = self.selectedStepIndex + 1
 end
 
----Get available targets based on step type
+---Get available targets based on step type (uses cached data)
 ---@return table targets List of target names (with folder prefixes for organization)
 function WMEditorGUI:getAvailableTargets()
     local targets = {}
 
     if self.addStepType == "autodrive" then
-        -- Get AutoDrive destinations (with group/folder support)
-        if ADIntegration and ADIntegration.isAvailable then
-            local adDests = ADIntegration:getDestinations()
-            if adDests then
-                for _, dest in ipairs(adDests) do
-                    -- Use displayName which includes group prefix (e.g., "GroupName/MarkerName")
-                    table.insert(targets, dest.displayName or dest.name or tostring(dest))
-                end
+        -- Use cached AutoDrive destinations
+        if self.cachedADDestinations and #self.cachedADDestinations > 0 then
+            for _, dest in ipairs(self.cachedADDestinations) do
+                table.insert(targets, dest)
             end
-        end
-        -- Add some defaults if none found
-        if #targets == 0 then
+        else
+            -- Add some defaults if none cached
             table.insert(targets, "Farm/Silo")
             table.insert(targets, "Farm/Workshop")
             table.insert(targets, "Field1")
             table.insert(targets, "Field2")
         end
     else
-        -- Courseplay courses - load from saved courses (already includes folder paths)
-        if CPCoursesLoader and CPCoursesLoader.isInitialized then
-            local courses = CPCoursesLoader:getCourses()
-            if courses and #courses > 0 then
-                for _, course in ipairs(courses) do
-                    table.insert(targets, course)
-                end
-            else
-                -- No courses found - show placeholder
-                table.insert(targets, "<No courses found>")
+        -- Use cached Courseplay courses
+        if self.cachedCPCourses and #self.cachedCPCourses > 0 then
+            for _, course in ipairs(self.cachedCPCourses) do
+                table.insert(targets, course)
             end
         else
-            -- Fallback if loader not available
-            table.insert(targets, "Harvest/Field1_Course")
-            table.insert(targets, "Harvest/Field2_Course")
-            table.insert(targets, "Cultivate/Field1_Course")
+            -- No courses found - show placeholder
+            table.insert(targets, "<No courses found>")
         end
     end
 
@@ -398,19 +460,16 @@ function WMEditorGUI:currentActionNeedsFillType()
     return currentAction == "pickup_deliver" or currentAction == "load"
 end
 
----Get available fill types
+---Get available fill types (uses cached data)
 ---@return table fillTypes List of fill type names with "None" as first option
 function WMEditorGUI:getAvailableFillTypes()
-    local fillTypes = {g_i18n:getText("wm_none") or "(None)"}
-
-    if ADIntegration and ADIntegration.isAvailable then
-        local adFillTypes = ADIntegration:getFillTypeNames()
-        for _, name in ipairs(adFillTypes) do
-            table.insert(fillTypes, name)
-        end
+    -- Use cached fill types if available
+    if self.cachedFillTypes and #self.cachedFillTypes > 0 then
+        return self.cachedFillTypes
     end
 
-    return fillTypes
+    -- Fallback if cache not loaded
+    return {g_i18n:getText("wm_none") or "(None)"}
 end
 
 ---Open the add step dialog

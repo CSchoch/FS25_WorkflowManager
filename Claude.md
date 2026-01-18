@@ -450,6 +450,13 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
     - Skips manual CP start when AD handles it, just monitors CP completion
     - Added wait timeout (5 seconds) for CP to start after AD handoff
     - Benefits: Smoother transitions, leverages AD's native CP integration
+  - **Data Caching Optimization (2026-01-18)**:
+    - AD destinations and CP courses now loaded once when GUI opens (not every draw/click)
+    - Added `WMEditorGUI:loadDataCache()` method to populate cache
+    - Added `WMEditorGUI:clearDataCache()` method to clear on GUI close
+    - Cache populated in `WMManagerGUI:show()` and cleared in `WMManagerGUI:hide()`
+    - `getAvailableTargets()` and `getAvailableFillTypes()` now use cached data
+    - Benefits: Improved performance, reduced API calls during GUI interaction
 
 ### In Progress
 - Milestone 5: Phase 2 Features (not yet started)
