@@ -745,3 +745,60 @@ function ADIntegration:getDriverName(vehicle)
 
     return nil
 end
+
+---Configure AutoDrive to automatically start Courseplay when route completes
+---Uses stateModule:setStartHelper(true) which is the official API
+---AutoDrive will check getStartHelper() and getUsedHelper() == HELPER_CP on completion
+---@param vehicle table Vehicle to configure
+---@param enable boolean If true, enables CP handoff; if false, disables it
+---@return boolean success True if configured successfully
+function ADIntegration:setStartCPOnCompletion(vehicle, enable)
+    if not self.isAvailable then
+        WMLogger:error("Cannot configure CP handoff - AutoDrive not available")
+        return false
+    end
+
+    if vehicle == nil or vehicle.ad == nil then
+        WMLogger:error("Cannot configure CP handoff - vehicle or vehicle.ad is nil")
+        return false
+    end
+
+    if vehicle.ad.stateModule == nil then
+        WMLogger:error("Cannot configure CP handoff - vehicle.ad.stateModule is nil")
+        return false
+    end
+
+    -- Check if Courseplay is the configured helper
+    local ADStateModule = FS25_AutoDrive and FS25_AutoDrive.ADStateModule
+    if ADStateModule then
+        local usedHelper = vehicle.ad.stateModule:getUsedHelper()
+        if usedHelper ~= ADStateModule.HELPER_CP then
+            WMLogger:warning("Vehicle helper is not Courseplay (helper=%s, expected=%s)",
+                tostring(usedHelper), tostring(ADStateModule.HELPER_CP))
+            -- Still try to set it - CP might start working
+        end
+    end
+
+    -- Use the official API: setStartHelper(true) tells AD to start the helper on completion
+    -- AutoDrive checks: getStartHelper() and getUsedHelper() == HELPER_CP
+    if vehicle.ad.stateModule.setStartHelper then
+        vehicle.ad.stateModule:setStartHelper(enable)
+        WMLogger:info("Configured AutoDrive to %s Courseplay on completion (setStartHelper=%s)",
+            enable and "start" or "not start", tostring(enable))
+        return true
+    else
+        WMLogger:error("Cannot configure CP handoff - setStartHelper not available")
+        return false
+    end
+end
+
+---Clear the Courseplay handoff flag
+---@param vehicle table Vehicle to configure
+function ADIntegration:clearCPHandoff(vehicle)
+    if vehicle ~= nil and vehicle.ad ~= nil and vehicle.ad.stateModule ~= nil then
+        if vehicle.ad.stateModule.setStartHelper then
+            vehicle.ad.stateModule:setStartHelper(false)
+            WMLogger:debug("Cleared AutoDrive CP handoff (setStartHelper=false)")
+        end
+    end
+end

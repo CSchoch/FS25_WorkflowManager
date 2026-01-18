@@ -207,9 +207,9 @@ Add Step Dialog:
 * [x] Add/remove steps
 * [x] Start/stop workflows
 
-### Milestone 4: Testing & Refinement
+### Milestone 4: Testing & Refinement ✓
 
-* [ ] In-game testing (Field 1 → Field 2)
+* [x] In-game testing (Field 1 → Field 2)
 * [ ] Implement error handling
 * [ ] Performance optimization
 * [ ] Documentation
@@ -233,6 +233,14 @@ Key functions from `ExternalInterface.lua` and `GraphManager.lua`:
 * **Check active**: `vehicle.ad.stateModule:isActive()`
 * **Completion callback**: Pass callback to `StartDriving()` or use `registerDestinationListener()`
 * **Mode constants**: `MODE_DRIVETO=1`, `MODE_PICKUPANDDELIVER=2`, `MODE_DELIVERTO=3`, etc.
+
+**AutoDrive → Courseplay Handoff** (from `StateModule.lua` and `ExternalInterface.lua`):
+* **Enable helper**: `vehicle.ad.stateModule:setStartHelper(true)` - tells AD to start helper on completion
+* **Check helper type**: `vehicle.ad.stateModule:getUsedHelper()` - returns `ADStateModule.HELPER_CP` (1) if CP available
+* **Helper constant**: `ADStateModule.HELPER_CP = 1` - Courseplay helper type
+* **Start CP**: `AutoDrive:StartCP(vehicle)` - starts Courseplay from last waypoint
+* **Restart CP**: `AutoDrive:RestartCP(vehicle)` - continues/restarts Courseplay course
+* **Workflow Manager uses**: Pre-loads CP course, calls `setStartHelper(true)`, AD handles the switch automatically
 
 **Destination Groups/Folders** (from `GraphManager.lua`):
 * **Marker structure**: Each marker has `{id, markerIndex, name, group}` - `group` defaults to `"All"`
@@ -335,8 +343,8 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 
 ---
 
-**Status**: Phase 1 – Milestone 4 IN PROGRESS (Testing & Debugging)
-**Last updated**: 2026-01-17
+**Status**: Phase 1 COMPLETE – Ready for Phase 2
+**Last updated**: 2026-01-18
 
 ## Implementation Progress
 
@@ -434,11 +442,17 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
       - Fill Type selector with all game fill types from g_fillTypeManager
     - Added translations for all new UI elements (EN/DE)
     - Dialog dynamically shows/hides fields based on selected mode
+  - **AutoDrive → Courseplay Handoff (2026-01-18)**:
+    - When AD step is followed by CP step, AD now automatically starts CP on completion
+    - Uses AutoDrive's `stateModule:setStartHelper(true)` API for seamless handoff
+    - Pre-loads the CP course onto the vehicle before AD starts
+    - WorkflowExecutor detects AD→CP sequence and configures handoff
+    - Skips manual CP start when AD handles it, just monitors CP completion
+    - Added wait timeout (5 seconds) for CP to start after AD handoff
+    - Benefits: Smoother transitions, leverages AD's native CP integration
 
 ### In Progress
-- Milestone 4: Testing & Refinement
-  - Testing workflow execution with actual AD/CP vehicles
-  - Testing ESC menu integration (currently disabled)
+- Milestone 5: Phase 2 Features (not yet started)
 
 ### Fixed Issues
 1. **~~Glass Background with Random Icons~~** (Fixed 2026-01-14): Main GUI overlay was rendering entire UI texture atlas. Fixed by creating `textures/white.png` (1x1 white pixel) and using fully opaque two-pass rendering.

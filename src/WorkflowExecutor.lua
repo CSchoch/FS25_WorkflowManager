@@ -253,6 +253,29 @@ function WMExecutor:executeCurrentStep(workflow)
             step.unloadTarget or "nil",
             step.fillType or "nil")
 
+        -- Check if next step is Courseplay - if so, configure AD to hand off to CP
+        local nextStep = workflow.steps[workflow.currentStep + 1]
+        local willHandoffToCP = false
+
+        if nextStep ~= nil and nextStep.type == WorkflowManager.STEP_COURSEPLAY then
+            WMLogger:info("Next step is Courseplay - configuring AD->CP handoff")
+
+            -- Pre-load the Courseplay course onto the vehicle
+            if not CPIntegration:hasCourse(workflow.vehicle) or true then  -- Always try to load correct course
+                WMLogger:info("Pre-loading Courseplay course for handoff: %s", nextStep.target or "nil")
+                local loadSuccess = CPIntegration:loadCourse(workflow.vehicle, nextStep.target)
+                if loadSuccess then
+                    -- Configure AutoDrive to start Courseplay when it completes
+                    -- Uses stateModule:setStartHelper(true) - AD will start CP automatically
+                    ADIntegration:setStartCPOnCompletion(workflow.vehicle, true)
+                    willHandoffToCP = true
+                    WMLogger:info("AD->CP handoff configured, course pre-loaded, setStartHelper enabled")
+                else
+                    WMLogger:warning("Failed to pre-load CP course, will start CP manually after AD completes")
+                end
+            end
+        end
+
         local success = ADIntegration:startRoute(
             workflow.vehicle,
             step.target,
@@ -263,8 +286,14 @@ function WMExecutor:executeCurrentStep(workflow)
         if success then
             activeData.waitingForCompletion = true
             activeData.currentStepType = WorkflowManager.STEP_AUTODRIVE
-            WMLogger:info("AutoDrive step started successfully, waiting for completion")
+            activeData.willHandoffToCP = willHandoffToCP  -- Track that AD will start CP
+            WMLogger:info("AutoDrive step started successfully, waiting for completion (handoffToCP=%s)",
+                tostring(willHandoffToCP))
         else
+            -- Clear handoff flag if AD failed to start
+            if willHandoffToCP then
+                ADIntegration:clearCPHandoff(workflow.vehicle)
+            end
             self:handleStepError(workflow, "Failed to start AutoDrive route: " .. (step.target or "nil"))
         end
 
@@ -361,13 +390,19 @@ end
 ---Handle step completion
 ---@param workflow table Workflow
 function WMExecutor:onStepCompleted(workflow)
-    WMLogger:info("Step %d completed for workflow %s", workflow.currentStep, workflow.name)
+    local activeData = self.activeWorkflows[workflow.id]
+    local completedStepNum = workflow.currentStep
+
+    WMLogger:info("Step %d completed for workflow %s", completedStepNum, workflow.name)
 
     -- Fire step completed event
     WMEventHandler:fireEvent(WMEventHandler.EVENT_STEP_COMPLETED, {
         workflowId = workflow.id,
-        stepNumber = workflow.currentStep
+        stepNumber = completedStepNum
     })
+
+    -- Check if AD handed off to CP (AD already started CP for us)
+    local adHandedOffToCP = activeData and activeData.willHandoffToCP
 
     -- Move to next step
     workflow.currentStep = workflow.currentStep + 1
@@ -375,8 +410,28 @@ function WMExecutor:onStepCompleted(workflow)
     -- Check if workflow is complete
     if workflow.currentStep > #workflow.steps then
         self:onWorkflowCompleted(workflow)
+    elseif adHandedOffToCP then
+        -- AD already started Courseplay - just set up monitoring, don't call executeCurrentStep
+        local nextStep = workflow.steps[workflow.currentStep]
+        WMLogger:info("AD handed off to CP - skipping CP start, monitoring step %d: %s",
+            workflow.currentStep, nextStep.target or "unknown")
+
+        -- Fire step started event for the CP step
+        WMEventHandler:fireEvent(WMEventHandler.EVENT_STEP_STARTED, {
+            workflowId = workflow.id,
+            stepNumber = workflow.currentStep,
+            stepType = nextStep.type,
+            target = nextStep.target
+        })
+
+        -- Set up CP monitoring (AD already started it)
+        activeData.waitingForCompletion = true
+        activeData.currentStepType = WorkflowManager.STEP_COURSEPLAY
+        activeData.willHandoffToCP = false  -- Clear the handoff flag
+        activeData.cpWasRunning = true  -- Assume CP is running since AD started it
+        activeData.cpStartedByAD = true  -- Track that AD started CP
     else
-        -- Execute next step
+        -- Normal case: Execute next step
         self:executeCurrentStep(workflow)
     end
 end
@@ -454,9 +509,32 @@ function WMExecutor:update(dt)
                     isComplete = true
                     WMLogger:debug("Courseplay step completed (was running, now stopped)")
                 elseif not cpRunning and not activeData.cpWasRunning then
-                    -- CP never started or failed to start
-                    WMLogger:warning("Courseplay never started for workflow %s", workflow.name)
-                    isComplete = true  -- Treat as complete to avoid hanging
+                    -- CP not running and was never detected running
+                    if activeData.cpStartedByAD then
+                        -- AD handed off to CP - give it some time to actually start
+                        -- Initialize wait counter if not set
+                        if activeData.cpStartWaitCount == nil then
+                            activeData.cpStartWaitCount = 0
+                        end
+                        activeData.cpStartWaitCount = activeData.cpStartWaitCount + 1
+
+                        -- Wait up to 10 checks (5 seconds at 500ms interval) for CP to start
+                        if activeData.cpStartWaitCount > 10 then
+                            WMLogger:warning("Courseplay did not start after AD handoff for workflow %s", workflow.name)
+                            isComplete = true  -- Treat as complete to avoid hanging
+                        else
+                            WMLogger:debug("Waiting for CP to start after AD handoff (%d/10)", activeData.cpStartWaitCount)
+                        end
+                    else
+                        -- CP never started or failed to start (not from AD handoff)
+                        WMLogger:warning("Courseplay never started for workflow %s", workflow.name)
+                        isComplete = true  -- Treat as complete to avoid hanging
+                    end
+                elseif cpRunning and activeData.cpStartedByAD then
+                    -- CP started successfully after AD handoff
+                    WMLogger:info("Courseplay started successfully after AD handoff")
+                    activeData.cpStartedByAD = false  -- Clear the flag
+                    activeData.cpStartWaitCount = nil
                 end
 
                 -- Update tracking
