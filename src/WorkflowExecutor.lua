@@ -304,18 +304,20 @@ function WMExecutor:executeCurrentStep(workflow)
             step.target or "nil",
             step.action or "nil")
 
-        -- Check if vehicle has the course loaded, if not try to load it
-        if not CPIntegration:hasCourse(workflow.vehicle) then
-            WMLogger:info("No course loaded on vehicle, attempting to load: %s", step.target)
+        -- Check if vehicle has the correct course loaded
+        local currentCourse = CPIntegration:getCurrentCourseName(workflow.vehicle)
+        local hasCourse = CPIntegration:hasCourse(workflow.vehicle)
+        local needsLoad = not hasCourse or currentCourse ~= step.target
+
+        if needsLoad then
+            WMLogger:info("Loading course for step: %s (current: %s)", step.target or "nil", currentCourse or "none")
             local loadSuccess = CPIntegration:loadCourse(workflow.vehicle, step.target)
             if not loadSuccess then
                 self:handleStepError(workflow, "Failed to load Courseplay course: " .. (step.target or "nil"))
                 return
             end
         else
-            -- Course is loaded - check if it's the right one
-            local currentCourse = CPIntegration:getCurrentCourseName(workflow.vehicle)
-            WMLogger:debug("Vehicle already has course loaded: %s", currentCourse or "unknown")
+            WMLogger:debug("Correct course already loaded: %s", currentCourse or "unknown")
         end
 
         -- Verify course is now loaded
