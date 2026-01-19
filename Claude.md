@@ -344,7 +344,7 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 ---
 
 **Status**: Phase 1 COMPLETE – Ready for Phase 2
-**Last updated**: 2026-01-18
+**Last updated**: 2026-01-19
 
 ## Implementation Progress
 
@@ -450,6 +450,11 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
     - Skips manual CP start when AD handles it, just monitors CP completion
     - Added wait timeout (5 seconds) for CP to start after AD handoff
     - Benefits: Smoother transitions, leverages AD's native CP integration
+  - **Auto-Save on Game Save (2026-01-19)**:
+    - Workflows now automatically saved when player saves the game
+    - Hooks `FSBaseMission.saveSavegame` via `Utils.appendedFunction`
+    - Also saves on: editor Save button, workflow deletion, map unload
+    - Log message: `[WorkflowManager] Game saving - persisting workflows`
 
 ### In Progress
 - Milestone 5: Phase 2 Features (not yet started)
@@ -477,6 +482,13 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
    - Use the proper public API: `vehicle:appendLoadedCpCourse(entity)`
    - This is the same method used by Courseplay's CpCourseManagerFrame GUI
    - The vehicle method internally calls `file:load()` with correct parameters
+9. **~~Courseplay Course Not Changing Between Consecutive CP Steps~~** (Fixed 2026-01-19): When two Courseplay steps ran in sequence, the second step would use the first step's course. Root cause: `executeCurrentStep` only loaded a course if `hasCourse()` returned false, not checking if the *correct* course was loaded. Fix:
+   - Now compares `getCurrentCourseName()` with `step.target`
+   - Loads new course if names differ or no course loaded
+10. **~~Workflows Not Persisted to XML~~** (Fixed 2026-01-19): Changes to workflows (create, edit, delete) were only saved in memory until map unload. Fix:
+    - Added `WorkflowManager:saveWorkflows()` call to editor's `saveAndClose()`
+    - Added `WorkflowManager:saveWorkflows()` call to main GUI's `onClickDelete()`
+    - Added `FSBaseMission.saveSavegame` hook for auto-save on game save
 
 ### Pending
 - modIcon.dds creation
@@ -506,6 +518,9 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 [WorkflowManager] Vehicle 'Name': hasAD=true, hasCP=true, type=tractor
 [WorkflowManager] Processed X vehicles, included Y with AD+CP
 [WorkflowManager] Loaded X Courseplay-compatible vehicle(s)
+[WorkflowManager] Hooked FSBaseMission.saveSavegame for auto-save
+[WorkflowManager] Game saving - persisting workflows
+[WorkflowManager] Loading course for step: X (current: Y)
 ```
 
 ### Testing Checklist
@@ -537,5 +552,7 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
   - [ ] Mode selector cycles through: Drive To, Pickup & Deliver, Deliver, Load, Unload
   - [ ] Unload Target field appears only when "Pickup & Deliver" is selected
   - [ ] Fill Type field shows all available fill types from game
-  - [ ] Test pickup_deliver workflow: load at target, deliver to unloadTarget
-  - [ ] Verify unloadTarget and fillType are saved/loaded correctly in XML
+- [ ] Test Workflow Persistence (2026-01-19):
+  - [ ] Create workflow, save game, reload - workflow should persist
+  - [ ] Delete workflow, save game, reload - workflow should be gone
+  - [ ] Two consecutive CP steps use correct courses for each step

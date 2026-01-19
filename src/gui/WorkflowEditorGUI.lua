@@ -152,6 +152,9 @@ function WMEditorGUI:saveAndClose()
         end
 
         WMLogger:info("Saved workflow: %s", self.currentWorkflow.name)
+
+        -- Persist to XML
+        WorkflowManager:saveWorkflows()
     end
     self:close()
 end
