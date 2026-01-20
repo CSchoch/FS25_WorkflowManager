@@ -267,6 +267,9 @@ function WMManagerGUI:onClickDelete()
         WorkflowManager:deleteWorkflow(workflow.id)
         self.selectedWorkflowIndex = 0
         self:refresh()
+
+        -- Persist to XML
+        WorkflowManager:saveWorkflows()
     end
 end
 

@@ -747,4 +747,15 @@ end
 -- Register as mod event listener
 addModEventListener(WorkflowManager)
 
+-- Hook into game save event to save workflows when player saves the game
+if FSBaseMission.saveSavegame ~= nil then
+    FSBaseMission.saveSavegame = Utils.appendedFunction(FSBaseMission.saveSavegame, function()
+        if WorkflowManager.isInitialized then
+            WMLogger:info("Game saving - persisting workflows")
+            WorkflowManager:saveWorkflows()
+        end
+    end)
+    WMLogger:info("Hooked FSBaseMission.saveSavegame for auto-save")
+end
+
 WMLogger:info("WorkflowManager module loaded")
