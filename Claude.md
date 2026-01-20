@@ -344,7 +344,7 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 ---
 
 **Status**: Phase 1 COMPLETE – Ready for Phase 2
-**Last updated**: 2026-01-19
+**Last updated**: 2026-01-20
 
 ## Implementation Progress
 
@@ -496,6 +496,17 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
     - Added `WorkflowManager:saveWorkflows()` call to editor's `saveAndClose()`
     - Added `WorkflowManager:saveWorkflows()` call to main GUI's `onClickDelete()`
     - Added `FSBaseMission.saveSavegame` hook for auto-save on game save
+11. **~~Courseplay Error When Entering Shop~~** (Fixed 2026-01-20): Error `CpCourseManager.lua:257: invalid argument #1 to 'next' (table expected, got nil)` when entering the shop or other menus. Root cause: `CPCoursesLoader` and `CPVehiclesLoader` were continuously scanning in the background (every 2-5 seconds), interfering with Courseplay's internal state. Fix:
+    - Added `guiIsOpen` flag to both loaders
+    - `update()` now only scans when `guiIsOpen = true`
+    - Removed `scanCourses()`/`scanVehicles()` from `init()` - no longer scans on map load
+    - Removed `directoryView.refresh()` call that was modifying Courseplay's internal state
+    - Added `setGuiOpen(isOpen)` function to control scanning
+    - `WorkflowEditorGUI:openWorkflow()` sets `guiIsOpen = true`, `close()` sets it to `false`
+    - Courses/vehicles now only scanned when Editor GUI is actually open
+12. **~~Courses Not Displayed in Add Step Dialog~~** (Fixed 2026-01-20): Courses were loaded (39 found in log) but not shown in the target selection dropdown. Root cause: `loadDataCache()` function existed but was never called. Fix:
+    - Added `self:loadDataCache()` call in `openWorkflow()` after `setGuiOpen(true)`
+    - Cache now properly populated with AD destinations, CP courses, and fill types
 
 ### Pending
 - modIcon.dds creation
@@ -528,6 +539,9 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 [WorkflowManager] Hooked FSBaseMission.saveSavegame for auto-save
 [WorkflowManager] Game saving - persisting workflows
 [WorkflowManager] Loading course for step: X (current: Y)
+[WorkflowManager] Loading data cache for AD destinations and CP courses...
+[WorkflowManager] Data cache loaded: X AD destinations, Y CP courses, Z fill types
+[WorkflowManager] Loaded X Courseplay course(s) from API
 ```
 
 ### Testing Checklist
@@ -563,3 +577,7 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
   - [ ] Create workflow, save game, reload - workflow should persist
   - [ ] Delete workflow, save game, reload - workflow should be gone
   - [ ] Two consecutive CP steps use correct courses for each step
+- [x] Test On-Demand Scanning (2026-01-20):
+  - [x] No Courseplay errors when entering shop ✓ Fixed
+  - [x] Courses only loaded when Editor GUI opens
+  - [x] Courses displayed in Add Step dialog when selecting Courseplay type

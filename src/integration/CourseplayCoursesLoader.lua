@@ -14,16 +14,19 @@ CPCoursesLoader = {}
 CPCoursesLoader.isInitialized = false
 CPCoursesLoader.courses = {}
 CPCoursesLoader.lastScanTime = 0
-CPCoursesLoader.scanInterval = 5000  -- Rescan every 5 seconds
+CPCoursesLoader.scanInterval = 5000  -- Rescan every 5 seconds (only when GUI is open)
+CPCoursesLoader.guiIsOpen = false  -- Only scan when GUI is open
 
 ---Initialize the courses loader
 function CPCoursesLoader:init()
     self.isInitialized = true
     self.courses = {}
     self.lastScanTime = 0
+    self.guiIsOpen = false
 
-    -- Do initial scan
-    self:scanCourses()
+    -- NOTE: Do NOT scan on init - only scan when GUI is opened
+    -- Scanning on init can interfere with Courseplay's internal state
+    -- and cause errors in CpCourseManager.lua
 end
 
 ---Get the Courseplay global object
@@ -267,10 +270,9 @@ function CPCoursesLoader:collectCoursesFromDirectoryView(directoryView, courses,
         return
     end
 
-    -- Try to refresh the directory view first
-    if type(directoryView.refresh) == "function" then
-        pcall(directoryView.refresh, directoryView)
-    end
+    -- NOTE: Do NOT call directoryView.refresh() here - it modifies Courseplay's internal state
+    -- and can cause errors like "invalid argument #1 to 'next' (table expected, got nil)"
+    -- in CpCourseManager.lua when Courseplay's update loop runs
 
     -- Get current directory name for building path
     local currentDirName = ""
@@ -523,10 +525,15 @@ function CPCoursesLoader:extractCoursesFromTable(coursesTable)
     return #courses > 0 and courses or nil
 end
 
----Update function - periodically rescan for new courses
+---Update function - periodically rescan for new courses (only when GUI is open)
 ---@param dt number Delta time in milliseconds
 function CPCoursesLoader:update(dt)
     if not self.isInitialized then
+        return
+    end
+
+    -- Only scan when GUI is open to avoid interfering with Courseplay's internal state
+    if not self.guiIsOpen then
         return
     end
 
@@ -534,6 +541,16 @@ function CPCoursesLoader:update(dt)
 
     if self.lastScanTime >= self.scanInterval then
         self.lastScanTime = 0
+        self:scanCourses()
+    end
+end
+
+---Set whether the GUI is open (controls automatic scanning)
+---@param isOpen boolean
+function CPCoursesLoader:setGuiOpen(isOpen)
+    self.guiIsOpen = isOpen
+    -- Do an immediate scan when GUI opens
+    if isOpen then
         self:scanCourses()
     end
 end

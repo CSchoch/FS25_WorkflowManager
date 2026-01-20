@@ -14,16 +14,19 @@ CPVehiclesLoader = {}
 CPVehiclesLoader.isInitialized = false
 CPVehiclesLoader.vehicles = {}
 CPVehiclesLoader.lastScanTime = 0
-CPVehiclesLoader.scanInterval = 2000  -- Rescan every 2 seconds
+CPVehiclesLoader.scanInterval = 2000  -- Rescan every 2 seconds (only when GUI is open)
+CPVehiclesLoader.guiIsOpen = false  -- Only scan when GUI is open
 
 ---Initialize the vehicles loader
 function CPVehiclesLoader:init()
     self.isInitialized = true
     self.vehicles = {}
     self.lastScanTime = 0
+    self.guiIsOpen = false
 
-    -- Do initial scan
-    self:scanVehicles()
+    -- NOTE: Do NOT scan on init - only scan when GUI is opened
+    -- Scanning on init can interfere with Courseplay's internal state
+    -- and cause errors in CpCourseManager.lua
 end
 
 ---Scan for Courseplay-compatible vehicles
@@ -290,10 +293,15 @@ function CPVehiclesLoader:extractVehiclesFromTable(vehiclesTable)
     return nil
 end
 
----Update function - periodically rescan for new vehicles
+---Update function - periodically rescan for new vehicles (only when GUI is open)
 ---@param dt number Delta time in milliseconds
 function CPVehiclesLoader:update(dt)
     if not self.isInitialized then
+        return
+    end
+
+    -- Only scan when GUI is open to avoid interfering with Courseplay's internal state
+    if not self.guiIsOpen then
         return
     end
 
@@ -301,6 +309,16 @@ function CPVehiclesLoader:update(dt)
 
     if self.lastScanTime >= self.scanInterval then
         self.lastScanTime = 0
+        self:scanVehicles()
+    end
+end
+
+---Set whether the GUI is open (controls automatic scanning)
+---@param isOpen boolean
+function CPVehiclesLoader:setGuiOpen(isOpen)
+    self.guiIsOpen = isOpen
+    -- Do an immediate scan when GUI opens
+    if isOpen then
         self:scanVehicles()
     end
 end

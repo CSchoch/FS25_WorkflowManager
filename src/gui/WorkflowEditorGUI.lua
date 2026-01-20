@@ -124,6 +124,13 @@ function WMEditorGUI:openWorkflow(workflow)
     self.isAddStepDialogOpen = false
     self.editedName = workflow.name or ""
 
+    -- Tell loaders to start scanning (only while GUI is open)
+    CPCoursesLoader:setGuiOpen(true)
+    CPVehiclesLoader:setGuiOpen(true)
+
+    -- Load data cache (AD destinations, CP courses, fill types)
+    self:loadDataCache()
+
     -- Refresh available vehicles
     self:refreshVehicleList()
 
@@ -147,6 +154,10 @@ function WMEditorGUI:close()
     self.currentWorkflow = nil
     self.selectedStepIndex = 0
     self.isAddStepDialogOpen = false
+
+    -- Stop loaders scanning when GUI is closed
+    CPCoursesLoader:setGuiOpen(false)
+    CPVehiclesLoader:setGuiOpen(false)
 
     -- Show main GUI again
     WMManagerGUI.isVisible = true
