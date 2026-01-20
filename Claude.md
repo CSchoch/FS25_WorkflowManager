@@ -507,6 +507,13 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 12. **~~Courses Not Displayed in Add Step Dialog~~** (Fixed 2026-01-20): Courses were loaded (39 found in log) but not shown in the target selection dropdown. Root cause: `loadDataCache()` function existed but was never called. Fix:
     - Added `self:loadDataCache()` call in `openWorkflow()` after `setGuiOpen(true)`
     - Cache now properly populated with AD destinations, CP courses, and fill types
+13. **~~Courseplay Step Completes Prematurely When CP Hands Off to AD~~** (Fixed 2026-01-20): When Courseplay finishes fieldwork and internally starts AutoDrive (e.g., to unload at a silo), WorkflowManager detected "CP stopped" and marked the step as complete, even though the vehicle was still working via AD. The full cycle can be: CP → AD (unload) → CP (continue) → AD → ... Root cause: `WorkflowExecutor.update()` only checked `CPIntegration:isRunning()` to detect completion. Fix:
+    - Now also checks `ADIntegration:isRunning()` when CP stops
+    - If AD is running after CP stops, sets `activeData.cpHandedOffToAD = true`
+    - When AD stops, checks if CP started again (AD may restart CP)
+    - If CP restarted, continues monitoring CP (handles cyclic handoffs)
+    - Only marks step complete when BOTH CP and AD are not running
+    - Added logging for all handoff transitions
 
 ### Pending
 - modIcon.dds creation
@@ -542,6 +549,9 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 [WorkflowManager] Loading data cache for AD destinations and CP courses...
 [WorkflowManager] Data cache loaded: X AD destinations, Y CP courses, Z fill types
 [WorkflowManager] Loaded X Courseplay course(s) from API
+[WorkflowManager] [DEBUG] Courseplay stopped but AutoDrive is running - waiting for AD
+[WorkflowManager] [DEBUG] AutoDrive completed and Courseplay restarted - continuing to monitor CP
+[WorkflowManager] [DEBUG] AutoDrive completed after Courseplay handoff - CP step complete
 ```
 
 ### Testing Checklist
@@ -581,3 +591,8 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
   - [x] No Courseplay errors when entering shop ✓ Fixed
   - [x] Courses only loaded when Editor GUI opens
   - [x] Courses displayed in Add Step dialog when selecting Courseplay type
+- [x] Test CP↔AD Cyclic Handoff (2026-01-20):
+  - [x] When CP finishes fieldwork and starts AD (e.g., for unloading), workflow waits for AD
+  - [x] When AD finishes and restarts CP, workflow continues monitoring CP
+  - [x] Debug log shows handoff transitions (enable DEBUG in DevConfig)
+  - [x] Step only completes when BOTH CP and AD are not running

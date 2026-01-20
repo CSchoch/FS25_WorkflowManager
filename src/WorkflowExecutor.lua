@@ -504,15 +504,48 @@ function WMExecutor:update(dt)
             elseif activeData.currentStepType == WorkflowManager.STEP_COURSEPLAY then
                 -- Courseplay: Check if CP is no longer running
                 -- We need to detect transition from running -> not running
+                -- Also handle cyclic handoffs: CP → AD (unload) → CP (continue) → AD → ...
                 local cpRunning = CPIntegration:isRunning(workflow.vehicle)
+                local adRunning = ADIntegration:isRunning(workflow.vehicle)
 
-                if activeData.cpWasRunning and not cpRunning then
-                    -- CP was running and now stopped = completed
-                    isComplete = true
-                    WMLogger:debug("Courseplay step completed (was running, now stopped)")
+                -- Handle case: CP handed off to AD and we're waiting for AD to complete
+                if activeData.cpHandedOffToAD then
+                    if not adRunning then
+                        -- AD finished after CP handed off to it
+                        -- But check if CP started again (AD may have restarted CP)
+                        if cpRunning then
+                            WMLogger:debug("AutoDrive completed and Courseplay restarted - continuing to monitor CP")
+                            activeData.cpHandedOffToAD = false
+                            activeData.cpWasRunning = true  -- Track that CP is running again
+                        else
+                            -- Neither CP nor AD running - truly complete
+                            WMLogger:debug("AutoDrive completed after Courseplay handoff - CP step complete")
+                            isComplete = true
+                            activeData.cpHandedOffToAD = false
+                        end
+                    -- else: still waiting for AD, no log needed (would spam every 500ms)
+                    end
+                elseif activeData.cpWasRunning and not cpRunning then
+                    -- CP was running and now stopped
+                    -- Check if CP handed off to AutoDrive
+                    if adRunning then
+                        -- CP stopped but AD is now running - CP internally started AD
+                        -- This happens when CP finishes fieldwork and starts AD for unloading
+                        WMLogger:debug("Courseplay stopped but AutoDrive is running - waiting for AD")
+                        activeData.cpHandedOffToAD = true
+                        -- Don't mark as complete - wait for AD to finish
+                    else
+                        -- CP stopped and AD is not running = truly completed
+                        isComplete = true
+                        WMLogger:debug("Courseplay step completed (was running, now stopped)")
+                    end
                 elseif not cpRunning and not activeData.cpWasRunning then
                     -- CP not running and was never detected running
-                    if activeData.cpStartedByAD then
+                    -- Check if AD is running (might have started before we could detect CP)
+                    if adRunning then
+                        WMLogger:debug("AutoDrive detected running at start of CP step - waiting for AD")
+                        activeData.cpHandedOffToAD = true
+                    elseif activeData.cpStartedByAD then
                         -- AD handed off to CP - give it some time to actually start
                         -- Initialize wait counter if not set
                         if activeData.cpStartWaitCount == nil then
@@ -534,7 +567,7 @@ function WMExecutor:update(dt)
                     end
                 elseif cpRunning and activeData.cpStartedByAD then
                     -- CP started successfully after AD handoff
-                    WMLogger:info("Courseplay started successfully after AD handoff")
+                    WMLogger:debug("Courseplay started successfully after AD handoff")
                     activeData.cpStartedByAD = false  -- Clear the flag
                     activeData.cpStartWaitCount = nil
                 end
