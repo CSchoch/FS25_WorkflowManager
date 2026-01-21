@@ -497,11 +497,21 @@ function WMManagerGUI:drawWorkflowRow(baseX, y, index, workflow)
     local isSelected = (index == self.selectedWorkflowIndex)
     local rowHeight = 0.04
 
-    -- Row background for selected
+    -- Row background (all rows get a background for visual separation)
     if isSelected then
-        setOverlayColor(self.overlayId, 0.2, 0.4, 0.6, 0.5)
-        renderOverlay(self.overlayId, baseX + 0.01, y - rowHeight + 0.01, 0.48, rowHeight)
+        setOverlayColor(self.overlayId, 0.2, 0.4, 0.6, 0.7)
+    elseif index % 2 == 0 then
+        -- Even rows: lighter background
+        setOverlayColor(self.overlayId, 0.12, 0.12, 0.15, 0.9)
+    else
+        -- Odd rows: darker background
+        setOverlayColor(self.overlayId, 0.08, 0.08, 0.10, 0.9)
     end
+    renderOverlay(self.overlayId, baseX + 0.01, y - rowHeight + 0.01, 0.48, rowHeight)
+
+    -- Row separator line at bottom
+    setOverlayColor(self.overlayId, 0.3, 0.3, 0.35, 0.4)
+    renderOverlay(self.overlayId, baseX + 0.02, y - rowHeight + 0.01, 0.46, 0.001)
 
     -- Row color based on status
     local textColor = {1, 1, 1, 1}

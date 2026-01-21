@@ -484,6 +484,15 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
     - Added `handleDropdownClick()` for click handling
     - Added `onScrollEvent()` for scroll wheel support
     - Benefits: Much faster selection for lists with many items
+  - **Row Separators for Lists (2026-01-21)**:
+    - Added visual row separation to workflow list, step list, and dropdown items
+    - Features:
+      - Alternating row backgrounds (darker/lighter) for better readability
+      - Subtle separator lines at the bottom of each row
+      - Consistent styling across all list types
+    - Updated `drawWorkflowRow()` in WorkflowManagerGUI
+    - Updated `drawStepRow()` in WorkflowEditorGUI
+    - Updated `drawDropdownList()` for dropdown items
 
 ### In Progress
 - Milestone 5: Phase 2 Features (not yet started)
@@ -645,3 +654,10 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
   - [x] When target dropdown is open, unload target dropdown field text is hidden
   - [x] Text reappears immediately when dropdown is closed
   - [x] Dropdown list items still show their text correctly
+- [x] Test Row Separators (2026-01-21):
+  - [x] Workflow list shows alternating row backgrounds
+  - [x] Workflow list has separator lines between rows
+  - [x] Step list shows alternating row backgrounds
+  - [x] Step list has separator lines between rows
+  - [x] Dropdown items show alternating backgrounds
+  - [x] Dropdown items have separator lines between items

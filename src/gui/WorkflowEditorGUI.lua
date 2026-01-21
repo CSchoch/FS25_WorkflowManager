@@ -1035,12 +1035,25 @@ function WMEditorGUI:drawDropdownList(x, y, w, dropdownName, items, selectedInde
         local isSelected = (i == selectedIndex)
 
         if isItemHovered then
-            setOverlayColor(self.overlayId, 0.3, 0.5, 0.7, 0.6)
+            setOverlayColor(self.overlayId, 0.3, 0.5, 0.7, 0.8)
             renderOverlay(self.overlayId, x + 0.002, itemY, w - 0.004, itemH)
         elseif isSelected then
-            setOverlayColor(self.overlayId, 0.2, 0.4, 0.2, 0.5)
+            setOverlayColor(self.overlayId, 0.2, 0.4, 0.2, 0.7)
+            renderOverlay(self.overlayId, x + 0.002, itemY, w - 0.004, itemH)
+        else
+            -- Alternating row background for non-hovered/non-selected items
+            local rowIndex = i - startIndex
+            if rowIndex % 2 == 0 then
+                setOverlayColor(self.overlayId, 0.14, 0.14, 0.17, 0.95)
+            else
+                setOverlayColor(self.overlayId, 0.10, 0.10, 0.12, 0.95)
+            end
             renderOverlay(self.overlayId, x + 0.002, itemY, w - 0.004, itemH)
         end
+
+        -- Row separator line at bottom of each item
+        setOverlayColor(self.overlayId, 0.4, 0.4, 0.45, 0.3)
+        renderOverlay(self.overlayId, x + 0.01, itemY, w - 0.02, 0.001)
 
         -- Truncate text if needed
         local maxChars = math.floor((w - 0.02) / 0.008)
@@ -1244,11 +1257,19 @@ function WMEditorGUI:drawStepRow(baseX, y, index, step)
 
     -- Row background (always draw, just the overlay)
     if isSelected then
-        setOverlayColor(self.overlayId, 0.2, 0.5, 0.2, 0.5)
+        setOverlayColor(self.overlayId, 0.2, 0.5, 0.2, 0.7)
+    elseif index % 2 == 0 then
+        -- Even rows: lighter background
+        setOverlayColor(self.overlayId, 0.12, 0.12, 0.15, 0.9)
     else
-        setOverlayColor(self.overlayId, 0.1, 0.1, 0.12, 0.5)
+        -- Odd rows: darker background
+        setOverlayColor(self.overlayId, 0.08, 0.08, 0.10, 0.9)
     end
     renderOverlay(self.overlayId, baseX + 0.01, y, L.bgW - 0.02, rowHeight)
+
+    -- Row separator line at bottom
+    setOverlayColor(self.overlayId, 0.3, 0.3, 0.35, 0.4)
+    renderOverlay(self.overlayId, baseX + 0.02, y, L.bgW - 0.04, 0.001)
 
     -- Skip text rendering if covered by dropdown
     if isCovered then
