@@ -344,7 +344,7 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 ---
 
 **Status**: Phase 1 COMPLETE – Ready for Phase 2
-**Last updated**: 2026-01-20
+**Last updated**: 2026-01-21
 
 ## Implementation Progress
 
@@ -462,6 +462,13 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
     - Hooks `FSBaseMission.saveSavegame` via `Utils.appendedFunction`
     - Also saves on: editor Save button, workflow deletion, map unload
     - Log message: `[WorkflowManager] Game saving - persisting workflows`
+  - **Double-Click to Edit (2026-01-21)**:
+    - Double-clicking a workflow row in the main GUI opens the editor
+    - Double-clicking a step row in the workflow editor opens the edit step dialog
+    - Uses 400ms threshold for double-click detection
+    - Tracks `lastClickTime` and `lastClickIndex`/`lastClickStepIndex` for same-row detection
+    - UI hints updated to show "Double-click to edit" in both GUIs
+    - Fixed broken `onEditClick` references to use `onClickEdit`
 
 ### In Progress
 - Milestone 5: Phase 2 Features (not yet started)
@@ -552,6 +559,8 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 [WorkflowManager] [DEBUG] Courseplay stopped but AutoDrive is running - waiting for AD
 [WorkflowManager] [DEBUG] AutoDrive completed and Courseplay restarted - continuing to monitor CP
 [WorkflowManager] [DEBUG] AutoDrive completed after Courseplay handoff - CP step complete
+[WorkflowManager] Double-click on workflow X - opening editor
+[WorkflowManager] Double-click on step X - opening edit dialog
 ```
 
 ### Testing Checklist
@@ -596,3 +605,8 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
   - [x] When AD finishes and restarts CP, workflow continues monitoring CP
   - [x] Debug log shows handoff transitions (enable DEBUG in DevConfig)
   - [x] Step only completes when BOTH CP and AD are not running
+- [ ] Test Double-Click to Edit (2026-01-21):
+  - [ ] Double-click on workflow row opens editor
+  - [ ] Double-click on step row opens edit step dialog
+  - [ ] Single click only selects the row (both GUIs)
+  - [ ] Double-click on different rows doesn't trigger edit (must be same row)

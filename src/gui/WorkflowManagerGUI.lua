@@ -27,6 +27,11 @@ WMManagerGUI.mouseX = 0
 WMManagerGUI.mouseY = 0
 WMManagerGUI.wasMouseDown = false
 
+-- Double-click tracking
+WMManagerGUI.lastClickTime = 0
+WMManagerGUI.lastClickIndex = 0
+WMManagerGUI.DOUBLE_CLICK_THRESHOLD = 400  -- milliseconds
+
 -- Button positions (set during draw)
 WMManagerGUI.buttonAreas = {}
 
@@ -42,6 +47,8 @@ function WMManagerGUI:init()
     self.mouseY = 0
     self.wasMouseDown = false
     self.buttonAreas = {}
+    self.lastClickTime = 0
+    self.lastClickIndex = 0
 
     -- Create overlay for rendering solid colors
     -- Use our mod's white.png texture (1x1 white pixel that can be tinted)
@@ -218,7 +225,7 @@ end
 ---Handle workflow double click (callback from GUI)
 function WMManagerGUI:onWorkflowDoubleClick(list, section, index)
     self:onWorkflowSelected(index)
-    self:onEditClick()
+    self:onClickEdit()
 end
 
 ---Handle "New" button click
@@ -419,7 +426,7 @@ function WMManagerGUI:draw()
 
     -- Draw key hints
     setTextColor(0.5, 0.5, 0.5, 1)
-    renderText(bgX + bgW - 0.22, statusY, 0.012, "Alt+W: Toggle | 1-9: Select")
+    renderText(bgX + bgW - 0.28, statusY, 0.012, "Double-click to edit | 1-9: Select")
 end
 
 ---Draw toolbar buttons
@@ -641,11 +648,32 @@ function WMManagerGUI:handleListClick(x, y)
         for i = 1, math.min(#workflows, 12) do
             local rowY = listStartY - (i - 1) * rowHeight
             if y >= rowY - rowHeight + 0.01 and y <= rowY + 0.01 then
-                self:onWorkflowSelected(i)
+                -- Get current time in milliseconds
+                local currentTime = g_currentMission ~= nil and g_currentMission.time or 0
+
+                -- Check for double-click on the same row
+                if self.lastClickIndex == i and (currentTime - self.lastClickTime) < self.DOUBLE_CLICK_THRESHOLD then
+                    -- Double-click detected - open editor
+                    WMLogger:debug("Double-click on workflow %d - opening editor", i)
+                    self:onWorkflowSelected(i)
+                    self:onClickEdit()
+                    -- Reset double-click tracking
+                    self.lastClickTime = 0
+                    self.lastClickIndex = 0
+                else
+                    -- Single click - just select
+                    self:onWorkflowSelected(i)
+                    self.lastClickTime = currentTime
+                    self.lastClickIndex = i
+                end
                 return
             end
         end
     end
+
+    -- Click outside list area - reset double-click tracking
+    self.lastClickTime = 0
+    self.lastClickIndex = 0
 end
 
 ---Cleanup the GUI and release resources
@@ -661,6 +689,8 @@ function WMManagerGUI:cleanup()
     self.selectedWorkflowIndex = 0
     self.listData = {}
     self.buttonAreas = {}
+    self.lastClickTime = 0
+    self.lastClickIndex = 0
 end
 
 ---Handle keyboard/mouse input
@@ -688,7 +718,7 @@ function WMManagerGUI:handleInput()
     -- Enter to edit selected
     if Input.isKeyPressed(Input.KEY_return) then
         if self.selectedWorkflowIndex > 0 then
-            self:onEditClick()
+            self:onClickEdit()
         end
     end
 

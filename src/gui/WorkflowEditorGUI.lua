@@ -45,6 +45,11 @@ WMEditorGUI.mouseX = 0
 WMEditorGUI.mouseY = 0
 WMEditorGUI.wasMouseDown = false
 
+-- Double-click tracking for step list
+WMEditorGUI.lastClickTime = 0
+WMEditorGUI.lastClickStepIndex = 0
+WMEditorGUI.DOUBLE_CLICK_THRESHOLD = 400  -- milliseconds
+
 -- Overlay ID for rendering
 WMEditorGUI.overlayId = nil
 
@@ -202,6 +207,10 @@ function WMEditorGUI:cleanup()
     self.cachedCPCourses = nil
     self.cachedFillTypes = nil
     self.dataCacheLoaded = false
+
+    -- Reset double-click tracking
+    self.lastClickTime = 0
+    self.lastClickStepIndex = 0
 end
 
 ---Load all data caches (AD destinations, CP courses, fill types)
@@ -788,6 +797,10 @@ function WMEditorGUI:draw()
     renderText(L.bgX + L.margin, currentY, 0.018, g_i18n:getText("wm_editor_steps"))
     setTextBold(false)
 
+    -- Double-click hint
+    setTextColor(0.5, 0.5, 0.5, 1)
+    renderText(L.bgX + L.bgW - 0.18, currentY, 0.011, "Double-click to edit")
+
     -- Step toolbar buttons
     local toolbarX = L.bgX + 0.12
     self:drawButton(toolbarX, currentY - 0.01, 0.07, L.smallBtnH, "+ " .. g_i18n:getText("wm_button_add"), {0.2, 0.5, 0.2, 1})
@@ -1260,10 +1273,31 @@ function WMEditorGUI:handleStepListClick(x, y)
     for i = 1, math.min(#self.currentWorkflow.steps, 8) do
         local rowY = stepsStartY - (i * L.rowHeight)
         if self:isMouseInArea(L.bgX + 0.01, rowY, L.bgW - 0.02, L.rowHeight - 0.005) then
-            self.selectedStepIndex = i
+            -- Get current time in milliseconds
+            local currentTime = g_currentMission ~= nil and g_currentMission.time or 0
+
+            -- Check for double-click on the same row
+            if self.lastClickStepIndex == i and (currentTime - self.lastClickTime) < self.DOUBLE_CLICK_THRESHOLD then
+                -- Double-click detected - open edit dialog
+                WMLogger:debug("Double-click on step %d - opening edit dialog", i)
+                self.selectedStepIndex = i
+                self:openEditStepDialog()
+                -- Reset double-click tracking
+                self.lastClickTime = 0
+                self.lastClickStepIndex = 0
+            else
+                -- Single click - just select
+                self.selectedStepIndex = i
+                self.lastClickTime = currentTime
+                self.lastClickStepIndex = i
+            end
             return
         end
     end
+
+    -- Click outside step list - reset double-click tracking
+    self.lastClickTime = 0
+    self.lastClickStepIndex = 0
 end
 
 ---Handle click on step dialog (add or edit)
