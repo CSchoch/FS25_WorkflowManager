@@ -329,10 +329,11 @@ function ADIntegration:actionNeedsFillType(action)
     return action == "pickup_deliver" or action == "load"
 end
 
----Get available fill types from the game
+---Get available fill types from the game (deduplicated by title)
 ---@return table fillTypes List of {index, name, title} tables
 function ADIntegration:getAvailableFillTypes()
     local fillTypes = {}
+    local seenTitles = {}  -- Track titles we've already added to avoid duplicates
 
     if g_fillTypeManager == nil then
         WMLogger:debug("g_fillTypeManager not available")
@@ -345,13 +346,18 @@ function ADIntegration:getAvailableFillTypes()
     end
 
     for index, fillType in ipairs(allFillTypes) do
-        -- Skip non-transportable types
-        if fillType.name ~= "UNKNOWN" and fillType.name ~= "AIR" then
-            table.insert(fillTypes, {
-                index = index,
-                name = fillType.name,
-                title = fillType.title or fillType.name
-            })
+        -- Skip UNKNOWN (invalid placeholder type)
+        if fillType.name ~= "UNKNOWN" then
+            local title = fillType.title or fillType.name
+            -- Deduplicate by title (some fill types have same display name)
+            if not seenTitles[title] then
+                seenTitles[title] = true
+                table.insert(fillTypes, {
+                    index = index,
+                    name = fillType.name,
+                    title = title
+                })
+            end
         end
     end
 
@@ -360,7 +366,7 @@ function ADIntegration:getAvailableFillTypes()
         return (a.title or "") < (b.title or "")
     end)
 
-    WMLogger:debug("Found %d fill types", #fillTypes)
+    WMLogger:debug("Found %d fill types (deduplicated)", #fillTypes)
     return fillTypes
 end
 

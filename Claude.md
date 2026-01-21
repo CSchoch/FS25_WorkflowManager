@@ -493,6 +493,12 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
     - Updated `drawWorkflowRow()` in WorkflowManagerGUI
     - Updated `drawStepRow()` in WorkflowEditorGUI
     - Updated `drawDropdownList()` for dropdown items
+  - **Fill Type Deduplication (2026-01-21)**:
+    - Fill type dropdown now deduplicates entries by display title
+    - Only excludes UNKNOWN (invalid placeholder type)
+    - Uses `seenTitles` lookup table to prevent duplicate display names
+    - Note: AD/CP filter based on vehicle's actual fill unit capabilities (not static list)
+    - Benefits: No more duplicate entries in the dropdown
 
 ### In Progress
 - Milestone 5: Phase 2 Features (not yet started)
@@ -661,3 +667,7 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
   - [x] Step list has separator lines between rows
   - [x] Dropdown items show alternating backgrounds
   - [x] Dropdown items have separator lines between items
+- [x] Test Fill Type Deduplication (2026-01-21):
+  - [x] Fill Type dropdown does NOT show duplicate entries
+  - [x] Fill Type dropdown does NOT show UNKNOWN
+  - [x] All cargo types are available (WHEAT, BARLEY, DIESEL, etc.)
