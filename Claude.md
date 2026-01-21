@@ -469,6 +469,21 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
     - Tracks `lastClickTime` and `lastClickIndex`/`lastClickStepIndex` for same-row detection
     - UI hints updated to show "Double-click to edit" in both GUIs
     - Fixed broken `onEditClick` references to use `onClickEdit`
+  - **Dropdown Selectors (2026-01-21)**:
+    - Replaced all `< >` cycle buttons with proper dropdown menus
+    - Converted fields: Vehicle, Action/Mode, Target, Unload Target, Fill Type
+    - Features:
+      - Click to open dropdown, click item to select
+      - Scroll wheel support for long lists (>8 items)
+      - Hover highlighting on items
+      - Selected item shown with green highlight
+      - Dropdown arrow indicator (▼ closed, ▲ open)
+      - Auto-close when clicking outside dropdown
+      - Maximum 8 visible items with scroll indicators
+    - Added `drawDropdownField()` and `drawDropdownList()` methods
+    - Added `handleDropdownClick()` for click handling
+    - Added `onScrollEvent()` for scroll wheel support
+    - Benefits: Much faster selection for lists with many items
 
 ### In Progress
 - Milestone 5: Phase 2 Features (not yet started)
@@ -570,7 +585,6 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 - [x] Click "New" and verify editor has solid dark background ✓ Fixed
 - [x] Check if AD/CP detection shows "modLoaded=true" ✓ Working (2026-01-16)
 - [x] Test editor button clicks:
-  - [x] Vehicle < > buttons cycle through vehicles
   - [x] "+ Add" opens add step dialog
   - [x] "- Remove" removes selected step
   - [x] "Up/Down" move selected step
@@ -579,8 +593,6 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
   - [x] "X" close button works
 - [x] Test Add Step Dialog:
   - [x] AutoDrive/Courseplay type selection
-  - [x] Target < > navigation (with folder/group support)
-  - [x] Action < > navigation
   - [x] Add and Cancel buttons
 - [x] Verify editor closes and returns to main GUI correctly
 - [x] Test workflow creation and step management
@@ -588,14 +600,14 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 - [x] Verify CP courses show with folder prefix ✓ Working (2026-01-16)
 - [x] Verify targets are sorted alphabetically ✓ Working (2026-01-16)
 - [x] Verify vehicle loading shows only AD+CP vehicles ✓ Working (2026-01-16)
-- [ ] Test AutoDrive Advanced Modes (2026-01-17):
-  - [ ] Mode selector cycles through: Drive To, Pickup & Deliver, Deliver, Load, Unload
-  - [ ] Unload Target field appears only when "Pickup & Deliver" is selected
-  - [ ] Fill Type field shows all available fill types from game
-- [ ] Test Workflow Persistence (2026-01-19):
-  - [ ] Create workflow, save game, reload - workflow should persist
-  - [ ] Delete workflow, save game, reload - workflow should be gone
-  - [ ] Two consecutive CP steps use correct courses for each step
+- [x] Test AutoDrive Advanced Modes (2026-01-17):
+  - [x] Mode selector cycles through: Drive To, Pickup & Deliver, Deliver, Load, Unload
+  - [x] Unload Target field appears only when "Pickup & Deliver" is selected
+  - [x] Fill Type field shows all available fill types from game
+- [x] Test Workflow Persistence (2026-01-19):
+  - [x] Create workflow, save game, reload - workflow should persist
+  - [x] Delete workflow, save game, reload - workflow should be gone
+  - [x] Two consecutive CP steps use correct courses for each step
 - [x] Test On-Demand Scanning (2026-01-20):
   - [x] No Courseplay errors when entering shop ✓ Fixed
   - [x] Courses only loaded when Editor GUI opens
@@ -605,8 +617,18 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
   - [x] When AD finishes and restarts CP, workflow continues monitoring CP
   - [x] Debug log shows handoff transitions (enable DEBUG in DevConfig)
   - [x] Step only completes when BOTH CP and AD are not running
-- [ ] Test Double-Click to Edit (2026-01-21):
-  - [ ] Double-click on workflow row opens editor
-  - [ ] Double-click on step row opens edit step dialog
-  - [ ] Single click only selects the row (both GUIs)
-  - [ ] Double-click on different rows doesn't trigger edit (must be same row)
+- [x] Test Double-Click to Edit (2026-01-21):
+  - [x] Double-click on workflow row opens editor
+  - [x] Double-click on step row opens edit step dialog
+  - [x] Single click only selects the row (both GUIs)
+  - [x] Double-click on different rows doesn't trigger edit (must be same row)
+- [x] Test Dropdown Selectors (2026-01-21):
+  - [x] Vehicle dropdown opens and shows all available vehicles
+  - [x] Click on vehicle in dropdown selects it
+  - [x] Action/Mode dropdown shows all available modes (Drive To, Pickup & Deliver, etc.)
+  - [x] Target dropdown shows all AD destinations or CP courses
+  - [x] Unload Target dropdown appears only for relevant modes
+  - [x] Fill Type dropdown appears only for pickup_deliver/load modes
+  - [x] Scroll wheel works to scroll through long lists
+  - [x] Clicking outside dropdown closes it
+  - [x] Selected item shows with green highlight

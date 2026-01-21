@@ -50,6 +50,12 @@ WMEditorGUI.lastClickTime = 0
 WMEditorGUI.lastClickStepIndex = 0
 WMEditorGUI.DOUBLE_CLICK_THRESHOLD = 400  -- milliseconds
 
+-- Dropdown state
+WMEditorGUI.openDropdown = nil  -- Name of currently open dropdown (nil = none open)
+WMEditorGUI.dropdownScrollOffset = 0  -- Scroll offset for long lists
+WMEditorGUI.DROPDOWN_MAX_VISIBLE = 8  -- Max items visible in dropdown
+WMEditorGUI.DROPDOWN_ITEM_HEIGHT = 0.03  -- Height of each dropdown item
+
 -- Overlay ID for rendering
 WMEditorGUI.overlayId = nil
 
@@ -80,6 +86,12 @@ function WMEditorGUI:init()
     self.cachedCPCourses = nil
     self.cachedFillTypes = nil
     self.dataCacheLoaded = false
+
+    -- Initialize dropdown state
+    self.openDropdown = nil
+    self.dropdownScrollOffset = 0
+    self.vehicleDropdownPos = nil
+    self.dialogDropdowns = {}
 
     -- Create own overlay from white.png texture
     self.overlayId = nil
@@ -159,6 +171,10 @@ function WMEditorGUI:close()
     self.currentWorkflow = nil
     self.selectedStepIndex = 0
     self.isAddStepDialogOpen = false
+    self.isEditStepDialogOpen = false
+
+    -- Close any open dropdown
+    self:closeDropdown()
 
     -- Stop loaders scanning when GUI is closed
     CPCoursesLoader:setGuiOpen(false)
@@ -200,6 +216,7 @@ function WMEditorGUI:cleanup()
     self.currentWorkflow = nil
     self.selectedStepIndex = 0
     self.isAddStepDialogOpen = false
+    self.isEditStepDialogOpen = false
     self.availableVehicles = {}
 
     -- Clear data cache
@@ -211,6 +228,12 @@ function WMEditorGUI:cleanup()
     -- Reset double-click tracking
     self.lastClickTime = 0
     self.lastClickStepIndex = 0
+
+    -- Reset dropdown state
+    self.openDropdown = nil
+    self.dropdownScrollOffset = 0
+    self.vehicleDropdownPos = nil
+    self.dialogDropdowns = {}
 end
 
 ---Load all data caches (AD destinations, CP courses, fill types)
@@ -579,6 +602,8 @@ function WMEditorGUI:closeStepDialog()
     self.isAddStepDialogOpen = false
     self.isEditStepDialogOpen = false
     self.editingStepIndex = 0
+    -- Close any open dropdown
+    self:closeDropdown()
 end
 
 ---Close the add step dialog (legacy, calls closeStepDialog)
@@ -765,30 +790,21 @@ function WMEditorGUI:draw()
     setTextColor(0.8, 0.8, 0.8, 1)
     renderText(L.bgX + L.margin, currentY, 0.016, g_i18n:getText("wm_editor_vehicle") .. ":")
 
-    -- Prev button
-    self:drawButton(L.bgX + 0.12, currentY - 0.008, L.smallBtnW, L.smallBtnH, "<", {0.3, 0.3, 0.5, 1})
-
-    -- Vehicle name display
-    setOverlayColor(self.overlayId, 0.1, 0.1, 0.12, 1)
-    renderOverlay(self.overlayId, L.bgX + 0.17, currentY - 0.008, 0.25, 0.03)
-
-    local vehicleText = g_i18n:getText("wm_no_vehicle")
-    if self.selectedVehicleIndex > 0 and self.selectedVehicleIndex <= #self.availableVehicles then
-        vehicleText = self.availableVehicles[self.selectedVehicleIndex].name
+    -- Vehicle dropdown field
+    local vehicleNames = {}
+    for _, vData in ipairs(self.availableVehicles) do
+        table.insert(vehicleNames, vData.name)
     end
-    if string.len(vehicleText) > 22 then
-        vehicleText = string.sub(vehicleText, 1, 20) .. ".."
-    end
-    setTextColor(1, 1, 1, 1)
-    renderText(L.bgX + 0.18, currentY, 0.015, vehicleText)
+    local vehicleFieldX = L.bgX + 0.12
+    local vehicleFieldY = currentY - 0.008
+    local vehicleFieldW = 0.35
+    local vehicleFieldH = 0.035
 
-    -- Next button
-    self:drawButton(L.bgX + 0.43, currentY - 0.008, L.smallBtnW, L.smallBtnH, ">", {0.3, 0.3, 0.5, 1})
+    self:drawDropdownField(vehicleFieldX, vehicleFieldY, vehicleFieldW, vehicleFieldH,
+        "vehicle", vehicleNames, self.selectedVehicleIndex, g_i18n:getText("wm_no_vehicle"))
 
-    -- Vehicle count
-    setTextColor(0.5, 0.5, 0.5, 1)
-    local countText = string.format("(%d/%d)", self.selectedVehicleIndex, #self.availableVehicles)
-    renderText(L.bgX + 0.48, currentY, 0.012, countText)
+    -- Store position for dropdown list (drawn at end)
+    self.vehicleDropdownPos = {x = vehicleFieldX, y = vehicleFieldY, w = vehicleFieldW, h = vehicleFieldH}
 
     -- === STEPS SECTION ===
     currentY = currentY - 0.06
@@ -846,6 +862,16 @@ function WMEditorGUI:draw()
 
     self:drawButton(centerX - 0.22, bottomY, L.buttonW, L.buttonH, g_i18n:getText("wm_button_save"), {0.2, 0.6, 0.2, 1})
     self:drawButton(centerX - 0.06, bottomY, L.buttonW, L.buttonH, g_i18n:getText("wm_button_cancel"), {0.6, 0.3, 0.3, 1})
+
+    -- === DRAW DROPDOWN LISTS (on top of everything) ===
+    if self.vehicleDropdownPos then
+        local vPos = self.vehicleDropdownPos
+        local vehicleNames = {}
+        for _, vData in ipairs(self.availableVehicles) do
+            table.insert(vehicleNames, vData.name)
+        end
+        self:drawDropdownList(vPos.x, vPos.y, vPos.w, "vehicle", vehicleNames, self.selectedVehicleIndex)
+    end
 end
 
 ---Draw a button
@@ -878,6 +904,256 @@ function WMEditorGUI:drawButton(x, y, w, h, text, color)
     setTextColor(1, 1, 1, 1)
     local textWidth = getTextWidth(0.014, text)
     renderText(x + (w - textWidth) / 2, y + h * 0.3, 0.014, text)
+end
+
+---Draw a dropdown selector field
+---@param x number X position
+---@param y number Y position
+---@param w number Width
+---@param h number Height
+---@param dropdownName string Unique name for this dropdown
+---@param items table List of items to display
+---@param selectedIndex number Currently selected index (0 = none)
+---@param placeholder string Text to show when nothing selected
+function WMEditorGUI:drawDropdownField(x, y, w, h, dropdownName, items, selectedIndex, placeholder)
+    local isOpen = self.openDropdown == dropdownName
+    local isHovered = self:isMouseInArea(x, y, w, h)
+
+    -- Draw field background
+    if isHovered or isOpen then
+        setOverlayColor(self.overlayId, 0.15, 0.15, 0.18, 1)
+    else
+        setOverlayColor(self.overlayId, 0.1, 0.1, 0.12, 1)
+    end
+    renderOverlay(self.overlayId, x, y, w, h)
+
+    -- Border when hovered or open
+    if isHovered or isOpen then
+        setOverlayColor(self.overlayId, 0.5, 0.7, 0.9, 0.5)
+        renderOverlay(self.overlayId, x, y, w, 0.002)
+        renderOverlay(self.overlayId, x, y + h - 0.002, w, 0.002)
+        renderOverlay(self.overlayId, x, y, 0.002, h)
+        renderOverlay(self.overlayId, x + w - 0.002, y, 0.002, h)
+    end
+
+    -- Display text
+    local displayText = placeholder or "(None)"
+    if selectedIndex > 0 and selectedIndex <= #items then
+        displayText = items[selectedIndex]
+        if type(displayText) == "table" then
+            displayText = displayText.name or displayText.displayName or tostring(displayText)
+        end
+    end
+
+    -- Truncate if too long (leave room for arrow)
+    local maxChars = math.floor((w - 0.04) / 0.008)
+    if string.len(displayText) > maxChars then
+        displayText = string.sub(displayText, 1, maxChars - 2) .. ".."
+    end
+
+    setTextColor(1, 1, 1, 1)
+    renderText(x + 0.01, y + h * 0.3, 0.014, displayText)
+
+    -- Draw dropdown arrow
+    local arrowX = x + w - 0.025
+    local arrowY = y + h * 0.35
+    setTextColor(0.7, 0.7, 0.7, 1)
+    renderText(arrowX, arrowY, 0.014, isOpen and "▲" or "▼")
+end
+
+---Draw the dropdown list when open
+---@param x number X position (left edge of dropdown)
+---@param y number Y position (bottom of field, list drops down from here)
+---@param w number Width
+---@param dropdownName string Unique name for this dropdown
+---@param items table List of items to display
+---@param selectedIndex number Currently selected index
+function WMEditorGUI:drawDropdownList(x, y, w, dropdownName, items, selectedIndex)
+    if self.openDropdown ~= dropdownName or #items == 0 then
+        return
+    end
+
+    local itemH = self.DROPDOWN_ITEM_HEIGHT
+    local maxVisible = math.min(#items, self.DROPDOWN_MAX_VISIBLE)
+    local listH = maxVisible * itemH + 0.01
+
+    -- Calculate list position (drops down below the field)
+    local listY = y - listH
+
+    -- Ensure list doesn't go off-screen
+    if listY < 0.02 then
+        listY = 0.02
+    end
+
+    -- Draw list background
+    setOverlayColor(self.overlayId, 0.08, 0.08, 0.1, 0.98)
+    renderOverlay(self.overlayId, x, listY, w, listH)
+
+    -- Draw border
+    setOverlayColor(self.overlayId, 0.5, 0.7, 0.9, 0.8)
+    renderOverlay(self.overlayId, x, listY, w, 0.002)
+    renderOverlay(self.overlayId, x, listY + listH - 0.002, w, 0.002)
+    renderOverlay(self.overlayId, x, listY, 0.002, listH)
+    renderOverlay(self.overlayId, x + w - 0.002, listY, 0.002, listH)
+
+    -- Draw items
+    local startIndex = self.dropdownScrollOffset + 1
+    local endIndex = math.min(startIndex + maxVisible - 1, #items)
+
+    for i = startIndex, endIndex do
+        local itemY = listY + listH - 0.005 - (i - startIndex + 1) * itemH
+        local itemText = items[i]
+        if type(itemText) == "table" then
+            itemText = itemText.name or itemText.displayName or tostring(itemText)
+        end
+
+        -- Highlight hovered or selected item
+        local isItemHovered = self:isMouseInArea(x + 0.002, itemY, w - 0.004, itemH)
+        local isSelected = (i == selectedIndex)
+
+        if isItemHovered then
+            setOverlayColor(self.overlayId, 0.3, 0.5, 0.7, 0.6)
+            renderOverlay(self.overlayId, x + 0.002, itemY, w - 0.004, itemH)
+        elseif isSelected then
+            setOverlayColor(self.overlayId, 0.2, 0.4, 0.2, 0.5)
+            renderOverlay(self.overlayId, x + 0.002, itemY, w - 0.004, itemH)
+        end
+
+        -- Truncate text if needed
+        local maxChars = math.floor((w - 0.02) / 0.008)
+        if string.len(itemText) > maxChars then
+            itemText = string.sub(itemText, 1, maxChars - 2) .. ".."
+        end
+
+        setTextColor(1, 1, 1, 1)
+        renderText(x + 0.01, itemY + itemH * 0.3, 0.013, itemText)
+    end
+
+    -- Draw scroll indicators if needed
+    if #items > maxVisible then
+        setTextColor(0.6, 0.6, 0.6, 1)
+        if self.dropdownScrollOffset > 0 then
+            renderText(x + w - 0.02, listY + listH - 0.015, 0.012, "▲")
+        end
+        if endIndex < #items then
+            renderText(x + w - 0.02, listY + 0.005, 0.012, "▼")
+        end
+    end
+end
+
+---Handle click on a dropdown field - returns true if handled
+---@param x number Click X
+---@param y number Click Y
+---@param fieldX number Field X position
+---@param fieldY number Field Y position
+---@param fieldW number Field width
+---@param fieldH number Field height
+---@param dropdownName string Dropdown name
+---@param items table Items list
+---@param onSelect function Callback when item selected (receives index)
+---@return boolean handled
+function WMEditorGUI:handleDropdownClick(x, y, fieldX, fieldY, fieldW, fieldH, dropdownName, items, onSelect)
+    local isOpen = self.openDropdown == dropdownName
+
+    -- If dropdown is open, check for list clicks first
+    if isOpen and #items > 0 then
+        local itemH = self.DROPDOWN_ITEM_HEIGHT
+        local maxVisible = math.min(#items, self.DROPDOWN_MAX_VISIBLE)
+        local listH = maxVisible * itemH + 0.01
+        local listY = fieldY - listH
+
+        -- Ensure list doesn't go off-screen
+        if listY < 0.02 then
+            listY = 0.02
+        end
+
+        -- Check if click is in the list area
+        if self:isMouseInArea(fieldX, listY, fieldW, listH) then
+            -- Find which item was clicked
+            local startIndex = self.dropdownScrollOffset + 1
+            local endIndex = math.min(startIndex + maxVisible - 1, #items)
+
+            for i = startIndex, endIndex do
+                local itemY = listY + listH - 0.005 - (i - startIndex + 1) * itemH
+                if self:isMouseInArea(fieldX + 0.002, itemY, fieldW - 0.004, itemH) then
+                    -- Item clicked - select it
+                    if onSelect then
+                        onSelect(i)
+                    end
+                    self.openDropdown = nil
+                    self.dropdownScrollOffset = 0
+                    return true
+                end
+            end
+
+            -- Click was in list but not on an item (scroll area?) - just close
+            self.openDropdown = nil
+            self.dropdownScrollOffset = 0
+            return true
+        end
+    end
+
+    -- Check if click is on the field itself
+    if self:isMouseInArea(fieldX, fieldY, fieldW, fieldH) then
+        if isOpen then
+            -- Close this dropdown
+            self.openDropdown = nil
+            self.dropdownScrollOffset = 0
+        else
+            -- Open this dropdown (close any other)
+            self.openDropdown = dropdownName
+            self.dropdownScrollOffset = 0
+        end
+        return true
+    end
+
+    return false
+end
+
+---Handle scroll wheel for dropdowns
+---@param direction number Scroll direction (-1 or 1)
+function WMEditorGUI:handleDropdownScroll(direction)
+    if self.openDropdown == nil then
+        return false
+    end
+
+    -- Get the items for the current dropdown
+    local items = self:getDropdownItems(self.openDropdown)
+    if items == nil or #items <= self.DROPDOWN_MAX_VISIBLE then
+        return false
+    end
+
+    local maxScroll = #items - self.DROPDOWN_MAX_VISIBLE
+    self.dropdownScrollOffset = math.max(0, math.min(maxScroll, self.dropdownScrollOffset + direction))
+    return true
+end
+
+---Get items for a dropdown by name
+---@param dropdownName string
+---@return table items
+function WMEditorGUI:getDropdownItems(dropdownName)
+    if dropdownName == "vehicle" then
+        local items = {}
+        for _, vData in ipairs(self.availableVehicles) do
+            table.insert(items, vData.name)
+        end
+        return items
+    elseif dropdownName == "action" then
+        return self:getAvailableActions()
+    elseif dropdownName == "target" then
+        return self:getAvailableTargets()
+    elseif dropdownName == "unloadTarget" then
+        return self:getAvailableTargets()
+    elseif dropdownName == "fillType" then
+        return self:getAvailableFillTypes()
+    end
+    return {}
+end
+
+---Close any open dropdown
+function WMEditorGUI:closeDropdown()
+    self.openDropdown = nil
+    self.dropdownScrollOffset = 0
 end
 
 ---Draw a single step row
@@ -932,6 +1208,11 @@ end
 function WMEditorGUI:drawStepDialog()
     local dlgX, dlgY = 0.25, 0.15
     local dlgW, dlgH = 0.50, 0.70
+    local fieldW = 0.35
+    local fieldH = 0.035
+
+    -- Reset dialog dropdown positions
+    self.dialogDropdowns = {}
 
     -- Full-screen dimming overlay to block content behind
     setOverlayColor(self.overlayId, 0, 0, 0, 0.85)
@@ -956,43 +1237,36 @@ function WMEditorGUI:drawStepDialog()
     setTextBold(false)
 
     local fieldY = dlgY + dlgH - 0.10
+    local fieldX = dlgX + 0.12
 
     -- === STEP TYPE ===
     setTextColor(0.8, 0.8, 0.8, 1)
     renderText(dlgX + 0.02, fieldY, 0.016, g_i18n:getText("wm_editor_type") .. ":")
 
-    -- Type buttons
+    -- Type buttons (keep as toggle buttons, not dropdown)
     local adColor = self.addStepType == "autodrive" and {0.3, 0.5, 0.7, 1} or {0.2, 0.2, 0.25, 1}
     local cpColor = self.addStepType == "courseplay" and {0.3, 0.6, 0.3, 1} or {0.2, 0.2, 0.25, 1}
 
-    self:drawButton(dlgX + 0.12, fieldY - 0.008, 0.12, 0.035, g_i18n:getText("wm_type_autodrive"), adColor)
-    self:drawButton(dlgX + 0.25, fieldY - 0.008, 0.12, 0.035, g_i18n:getText("wm_type_courseplay"), cpColor)
+    self:drawButton(fieldX, fieldY - 0.008, 0.12, fieldH, g_i18n:getText("wm_type_autodrive"), adColor)
+    self:drawButton(fieldX + 0.13, fieldY - 0.008, 0.12, fieldH, g_i18n:getText("wm_type_courseplay"), cpColor)
 
-    -- === ACTION / MODE (now above Target) ===
+    -- === ACTION / MODE ===
     fieldY = fieldY - 0.06
     setTextColor(0.8, 0.8, 0.8, 1)
     local actionLabel = self.addStepType == "autodrive" and (g_i18n:getText("wm_editor_mode") or "Mode") or (g_i18n:getText("wm_editor_action") or "Action")
     renderText(dlgX + 0.02, fieldY, 0.016, actionLabel .. ":")
 
     local actions = self:getAvailableActions()
+    local actionDisplayNames = {}
+    for _, action in ipairs(actions) do
+        table.insert(actionDisplayNames, self:getActionDisplayName(action))
+    end
 
-    -- Prev action button
-    self:drawButton(dlgX + 0.12, fieldY - 0.008, 0.04, 0.035, "<", {0.3, 0.3, 0.5, 1})
-
-    -- Action display
-    setOverlayColor(self.overlayId, 0.1, 0.1, 0.12, 1)
-    renderOverlay(self.overlayId, dlgX + 0.17, fieldY - 0.008, 0.25, 0.035)
-
-    local actionText = self:getActionDisplayName(actions[self.addStepActionIndex] or "default")
-    setTextColor(1, 1, 1, 1)
-    renderText(dlgX + 0.18, fieldY, 0.014, actionText)
-
-    -- Next action button
-    self:drawButton(dlgX + 0.43, fieldY - 0.008, 0.04, 0.035, ">", {0.3, 0.3, 0.5, 1})
+    self:drawDropdownField(fieldX, fieldY - 0.008, fieldW, fieldH,
+        "action", actionDisplayNames, self.addStepActionIndex, g_i18n:getText("wm_none"))
+    self.dialogDropdowns.action = {x = fieldX, y = fieldY - 0.008, w = fieldW, h = fieldH, items = actionDisplayNames}
 
     -- === TARGET (Primary destination) ===
-    -- Labels based on mode:
-    --   drive: Target | unload: Unload | pickup_deliver: Pickup | deliver: Target | load: Return To
     fieldY = fieldY - 0.06
     setTextColor(0.8, 0.8, 0.8, 1)
     local targetLabel = g_i18n:getText("wm_editor_target") or "Target"
@@ -1005,37 +1279,20 @@ function WMEditorGUI:drawStepDialog()
         elseif currentAction == "load" then
             targetLabel = g_i18n:getText("wm_editor_return_target") or "Return To"
         end
-        -- drive and deliver use default "Target"
     end
     renderText(dlgX + 0.02, fieldY, 0.016, targetLabel .. ":")
 
     local targets = self:getAvailableTargets()
 
-    -- Prev target button
-    self:drawButton(dlgX + 0.12, fieldY - 0.008, 0.04, 0.035, "<", {0.3, 0.3, 0.5, 1})
-
-    -- Target display
-    setOverlayColor(self.overlayId, 0.1, 0.1, 0.12, 1)
-    renderOverlay(self.overlayId, dlgX + 0.17, fieldY - 0.008, 0.25, 0.035)
-
-    local targetText = targets[self.addStepTargetIndex] or g_i18n:getText("wm_none")
-    if string.len(targetText) > 30 then
-        targetText = string.sub(targetText, 1, 28) .. ".."
-    end
-    setTextColor(1, 1, 1, 1)
-    renderText(dlgX + 0.18, fieldY, 0.014, targetText)
-
-    -- Next target button
-    self:drawButton(dlgX + 0.43, fieldY - 0.008, 0.04, 0.035, ">", {0.3, 0.3, 0.5, 1})
+    self:drawDropdownField(fieldX, fieldY - 0.008, fieldW, fieldH,
+        "target", targets, self.addStepTargetIndex, g_i18n:getText("wm_none"))
+    self.dialogDropdowns.target = {x = fieldX, y = fieldY - 0.008, w = fieldW, h = fieldH, items = targets}
 
     -- === SECOND TARGET (for modes requiring 2 targets: unload, pickup_deliver, load) ===
     if self.addStepType == "autodrive" and self:currentActionNeedsUnloadTarget() then
         fieldY = fieldY - 0.06
         setTextColor(0.8, 0.8, 0.8, 1)
 
-        -- Label depends on mode:
-        --   unload: Target | pickup_deliver: Deliver To | load: Load At
-        local actions = self:getAvailableActions()
         local currentAction = actions[self.addStepActionIndex]
         local secondTargetLabel = g_i18n:getText("wm_editor_unload_target") or "Deliver To"
         if currentAction == "unload" then
@@ -1045,25 +1302,9 @@ function WMEditorGUI:drawStepDialog()
         end
         renderText(dlgX + 0.02, fieldY, 0.016, secondTargetLabel .. ":")
 
-        -- Prev unload target button
-        self:drawButton(dlgX + 0.12, fieldY - 0.008, 0.04, 0.035, "<", {0.3, 0.3, 0.5, 1})
-
-        -- Unload target display
-        setOverlayColor(self.overlayId, 0.1, 0.1, 0.12, 1)
-        renderOverlay(self.overlayId, dlgX + 0.17, fieldY - 0.008, 0.25, 0.035)
-
-        local unloadText = g_i18n:getText("wm_none") or "(Not Set)"
-        if self.addStepUnloadTargetIndex > 0 and self.addStepUnloadTargetIndex <= #targets then
-            unloadText = targets[self.addStepUnloadTargetIndex]
-        end
-        if string.len(unloadText) > 30 then
-            unloadText = string.sub(unloadText, 1, 28) .. ".."
-        end
-        setTextColor(1, 1, 1, 1)
-        renderText(dlgX + 0.18, fieldY, 0.014, unloadText)
-
-        -- Next unload target button
-        self:drawButton(dlgX + 0.43, fieldY - 0.008, 0.04, 0.035, ">", {0.3, 0.3, 0.5, 1})
+        self:drawDropdownField(fieldX, fieldY - 0.008, fieldW, fieldH,
+            "unloadTarget", targets, self.addStepUnloadTargetIndex, g_i18n:getText("wm_none"))
+        self.dialogDropdowns.unloadTarget = {x = fieldX, y = fieldY - 0.008, w = fieldW, h = fieldH, items = targets}
     end
 
     -- === FILL TYPE (only for pickup_deliver and load modes) ===
@@ -1074,22 +1315,9 @@ function WMEditorGUI:drawStepDialog()
 
         local fillTypes = self:getAvailableFillTypes()
 
-        -- Prev fill type button
-        self:drawButton(dlgX + 0.12, fieldY - 0.008, 0.04, 0.035, "<", {0.3, 0.3, 0.5, 1})
-
-        -- Fill type display
-        setOverlayColor(self.overlayId, 0.1, 0.1, 0.12, 1)
-        renderOverlay(self.overlayId, dlgX + 0.17, fieldY - 0.008, 0.25, 0.035)
-
-        local fillTypeText = fillTypes[self.addStepFillTypeIndex] or g_i18n:getText("wm_none") or "(None)"
-        if string.len(fillTypeText) > 30 then
-            fillTypeText = string.sub(fillTypeText, 1, 28) .. ".."
-        end
-        setTextColor(1, 1, 1, 1)
-        renderText(dlgX + 0.18, fieldY, 0.014, fillTypeText)
-
-        -- Next fill type button
-        self:drawButton(dlgX + 0.43, fieldY - 0.008, 0.04, 0.035, ">", {0.3, 0.3, 0.5, 1})
+        self:drawDropdownField(fieldX, fieldY - 0.008, fieldW, fieldH,
+            "fillType", fillTypes, self.addStepFillTypeIndex, g_i18n:getText("wm_none"))
+        self.dialogDropdowns.fillType = {x = fieldX, y = fieldY - 0.008, w = fieldW, h = fieldH, items = fillTypes}
     end
 
     -- === DIALOG BUTTONS ===
@@ -1097,6 +1325,24 @@ function WMEditorGUI:drawStepDialog()
     local confirmText = self.isEditStepDialogOpen and g_i18n:getText("wm_button_save") or g_i18n:getText("wm_button_add")
     self:drawButton(dlgX + 0.10, btnY, 0.12, 0.045, confirmText, {0.2, 0.6, 0.2, 1})
     self:drawButton(dlgX + 0.28, btnY, 0.12, 0.045, g_i18n:getText("wm_button_cancel"), {0.6, 0.3, 0.3, 1})
+
+    -- === DRAW DROPDOWN LISTS (on top of everything) ===
+    if self.dialogDropdowns.action then
+        local dd = self.dialogDropdowns.action
+        self:drawDropdownList(dd.x, dd.y, dd.w, "action", dd.items, self.addStepActionIndex)
+    end
+    if self.dialogDropdowns.target then
+        local dd = self.dialogDropdowns.target
+        self:drawDropdownList(dd.x, dd.y, dd.w, "target", dd.items, self.addStepTargetIndex)
+    end
+    if self.dialogDropdowns.unloadTarget then
+        local dd = self.dialogDropdowns.unloadTarget
+        self:drawDropdownList(dd.x, dd.y, dd.w, "unloadTarget", dd.items, self.addStepUnloadTargetIndex)
+    end
+    if self.dialogDropdowns.fillType then
+        local dd = self.dialogDropdowns.fillType
+        self:drawDropdownList(dd.x, dd.y, dd.w, "fillType", dd.items, self.addStepFillTypeIndex)
+    end
 end
 
 ---Update function
@@ -1131,6 +1377,30 @@ function WMEditorGUI:onMouseEvent(posX, posY, isDown, isUp, button)
     end
 
     self.wasMouseDown = isDown
+end
+
+---Handle scroll wheel event for dropdown scrolling
+---@param direction number Scroll direction (-1 = down, 1 = up)
+---@return boolean handled True if scroll was handled
+function WMEditorGUI:onScrollEvent(direction)
+    if not self.isVisible then
+        return false
+    end
+
+    -- Only handle scroll when a dropdown is open
+    if self.openDropdown == nil then
+        return false
+    end
+
+    -- Get items for current dropdown
+    local items = self:getDropdownItems(self.openDropdown)
+    if items == nil or #items <= self.DROPDOWN_MAX_VISIBLE then
+        return false
+    end
+
+    local maxScroll = #items - self.DROPDOWN_MAX_VISIBLE
+    self.dropdownScrollOffset = math.max(0, math.min(maxScroll, self.dropdownScrollOffset - direction))
+    return true
 end
 
 ---Check if mouse is inside an area
@@ -1173,6 +1443,28 @@ function WMEditorGUI:handleMouseClick(x, y)
         return
     end
 
+    -- Handle dropdown clicks first (they appear on top)
+    if self.vehicleDropdownPos then
+        local vPos = self.vehicleDropdownPos
+        local vehicleNames = {}
+        for _, vData in ipairs(self.availableVehicles) do
+            table.insert(vehicleNames, vData.name)
+        end
+        if self:handleDropdownClick(x, y, vPos.x, vPos.y, vPos.w, vPos.h, "vehicle", vehicleNames,
+            function(index)
+                self.selectedVehicleIndex = index
+                self:applyVehicleSelection()
+            end) then
+            return
+        end
+    end
+
+    -- If a dropdown is open and we clicked elsewhere, close it
+    if self.openDropdown ~= nil then
+        self:closeDropdown()
+        return
+    end
+
     -- Close button (X)
     if self:isMouseInArea(L.bgX + L.bgW - 0.05, L.bgY + L.bgH - 0.05, 0.04, 0.04) then
         self:cancelAndClose()
@@ -1190,18 +1482,6 @@ function WMEditorGUI:handleMouseClick(x, y)
     -- Edit name button
     if self:isMouseInArea(L.bgX + 0.43, currentY - 0.008, 0.06, 0.03) then
         self:openNameEditDialog()
-        return
-    end
-
-    -- Vehicle prev button
-    if self:isMouseInArea(L.bgX + 0.12, currentY - 0.05 - 0.008, L.smallBtnW, L.smallBtnH) then
-        self:prevVehicle()
-        return
-    end
-
-    -- Vehicle next button
-    if self:isMouseInArea(L.bgX + 0.43, currentY - 0.05 - 0.008, L.smallBtnW, L.smallBtnH) then
-        self:nextVehicle()
         return
     end
 
@@ -1307,9 +1587,73 @@ function WMEditorGUI:handleStepDialogClick(x, y)
     local dlgX, dlgY = 0.25, 0.15
     local dlgW, dlgH = 0.50, 0.70
     local fieldY = dlgY + dlgH - 0.10
+    local fieldX = dlgX + 0.12
+    local fieldW = 0.35
+    local fieldH = 0.035
 
-    -- Type buttons
-    if self:isMouseInArea(dlgX + 0.12, fieldY - 0.008, 0.12, 0.035) then
+    -- Handle dropdown clicks first (they appear on top)
+    if self.dialogDropdowns then
+        -- Action dropdown
+        if self.dialogDropdowns.action then
+            local dd = self.dialogDropdowns.action
+            local actions = self:getAvailableActions()
+            local actionDisplayNames = {}
+            for _, action in ipairs(actions) do
+                table.insert(actionDisplayNames, self:getActionDisplayName(action))
+            end
+            if self:handleDropdownClick(x, y, dd.x, dd.y, dd.w, dd.h, "action", actionDisplayNames,
+                function(index)
+                    self.addStepActionIndex = index
+                end) then
+                return
+            end
+        end
+
+        -- Target dropdown
+        if self.dialogDropdowns.target then
+            local dd = self.dialogDropdowns.target
+            local targets = self:getAvailableTargets()
+            if self:handleDropdownClick(x, y, dd.x, dd.y, dd.w, dd.h, "target", targets,
+                function(index)
+                    self.addStepTargetIndex = index
+                end) then
+                return
+            end
+        end
+
+        -- Unload Target dropdown
+        if self.dialogDropdowns.unloadTarget then
+            local dd = self.dialogDropdowns.unloadTarget
+            local targets = self:getAvailableTargets()
+            if self:handleDropdownClick(x, y, dd.x, dd.y, dd.w, dd.h, "unloadTarget", targets,
+                function(index)
+                    self.addStepUnloadTargetIndex = index
+                end) then
+                return
+            end
+        end
+
+        -- Fill Type dropdown
+        if self.dialogDropdowns.fillType then
+            local dd = self.dialogDropdowns.fillType
+            local fillTypes = self:getAvailableFillTypes()
+            if self:handleDropdownClick(x, y, dd.x, dd.y, dd.w, dd.h, "fillType", fillTypes,
+                function(index)
+                    self.addStepFillTypeIndex = index
+                end) then
+                return
+            end
+        end
+    end
+
+    -- If a dropdown is open and we clicked elsewhere, close it
+    if self.openDropdown ~= nil then
+        self:closeDropdown()
+        return
+    end
+
+    -- Type buttons (not dropdowns)
+    if self:isMouseInArea(fieldX, fieldY - 0.008, 0.12, fieldH) then
         self.addStepType = "autodrive"
         self.addStepTargetIndex = 1
         self.addStepActionIndex = 1
@@ -1317,92 +1661,13 @@ function WMEditorGUI:handleStepDialogClick(x, y)
         self.addStepFillTypeIndex = 1
         return
     end
-    if self:isMouseInArea(dlgX + 0.25, fieldY - 0.008, 0.12, 0.035) then
+    if self:isMouseInArea(fieldX + 0.13, fieldY - 0.008, 0.12, fieldH) then
         self.addStepType = "courseplay"
         self.addStepTargetIndex = 1
         self.addStepActionIndex = 1
         self.addStepUnloadTargetIndex = 0
         self.addStepFillTypeIndex = 1
         return
-    end
-
-    -- Action/Mode navigation (now above Target)
-    fieldY = fieldY - 0.06
-    local actions = self:getAvailableActions()
-
-    if self:isMouseInArea(dlgX + 0.12, fieldY - 0.008, 0.04, 0.035) then
-        self.addStepActionIndex = self.addStepActionIndex - 1
-        if self.addStepActionIndex < 1 then
-            self.addStepActionIndex = #actions
-        end
-        return
-    end
-    if self:isMouseInArea(dlgX + 0.43, fieldY - 0.008, 0.04, 0.035) then
-        self.addStepActionIndex = self.addStepActionIndex + 1
-        if self.addStepActionIndex > #actions then
-            self.addStepActionIndex = 1
-        end
-        return
-    end
-
-    -- Target navigation
-    fieldY = fieldY - 0.06
-    local targets = self:getAvailableTargets()
-
-    if self:isMouseInArea(dlgX + 0.12, fieldY - 0.008, 0.04, 0.035) then
-        self.addStepTargetIndex = self.addStepTargetIndex - 1
-        if self.addStepTargetIndex < 1 then
-            self.addStepTargetIndex = #targets
-        end
-        return
-    end
-    if self:isMouseInArea(dlgX + 0.43, fieldY - 0.008, 0.04, 0.035) then
-        self.addStepTargetIndex = self.addStepTargetIndex + 1
-        if self.addStepTargetIndex > #targets then
-            self.addStepTargetIndex = 1
-        end
-        return
-    end
-
-    -- Second target navigation (for unload, pickup_deliver, load modes)
-    if self.addStepType == "autodrive" and self:currentActionNeedsUnloadTarget() then
-        fieldY = fieldY - 0.06
-
-        if self:isMouseInArea(dlgX + 0.12, fieldY - 0.008, 0.04, 0.035) then
-            self.addStepUnloadTargetIndex = self.addStepUnloadTargetIndex - 1
-            if self.addStepUnloadTargetIndex < 0 then
-                self.addStepUnloadTargetIndex = #targets
-            end
-            return
-        end
-        if self:isMouseInArea(dlgX + 0.43, fieldY - 0.008, 0.04, 0.035) then
-            self.addStepUnloadTargetIndex = self.addStepUnloadTargetIndex + 1
-            if self.addStepUnloadTargetIndex > #targets then
-                self.addStepUnloadTargetIndex = 0
-            end
-            return
-        end
-    end
-
-    -- Fill type navigation (only for pickup_deliver and load modes)
-    if self.addStepType == "autodrive" and self:currentActionNeedsFillType() then
-        fieldY = fieldY - 0.06
-        local fillTypes = self:getAvailableFillTypes()
-
-        if self:isMouseInArea(dlgX + 0.12, fieldY - 0.008, 0.04, 0.035) then
-            self.addStepFillTypeIndex = self.addStepFillTypeIndex - 1
-            if self.addStepFillTypeIndex < 1 then
-                self.addStepFillTypeIndex = #fillTypes
-            end
-            return
-        end
-        if self:isMouseInArea(dlgX + 0.43, fieldY - 0.008, 0.04, 0.035) then
-            self.addStepFillTypeIndex = self.addStepFillTypeIndex + 1
-            if self.addStepFillTypeIndex > #fillTypes then
-                self.addStepFillTypeIndex = 1
-            end
-            return
-        end
     end
 
     -- Dialog buttons

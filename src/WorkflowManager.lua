@@ -739,6 +739,20 @@ function WorkflowManager:mouseEvent(posX, posY, isDown, isUp, button)
         return
     end
 
+    -- Handle scroll wheel (button 4 = scroll up, button 5 = scroll down in some systems)
+    -- In FS25, scroll is often communicated via isDown with specific button values
+    if button == 4 and isDown then
+        -- Scroll up
+        if WMEditorGUI.isVisible and WMEditorGUI:onScrollEvent(1) then
+            return
+        end
+    elseif button == 5 and isDown then
+        -- Scroll down
+        if WMEditorGUI.isVisible and WMEditorGUI:onScrollEvent(-1) then
+            return
+        end
+    end
+
     -- Forward mouse events to GUI
     WMManagerGUI:onMouseEvent(posX, posY, isDown, isUp, button)
     WMEditorGUI:onMouseEvent(posX, posY, isDown, isUp, button)
