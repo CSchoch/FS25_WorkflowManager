@@ -536,6 +536,13 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
     - If CP restarted, continues monitoring CP (handles cyclic handoffs)
     - Only marks step complete when BOTH CP and AD are not running
     - Added logging for all handoff transitions
+14. **~~Dropdown Text Rendering Over Dropdown List~~** (Fixed 2026-01-21): Text from UI elements below an open dropdown would render on top of the dropdown list. Root cause: In FS25's rendering system, all text (`renderText`) renders at a higher z-level than overlays, regardless of call order. Fix:
+    - Added `isPositionCoveredByDropdown(y, h)` helper function to check if a Y position overlaps with an open dropdown's list area
+    - Updated `drawStepRow()` to skip text rendering when covered by dropdown
+    - Updated `drawButton()` to skip text when covered (with optional `skipDropdownCheck` param)
+    - Updated `drawDropdownField()` to skip text when covered by a different dropdown
+    - Updated column headers and labels in both main editor and step dialog to check coverage
+    - Dropdown overlays still render normally, only text is conditionally skipped
 
 ### Pending
 - modIcon.dds creation
@@ -632,3 +639,9 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
   - [x] Scroll wheel works to scroll through long lists
   - [x] Clicking outside dropdown closes it
   - [x] Selected item shows with green highlight
+- [x] Test Dropdown Text Occlusion (2026-01-21):
+  - [x] When vehicle dropdown is open, step list text below it is hidden
+  - [x] When action dropdown is open in step dialog, target label below is hidden
+  - [x] When target dropdown is open, unload target dropdown field text is hidden
+  - [x] Text reappears immediately when dropdown is closed
+  - [x] Dropdown list items still show their text correctly

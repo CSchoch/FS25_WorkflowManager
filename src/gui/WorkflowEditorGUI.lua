@@ -827,11 +827,16 @@ function WMEditorGUI:draw()
 
     -- Column headers
     currentY = currentY - 0.05
-    setTextColor(0.7, 0.7, 0.7, 1)
-    renderText(L.bgX + 0.02, currentY, 0.014, "#")
-    renderText(L.bgX + 0.05, currentY, 0.014, g_i18n:getText("wm_editor_type"))
-    renderText(L.bgX + 0.18, currentY, 0.014, g_i18n:getText("wm_editor_target"))
-    renderText(L.bgX + 0.45, currentY, 0.014, g_i18n:getText("wm_editor_action"))
+    local headerY = currentY
+
+    -- Only render column header text if not covered by dropdown
+    if not self:isPositionCoveredByDropdown(headerY, 0.02) then
+        setTextColor(0.7, 0.7, 0.7, 1)
+        renderText(L.bgX + 0.02, currentY, 0.014, "#")
+        renderText(L.bgX + 0.05, currentY, 0.014, g_i18n:getText("wm_editor_type"))
+        renderText(L.bgX + 0.18, currentY, 0.014, g_i18n:getText("wm_editor_target"))
+        renderText(L.bgX + 0.45, currentY, 0.014, g_i18n:getText("wm_editor_action"))
+    end
 
     -- Separator
     currentY = currentY - 0.015
@@ -843,8 +848,11 @@ function WMEditorGUI:draw()
     local stepsStartY = currentY
 
     if #workflow.steps == 0 then
-        setTextColor(0.5, 0.5, 0.5, 1)
-        renderText(L.bgX + 0.20, currentY - 0.05, 0.016, g_i18n:getText("wm_editor_no_steps"))
+        -- Only render "no steps" text if not covered by dropdown
+        if not self:isPositionCoveredByDropdown(currentY - 0.05, 0.02) then
+            setTextColor(0.5, 0.5, 0.5, 1)
+            renderText(L.bgX + 0.20, currentY - 0.05, 0.016, g_i18n:getText("wm_editor_no_steps"))
+        end
     else
         for i, step in ipairs(workflow.steps) do
             currentY = currentY - L.rowHeight
@@ -881,7 +889,8 @@ end
 ---@param h number Height
 ---@param text string Button text
 ---@param color table RGBA color
-function WMEditorGUI:drawButton(x, y, w, h, text, color)
+---@param skipDropdownCheck boolean Optional - skip dropdown coverage check (for dialog buttons)
+function WMEditorGUI:drawButton(x, y, w, h, text, color, skipDropdownCheck)
     local isHovered = self:isMouseInArea(x, y, w, h)
     local brightness = isHovered and 1.2 or 1.0
 
@@ -899,6 +908,11 @@ function WMEditorGUI:drawButton(x, y, w, h, text, color)
         renderOverlay(self.overlayId, x, y + h - 0.002, w, 0.002)
         renderOverlay(self.overlayId, x, y, 0.002, h)
         renderOverlay(self.overlayId, x + w - 0.002, y, 0.002, h)
+    end
+
+    -- Skip text rendering if covered by dropdown (unless skipDropdownCheck is true)
+    if not skipDropdownCheck and self:isPositionCoveredByDropdown(y, h) then
+        return
     end
 
     setTextColor(1, 1, 1, 1)
@@ -919,6 +933,10 @@ function WMEditorGUI:drawDropdownField(x, y, w, h, dropdownName, items, selected
     local isOpen = self.openDropdown == dropdownName
     local isHovered = self:isMouseInArea(x, y, w, h)
 
+    -- Check if this field is covered by a different dropdown
+    local isCoveredByOther = (self.openDropdown ~= nil and self.openDropdown ~= dropdownName)
+        and self:isPositionCoveredByDropdown(y, h)
+
     -- Draw field background
     if isHovered or isOpen then
         setOverlayColor(self.overlayId, 0.15, 0.15, 0.18, 1)
@@ -934,6 +952,11 @@ function WMEditorGUI:drawDropdownField(x, y, w, h, dropdownName, items, selected
         renderOverlay(self.overlayId, x, y + h - 0.002, w, 0.002)
         renderOverlay(self.overlayId, x, y, 0.002, h)
         renderOverlay(self.overlayId, x + w - 0.002, y, 0.002, h)
+    end
+
+    -- Skip text rendering if covered by another dropdown
+    if isCoveredByOther then
+        return
     end
 
     -- Display text
@@ -1156,6 +1179,56 @@ function WMEditorGUI:closeDropdown()
     self.dropdownScrollOffset = 0
 end
 
+---Check if a Y position is covered by an open dropdown
+---@param testY number Y position to check
+---@param testH number Height of element to check (optional, defaults to 0)
+---@return boolean isCovered True if the position is covered by dropdown
+function WMEditorGUI:isPositionCoveredByDropdown(testY, testH)
+    if self.openDropdown == nil then
+        return false
+    end
+
+    testH = testH or 0
+
+    -- Get dropdown position based on which one is open
+    local ddPos = nil
+    if self.openDropdown == "vehicle" and self.vehicleDropdownPos then
+        ddPos = self.vehicleDropdownPos
+    elseif self.dialogDropdowns and self.dialogDropdowns[self.openDropdown] then
+        ddPos = self.dialogDropdowns[self.openDropdown]
+    end
+
+    if ddPos == nil then
+        return false
+    end
+
+    -- Calculate dropdown list bounds
+    local items = self:getDropdownItems(self.openDropdown)
+    if items == nil or #items == 0 then
+        return false
+    end
+
+    local itemH = self.DROPDOWN_ITEM_HEIGHT
+    local maxVisible = math.min(#items, self.DROPDOWN_MAX_VISIBLE)
+    local listH = maxVisible * itemH + 0.01
+    local listY = ddPos.y - listH
+
+    -- Ensure list doesn't go off-screen
+    if listY < 0.02 then
+        listY = 0.02
+    end
+
+    local listTop = listY + listH
+    local listBottom = listY
+
+    -- Check if the test position overlaps with the dropdown list
+    local testTop = testY + testH
+    local testBottom = testY
+
+    -- Overlap check
+    return testBottom < listTop and testTop > listBottom
+end
+
 ---Draw a single step row
 ---@param baseX number Base X position
 ---@param y number Y position
@@ -1166,13 +1239,21 @@ function WMEditorGUI:drawStepRow(baseX, y, index, step)
     local isSelected = (index == self.selectedStepIndex)
     local rowHeight = L.rowHeight - 0.005
 
-    -- Row background
+    -- Check if this row is covered by a dropdown
+    local isCovered = self:isPositionCoveredByDropdown(y, rowHeight)
+
+    -- Row background (always draw, just the overlay)
     if isSelected then
         setOverlayColor(self.overlayId, 0.2, 0.5, 0.2, 0.5)
     else
         setOverlayColor(self.overlayId, 0.1, 0.1, 0.12, 0.5)
     end
     renderOverlay(self.overlayId, baseX + 0.01, y, L.bgW - 0.02, rowHeight)
+
+    -- Skip text rendering if covered by dropdown
+    if isCovered then
+        return
+    end
 
     -- Row color by type
     local textColor = {1, 1, 1, 1}
@@ -1252,72 +1333,88 @@ function WMEditorGUI:drawStepDialog()
 
     -- === ACTION / MODE ===
     fieldY = fieldY - 0.06
-    setTextColor(0.8, 0.8, 0.8, 1)
-    local actionLabel = self.addStepType == "autodrive" and (g_i18n:getText("wm_editor_mode") or "Mode") or (g_i18n:getText("wm_editor_action") or "Action")
-    renderText(dlgX + 0.02, fieldY, 0.016, actionLabel .. ":")
-
     local actions = self:getAvailableActions()
     local actionDisplayNames = {}
     for _, action in ipairs(actions) do
         table.insert(actionDisplayNames, self:getActionDisplayName(action))
     end
 
+    -- Draw dropdown field first (populates dialogDropdowns for coverage check)
     self:drawDropdownField(fieldX, fieldY - 0.008, fieldW, fieldH,
         "action", actionDisplayNames, self.addStepActionIndex, g_i18n:getText("wm_none"))
     self.dialogDropdowns.action = {x = fieldX, y = fieldY - 0.008, w = fieldW, h = fieldH, items = actionDisplayNames}
 
+    -- Draw label (skip if covered by dropdown above)
+    if not self:isPositionCoveredByDropdown(fieldY, 0.02) then
+        setTextColor(0.8, 0.8, 0.8, 1)
+        local actionLabel = self.addStepType == "autodrive" and (g_i18n:getText("wm_editor_mode") or "Mode") or (g_i18n:getText("wm_editor_action") or "Action")
+        renderText(dlgX + 0.02, fieldY, 0.016, actionLabel .. ":")
+    end
+
     -- === TARGET (Primary destination) ===
     fieldY = fieldY - 0.06
-    setTextColor(0.8, 0.8, 0.8, 1)
-    local targetLabel = g_i18n:getText("wm_editor_target") or "Target"
-    if self.addStepType == "autodrive" then
-        local currentAction = actions[self.addStepActionIndex]
-        if currentAction == "unload" then
-            targetLabel = g_i18n:getText("wm_editor_unload_first") or "Unload"
-        elseif currentAction == "pickup_deliver" then
-            targetLabel = g_i18n:getText("wm_editor_pickup_target") or "Pickup"
-        elseif currentAction == "load" then
-            targetLabel = g_i18n:getText("wm_editor_return_target") or "Return To"
-        end
-    end
-    renderText(dlgX + 0.02, fieldY, 0.016, targetLabel .. ":")
-
     local targets = self:getAvailableTargets()
 
+    -- Draw dropdown field first
     self:drawDropdownField(fieldX, fieldY - 0.008, fieldW, fieldH,
         "target", targets, self.addStepTargetIndex, g_i18n:getText("wm_none"))
     self.dialogDropdowns.target = {x = fieldX, y = fieldY - 0.008, w = fieldW, h = fieldH, items = targets}
 
+    -- Draw label (skip if covered)
+    if not self:isPositionCoveredByDropdown(fieldY, 0.02) then
+        setTextColor(0.8, 0.8, 0.8, 1)
+        local targetLabel = g_i18n:getText("wm_editor_target") or "Target"
+        if self.addStepType == "autodrive" then
+            local currentAction = actions[self.addStepActionIndex]
+            if currentAction == "unload" then
+                targetLabel = g_i18n:getText("wm_editor_unload_first") or "Unload"
+            elseif currentAction == "pickup_deliver" then
+                targetLabel = g_i18n:getText("wm_editor_pickup_target") or "Pickup"
+            elseif currentAction == "load" then
+                targetLabel = g_i18n:getText("wm_editor_return_target") or "Return To"
+            end
+        end
+        renderText(dlgX + 0.02, fieldY, 0.016, targetLabel .. ":")
+    end
+
     -- === SECOND TARGET (for modes requiring 2 targets: unload, pickup_deliver, load) ===
     if self.addStepType == "autodrive" and self:currentActionNeedsUnloadTarget() then
         fieldY = fieldY - 0.06
-        setTextColor(0.8, 0.8, 0.8, 1)
 
-        local currentAction = actions[self.addStepActionIndex]
-        local secondTargetLabel = g_i18n:getText("wm_editor_unload_target") or "Deliver To"
-        if currentAction == "unload" then
-            secondTargetLabel = g_i18n:getText("wm_editor_target") or "Target"
-        elseif currentAction == "load" then
-            secondTargetLabel = g_i18n:getText("wm_editor_load_target") or "Load At"
-        end
-        renderText(dlgX + 0.02, fieldY, 0.016, secondTargetLabel .. ":")
-
+        -- Draw dropdown field first
         self:drawDropdownField(fieldX, fieldY - 0.008, fieldW, fieldH,
             "unloadTarget", targets, self.addStepUnloadTargetIndex, g_i18n:getText("wm_none"))
         self.dialogDropdowns.unloadTarget = {x = fieldX, y = fieldY - 0.008, w = fieldW, h = fieldH, items = targets}
+
+        -- Draw label (skip if covered)
+        if not self:isPositionCoveredByDropdown(fieldY, 0.02) then
+            setTextColor(0.8, 0.8, 0.8, 1)
+            local currentAction = actions[self.addStepActionIndex]
+            local secondTargetLabel = g_i18n:getText("wm_editor_unload_target") or "Deliver To"
+            if currentAction == "unload" then
+                secondTargetLabel = g_i18n:getText("wm_editor_target") or "Target"
+            elseif currentAction == "load" then
+                secondTargetLabel = g_i18n:getText("wm_editor_load_target") or "Load At"
+            end
+            renderText(dlgX + 0.02, fieldY, 0.016, secondTargetLabel .. ":")
+        end
     end
 
     -- === FILL TYPE (only for pickup_deliver and load modes) ===
     if self.addStepType == "autodrive" and self:currentActionNeedsFillType() then
         fieldY = fieldY - 0.06
-        setTextColor(0.8, 0.8, 0.8, 1)
-        renderText(dlgX + 0.02, fieldY, 0.016, (g_i18n:getText("wm_editor_fill_type") or "Fill Type") .. ":")
-
         local fillTypes = self:getAvailableFillTypes()
 
+        -- Draw dropdown field first
         self:drawDropdownField(fieldX, fieldY - 0.008, fieldW, fieldH,
             "fillType", fillTypes, self.addStepFillTypeIndex, g_i18n:getText("wm_none"))
         self.dialogDropdowns.fillType = {x = fieldX, y = fieldY - 0.008, w = fieldW, h = fieldH, items = fillTypes}
+
+        -- Draw label (skip if covered)
+        if not self:isPositionCoveredByDropdown(fieldY, 0.02) then
+            setTextColor(0.8, 0.8, 0.8, 1)
+            renderText(dlgX + 0.02, fieldY, 0.016, (g_i18n:getText("wm_editor_fill_type") or "Fill Type") .. ":")
+        end
     end
 
     -- === DIALOG BUTTONS ===
