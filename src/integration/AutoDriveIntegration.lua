@@ -329,7 +329,56 @@ function ADIntegration:actionNeedsFillType(action)
     return action == "pickup_deliver" or action == "load"
 end
 
----Get available fill types from the game (deduplicated by title)
+-- Fill types to exclude from selection (same filter as AutoDrive.ItemFilterList)
+-- Includes animals, bales, and other non-cargo types
+ADIntegration.filteredFillTypes = {
+    "AIR",
+    "CHICKEN_TYPE_BLACK",
+    "CHICKEN_TYPE_WHITE",
+    "CHICKEN_TYPE_BROWN",
+    "CHICKEN_TYPE_ROOSTER",
+    "COW_TYPE_BROWN",
+    "COW_TYPE_BROWN_WHITE",
+    "COW_TYPE_BLACK",
+    "COW_TYPE_BLACK_WHITE",
+    "COW_TYPE_BRAHMAN_BROWN",
+    "COW_TYPE_BRAHMAN_WHITE",
+    "COW_TYPE_BRAHMAN_LIGHT_BROWN",
+    "COW_TYPE_BRAHMAN_GREY",
+    "EGG",
+    "HORSE_TYPE_BEIGE",
+    "HORSE_TYPE_BLACK",
+    "HORSE_TYPE_BROWN",
+    "HORSE_TYPE_BROWN_WHITE",
+    "HORSE_TYPE_DARK_BROWN",
+    "HORSE_TYPE_GREY",
+    "HORSE_TYPE_LIGHT_BROWN",
+    "HORSE_TYPE_RED_BROWN",
+    "OILSEEDRADISH",
+    "PIG_TYPE_RED",
+    "PIG_TYPE_WHITE",
+    "PIG_TYPE_BLACK_WHITE",
+    "PIG_TYPE_BLACK",
+    "ROUNDBALE",
+    "ROUNDBALE_GRASS",
+    "ROUNDBALE_DRYGRASS",
+    "ROUNDBALE_WHEAT",
+    "ROUNDBALE_BARLEY",
+    "SHEEP_TYPE_WHITE",
+    "SHEEP_TYPE_BROWN",
+    "SHEEP_TYPE_BLACK_WHITE",
+    "SHEEP_TYPE_BLACK",
+    "SQUAREBALE",
+    "SQUAREBALE_WHEAT",
+    "SQUAREBALE_BARLEY",
+    "TARP",
+    "TREESAPLINGS",
+    "UNKNOWN",
+    "WEED",
+    "WOOL"
+}
+
+---Get available fill types from the game (filtered and deduplicated by title)
 ---@return table fillTypes List of {index, name, title} tables
 function ADIntegration:getAvailableFillTypes()
     local fillTypes = {}
@@ -340,14 +389,20 @@ function ADIntegration:getAvailableFillTypes()
         return fillTypes
     end
 
+    -- Build lookup table for filtered types
+    local filteredLookup = {}
+    for _, name in ipairs(self.filteredFillTypes) do
+        filteredLookup[name] = true
+    end
+
     local allFillTypes = g_fillTypeManager:getFillTypes()
     if allFillTypes == nil then
         return fillTypes
     end
 
     for index, fillType in ipairs(allFillTypes) do
-        -- Skip UNKNOWN (invalid placeholder type)
-        if fillType.name ~= "UNKNOWN" then
+        -- Skip filtered fill types (animals, bales, special types)
+        if not filteredLookup[fillType.name] then
             local title = fillType.title or fillType.name
             -- Deduplicate by title (some fill types have same display name)
             if not seenTitles[title] then
@@ -366,7 +421,7 @@ function ADIntegration:getAvailableFillTypes()
         return (a.title or "") < (b.title or "")
     end)
 
-    WMLogger:debug("Found %d fill types (deduplicated)", #fillTypes)
+    WMLogger:debug("Found %d fill types (filtered and deduplicated)", #fillTypes)
     return fillTypes
 end
 
