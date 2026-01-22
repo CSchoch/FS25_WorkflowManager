@@ -59,7 +59,8 @@ function WMExecutor:onADFinishedEvent(eventData)
     -- Find the workflow that was waiting for this vehicle
     for workflowId, activeData in pairs(self.activeWorkflows) do
         local workflow = activeData.workflow
-        if workflow.vehicle == eventData.vehicle and
+        -- Milestone 4: Use activeData.vehicle instead of workflow.vehicle
+        if activeData.vehicle == eventData.vehicle and
            activeData.waitingForCompletion and
            activeData.currentStepType == WorkflowManager.STEP_AUTODRIVE then
 
@@ -72,11 +73,18 @@ function WMExecutor:onADFinishedEvent(eventData)
 end
 
 ---Start executing a workflow
+---Milestone 4: Vehicle is now passed as a parameter instead of being stored in workflow
 ---@param workflow table Workflow to execute
+---@param vehicle table Vehicle to use for this workflow execution
 ---@return boolean success True if started successfully
-function WMExecutor:startWorkflow(workflow)
+function WMExecutor:startWorkflow(workflow, vehicle)
     if workflow == nil then
         WMLogger:error("Cannot start nil workflow")
+        return false
+    end
+
+    if vehicle == nil then
+        WMLogger:error("Cannot start workflow without a vehicle")
         return false
     end
 
@@ -96,19 +104,23 @@ function WMExecutor:startWorkflow(workflow)
     workflow.currentStep = 1
     workflow.status = WorkflowManager.STATUS_RUNNING
 
-    -- Add to active workflows
+    -- Milestone 4: Store vehicle in activeData instead of workflow
     self.activeWorkflows[workflow.id] = {
         workflow = workflow,
+        vehicle = vehicle,  -- Vehicle is stored here at runtime, not in workflow
         startTime = g_currentMission.time,
         waitingForCompletion = false
     }
 
-    WMLogger:info("Starting workflow: %s (Step %d/%d)", workflow.name, workflow.currentStep, #workflow.steps)
+    local vehicleName = vehicle.getName and vehicle:getName() or "unknown"
+    WMLogger:info("Starting workflow: %s with vehicle: %s (Step %d/%d)",
+        workflow.name, vehicleName, workflow.currentStep, #workflow.steps)
 
     -- Fire event
     WMEventHandler:fireEvent(WMEventHandler.EVENT_WORKFLOW_STARTED, {
         workflowId = workflow.id,
-        workflowName = workflow.name
+        workflowName = workflow.name,
+        vehicleName = vehicleName
     })
 
     -- Execute first step
@@ -221,6 +233,7 @@ function WMExecutor:resumeWorkflow(workflow)
 end
 
 ---Execute the current step of a workflow
+---Milestone 4: Uses activeData.vehicle instead of workflow.vehicle
 ---@param workflow table Workflow
 function WMExecutor:executeCurrentStep(workflow)
     local step = workflow.steps[workflow.currentStep]
@@ -241,13 +254,14 @@ function WMExecutor:executeCurrentStep(workflow)
     })
 
     local activeData = self.activeWorkflows[workflow.id]
+    local vehicle = activeData.vehicle  -- Milestone 4: Get vehicle from activeData
 
     -- Execute based on step type
     if step.type == WorkflowManager.STEP_AUTODRIVE then
         -- AutoDrive: Use startRoute which internally uses StartDriving with callback
         -- Pass all step parameters including unloadTarget and fillType
         WMLogger:info("Starting AutoDrive step - vehicle: %s, target: %s, action: %s, unloadTarget: %s, fillType: %s",
-            workflow.vehicle and (workflow.vehicle.getName and workflow.vehicle:getName() or "unknown") or "nil",
+            vehicle and (vehicle.getName and vehicle:getName() or "unknown") or "nil",
             step.target or "nil",
             step.action or "nil",
             step.unloadTarget or "nil",
@@ -261,13 +275,13 @@ function WMExecutor:executeCurrentStep(workflow)
             WMLogger:info("Next step is Courseplay - configuring AD->CP handoff")
 
             -- Pre-load the Courseplay course onto the vehicle
-            if not CPIntegration:hasCourse(workflow.vehicle) or true then  -- Always try to load correct course
+            if not CPIntegration:hasCourse(vehicle) or true then  -- Always try to load correct course
                 WMLogger:info("Pre-loading Courseplay course for handoff: %s", nextStep.target or "nil")
-                local loadSuccess = CPIntegration:loadCourse(workflow.vehicle, nextStep.target)
+                local loadSuccess = CPIntegration:loadCourse(vehicle, nextStep.target)
                 if loadSuccess then
                     -- Configure AutoDrive to start Courseplay when it completes
                     -- Uses stateModule:setStartHelper(true) - AD will start CP automatically
-                    ADIntegration:setStartCPOnCompletion(workflow.vehicle, true)
+                    ADIntegration:setStartCPOnCompletion(vehicle, true)
                     willHandoffToCP = true
                     WMLogger:info("AD->CP handoff configured, course pre-loaded, setStartHelper enabled")
                 else
@@ -277,7 +291,7 @@ function WMExecutor:executeCurrentStep(workflow)
         end
 
         local success = ADIntegration:startRoute(
-            workflow.vehicle,
+            vehicle,
             step.target,
             step.action,
             step.unloadTarget,
@@ -292,7 +306,7 @@ function WMExecutor:executeCurrentStep(workflow)
         else
             -- Clear handoff flag if AD failed to start
             if willHandoffToCP then
-                ADIntegration:clearCPHandoff(workflow.vehicle)
+                ADIntegration:clearCPHandoff(vehicle)
             end
             self:handleStepError(workflow, "Failed to start AutoDrive route: " .. (step.target or "nil"))
         end
@@ -300,18 +314,18 @@ function WMExecutor:executeCurrentStep(workflow)
     elseif step.type == WorkflowManager.STEP_COURSEPLAY then
         -- Courseplay: The 'target' field specifies which course to load
         WMLogger:info("Starting Courseplay step - vehicle: %s, course: %s, action: %s",
-            workflow.vehicle and (workflow.vehicle.getName and workflow.vehicle:getName() or "unknown") or "nil",
+            vehicle and (vehicle.getName and vehicle:getName() or "unknown") or "nil",
             step.target or "nil",
             step.action or "nil")
 
         -- Check if vehicle has the correct course loaded
-        local currentCourse = CPIntegration:getCurrentCourseName(workflow.vehicle)
-        local hasCourse = CPIntegration:hasCourse(workflow.vehicle)
+        local currentCourse = CPIntegration:getCurrentCourseName(vehicle)
+        local hasCourse = CPIntegration:hasCourse(vehicle)
         local needsLoad = not hasCourse or currentCourse ~= step.target
 
         if needsLoad then
             WMLogger:info("Loading course for step: %s (current: %s)", step.target or "nil", currentCourse or "none")
-            local loadSuccess = CPIntegration:loadCourse(workflow.vehicle, step.target)
+            local loadSuccess = CPIntegration:loadCourse(vehicle, step.target)
             if not loadSuccess then
                 self:handleStepError(workflow, "Failed to load Courseplay course: " .. (step.target or "nil"))
                 return
@@ -321,14 +335,14 @@ function WMExecutor:executeCurrentStep(workflow)
         end
 
         -- Verify course is now loaded
-        if not CPIntegration:hasCourse(workflow.vehicle) then
+        if not CPIntegration:hasCourse(vehicle) then
             self:handleStepError(workflow, "Vehicle has no Courseplay course loaded for step: " .. (step.target or "nil"))
             return
         end
 
         -- Determine start position based on action
         local startAtFirst = (step.action == "first" or step.action == "start")
-        local success = CPIntegration:startFieldWork(workflow.vehicle, startAtFirst)
+        local success = CPIntegration:startFieldWork(vehicle, startAtFirst)
 
         if success then
             activeData.waitingForCompletion = true
@@ -344,6 +358,7 @@ function WMExecutor:executeCurrentStep(workflow)
 end
 
 ---Stop the current step
+---Milestone 4: Uses activeData.vehicle instead of workflow.vehicle
 ---@param workflow table Workflow
 function WMExecutor:stopCurrentStep(workflow)
     local step = workflow.steps[workflow.currentStep]
@@ -351,14 +366,23 @@ function WMExecutor:stopCurrentStep(workflow)
         return
     end
 
+    local activeData = self.activeWorkflows[workflow.id]
+    local vehicle = activeData and activeData.vehicle or nil
+
+    if vehicle == nil then
+        WMLogger:warning("Cannot stop step - no vehicle in activeData")
+        return
+    end
+
     if step.type == WorkflowManager.STEP_AUTODRIVE then
-        ADIntegration:stopRoute(workflow.vehicle)
+        ADIntegration:stopRoute(vehicle)
     elseif step.type == WorkflowManager.STEP_COURSEPLAY then
-        CPIntegration:stopCourse(workflow.vehicle)
+        CPIntegration:stopCourse(vehicle)
     end
 end
 
 ---Pause the current step
+---Milestone 4: Uses activeData.vehicle instead of workflow.vehicle
 ---@param workflow table Workflow
 function WMExecutor:pauseCurrentStep(workflow)
     local step = workflow.steps[workflow.currentStep]
@@ -366,15 +390,24 @@ function WMExecutor:pauseCurrentStep(workflow)
         return
     end
 
+    local activeData = self.activeWorkflows[workflow.id]
+    local vehicle = activeData and activeData.vehicle or nil
+
+    if vehicle == nil then
+        WMLogger:warning("Cannot pause step - no vehicle in activeData")
+        return
+    end
+
     if step.type == WorkflowManager.STEP_AUTODRIVE then
-        ADIntegration:pauseRoute(workflow.vehicle)
+        ADIntegration:pauseRoute(vehicle)
     elseif step.type == WorkflowManager.STEP_COURSEPLAY then
         -- Use holdCourse for CP (temporary pause)
-        CPIntegration:holdCourse(workflow.vehicle, nil)  -- nil = indefinite freeze
+        CPIntegration:holdCourse(vehicle, nil)  -- nil = indefinite freeze
     end
 end
 
 ---Resume the current step
+---Milestone 4: Uses activeData.vehicle instead of workflow.vehicle
 ---@param workflow table Workflow
 function WMExecutor:resumeCurrentStep(workflow)
     local step = workflow.steps[workflow.currentStep]
@@ -382,10 +415,18 @@ function WMExecutor:resumeCurrentStep(workflow)
         return
     end
 
+    local activeData = self.activeWorkflows[workflow.id]
+    local vehicle = activeData and activeData.vehicle or nil
+
+    if vehicle == nil then
+        WMLogger:warning("Cannot resume step - no vehicle in activeData")
+        return
+    end
+
     if step.type == WorkflowManager.STEP_AUTODRIVE then
-        ADIntegration:resumeRoute(workflow.vehicle)
+        ADIntegration:resumeRoute(vehicle)
     elseif step.type == WorkflowManager.STEP_COURSEPLAY then
-        CPIntegration:resumeCourse(workflow.vehicle)
+        CPIntegration:resumeCourse(vehicle)
     end
 end
 
@@ -492,6 +533,7 @@ function WMExecutor:update(dt)
     -- Check each active workflow for step completion
     for workflowId, activeData in pairs(self.activeWorkflows) do
         local workflow = activeData.workflow
+        local vehicle = activeData.vehicle  -- Milestone 4: Use vehicle from activeData
 
         if workflow.status == WorkflowManager.STATUS_RUNNING and activeData.waitingForCompletion then
             local isComplete = false
@@ -499,14 +541,14 @@ function WMExecutor:update(dt)
             -- Check completion based on current step type
             if activeData.currentStepType == WorkflowManager.STEP_AUTODRIVE then
                 -- AutoDrive: Check if route is complete (polling fallback, callbacks preferred)
-                isComplete = ADIntegration:isRouteComplete(workflow.vehicle)
+                isComplete = ADIntegration:isRouteComplete(vehicle)
 
             elseif activeData.currentStepType == WorkflowManager.STEP_COURSEPLAY then
                 -- Courseplay: Check if CP is no longer running
                 -- We need to detect transition from running -> not running
                 -- Also handle cyclic handoffs: CP → AD (unload) → CP (continue) → AD → ...
-                local cpRunning = CPIntegration:isRunning(workflow.vehicle)
-                local adRunning = ADIntegration:isRunning(workflow.vehicle)
+                local cpRunning = CPIntegration:isRunning(vehicle)
+                local adRunning = ADIntegration:isRunning(vehicle)
 
                 -- Handle case: CP handed off to AD and we're waiting for AD to complete
                 if activeData.cpHandedOffToAD then

@@ -60,10 +60,12 @@ A mod for Farming Simulator 25 that combines AutoDrive and Courseplay to create 
 ### Data Structure
 
 ```lua
+-- Milestone 4: Vehicle is no longer stored with workflow
+-- Vehicle is detected at runtime when starting (g_currentMission.controlledVehicle)
 Workflow = {
     id = "workflow_001",
     name = "Harvest wheat – fields 1–2",
-    vehicle = vehicleId,
+    -- vehicle field removed in Milestone 4
     steps = {
         {
             type = "autodrive",  -- "autodrive" or "courseplay"
@@ -117,9 +119,10 @@ Workflow = {
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Milestone 4: vehicleId attribute removed - vehicle detected at runtime -->
 <WorkflowManager>
     <workflows>
-        <workflow id="workflow_001" name="Harvest wheat – fields 1–2" vehicle="vehicle_123" currentStep="1" status="ready">
+        <workflow id="workflow_001" name="Harvest wheat – fields 1–2" currentStep="1" status="ready">
             <step type="autodrive" target="Route_Field1" action="drive"/>
             <step type="courseplay" target="Field1_Harvest" action="fieldwork"/>
             <step type="autodrive" target="Farm/Silo" action="pickup_deliver" unloadTarget="Sell/BGA" fillType="WHEAT"/>
@@ -131,7 +134,7 @@ Workflow = {
 
 ## GUI Concept
 
-### Main Tabular View
+### Main Tabular View (Milestone 4: Vehicle column removed)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -139,23 +142,23 @@ Workflow = {
 ├─────────────────────────────────────────────────────────────────┤
 │ [New] [Edit] [Delete] [Start] [Stop]                            │
 ├─────────────────────────────────────────────────────────────────┤
-│ Workflow Name          │ Vehicle       │ Steps │ Status          │
-├────────────────────────┼───────────────┼───────┼─────────────────┤
-│ Harvest wheat 1–2      │ Combine       │ 4     │ Ready           │
-│ Harvest corn 3–5       │ Forage harv.  │ 6     │ Running (2/6)   │
-│ Spread slurry          │ Tractor 1     │ 8     │ Paused          │
+│ Workflow Name                    │ Steps │ Status                │
+├──────────────────────────────────┼───────┼───────────────────────┤
+│ Harvest wheat 1–2                │ 4     │ Ready                 │
+│ Harvest corn 3–5                 │ 6     │ Running (2/6)         │
+│ Spread slurry                    │ 8     │ Paused                │
 └─────────────────────────────────────────────────────────────────┘
+Note: Start workflow while in a vehicle - uses current vehicle
 ```
 
-### Workflow Editor (Detail View) - Button-Based
+### Workflow Editor (Detail View) - Button-Based (Milestone 4: Vehicle selector removed)
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │ Edit Workflow                                                   [X]  │
 ├──────────────────────────────────────────────────────────────────────┤
 │ Name:    [Harvest wheat 1–2________________________]                 │
-│                                                                      │
-│ Vehicle: [<] [      Combine XL      ] [>]  (1/5)                    │
+│ Vehicle: Uses current vehicle when starting workflow                 │
 │                                                                      │
 │ Steps:   [+ Add] [- Remove] [Up] [Down]                             │
 ├──────────────────────────────────────────────────────────────────────┤
@@ -207,17 +210,42 @@ Add Step Dialog:
 * [x] Add/remove steps
 * [x] Start/stop workflows
 
-### Milestone 4: Testing & Refinement ✓
+### Milestone 4: Vehicle selection (COMPLETED 2026-01-22)
+* [x] The vehicle should not be tied to a workflow
+* [x] The workflow can only be started from within a vehicle
+* [x] The workflow is started for the current vehicle
 
+### Milestone 5: Refinement
+* [ ] The ingame help menu F1 overlays the gui
+* [ ] Edit workflow name is possible in edit workflow gui without opening a separate overlay
+* [ ] Relocate double click to edit hint in edit workflow gui to the bottom
+* [ ] edit workflow gui has an X to close in the top right corner which works workflow manager has just a text [X] ESC which does not work
+* [ ] Do not show vehicle hint in gui
+* [ ] Edit step GUI looks different from the others (Header) 
+
+### Milestone 6: Folder view
+* [ ] Show folders in dropdowns
+* [ ] Folders are collapsed by default
+* [ ] For AD Targets
+* [ ] For CP Courses
+* [ ] Collapse all
+* [ ] Expand all
+
+### Milestone 7: Search
+* [ ] Search in dropdowns
+* [ ] Just typing while dropdown is open
+* [ ] Dropdown content should shrink according to input
+
+### Milestone 8: Refinement
 * [x] In-game testing (Field 1 → Field 2)
 * [ ] Implement error handling
 * [ ] Performance optimization
 * [ ] Documentation
 
-### Milestone 5: Phase 2 Features
+### Milestone 8: Phase 2 Features
 
 * [ ] Queue system
-* [ ] Support for 3+ fields
+* [x] Support for 3+ fields
 * [ ] Advanced conditions
 * [ ] Improve master-detail UI
 
@@ -500,9 +528,26 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
     - Uses `seenTitles` lookup table to prevent duplicate display names
     - Note: AD/CP filter based on vehicle's actual fill unit capabilities (not static list)
     - Benefits: No more duplicate entries in the dropdown
+  - **Milestone 4: Vehicle Detection at Runtime (2026-01-22)**:
+    - Vehicles are no longer stored with workflows
+    - When starting a workflow, uses `g_currentMission.controlledVehicle`
+    - Player must be in a vehicle to start a workflow
+    - Vehicle must have both AutoDrive and Courseplay support
+    - Changes made:
+      - `WorkflowManager.createWorkflow()`: Removed vehicle field from workflow
+      - `WorkflowManager.startWorkflow()`: Detects current vehicle, validates it has AD+CP
+      - `WorkflowManager.isVehicleValid()`: New function to check for AD+CP support
+      - `WorkflowManager.assignVehicle()`: Deprecated (does nothing)
+      - `WMExecutor.startWorkflow()`: Now accepts vehicle as parameter
+      - `WMExecutor.activeWorkflows[id].vehicle`: Stores vehicle at runtime
+      - All executor functions now use `activeData.vehicle` instead of `workflow.vehicle`
+      - `WMStorage`: No longer saves/loads vehicleId (old XML files still work)
+      - `WMEditorGUI`: Vehicle dropdown removed, shows hint instead
+      - `WMManagerGUI`: Vehicle column removed, workflow name column is wider
+    - Benefits: Workflows are now vehicle-agnostic and can run on any compatible vehicle
 
 ### In Progress
-- Milestone 5: Phase 2 Features (not yet started)
+- Milestone 5: Refinement (not yet started)
 
 ### Fixed Issues
 1. **~~Glass Background with Random Icons~~** (Fixed 2026-01-14): Main GUI overlay was rendering entire UI texture atlas. Fixed by creating `textures/white.png` (1x1 white pixel) and using fully opaque two-pass rendering.
@@ -683,6 +728,17 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
   - [x] All cargo types are available (WHEAT, BARLEY, DIESEL, etc.)
 - [x] Test In-Vehicle GUI Access (2026-01-22):
   - [x] Alt+W opens GUI when in a vehicle
+- [ ] Test Milestone 4: Runtime Vehicle Detection (2026-01-22):
+  - [ ] Editor GUI no longer shows vehicle dropdown
+  - [ ] Editor shows "Vehicle: Uses current vehicle when starting workflow" hint
+  - [ ] Main GUI no longer shows Vehicle column
+  - [ ] Workflow list shows only Name, Steps, Status columns
+  - [ ] Starting workflow while NOT in vehicle shows error
+  - [ ] Starting workflow in vehicle without AD+CP shows error
+  - [ ] Starting workflow in compatible vehicle (AD+CP) works correctly
+  - [ ] Workflow execution uses the vehicle that was current at start time
+  - [ ] Old XML files with vehicleId still load (id is ignored)
+  - [ ] New XML files don't include vehicleId attribute
   - [x] F9 opens GUI when in a vehicle
   - [x] Keybinding hint shows in F1 help menu when in vehicle
   - [x] GUI still works when not in a vehicle (walking around)

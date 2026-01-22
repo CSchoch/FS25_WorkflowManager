@@ -86,6 +86,8 @@
         <!-- Messages -->
         <text name="wm_no_workflows" text="Noch keine Workflows erstellt. Klicken Sie 'Neu', um einen zu erstellen."/>
         <text name="wm_no_vehicle" text="Kein Fahrzeug zugewiesen"/>
+        <text name="wm_current_vehicle" text="Aktuell"/>
+        <text name="wm_vehicle_hint" text="Fahrzeug: Verwendet aktuelles Fahrzeug beim Starten"/>
         <text name="wm_workflow_started" text="Workflow gestartet: %s"/>
         <text name="wm_workflow_stopped" text="Workflow gestoppt: %s"/>
         <text name="wm_workflow_completed" text="Workflow abgeschlossen: %s"/>
@@ -102,6 +104,10 @@
         <!-- Vehicle dropdown -->
         <text name="wm_select_vehicle" text="-- Fahrzeug waehlen --"/>
         <text name="wm_none" text="(keins)"/>
+
+        <!-- Warnings -->
+        <text name="wm_warning_no_vehicle" text="Steigen Sie in ein Fahrzeug, um den Workflow zu starten"/>
+        <text name="wm_warning_incompatible_vehicle" text="Fahrzeug '%s' benoetigt AutoDrive + Courseplay"/>
 
         <!-- Errors -->
         <text name="wm_error_no_autodrive" text="AutoDrive nicht verfuegbar"/>

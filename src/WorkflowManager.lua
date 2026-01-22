@@ -452,7 +452,8 @@ function WorkflowManager:createWorkflow(name)
     local workflow = {
         id = self:generateWorkflowId(),
         name = name or "New Workflow",
-        vehicle = nil,
+        -- NOTE: vehicle is no longer stored with workflow (Milestone 4)
+        -- Vehicle is detected at runtime when starting the workflow
         steps = {},
         currentStep = 1,
         status = self.STATUS_READY,
@@ -527,6 +528,7 @@ function WorkflowManager:addStep(workflowId, stepType, target, action)
 end
 
 ---Start a workflow
+---Uses the current vehicle the player is driving (Milestone 4)
 ---@param workflowId string Workflow ID to start
 ---@return boolean success True if started successfully
 function WorkflowManager:startWorkflow(workflowId)
@@ -546,12 +548,61 @@ function WorkflowManager:startWorkflow(workflowId)
         return false
     end
 
-    if workflow.vehicle == nil then
-        WMLogger:error("Cannot start: Workflow %s has no vehicle assigned", workflowId)
+    -- Milestone 4: Get the current vehicle the player is driving
+    -- Use g_localPlayer:getCurrentVehicle() which works even when GUI is open
+    local currentVehicle = nil
+    if g_localPlayer and g_localPlayer.getCurrentVehicle then
+        currentVehicle = g_localPlayer:getCurrentVehicle()
+    end
+
+    if currentVehicle == nil then
+        -- Show in-game warning to user
+        local warningText = g_i18n:getText("wm_warning_no_vehicle") or "Enter a vehicle to start the workflow"
+        if g_currentMission and g_currentMission.hud and g_currentMission.hud.showBlinkingWarning then
+            g_currentMission.hud:showBlinkingWarning(warningText, 2000)
+        end
+        WMLogger:warning("Cannot start: Player is not in a vehicle")
         return false
     end
 
-    return WMExecutor:startWorkflow(workflow)
+    -- Validate vehicle has required AutoDrive + Courseplay support
+    if not self:isVehicleValid(currentVehicle) then
+        local vehicleName = currentVehicle.getName and currentVehicle:getName() or "unknown"
+        -- Show in-game warning to user
+        local warningText = string.format(g_i18n:getText("wm_warning_incompatible_vehicle") or "Vehicle '%s' needs AutoDrive + Courseplay", vehicleName)
+        if g_currentMission and g_currentMission.hud and g_currentMission.hud.showBlinkingWarning then
+            g_currentMission.hud:showBlinkingWarning(warningText, 2000)
+        end
+        WMLogger:warning("Cannot start: Vehicle '%s' does not support workflows (needs AutoDrive + Courseplay)", vehicleName)
+        return false
+    end
+
+    WMLogger:info("Starting workflow '%s' with vehicle: %s",
+        workflow.name,
+        currentVehicle.getName and currentVehicle:getName() or "unknown")
+
+    -- Pass the current vehicle to the executor
+    return WMExecutor:startWorkflow(workflow, currentVehicle)
+end
+
+---Check if a vehicle supports running workflows
+---Requires both AutoDrive and Courseplay specs
+---@param vehicle table Vehicle to validate
+---@return boolean valid True if vehicle has AutoDrive and Courseplay support
+function WorkflowManager:isVehicleValid(vehicle)
+    if vehicle == nil then
+        return false
+    end
+
+    -- Check for AutoDrive support
+    local hasAutoDrive = vehicle.ad ~= nil or vehicle.spec_autoDrive ~= nil
+
+    -- Check for Courseplay support (multiple possible spec names)
+    local hasCP = vehicle.spec_cpAIWorker ~= nil or
+                  vehicle.spec_cpAIFieldWorker ~= nil or
+                  (vehicle.getIsCpActive ~= nil)
+
+    return hasAutoDrive and hasCP
 end
 
 ---Stop a running workflow
@@ -593,20 +644,13 @@ function WorkflowManager:resumeWorkflow(workflowId)
     return WMExecutor:resumeWorkflow(workflow)
 end
 
----Assign a vehicle to a workflow
+---DEPRECATED: Vehicles are now detected at runtime when starting a workflow (Milestone 4)
+---This function is kept for backward compatibility but does nothing
 ---@param workflowId string Workflow ID
----@param vehicle table Vehicle object
----@return boolean success True if assigned successfully
+---@param vehicle table Vehicle object (ignored)
+---@return boolean success Always returns true
 function WorkflowManager:assignVehicle(workflowId, vehicle)
-    local workflow = self:getWorkflowById(workflowId)
-    if workflow == nil then
-        WMLogger:error("Cannot assign vehicle: Workflow %s not found", workflowId)
-        return false
-    end
-
-    workflow.vehicle = vehicle
-    WMLogger:debug("Assigned vehicle to workflow %s", workflowId)
-
+    WMLogger:debug("assignVehicle called but ignored (deprecated - vehicles detected at runtime)")
     return true
 end
 

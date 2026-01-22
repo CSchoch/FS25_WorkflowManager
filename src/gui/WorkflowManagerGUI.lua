@@ -196,18 +196,13 @@ function WMManagerGUI:getStatusText(workflow)
     return statusText
 end
 
----Get vehicle name for a workflow
----@param workflow table Workflow data
----@return string vehicleName Vehicle name or placeholder
+---Milestone 4: Vehicle is no longer stored with workflow
+---This function now returns a hint about current vehicle usage
+---@param workflow table Workflow data (not used)
+---@return string vehicleName Static text about current vehicle
 function WMManagerGUI:getVehicleName(workflow)
-    if workflow.vehicle ~= nil then
-        if workflow.vehicle.getName then
-            return workflow.vehicle:getName()
-        elseif workflow.vehicle.name then
-            return workflow.vehicle.name
-        end
-    end
-    return g_i18n:getText("wm_no_vehicle")
+    -- Milestone 4: Vehicles are detected at runtime when starting
+    return g_i18n:getText("wm_current_vehicle") or "Current"
 end
 
 ---Handle workflow selection
@@ -386,13 +381,13 @@ function WMManagerGUI:draw()
     self:drawToolbar(bgX + 0.02, toolbarY)
 
     -- Draw column headers
+    -- Milestone 4: Vehicle column removed - vehicles detected at runtime
     local headerY = toolbarY - 0.05
     setTextColor(0.7, 0.7, 0.7, 1)
     setTextBold(true)
     renderText(bgX + 0.02, headerY, 0.016, g_i18n:getText("wm_header_name"))
-    renderText(bgX + 0.20, headerY, 0.016, g_i18n:getText("wm_header_vehicle"))
-    renderText(bgX + 0.35, headerY, 0.016, g_i18n:getText("wm_header_steps"))
-    renderText(bgX + 0.42, headerY, 0.016, g_i18n:getText("wm_header_status"))
+    renderText(bgX + 0.28, headerY, 0.016, g_i18n:getText("wm_header_steps"))
+    renderText(bgX + 0.36, headerY, 0.016, g_i18n:getText("wm_header_status"))
     setTextBold(false)
 
     -- Draw separator line
@@ -528,28 +523,22 @@ function WMManagerGUI:drawWorkflowRow(baseX, y, index, workflow)
     setTextColor(textColor[1], textColor[2], textColor[3], textColor[4])
 
     -- Draw workflow data
+    -- Milestone 4: Vehicle column removed
     local textY = y - 0.01
 
-    -- Index + Name
+    -- Index + Name (wider now without vehicle column)
     local displayName = string.format("%d. %s", index, workflow.name or g_i18n:getText("wm_unnamed"))
-    if string.len(displayName) > 20 then
-        displayName = string.sub(displayName, 1, 18) .. ".."
+    if string.len(displayName) > 30 then
+        displayName = string.sub(displayName, 1, 28) .. ".."
     end
     renderText(baseX + 0.02, textY, 0.015, displayName)
 
-    -- Vehicle
-    local vehicleName = self:getVehicleName(workflow)
-    if string.len(vehicleName) > 15 then
-        vehicleName = string.sub(vehicleName, 1, 13) .. ".."
-    end
-    renderText(baseX + 0.20, textY, 0.015, vehicleName)
-
     -- Steps count
-    renderText(baseX + 0.35, textY, 0.015, tostring(#workflow.steps))
+    renderText(baseX + 0.28, textY, 0.015, tostring(#workflow.steps))
 
     -- Status
     local statusText = self:getStatusText(workflow)
-    renderText(baseX + 0.42, textY, 0.015, statusText)
+    renderText(baseX + 0.36, textY, 0.015, statusText)
 end
 
 ---Update function

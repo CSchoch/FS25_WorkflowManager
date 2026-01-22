@@ -57,10 +57,8 @@ function WMStorage:saveWorkflows(workflows)
         xmlFile:setInt(workflowKey .. "#currentStep", workflow.currentStep)
         xmlFile:setString(workflowKey .. "#status", workflow.status)
 
-        -- Save vehicle reference (by ID if available)
-        if workflow.vehicle ~= nil and workflow.vehicle.id ~= nil then
-            xmlFile:setInt(workflowKey .. "#vehicleId", workflow.vehicle.id)
-        end
+        -- Milestone 4: Vehicle is no longer saved with workflow
+        -- Vehicle is detected at runtime when starting the workflow
 
         -- Save steps
         for j, step in ipairs(workflow.steps) do
@@ -122,15 +120,13 @@ function WMStorage:loadWorkflows()
             name = xmlFile:getString(workflowKey .. "#name", "Unnamed Workflow"),
             currentStep = xmlFile:getInt(workflowKey .. "#currentStep", 1),
             status = xmlFile:getString(workflowKey .. "#status", WorkflowManager.STATUS_READY),
-            vehicle = nil,
+            -- Milestone 4: Vehicle is no longer stored with workflow
+            -- Vehicle is detected at runtime when starting the workflow
             steps = {}
         }
 
-        -- Try to restore vehicle reference
-        local vehicleId = xmlFile:getInt(workflowKey .. "#vehicleId")
-        if vehicleId ~= nil then
-            workflow.vehicle = self:findVehicleById(vehicleId)
-        end
+        -- Milestone 4: vehicleId is ignored (old XML files may still have it)
+        -- local vehicleId = xmlFile:getInt(workflowKey .. "#vehicleId")
 
         -- Load steps
         local stepIndex = 0
@@ -251,7 +247,7 @@ function WMStorage:importWorkflow(filename)
         name = xmlFile:getString("Workflow#name", "Imported Workflow"),
         currentStep = 1,
         status = WorkflowManager.STATUS_READY,
-        vehicle = nil,
+        -- Milestone 4: Vehicle is detected at runtime when starting the workflow
         steps = {}
     }
 

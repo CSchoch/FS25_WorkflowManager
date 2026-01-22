@@ -27,9 +27,8 @@ WMEditorGUI.addStepUnloadTargetIndex = 0
 WMEditorGUI.addStepFillTypeIndex = 0
 WMEditorGUI.availableFillTypes = {}
 
--- Available vehicles cache
-WMEditorGUI.availableVehicles = {}
-WMEditorGUI.selectedVehicleIndex = 0
+-- Milestone 4: Vehicle selection removed from editor
+-- Vehicles are now detected at runtime when starting a workflow
 
 -- Cached data for AD destinations and CP courses (loaded once when GUI opens)
 WMEditorGUI.cachedADDestinations = nil  -- Cached AutoDrive destinations
@@ -79,7 +78,7 @@ function WMEditorGUI:init()
     self.isVisible = false
     self.currentWorkflow = nil
     self.selectedStepIndex = 0
-    self.availableVehicles = {}
+    -- Milestone 4: Vehicle selection removed
 
     -- Initialize cache as empty (will be loaded when main GUI opens)
     self.cachedADDestinations = nil
@@ -90,7 +89,7 @@ function WMEditorGUI:init()
     -- Initialize dropdown state
     self.openDropdown = nil
     self.dropdownScrollOffset = 0
-    self.vehicleDropdownPos = nil
+    -- Milestone 4: vehicleDropdownPos removed
     self.dialogDropdowns = {}
 
     -- Create own overlay from white.png texture
@@ -148,19 +147,8 @@ function WMEditorGUI:openWorkflow(workflow)
     -- Load data cache (AD destinations, CP courses, fill types)
     self:loadDataCache()
 
-    -- Refresh available vehicles
-    self:refreshVehicleList()
-
-    -- Find current vehicle index
-    self.selectedVehicleIndex = 0
-    if workflow.vehicle ~= nil then
-        for i, vData in ipairs(self.availableVehicles) do
-            if vData.vehicle == workflow.vehicle then
-                self.selectedVehicleIndex = i
-                break
-            end
-        end
-    end
+    -- Milestone 4: Vehicle selection removed from editor
+    -- Vehicles are detected at runtime when starting a workflow
 
     WMLogger:debug("Opened editor for workflow: %s", workflow.name)
 end
@@ -217,7 +205,7 @@ function WMEditorGUI:cleanup()
     self.selectedStepIndex = 0
     self.isAddStepDialogOpen = false
     self.isEditStepDialogOpen = false
-    self.availableVehicles = {}
+    -- Milestone 4: Vehicle selection removed
 
     -- Clear data cache
     self.cachedADDestinations = nil
@@ -232,7 +220,6 @@ function WMEditorGUI:cleanup()
     -- Reset dropdown state
     self.openDropdown = nil
     self.dropdownScrollOffset = 0
-    self.vehicleDropdownPos = nil
     self.dialogDropdowns = {}
 end
 
@@ -293,77 +280,9 @@ function WMEditorGUI:clearDataCache()
     WMLogger:debug("Data cache cleared")
 end
 
----Refresh the list of available vehicles
-function WMEditorGUI:refreshVehicleList()
-    -- Use the centralized vehicle loader instead of scanning ourselves
-    if CPVehiclesLoader and CPVehiclesLoader.isInitialized then
-        self.availableVehicles = CPVehiclesLoader:getVehicles()
-        WMLogger:debug("Loaded %d vehicles from CPVehiclesLoader", #self.availableVehicles)
-    else
-        -- Fallback: scan vehicles directly if loader not available
-        self.availableVehicles = {}
-
-        if g_currentMission == nil or g_currentMission.vehicles == nil then
-            return
-        end
-
-        for _, vehicle in ipairs(g_currentMission.vehicles) do
-            local hasAD = vehicle.ad ~= nil
-            local hasCP = vehicle.spec_cpAIWorker ~= nil or vehicle.spec_cpAIFieldWorker ~= nil
-
-            if hasAD or hasCP then
-                local name = "Unknown Vehicle"
-                if vehicle.getName then
-                    name = vehicle:getName()
-                elseif vehicle.name then
-                    name = vehicle.name
-                end
-
-                table.insert(self.availableVehicles, {
-                    vehicle = vehicle,
-                    name = name,
-                    hasAD = hasAD,
-                    hasCP = hasCP
-                })
-            end
-        end
-
-        WMLogger:debug("Found %d vehicles with AD/CP support (fallback)", #self.availableVehicles)
-    end
-end
-
----Cycle to previous vehicle
-function WMEditorGUI:prevVehicle()
-    if #self.availableVehicles == 0 then return end
-
-    self.selectedVehicleIndex = self.selectedVehicleIndex - 1
-    if self.selectedVehicleIndex < 0 then
-        self.selectedVehicleIndex = #self.availableVehicles
-    end
-    self:applyVehicleSelection()
-end
-
----Cycle to next vehicle
-function WMEditorGUI:nextVehicle()
-    if #self.availableVehicles == 0 then return end
-
-    self.selectedVehicleIndex = self.selectedVehicleIndex + 1
-    if self.selectedVehicleIndex > #self.availableVehicles then
-        self.selectedVehicleIndex = 0
-    end
-    self:applyVehicleSelection()
-end
-
----Apply the current vehicle selection to the workflow
-function WMEditorGUI:applyVehicleSelection()
-    if self.currentWorkflow == nil then return end
-
-    if self.selectedVehicleIndex > 0 and self.selectedVehicleIndex <= #self.availableVehicles then
-        self.currentWorkflow.vehicle = self.availableVehicles[self.selectedVehicleIndex].vehicle
-    else
-        self.currentWorkflow.vehicle = nil
-    end
-end
+-- Milestone 4: Vehicle selection functions removed
+-- refreshVehicleList, prevVehicle, nextVehicle, applyVehicleSelection are no longer needed
+-- Vehicles are detected at runtime when starting a workflow
 
 ---Remove selected step
 function WMEditorGUI:removeSelectedStep()
@@ -785,26 +704,11 @@ function WMEditorGUI:draw()
     -- Edit name button
     self:drawButton(L.bgX + 0.43, currentY - 0.008, 0.06, 0.03, g_i18n:getText("wm_button_edit"), {0.3, 0.5, 0.7, 1})
 
-    -- === VEHICLE SECTION ===
-    currentY = currentY - 0.05
-    setTextColor(0.8, 0.8, 0.8, 1)
-    renderText(L.bgX + L.margin, currentY, 0.016, g_i18n:getText("wm_editor_vehicle") .. ":")
-
-    -- Vehicle dropdown field
-    local vehicleNames = {}
-    for _, vData in ipairs(self.availableVehicles) do
-        table.insert(vehicleNames, vData.name)
-    end
-    local vehicleFieldX = L.bgX + 0.12
-    local vehicleFieldY = currentY - 0.008
-    local vehicleFieldW = 0.35
-    local vehicleFieldH = 0.035
-
-    self:drawDropdownField(vehicleFieldX, vehicleFieldY, vehicleFieldW, vehicleFieldH,
-        "vehicle", vehicleNames, self.selectedVehicleIndex, g_i18n:getText("wm_no_vehicle"))
-
-    -- Store position for dropdown list (drawn at end)
-    self.vehicleDropdownPos = {x = vehicleFieldX, y = vehicleFieldY, w = vehicleFieldW, h = vehicleFieldH}
+    -- Milestone 4: Vehicle section removed - vehicles detected at runtime
+    -- Show hint about vehicle requirement instead
+    currentY = currentY - 0.03
+    setTextColor(0.6, 0.7, 0.8, 1)
+    renderText(L.bgX + L.margin, currentY, 0.013, g_i18n:getText("wm_vehicle_hint") or "Vehicle: Uses current vehicle when starting workflow")
 
     -- === STEPS SECTION ===
     currentY = currentY - 0.06
@@ -871,15 +775,7 @@ function WMEditorGUI:draw()
     self:drawButton(centerX - 0.22, bottomY, L.buttonW, L.buttonH, g_i18n:getText("wm_button_save"), {0.2, 0.6, 0.2, 1})
     self:drawButton(centerX - 0.06, bottomY, L.buttonW, L.buttonH, g_i18n:getText("wm_button_cancel"), {0.6, 0.3, 0.3, 1})
 
-    -- === DRAW DROPDOWN LISTS (on top of everything) ===
-    if self.vehicleDropdownPos then
-        local vPos = self.vehicleDropdownPos
-        local vehicleNames = {}
-        for _, vData in ipairs(self.availableVehicles) do
-            table.insert(vehicleNames, vData.name)
-        end
-        self:drawDropdownList(vPos.x, vPos.y, vPos.w, "vehicle", vehicleNames, self.selectedVehicleIndex)
-    end
+    -- Milestone 4: Vehicle dropdown removed - no dropdowns to draw in main editor
 end
 
 ---Draw a button
@@ -1168,13 +1064,8 @@ end
 ---@param dropdownName string
 ---@return table items
 function WMEditorGUI:getDropdownItems(dropdownName)
-    if dropdownName == "vehicle" then
-        local items = {}
-        for _, vData in ipairs(self.availableVehicles) do
-            table.insert(items, vData.name)
-        end
-        return items
-    elseif dropdownName == "action" then
+    -- Milestone 4: Vehicle dropdown removed
+    if dropdownName == "action" then
         return self:getAvailableActions()
     elseif dropdownName == "target" then
         return self:getAvailableTargets()
@@ -1204,10 +1095,9 @@ function WMEditorGUI:isPositionCoveredByDropdown(testY, testH)
     testH = testH or 0
 
     -- Get dropdown position based on which one is open
+    -- Milestone 4: Vehicle dropdown removed
     local ddPos = nil
-    if self.openDropdown == "vehicle" and self.vehicleDropdownPos then
-        ddPos = self.vehicleDropdownPos
-    elseif self.dialogDropdowns and self.dialogDropdowns[self.openDropdown] then
+    if self.dialogDropdowns and self.dialogDropdowns[self.openDropdown] then
         ddPos = self.dialogDropdowns[self.openDropdown]
     end
 
@@ -1561,21 +1451,7 @@ function WMEditorGUI:handleMouseClick(x, y)
         return
     end
 
-    -- Handle dropdown clicks first (they appear on top)
-    if self.vehicleDropdownPos then
-        local vPos = self.vehicleDropdownPos
-        local vehicleNames = {}
-        for _, vData in ipairs(self.availableVehicles) do
-            table.insert(vehicleNames, vData.name)
-        end
-        if self:handleDropdownClick(x, y, vPos.x, vPos.y, vPos.w, vPos.h, "vehicle", vehicleNames,
-            function(index)
-                self.selectedVehicleIndex = index
-                self:applyVehicleSelection()
-            end) then
-            return
-        end
-    end
+    -- Milestone 4: Vehicle dropdown handling removed
 
     -- If a dropdown is open and we clicked elsewhere, close it
     if self.openDropdown ~= nil then
