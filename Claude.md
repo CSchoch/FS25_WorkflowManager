@@ -215,6 +215,10 @@ Add Step Dialog:
 * [x] The workflow can only be started from within a vehicle
 * [x] The workflow is started for the current vehicle
 
+### Milestone 5: Logo
+* [ ] Create a nice logo
+* [ ] convert to proper format
+
 ### Milestone 5: Refinement
 * [ ] The ingame help menu F1 overlays the gui
 * [ ] Edit workflow name is possible in edit workflow gui without opening a separate overlay
@@ -222,6 +226,7 @@ Add Step Dialog:
 * [ ] edit workflow gui has an X to close in the top right corner which works workflow manager has just a text [X] ESC which does not work
 * [ ] Do not show vehicle hint in gui
 * [ ] Edit step GUI looks different from the others (Header) 
+* [ ] Fix Warning (performance): Texture C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/textures/white.png raw format.
 
 ### Milestone 6: Folder view
 * [ ] Show folders in dropdowns
