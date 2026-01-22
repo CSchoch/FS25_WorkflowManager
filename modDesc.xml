@@ -38,6 +38,8 @@ Voraussetzungen: AutoDrive, Courseplay
     <!-- TODO: Create modIcon.dds (256x256 or 64x64 DDS icon) -->
 
     <extraSourceFiles>
+        <!-- Load spec first so it registers to vehicle types before vehicles are created -->
+        <sourceFile filename="src/WorkflowManagerSpec.lua" />
         <sourceFile filename="src/WorkflowManager.lua" />
     </extraSourceFiles>
 

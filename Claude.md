@@ -280,6 +280,7 @@ FS25_WorkflowManager/
 ├── src/
 │   ├── DevConfig.lua                # ✓ Development configuration
 │   ├── WorkflowManager.lua          # ✓ Main class & entry point
+│   ├── WorkflowManagerSpec.lua      # ✓ Vehicle specialization (for in-vehicle input)
 │   ├── WorkflowExecutor.lua         # ✓ Execution engine
 │   ├── WorkflowStorage.lua          # ✓ XML read/write
 │   ├── gui/
@@ -344,7 +345,7 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
 ---
 
 **Status**: Phase 1 COMPLETE – Ready for Phase 2
-**Last updated**: 2026-01-21
+**Last updated**: 2026-01-22
 
 ## Implementation Progress
 
@@ -558,6 +559,15 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
     - Updated `drawDropdownField()` to skip text when covered by a different dropdown
     - Updated column headers and labels in both main editor and step dialog to check coverage
     - Dropdown overlays still render normally, only text is conditionally skipped
+15. **~~GUI Not Accessible While in Vehicle~~** (Fixed 2026-01-22): Alt+W and F9 hotkeys only worked when not in a vehicle. Root cause: Input was only registered via `PlayerInputComponent.registerGlobalPlayerActionEvents` which is for global player actions when NOT controlling a vehicle. Fix:
+    - Created `WorkflowManagerSpec.lua` - a proper vehicle specialization
+    - Specialization registers `WM_TOGGLE_GUI` action via `onRegisterActionEvents` event
+    - Uses `g_specializationManager:addSpecialization()` and `g_vehicleTypeManager:addSpecialization()` to add spec to all enterable vehicles
+    - Hooks `TypeManager.validateTypes` to register at the right time (avoids stack overflow)
+    - Must use `InputAction.WM_TOGGLE_GUI` (not string) and `GS_PRIO_HIGH` for help text to appear
+    - Pattern matches how AutoDrive and Courseplay register vehicle-specific inputs
+    - Global input (when not in vehicle) still uses `PlayerInputComponent.registerGlobalPlayerActionEvents`
+    - Now works both when walking around AND when driving a vehicle, with keybinding hint visible
 
 ### Pending
 - modIcon.dds creation
@@ -671,3 +681,8 @@ All AutoDrive and Courseplay scripts will be provided for analysis.
   - [x] Fill Type dropdown does NOT show duplicate entries
   - [x] Fill Type dropdown does NOT show UNKNOWN
   - [x] All cargo types are available (WHEAT, BARLEY, DIESEL, etc.)
+- [x] Test In-Vehicle GUI Access (2026-01-22):
+  - [x] Alt+W opens GUI when in a vehicle
+  - [x] F9 opens GUI when in a vehicle
+  - [x] Keybinding hint shows in F1 help menu when in vehicle
+  - [x] GUI still works when not in a vehicle (walking around)

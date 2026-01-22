@@ -307,10 +307,11 @@ end
 
 ---Register input action bindings
 ---Uses PlayerInputComponent hook for global (non-vehicle) input actions
+---Vehicle input is handled by WorkflowManagerSpec specialization
 function WorkflowManager:registerInputActions()
-    WMLogger:debug("Setting up global input action registration...")
+    WMLogger:debug("Setting up input action registration...")
 
-    -- Hook into PlayerInputComponent to register global actions
+    -- Hook into PlayerInputComponent to register global actions (when NOT in vehicle)
     -- This is the pattern Courseplay uses for non-vehicle mods
     if PlayerInputComponent ~= nil and PlayerInputComponent.registerGlobalPlayerActionEvents ~= nil then
         local originalFunc = PlayerInputComponent.registerGlobalPlayerActionEvents
@@ -329,6 +330,10 @@ function WorkflowManager:registerInputActions()
         -- Fallback: try direct registration (may not work for global mods)
         self:registerGlobalActions()
     end
+
+    -- Note: Vehicle input is now handled by WorkflowManagerSpec specialization
+    -- which is registered to all enterable vehicles via g_vehicleTypeManager
+    WMLogger:info("Vehicle input handled by WorkflowManagerSpec specialization")
 end
 
 ---Register the actual global action events
