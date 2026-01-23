@@ -31,6 +31,9 @@
         <text name="wm_button_up" text="Hoch"/>
         <text name="wm_button_down" text="Runter"/>
 
+        <!-- Search (Milestone 7) -->
+        <text name="wm_search" text="Suchen"/>
+
         <!-- Table headers -->
         <text name="wm_header_name" text="Workflow-Name"/>
         <text name="wm_header_vehicle" text="Fahrzeug"/>

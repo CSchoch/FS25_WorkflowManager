@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<GUI onOpen="onOpen" onClose="onClose" onCreate="onCreate">
+    <GuiElement profile="newLayer"/>
+    <Bitmap profile="dialogFullscreenBg"/>
+    <GuiElement profile="fs25_dialogBg" size="900px 700px">
+        <ThreePartBitmap profile="fs25_dialogBgMiddleSmall"/>
+        <ThreePartBitmap profile="fs25_dialogBgTopSmall"/>
+        <ThreePartBitmap profile="fs25_dialogBgBottom"/>
+
+        <!-- Main content container -->
+        <BoxLayout profile="wm_dialogContentContainer">
+            <!-- Title -->
+            <Text profile="wm_dialogTitle" id="titleElement" text="$l10n_wm_title"/>
+            <ThreePartBitmap profile="wm_dialogTitleLineSeparator"/>
+
+            <!-- Action Buttons Row -->
+            <BoxLayout profile="wm_hBox" size="860px 50px">
+                <Button profile="buttonOK" id="newButton" text="$l10n_wm_button_new" onClick="onClickNew" size="120px 40px" focusId="newBtn"/>
+                <Button profile="buttonActivate" id="editButton" text="$l10n_wm_button_edit" onClick="onClickEdit" size="120px 40px" focusId="editBtn"/>
+                <Button profile="buttonActivate" id="deleteButton" text="$l10n_wm_button_delete" onClick="onClickDelete" size="120px 40px" focusId="deleteBtn"/>
+                <Button profile="buttonOK" id="startButton" text="$l10n_wm_button_start" onClick="onClickStart" size="120px 40px" focusId="startBtn"/>
+                <Button profile="buttonCancel" id="stopButton" text="$l10n_wm_button_stop" onClick="onClickStop" size="120px 40px" focusId="stopBtn"/>
+            </BoxLayout>
+
+            <!-- Column Headers -->
+            <BoxLayout profile="wm_hBox" size="860px 30px">
+                <Text profile="wm_columnHeader" text="$l10n_wm_header_name" size="500px 30px"/>
+                <Text profile="wm_columnHeader" text="$l10n_wm_header_steps" size="120px 30px"/>
+                <Text profile="wm_columnHeader" text="$l10n_wm_header_status" size="180px 30px"/>
+            </BoxLayout>
+
+            <!-- Workflow List -->
+            <BoxLayout absoluteSizeOffset="40px 420px" margin="0 0 0 10px">
+                <SmoothList profile="wm_list" id="workflowList"
+                            onSelectionChanged="onListSelectionChanged"
+                            onDoubleClick="onListDoubleClick"
+                            size="820px 420px"
+                            focusId="workflowList">
+                    <ListItem profile="wm_listItem" size="820px 40px">
+                        <BoxLayout flowDirection="horizontal" alignmentY="middle" size="100% 100%">
+                            <Text name="workflowName" profile="wm_listItemText" size="500px 100%"/>
+                            <Text name="workflowSteps" profile="wm_listItemText" size="120px 100%"/>
+                            <Text name="workflowStatus" profile="wm_listItemText" size="180px 100%"/>
+                        </BoxLayout>
+                    </ListItem>
+                </SmoothList>
+
+                <ThreePartBitmap profile="fs25_listSliderBox">
+                    <Slider profile="fs25_listSlider" dataElementId="workflowList"/>
+                </ThreePartBitmap>
+            </BoxLayout>
+        </BoxLayout>
+
+        <!-- Bottom Buttons -->
+        <BoxLayout profile="wm_dialogButtonBoxBottom">
+            <Button profile="buttonBack" id="closeButton" text="$l10n_wm_button_close" onClick="onClickClose" focusId="closeBtn"/>
+        </BoxLayout>
+    </GuiElement>
+</GUI>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<GUI onOpen="onOpen" onClose="onClose" onCreate="onCreate">
+    <GuiElement profile="newLayer"/>
+    <Bitmap profile="dialogFullscreenBg"/>
+    <GuiElement profile="fs25_dialogBg" size="900px 750px">
+        <ThreePartBitmap profile="fs25_dialogBgMiddleSmall"/>
+        <ThreePartBitmap profile="fs25_dialogBgTopSmall"/>
+        <ThreePartBitmap profile="fs25_dialogBgBottom"/>
+
+        <!-- Main content container -->
+        <BoxLayout profile="wm_dialogContentContainer">
+            <!-- Title -->
+            <Text profile="wm_dialogTitle" id="titleElement" text="$l10n_wm_editor_title"/>
+            <ThreePartBitmap profile="wm_dialogTitleLineSeparator"/>
+
+            <!-- Workflow Name Row -->
+            <BoxLayout profile="wm_hBox" size="860px 50px">
+                <Text profile="wm_dialogText" text="$l10n_wm_editor_name" size="80px 40px" textAutoWidth="true"/>
+                <TextInput profile="fs25_dialogTextInput" id="nameInput" onEnterPressed="onNameEnterPressed" maxCharacters="50" size="500px 40px" focusId="nameInput">
+                    <ThreePartBitmap profile="fs25_textInputBg"/>
+                    <Bitmap profile="fs25_textInputIconBox">
+                        <Bitmap profile="fs25_textInputIcon"/>
+                    </Bitmap>
+                </TextInput>
+            </BoxLayout>
+
+            <!-- Vehicle Hint -->
+            <Text profile="wm_infoText" text="$l10n_wm_vehicle_hint" size="860px 25px"/>
+
+            <!-- Steps Section Header with Buttons -->
+            <BoxLayout profile="wm_hBox" size="860px 50px">
+                <Text profile="wm_sectionLabel" text="$l10n_wm_editor_steps" size="80px 40px"/>
+                <Button profile="buttonOK" id="addStepButton" text="+" onClick="onClickAddStep" size="60px 40px" focusId="addBtn"/>
+                <Button profile="buttonActivate" id="editStepButton" text="$l10n_wm_button_edit" onClick="onClickEditStep" size="90px 40px" focusId="editBtn"/>
+                <Button profile="buttonActivate" id="removeStepButton" text="-" onClick="onClickRemoveStep" size="60px 40px" focusId="removeBtn"/>
+                <Button profile="buttonActivate" id="moveUpButton" text="$l10n_wm_button_up" onClick="onClickMoveUp" size="80px 40px" focusId="upBtn"/>
+                <Button profile="buttonActivate" id="moveDownButton" text="$l10n_wm_button_down" onClick="onClickMoveDown" size="90px 40px" focusId="downBtn"/>
+            </BoxLayout>
+
+            <!-- Column Headers for Steps -->
+            <BoxLayout profile="wm_hBox" size="860px 30px">
+                <Text profile="wm_columnHeader" text="#" size="50px 30px"/>
+                <Text profile="wm_columnHeader" text="$l10n_wm_editor_type" size="130px 30px"/>
+                <Text profile="wm_columnHeader" text="$l10n_wm_editor_target" size="380px 30px"/>
+                <Text profile="wm_columnHeader" text="$l10n_wm_editor_action" size="220px 30px"/>
+            </BoxLayout>
+
+            <!-- Step List -->
+            <BoxLayout absoluteSizeOffset="40px 380px" margin="0 0 0 10px">
+                <SmoothList profile="wm_list" id="stepList"
+                            onSelectionChanged="onStepListSelectionChanged"
+                            onDoubleClick="onStepListDoubleClick"
+                            size="820px 380px"
+                            focusId="stepList">
+                    <ListItem profile="wm_listItem" size="820px 38px">
+                        <BoxLayout flowDirection="horizontal" alignmentY="middle" size="100% 100%">
+                            <Text name="stepNum" profile="wm_listItemText" size="50px 100%"/>
+                            <Text name="stepType" profile="wm_listItemText" size="130px 100%"/>
+                            <Text name="stepTarget" profile="wm_listItemText" size="380px 100%"/>
+                            <Text name="stepAction" profile="wm_listItemText" size="220px 100%"/>
+                        </BoxLayout>
+                    </ListItem>
+                </SmoothList>
+
+                <ThreePartBitmap profile="fs25_listSliderBox">
+                    <Slider profile="fs25_listSlider" dataElementId="stepList"/>
+                </ThreePartBitmap>
+            </BoxLayout>
+        </BoxLayout>
+
+        <!-- Bottom Buttons -->
+        <BoxLayout profile="wm_dialogButtonBoxBottom">
+            <Button profile="buttonOK" id="saveButton" text="$l10n_wm_button_save" onClick="onClickSave" focusId="saveBtn"/>
+            <Bitmap profile="fs25_dialogButtonBoxSeparator"/>
+            <Button profile="buttonBack" id="cancelButton" text="$l10n_wm_button_cancel" onClick="onClickCancel" focusId="cancelBtn"/>
+        </BoxLayout>
+    </GuiElement>
+</GUI>

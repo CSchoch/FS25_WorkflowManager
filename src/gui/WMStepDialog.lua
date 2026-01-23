@@ -1,0 +1,661 @@
+--[[
+    WorkflowManager - Step Dialog
+    Allows adding/editing workflow steps with searchable dropdowns
+    Uses proper FS25 DialogElement for input blocking
+
+    Author: WorkflowManager Team
+]]
+
+---@class WMStepDialog
+WMStepDialog = {}
+
+local WMStepDialog_mt = Class(WMStepDialog, DialogElement)
+
+function WMStepDialog.new(target)
+    local self = DialogElement.new(target, WMStepDialog_mt)
+    self.step = nil
+    self.callback = nil
+    self.isEditMode = false
+
+    -- Step data
+    self.stepType = "autodrive"
+    self.stepAction = "drive"
+    self.stepTarget = ""
+    self.stepUnloadTarget = ""
+    self.stepFillType = ""
+
+    -- List data
+    self.targetItems = {}
+    self.filteredTargetItems = {}
+    self.selectedTargetIndex = 0
+
+    self.unloadTargetItems = {}
+    self.filteredUnloadTargetItems = {}
+    self.selectedUnloadTargetIndex = 0
+
+    self.fillTypeItems = {}
+    self.filteredFillTypeItems = {}
+    self.selectedFillTypeIndex = 0
+
+    -- Dropdown visibility state
+    self.targetDropdownVisible = false
+    self.unloadTargetDropdownVisible = false
+    self.fillTypeDropdownVisible = false
+
+    return self
+end
+
+function WMStepDialog:onCreate()
+    WMLogger:debug("WMStepDialog:onCreate")
+end
+
+function WMStepDialog:onOpen()
+    WMStepDialog:superClass().onOpen(self)
+    WMLogger:debug("WMStepDialog:onOpen")
+
+    -- Setup list data sources
+    if self.targetList ~= nil then
+        self.targetList:setDataSource(self)
+        self.targetList.dataSourceId = "target"
+    end
+    if self.unloadTargetList ~= nil then
+        self.unloadTargetList:setDataSource(self)
+        self.unloadTargetList.dataSourceId = "unloadTarget"
+    end
+    if self.fillTypeList ~= nil then
+        self.fillTypeList:setDataSource(self)
+        self.fillTypeList.dataSourceId = "fillType"
+    end
+
+    -- Load available targets and fill types
+    self:loadAvailableData()
+
+    -- Hide all dropdowns initially
+    self:hideAllDropdowns()
+
+    -- Apply initial values
+    self:refreshDisplay()
+end
+
+function WMStepDialog:onClose()
+    WMStepDialog:superClass().onClose(self)
+    WMLogger:debug("WMStepDialog:onClose")
+end
+
+---Set the step to edit (nil for new step)
+---@param step table|nil Step to edit, or nil for new
+---@param callback function Callback when done: callback(step) or callback(nil) if cancelled
+function WMStepDialog:setStep(step, callback)
+    self.callback = callback
+    self.isEditMode = step ~= nil
+
+    if step then
+        self.step = step
+        self.stepType = step.type or "autodrive"
+        self.stepAction = step.action or "drive"
+        self.stepTarget = step.target or ""
+        self.stepUnloadTarget = step.unloadTarget or ""
+        self.stepFillType = step.fillType or ""
+    else
+        self.step = nil
+        self.stepType = "autodrive"
+        self.stepAction = "drive"
+        self.stepTarget = ""
+        self.stepUnloadTarget = ""
+        self.stepFillType = ""
+    end
+end
+
+---Load available data from caches
+function WMStepDialog:loadAvailableData()
+    -- Get editor dialog for cached data
+    local editor = WorkflowManager.editorDialog
+
+    -- Load targets based on type
+    self:refreshTargetList()
+
+    -- Load fill types
+    self.fillTypeItems = {}
+    table.insert(self.fillTypeItems, {name = "", display = g_i18n:getText("wm_none") or "(None)"})
+    if editor then
+        local fillTypes = editor:getFillTypes()
+        for _, ft in ipairs(fillTypes) do
+            table.insert(self.fillTypeItems, {name = ft, display = ft})
+        end
+    end
+    self.filteredFillTypeItems = self.fillTypeItems
+end
+
+---Refresh the target list based on current step type
+function WMStepDialog:refreshTargetList()
+    local editor = WorkflowManager.editorDialog
+    self.targetItems = {}
+
+    if self.stepType == "autodrive" then
+        if editor then
+            local dests = editor:getADDestinations()
+            for _, dest in ipairs(dests) do
+                table.insert(self.targetItems, {name = dest, display = dest})
+            end
+        end
+    else
+        if editor then
+            local courses = editor:getCPCourses()
+            for _, course in ipairs(courses) do
+                table.insert(self.targetItems, {name = course, display = course})
+            end
+        end
+    end
+
+    -- Unload targets use same list as targets (AD destinations)
+    self.unloadTargetItems = {}
+    if editor then
+        local dests = editor:getADDestinations()
+        for _, dest in ipairs(dests) do
+            table.insert(self.unloadTargetItems, {name = dest, display = dest})
+        end
+    end
+
+    self.filteredTargetItems = self.targetItems
+    self.filteredUnloadTargetItems = self.unloadTargetItems
+end
+
+---Refresh the display with current values
+function WMStepDialog:refreshDisplay()
+    -- Update title
+    if self.titleElement then
+        local titleKey = self.isEditMode and "wm_dialog_edit_step" or "wm_dialog_add_step"
+        self.titleElement:setText(g_i18n:getText(titleKey))
+    end
+
+    -- Update type dropdown
+    self:refreshTypeDropdown()
+
+    -- Update action dropdown
+    self:refreshActionDropdown()
+
+    -- Update input field values
+    self:setInputFieldValues()
+
+    -- Update target list
+    self:refreshTargetDisplay()
+
+    -- Update visibility of unload target and fill type
+    self:updateFieldVisibility()
+end
+
+---Refresh type dropdown options
+function WMStepDialog:refreshTypeDropdown()
+    if self.typeDropdown == nil then
+        return
+    end
+
+    local types = {"autodrive", "courseplay"}
+    local texts = {
+        g_i18n:getText("wm_type_autodrive") or "AutoDrive",
+        g_i18n:getText("wm_type_courseplay") or "Courseplay"
+    }
+    self.typeDropdown:setTexts(texts)
+
+    -- Find current type index
+    local currentIndex = 1
+    for i, t in ipairs(types) do
+        if t == self.stepType then
+            currentIndex = i
+            break
+        end
+    end
+    self.typeDropdown:setState(currentIndex)
+end
+
+---Refresh action dropdown options
+function WMStepDialog:refreshActionDropdown()
+    if self.actionDropdown == nil then
+        return
+    end
+
+    self.actionDropdown:setTexts({})
+
+    local actions = self:getAvailableActions()
+    local texts = {}
+    for _, action in ipairs(actions) do
+        table.insert(texts, self:getActionDisplayName(action))
+    end
+    self.actionDropdown:setTexts(texts)
+
+    -- Find current action index
+    local currentIndex = 1
+    for i, action in ipairs(actions) do
+        if action == self.stepAction then
+            currentIndex = i
+            break
+        end
+    end
+    self.actionDropdown:setState(currentIndex)
+end
+
+---Get available actions based on step type
+function WMStepDialog:getAvailableActions()
+    if self.stepType == "autodrive" then
+        return {"drive", "pickup_deliver", "deliver", "load", "unload"}
+    else
+        return {"fieldwork", "bale_collect"}
+    end
+end
+
+---Get display name for an action
+function WMStepDialog:getActionDisplayName(action)
+    local actionDisplayNames = {
+        drive = g_i18n:getText("wm_action_drive") or "Drive To",
+        pickup_deliver = g_i18n:getText("wm_action_pickup_deliver") or "Pickup & Deliver",
+        deliver = g_i18n:getText("wm_action_deliver") or "Deliver",
+        load = g_i18n:getText("wm_action_load") or "Load",
+        unload = g_i18n:getText("wm_action_unload") or "Unload",
+        fieldwork = g_i18n:getText("wm_action_fieldwork") or "Field Work",
+        bale_collect = g_i18n:getText("wm_action_bale_collect") or "Bale Collect"
+    }
+    return actionDisplayNames[action] or action
+end
+
+---SmoothList data source: Get number of items
+function WMStepDialog:getNumberOfItemsInSection(list, section)
+    if list.dataSourceId == "target" then
+        return #self.filteredTargetItems
+    elseif list.dataSourceId == "unloadTarget" then
+        return #self.filteredUnloadTargetItems
+    elseif list.dataSourceId == "fillType" then
+        return #self.filteredFillTypeItems
+    end
+    return 0
+end
+
+---SmoothList data source: Populate cell
+function WMStepDialog:populateCellForItemInSection(list, section, index, cell)
+    if list.dataSourceId == "target" then
+        local item = self.filteredTargetItems[index]
+        if item then
+            local textElement = cell:getDescendantByName("targetText")
+            if textElement then
+                textElement:setText(item.display)
+            end
+        end
+    elseif list.dataSourceId == "unloadTarget" then
+        local item = self.filteredUnloadTargetItems[index]
+        if item then
+            local textElement = cell:getDescendantByName("unloadTargetText")
+            if textElement then
+                textElement:setText(item.display)
+            end
+        end
+    elseif list.dataSourceId == "fillType" then
+        local item = self.filteredFillTypeItems[index]
+        if item then
+            local textElement = cell:getDescendantByName("fillTypeText")
+            if textElement then
+                textElement:setText(item.display)
+            end
+        end
+    end
+end
+
+---Refresh target list display
+function WMStepDialog:refreshTargetDisplay()
+    -- Refresh target list
+    if self.targetList then
+        self.targetList:reloadData()
+
+        -- Select current target
+        self.selectedTargetIndex = 0
+        for i, item in ipairs(self.filteredTargetItems) do
+            if item.name == self.stepTarget then
+                self.selectedTargetIndex = i
+                self.targetList:setSelectedIndex(i)
+                break
+            end
+        end
+    end
+
+    -- Refresh unload target list
+    if self.unloadTargetList then
+        self.unloadTargetList:reloadData()
+
+        -- Select current unload target
+        self.selectedUnloadTargetIndex = 0
+        for i, item in ipairs(self.filteredUnloadTargetItems) do
+            if item.name == self.stepUnloadTarget then
+                self.selectedUnloadTargetIndex = i
+                self.unloadTargetList:setSelectedIndex(i)
+                break
+            end
+        end
+    end
+
+    -- Refresh fill type list
+    if self.fillTypeList then
+        self.fillTypeList:reloadData()
+
+        -- Select current fill type
+        self.selectedFillTypeIndex = 0
+        for i, item in ipairs(self.filteredFillTypeItems) do
+            if item.name == self.stepFillType then
+                self.selectedFillTypeIndex = i
+                self.fillTypeList:setSelectedIndex(i)
+                break
+            end
+        end
+    end
+end
+
+---Set input field values from current step data (called on open for edit mode)
+function WMStepDialog:setInputFieldValues()
+    -- Set target input
+    if self.targetSearchInput then
+        self.targetSearchInput:setText(self.stepTarget)
+    end
+    -- Set unload target input
+    if self.unloadTargetSearchInput then
+        self.unloadTargetSearchInput:setText(self.stepUnloadTarget)
+    end
+    -- Set fill type input
+    if self.fillTypeSearchInput then
+        self.fillTypeSearchInput:setText(self.stepFillType)
+    end
+end
+
+---Update field visibility based on action
+function WMStepDialog:updateFieldVisibility()
+    local needsUnloadTarget = self:actionNeedsUnloadTarget()
+    local needsFillType = self:actionNeedsFillType()
+
+    if self.unloadTargetSection then
+        self.unloadTargetSection:setVisible(needsUnloadTarget)
+    end
+    if self.fillTypeSection then
+        self.fillTypeSection:setVisible(needsFillType)
+    end
+end
+
+---Check if current action needs unload target
+function WMStepDialog:actionNeedsUnloadTarget()
+    if self.stepType ~= "autodrive" then
+        return false
+    end
+    return self.stepAction == "unload" or self.stepAction == "pickup_deliver" or self.stepAction == "load"
+end
+
+---Check if current action needs fill type
+function WMStepDialog:actionNeedsFillType()
+    if self.stepType ~= "autodrive" then
+        return false
+    end
+    return self.stepAction == "pickup_deliver" or self.stepAction == "load"
+end
+
+---Filter target list by search text
+function WMStepDialog:filterTargets(searchText)
+    searchText = string.lower(searchText or "")
+    self.filteredTargetItems = {}
+
+    if searchText == "" then
+        self.filteredTargetItems = self.targetItems
+    else
+        for _, item in ipairs(self.targetItems) do
+            if string.find(string.lower(item.display), searchText, 1, true) then
+                table.insert(self.filteredTargetItems, item)
+            end
+        end
+    end
+
+    self:refreshTargetDisplay()
+end
+
+---Filter unload target list by search text
+function WMStepDialog:filterUnloadTargets(searchText)
+    searchText = string.lower(searchText or "")
+    self.filteredUnloadTargetItems = {}
+
+    if searchText == "" then
+        self.filteredUnloadTargetItems = self.unloadTargetItems
+    else
+        for _, item in ipairs(self.unloadTargetItems) do
+            if string.find(string.lower(item.display), searchText, 1, true) then
+                table.insert(self.filteredUnloadTargetItems, item)
+            end
+        end
+    end
+
+    self:refreshTargetDisplay()
+end
+
+---Filter fill type list by search text
+function WMStepDialog:filterFillTypes(searchText)
+    searchText = string.lower(searchText or "")
+    self.filteredFillTypeItems = {}
+
+    if searchText == "" then
+        self.filteredFillTypeItems = self.fillTypeItems
+    else
+        for _, item in ipairs(self.fillTypeItems) do
+            if string.find(string.lower(item.display), searchText, 1, true) then
+                table.insert(self.filteredFillTypeItems, item)
+            end
+        end
+    end
+
+    self:refreshTargetDisplay()
+end
+
+-- Dropdown visibility management
+
+---Hide all dropdowns
+function WMStepDialog:hideAllDropdowns()
+    self:setTargetDropdownVisible(false)
+    self:setUnloadTargetDropdownVisible(false)
+    self:setFillTypeDropdownVisible(false)
+end
+
+---Set target dropdown visibility
+function WMStepDialog:setTargetDropdownVisible(visible)
+    self.targetDropdownVisible = visible
+    if self.targetDropdownContainer then
+        self.targetDropdownContainer:setVisible(visible)
+    end
+end
+
+---Set unload target dropdown visibility
+function WMStepDialog:setUnloadTargetDropdownVisible(visible)
+    self.unloadTargetDropdownVisible = visible
+    if self.unloadTargetDropdownContainer then
+        self.unloadTargetDropdownContainer:setVisible(visible)
+    end
+end
+
+---Set fill type dropdown visibility
+function WMStepDialog:setFillTypeDropdownVisible(visible)
+    self.fillTypeDropdownVisible = visible
+    if self.fillTypeDropdownContainer then
+        self.fillTypeDropdownContainer:setVisible(visible)
+    end
+end
+
+-- Event handlers
+
+---Called when type dropdown changes
+function WMStepDialog:onTypeChanged(state)
+    local types = {"autodrive", "courseplay"}
+    local defaultActions = {autodrive = "drive", courseplay = "fieldwork"}
+
+    if state > 0 and state <= #types then
+        local newType = types[state]
+        if self.stepType ~= newType then
+            self.stepType = newType
+            self.stepAction = defaultActions[newType]
+            self.stepTarget = ""
+            -- Clear and hide dropdown, update input
+            if self.targetSearchInput then
+                self.targetSearchInput:setText("")
+            end
+            self:setTargetDropdownVisible(false)
+            self:refreshTargetList()
+            self:refreshActionDropdown()
+            self:refreshTargetDisplay()
+            self:updateFieldVisibility()
+        end
+    end
+end
+
+---Called when action dropdown changes
+function WMStepDialog:onActionChanged(state)
+    local actions = self:getAvailableActions()
+    if state > 0 and state <= #actions then
+        self.stepAction = actions[state]
+        self:updateFieldVisibility()
+    end
+end
+
+---Called when target input gets focus
+function WMStepDialog:onTargetInputFocus()
+    -- Hide other dropdowns and show this one
+    self:setUnloadTargetDropdownVisible(false)
+    self:setFillTypeDropdownVisible(false)
+    self:setTargetDropdownVisible(true)
+end
+
+---Called when target search text changes
+function WMStepDialog:onTargetSearchChanged()
+    if self.targetSearchInput then
+        -- Ensure dropdown is visible when typing
+        self:setTargetDropdownVisible(true)
+        self:filterTargets(self.targetSearchInput.text)
+    end
+end
+
+---Called when target list selection changes
+function WMStepDialog:onTargetListSelectionChanged(list, section, index)
+    self.selectedTargetIndex = index
+    if index > 0 and index <= #self.filteredTargetItems then
+        local item = self.filteredTargetItems[index]
+        self.stepTarget = item.name
+        -- Update input field with selection
+        if self.targetSearchInput then
+            self.targetSearchInput:setText(item.display)
+        end
+        -- Hide dropdown after selection
+        self:setTargetDropdownVisible(false)
+    end
+end
+
+---Called when unload target input gets focus
+function WMStepDialog:onUnloadTargetInputFocus()
+    -- Hide other dropdowns and show this one
+    self:setTargetDropdownVisible(false)
+    self:setFillTypeDropdownVisible(false)
+    self:setUnloadTargetDropdownVisible(true)
+end
+
+---Called when unload target search text changes
+function WMStepDialog:onUnloadTargetSearchChanged()
+    if self.unloadTargetSearchInput then
+        -- Ensure dropdown is visible when typing
+        self:setUnloadTargetDropdownVisible(true)
+        self:filterUnloadTargets(self.unloadTargetSearchInput.text)
+    end
+end
+
+---Called when unload target list selection changes
+function WMStepDialog:onUnloadTargetListSelectionChanged(list, section, index)
+    self.selectedUnloadTargetIndex = index
+    if index > 0 and index <= #self.filteredUnloadTargetItems then
+        local item = self.filteredUnloadTargetItems[index]
+        self.stepUnloadTarget = item.name
+        -- Update input field with selection
+        if self.unloadTargetSearchInput then
+            self.unloadTargetSearchInput:setText(item.display)
+        end
+        -- Hide dropdown after selection
+        self:setUnloadTargetDropdownVisible(false)
+    end
+end
+
+---Called when fill type input gets focus
+function WMStepDialog:onFillTypeInputFocus()
+    -- Hide other dropdowns and show this one
+    self:setTargetDropdownVisible(false)
+    self:setUnloadTargetDropdownVisible(false)
+    self:setFillTypeDropdownVisible(true)
+end
+
+---Called when fill type search text changes
+function WMStepDialog:onFillTypeSearchChanged()
+    if self.fillTypeSearchInput then
+        -- Ensure dropdown is visible when typing
+        self:setFillTypeDropdownVisible(true)
+        self:filterFillTypes(self.fillTypeSearchInput.text)
+    end
+end
+
+---Called when fill type list selection changes
+function WMStepDialog:onFillTypeListSelectionChanged(list, section, index)
+    self.selectedFillTypeIndex = index
+    if index > 0 and index <= #self.filteredFillTypeItems then
+        local item = self.filteredFillTypeItems[index]
+        self.stepFillType = item.name
+        -- Update input field with selection
+        if self.fillTypeSearchInput then
+            self.fillTypeSearchInput:setText(item.display)
+        end
+        -- Hide dropdown after selection
+        self:setFillTypeDropdownVisible(false)
+    end
+end
+
+---Called when Confirm button is clicked
+function WMStepDialog:onClickConfirm()
+    WMLogger:debug("WMStepDialog:onClickConfirm")
+
+    -- Validate
+    if self.stepTarget == "" then
+        g_gui:showInfoDialog({
+            text = g_i18n:getText("wm_error_no_selection") or "Please select a target"
+        })
+        return
+    end
+
+    -- Build step
+    local step = {
+        type = self.stepType,
+        action = self.stepAction,
+        target = self.stepTarget
+    }
+
+    -- Add AD-specific fields
+    if self.stepType == "autodrive" then
+        if self:actionNeedsUnloadTarget() and self.stepUnloadTarget ~= "" then
+            step.unloadTarget = self.stepUnloadTarget
+        end
+        if self:actionNeedsFillType() and self.stepFillType ~= "" then
+            step.fillType = self.stepFillType
+        end
+    end
+
+    self:close()
+
+    if self.callback then
+        self.callback(step)
+    end
+end
+
+---Called when Cancel button is clicked
+function WMStepDialog:onClickCancel()
+    WMLogger:debug("WMStepDialog:onClickCancel")
+    self:close()
+
+    if self.callback then
+        self.callback(nil)
+    end
+end
+
+---Called when Escape is pressed
+function WMStepDialog:onEscPressed()
+    self:onClickCancel()
+end

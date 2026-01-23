@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <GUIProfiles>
+    <!-- Common dialog container -->
     <Profile name="wm_dialogContentContainer" extends="fs25_dialogContentContainer">
         <flowDirection value="vertical"/>
         <elementSpacing value="10px"/>
@@ -8,26 +9,60 @@
         <absoluteSizeOffset value="21px 30px"/>
     </Profile>
 
+    <!-- Horizontal box layout -->
     <Profile name="wm_hBox" extends="emptyPanel" with="anchorTopCenter">
         <flowDirection value="horizontal"/>
         <alignmentX value="center"/>
         <alignmentY value="middle"/>
-        <elementSpacing value="20px"/>
+        <elementSpacing value="10px"/>
     </Profile>
 
+    <!-- Dialog title -->
     <Profile name="wm_dialogTitle" extends="baseReference" with="anchorTopStretchingX">
         <textBold value="true"/>
         <textLayoutMode value="resize"/>
         <textMaxNumLines value="1"/>
         <textSize value="24px"/>
         <textUpperCase value="true"/>
+        <textColor value="1 1 1 1"/>
+        <textAlignment value="center"/>
+        <textVerticalAlignment value="middle"/>
         <size value="100% 40px"/>
     </Profile>
 
+    <!-- Title separator line -->
     <Profile name="wm_dialogTitleLineSeparator" extends="fs25_lineSeparatorTop">
         <absoluteSizeOffset value="100px 0"/>
     </Profile>
 
+    <!-- Dialog text/labels -->
+    <Profile name="wm_dialogText" extends="baseReference" with="anchorTopStretchingX">
+        <textMaxNumLines value="5"/>
+        <textSize value="16px"/>
+        <textColor value="1 1 1 1"/>
+        <textAlignment value="left"/>
+        <textVerticalAlignment value="middle"/>
+    </Profile>
+
+    <!-- Section label (bold) -->
+    <Profile name="wm_sectionLabel" extends="baseReference">
+        <textBold value="true"/>
+        <textSize value="18px"/>
+        <textColor value="1 1 1 1"/>
+        <textAlignment value="left"/>
+        <textVerticalAlignment value="middle"/>
+    </Profile>
+
+    <!-- Column header text -->
+    <Profile name="wm_columnHeader" extends="baseReference">
+        <textBold value="true"/>
+        <textSize value="14px"/>
+        <textColor value="0.7 0.7 0.7 1"/>
+        <textAlignment value="left"/>
+        <textVerticalAlignment value="middle"/>
+    </Profile>
+
+    <!-- Button box at bottom of dialog -->
     <Profile name="wm_dialogButtonBox" extends="fs25_dialogButtonBox">
         <absoluteSizeOffset value="0px 0px"/>
         <position value="0px 0px"/>
@@ -36,5 +71,34 @@
     <Profile name="wm_dialogButtonBoxBottom" extends="wm_dialogButtonBox" with="anchorBottomStretchingX">
         <position value="-6px 32px"/>
         <absoluteSizeOffset value="20px 0"/>
+    </Profile>
+
+    <!-- List container -->
+    <Profile name="wm_list" extends="emptyPanel" with="anchorStretchingYStretchingX pivotTopLeft">
+    </Profile>
+
+    <!-- List item with alternating colors -->
+    <Profile name="wm_listItem" extends="baseReference" with="anchorTopStretchingX alternating">
+        <height value="36px"/>
+        <imageColor value="0.15 0.15 0.15 1"/>
+        <imageSelectedColor value="0.0 0.5 0.8 1"/>
+        <alternateBackgroundColor value="0.1 0.1 0.1 1"/>
+    </Profile>
+
+    <!-- Text inside list item -->
+    <Profile name="wm_listItemText" extends="baseReference" with="anchorStretchingYLeft">
+        <textBold value="false"/>
+        <textOffset value="8px 0px"/>
+        <textSize value="14px"/>
+        <textColor value="1 1 1 1"/>
+        <textAlignment value="left"/>
+        <textVerticalAlignment value="middle"/>
+    </Profile>
+
+    <!-- Info text (hints) -->
+    <Profile name="wm_infoText" extends="baseReference">
+        <textSize value="14px"/>
+        <textColor value="0.6 0.6 0.6 1"/>
+        <textItalic value="true"/>
     </Profile>
 </GUIProfiles>

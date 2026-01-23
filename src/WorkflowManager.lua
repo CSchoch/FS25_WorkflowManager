@@ -25,11 +25,16 @@ source(Utils.getFilename("src/integration/CourseplayIntegration.lua", g_currentM
 source(Utils.getFilename("src/integration/CourseplayCoursesLoader.lua", g_currentModDirectory))
 source(Utils.getFilename("src/integration/CourseplayVehiclesLoader.lua", g_currentModDirectory))
 
--- 5. GUI modules
+-- 5. GUI modules (legacy draw-based - kept for reference)
 source(Utils.getFilename("src/gui/WorkflowManagerGUI.lua", g_currentModDirectory))
 source(Utils.getFilename("src/gui/WorkflowEditorGUI.lua", g_currentModDirectory))
 source(Utils.getFilename("src/gui/WorkflowManagerMenuFrame.lua", g_currentModDirectory))
 source(Utils.getFilename("src/gui/WMTextInputDialog.lua", g_currentModDirectory))
+
+-- 6. New dialog-based GUI (proper input blocking)
+source(Utils.getFilename("src/gui/WMMainDialog.lua", g_currentModDirectory))
+source(Utils.getFilename("src/gui/WMEditorDialog.lua", g_currentModDirectory))
+source(Utils.getFilename("src/gui/WMStepDialog.lua", g_currentModDirectory))
 
 -- Initialize logger from dev config immediately after loading
 WMLogger:initFromDevConfig()
@@ -80,12 +85,12 @@ function WorkflowManager:init()
     CPVehiclesLoader:init()
     WMDebugUtil:init()
 
-    -- Initialize GUI
+    -- Initialize legacy GUI (kept for fallback)
     WMManagerGUI:init()
     WMEditorGUI:init()
 
-    -- Load text input dialog
-    self:loadTextInputDialog()
+    -- Load new dialog-based GUI (proper input blocking)
+    self:loadDialogs()
 
     -- Setup InGameMenu integration
     self:setupInGameMenu()
@@ -105,10 +110,10 @@ function WorkflowManager:init()
     end
 end
 
----Load the text input dialog for name editing
-function WorkflowManager:loadTextInputDialog()
+---Load all dialog-based GUIs
+function WorkflowManager:loadDialogs()
     if g_gui == nil then
-        WMLogger:warning("g_gui not available, cannot load text input dialog")
+        WMLogger:warning("g_gui not available, cannot load dialogs")
         return
     end
 
@@ -117,20 +122,56 @@ function WorkflowManager:loadTextInputDialog()
     g_gui:loadProfiles(profilesPath)
     WMLogger:debug("Loaded GUI profiles from: %s", profilesPath)
 
-    -- Create dialog instance
+    -- Load Text Input Dialog
     self.textInputDialog = WMTextInputDialog.new()
-
-    -- Load the GUI from XML
     local xmlPath = Utils.getFilename("xml/gui/TextInputDialog.xml", self.modDirectory)
     local success, result = pcall(function()
         g_gui:loadGui(xmlPath, "WMTextInputDialog", self.textInputDialog)
     end)
-
     if success then
         WMLogger:info("Text input dialog loaded successfully")
     else
         WMLogger:warning("Failed to load text input dialog: %s", tostring(result))
         self.textInputDialog = nil
+    end
+
+    -- Load Main Dialog
+    self.mainDialog = WMMainDialog.new()
+    xmlPath = Utils.getFilename("xml/gui/WMMainDialog.xml", self.modDirectory)
+    success, result = pcall(function()
+        g_gui:loadGui(xmlPath, "WMMainDialog", self.mainDialog)
+    end)
+    if success then
+        WMLogger:info("Main dialog loaded successfully")
+    else
+        WMLogger:warning("Failed to load main dialog: %s", tostring(result))
+        self.mainDialog = nil
+    end
+
+    -- Load Editor Dialog
+    self.editorDialog = WMEditorDialog.new()
+    xmlPath = Utils.getFilename("xml/gui/WMEditorDialog.xml", self.modDirectory)
+    success, result = pcall(function()
+        g_gui:loadGui(xmlPath, "WMEditorDialog", self.editorDialog)
+    end)
+    if success then
+        WMLogger:info("Editor dialog loaded successfully")
+    else
+        WMLogger:warning("Failed to load editor dialog: %s", tostring(result))
+        self.editorDialog = nil
+    end
+
+    -- Load Step Dialog
+    self.stepDialog = WMStepDialog.new()
+    xmlPath = Utils.getFilename("xml/gui/WMStepDialog.xml", self.modDirectory)
+    success, result = pcall(function()
+        g_gui:loadGui(xmlPath, "WMStepDialog", self.stepDialog)
+    end)
+    if success then
+        WMLogger:info("Step dialog loaded successfully")
+    else
+        WMLogger:warning("Failed to load step dialog: %s", tostring(result))
+        self.stepDialog = nil
     end
 end
 
@@ -436,13 +477,52 @@ end
 
 ---Toggle the main GUI visibility
 function WorkflowManager:onToggleGUI()
-    WMLogger:info("onToggleGUI called! Current visibility: %s", tostring(self.guiVisible))
-    self.guiVisible = not self.guiVisible
-    if self.guiVisible then
-        WMManagerGUI:show()
-    else
-        WMManagerGUI:hide()
+    WMLogger:info("onToggleGUI called!")
+    self:showMainDialog()
+end
+
+---Show the main workflow list dialog
+function WorkflowManager:showMainDialog()
+    if self.mainDialog == nil then
+        WMLogger:warning("Main dialog not available, falling back to legacy GUI")
+        self.guiVisible = not self.guiVisible
+        if self.guiVisible then
+            WMManagerGUI:show()
+        else
+            WMManagerGUI:hide()
+        end
+        return
     end
+
+    g_gui:showDialog("WMMainDialog")
+end
+
+---Show the workflow editor dialog
+---@param workflow table Workflow to edit
+function WorkflowManager:showEditorDialog(workflow)
+    if self.editorDialog == nil then
+        WMLogger:warning("Editor dialog not available")
+        return
+    end
+
+    self.editorDialog:setWorkflow(workflow)
+    g_gui:showDialog("WMEditorDialog")
+end
+
+---Show the step add/edit dialog
+---@param step table|nil Step to edit, or nil for new step
+---@param callback function Callback when done: callback(step) or callback(nil) if cancelled
+function WorkflowManager:showStepDialog(step, callback)
+    if self.stepDialog == nil then
+        WMLogger:warning("Step dialog not available")
+        if callback then
+            callback(nil)
+        end
+        return
+    end
+
+    self.stepDialog:setStep(step, callback)
+    g_gui:showDialog("WMStepDialog")
 end
 
 ---Create a new workflow
@@ -660,6 +740,12 @@ function WorkflowManager:getAllWorkflows()
     return self.workflows
 end
 
+---Get all workflows (alias for getAllWorkflows)
+---@return table workflows List of all workflows
+function WorkflowManager:getWorkflows()
+    return self.workflows
+end
+
 ---Save all workflows to XML
 function WorkflowManager:saveWorkflows()
     WMStorage:saveWorkflows(self.workflows)
@@ -712,6 +798,22 @@ function WorkflowManager:deleteMap()
                 self.menuFrame:delete()
             end
             self.menuFrame = nil
+        end
+    end)
+
+    -- Cleanup new dialog-based GUI
+    pcall(function()
+        if self.mainDialog ~= nil then
+            self.mainDialog = nil
+        end
+        if self.editorDialog ~= nil then
+            self.editorDialog = nil
+        end
+        if self.stepDialog ~= nil then
+            self.stepDialog = nil
+        end
+        if self.textInputDialog ~= nil then
+            self.textInputDialog = nil
         end
     end)
 

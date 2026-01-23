@@ -1265,11 +1265,15 @@ function WMEditorGUI:drawStepDialog()
     -- === TARGET (Primary destination) ===
     fieldY = fieldY - 0.06
     local targets = self:getAvailableTargets()
+    local searchBtnW = 0.04
 
-    -- Draw dropdown field first
-    self:drawDropdownField(fieldX, fieldY - 0.008, fieldW, fieldH,
+    -- Draw dropdown field first (narrower to make room for search button)
+    self:drawDropdownField(fieldX, fieldY - 0.008, fieldW - searchBtnW - 0.01, fieldH,
         "target", targets, self.addStepTargetIndex, g_i18n:getText("wm_none"))
-    self.dialogDropdowns.target = {x = fieldX, y = fieldY - 0.008, w = fieldW, h = fieldH, items = targets}
+    self.dialogDropdowns.target = {x = fieldX, y = fieldY - 0.008, w = fieldW - searchBtnW - 0.01, h = fieldH, items = targets}
+
+    -- Search button for target
+    self:drawButton(fieldX + fieldW - searchBtnW, fieldY - 0.008, searchBtnW, fieldH, "?", {0.4, 0.5, 0.6, 1}, true)
 
     -- Draw label (skip if covered)
     if not self:isPositionCoveredByDropdown(fieldY, 0.02) then
@@ -1292,10 +1296,13 @@ function WMEditorGUI:drawStepDialog()
     if self.addStepType == "autodrive" and self:currentActionNeedsUnloadTarget() then
         fieldY = fieldY - 0.06
 
-        -- Draw dropdown field first
-        self:drawDropdownField(fieldX, fieldY - 0.008, fieldW, fieldH,
+        -- Draw dropdown field first (narrower to make room for search button)
+        self:drawDropdownField(fieldX, fieldY - 0.008, fieldW - searchBtnW - 0.01, fieldH,
             "unloadTarget", targets, self.addStepUnloadTargetIndex, g_i18n:getText("wm_none"))
-        self.dialogDropdowns.unloadTarget = {x = fieldX, y = fieldY - 0.008, w = fieldW, h = fieldH, items = targets}
+        self.dialogDropdowns.unloadTarget = {x = fieldX, y = fieldY - 0.008, w = fieldW - searchBtnW - 0.01, h = fieldH, items = targets}
+
+        -- Search button for unloadTarget
+        self:drawButton(fieldX + fieldW - searchBtnW, fieldY - 0.008, searchBtnW, fieldH, "?", {0.4, 0.5, 0.6, 1}, true)
 
         -- Draw label (skip if covered)
         if not self:isPositionCoveredByDropdown(fieldY, 0.02) then
@@ -1316,10 +1323,13 @@ function WMEditorGUI:drawStepDialog()
         fieldY = fieldY - 0.06
         local fillTypes = self:getAvailableFillTypes()
 
-        -- Draw dropdown field first
-        self:drawDropdownField(fieldX, fieldY - 0.008, fieldW, fieldH,
+        -- Draw dropdown field first (narrower to make room for search button)
+        self:drawDropdownField(fieldX, fieldY - 0.008, fieldW - searchBtnW - 0.01, fieldH,
             "fillType", fillTypes, self.addStepFillTypeIndex, g_i18n:getText("wm_none"))
-        self.dialogDropdowns.fillType = {x = fieldX, y = fieldY - 0.008, w = fieldW, h = fieldH, items = fillTypes}
+        self.dialogDropdowns.fillType = {x = fieldX, y = fieldY - 0.008, w = fieldW - searchBtnW - 0.01, h = fieldH, items = fillTypes}
+
+        -- Search button for fillType
+        self:drawButton(fieldX + fieldW - searchBtnW, fieldY - 0.008, searchBtnW, fieldH, "?", {0.4, 0.5, 0.6, 1}, true)
 
         -- Draw label (skip if covered)
         if not self:isPositionCoveredByDropdown(fieldY, 0.02) then
@@ -1437,6 +1447,57 @@ function WMEditorGUI:openNameEditDialog()
             end
         end
     )
+end
+
+---Open a search dialog for a dropdown
+---@param dropdownName string Name of dropdown to search ("target", "unloadTarget", "fillType")
+function WMEditorGUI:openDropdownSearchDialog(dropdownName)
+    local items = self:getDropdownItems(dropdownName)
+    if items == nil or #items == 0 then
+        return
+    end
+
+    -- Store which dropdown we're searching
+    self.searchingDropdown = dropdownName
+
+    WorkflowManager:showTextInputDialog(
+        g_i18n:getText("wm_search") or "Search",
+        "",
+        function(text, confirmed)
+            if confirmed and text ~= nil and text ~= "" then
+                -- Find first matching item (case-insensitive)
+                local searchLower = string.lower(text)
+                for i, item in ipairs(items) do
+                    local itemText = item
+                    if type(item) == "table" then
+                        itemText = item.name or item.displayName or tostring(item)
+                    end
+                    if string.find(string.lower(itemText), searchLower, 1, true) then
+                        -- Found a match - select it
+                        self:selectDropdownItem(dropdownName, i)
+                        WMLogger:debug("Search '%s' matched: %s (index %d)", text, itemText, i)
+                        break
+                    end
+                end
+            end
+            self.searchingDropdown = nil
+        end
+    )
+end
+
+---Select an item in a dropdown by index
+---@param dropdownName string Dropdown name
+---@param index number Item index to select
+function WMEditorGUI:selectDropdownItem(dropdownName, index)
+    if dropdownName == "target" then
+        self.addStepTargetIndex = index
+    elseif dropdownName == "unloadTarget" then
+        self.addStepUnloadTargetIndex = index
+    elseif dropdownName == "fillType" then
+        self.addStepFillTypeIndex = index
+    elseif dropdownName == "action" then
+        self.addStepActionIndex = index
+    end
 end
 
 ---Handle mouse click at position
@@ -1644,6 +1705,45 @@ function WMEditorGUI:handleStepDialogClick(x, y)
     if self.openDropdown ~= nil then
         self:closeDropdown()
         return
+    end
+
+    -- Search button click handlers
+    local searchBtnW = 0.04
+    local searchBtnX = fieldX + fieldW - searchBtnW
+
+    -- Calculate field positions (same as in drawStepDialog)
+    local targetFieldY = fieldY - 0.06  -- Action is at fieldY - 0.06, Target is one more down
+    targetFieldY = targetFieldY - 0.06  -- Target Y position
+
+    -- Target search button
+    if self:isMouseInArea(searchBtnX, targetFieldY - 0.008, searchBtnW, fieldH) then
+        self:openDropdownSearchDialog("target")
+        return
+    end
+
+    -- Unload Target search button (if visible)
+    if self.addStepType == "autodrive" and self:currentActionNeedsUnloadTarget() then
+        local unloadFieldY = targetFieldY - 0.06
+        if self:isMouseInArea(searchBtnX, unloadFieldY - 0.008, searchBtnW, fieldH) then
+            self:openDropdownSearchDialog("unloadTarget")
+            return
+        end
+
+        -- Fill Type search button (if visible, after unloadTarget)
+        if self:currentActionNeedsFillType() then
+            local fillTypeFieldY = unloadFieldY - 0.06
+            if self:isMouseInArea(searchBtnX, fillTypeFieldY - 0.008, searchBtnW, fieldH) then
+                self:openDropdownSearchDialog("fillType")
+                return
+            end
+        end
+    elseif self.addStepType == "autodrive" and self:currentActionNeedsFillType() then
+        -- Fill Type search button (directly after target, no unloadTarget)
+        local fillTypeFieldY = targetFieldY - 0.06
+        if self:isMouseInArea(searchBtnX, fillTypeFieldY - 0.008, searchBtnW, fieldH) then
+            self:openDropdownSearchDialog("fillType")
+            return
+        end
     end
 
     -- Type buttons (not dropdowns)
