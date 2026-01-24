@@ -53,6 +53,20 @@ function WMStepDialog:onOpen()
     WMStepDialog:superClass().onOpen(self)
     WMLogger:debug("WMStepDialog:onOpen")
 
+    -- Manually set callbacks for dropdowns (XML callback binding doesn't work for MultiTextOption)
+    if self.typeDropdown ~= nil then
+        local dialog = self
+        self.typeDropdown.onClickCallback = function(_, state)
+            dialog:onTypeChanged(nil, state)
+        end
+    end
+    if self.actionDropdown ~= nil then
+        local dialog = self
+        self.actionDropdown.onClickCallback = function(_, state)
+            dialog:onActionChanged(nil, state)
+        end
+    end
+
     -- Setup list data sources
     if self.targetList ~= nil then
         self.targetList:setDataSource(self)
@@ -214,13 +228,12 @@ function WMStepDialog:refreshActionDropdown()
         return
     end
 
-    self.actionDropdown:setTexts({})
-
     local actions = self:getAvailableActions()
     local texts = {}
     for _, action in ipairs(actions) do
         table.insert(texts, self:getActionDisplayName(action))
     end
+
     self.actionDropdown:setTexts(texts)
 
     -- Find current action index
@@ -231,6 +244,7 @@ function WMStepDialog:refreshActionDropdown()
             break
         end
     end
+
     self.actionDropdown:setState(currentIndex)
 end
 
@@ -481,21 +495,43 @@ end
 -- Event handlers
 
 ---Called when type dropdown changes
-function WMStepDialog:onTypeChanged(state)
+function WMStepDialog:onTypeChanged(element, state)
+    -- Handle both (state) and (element, state) signatures
+    if state == nil then
+        state = element
+    end
+
     local types = {"autodrive", "courseplay"}
     local defaultActions = {autodrive = "drive", courseplay = "fieldwork"}
 
-    if state > 0 and state <= #types then
+    if type(state) == "number" and state > 0 and state <= #types then
         local newType = types[state]
+        WMLogger:debug("onTypeChanged - newType: %s, current stepType: %s", newType, self.stepType)
         if self.stepType ~= newType then
             self.stepType = newType
             self.stepAction = defaultActions[newType]
+
+            -- Clear target
             self.stepTarget = ""
-            -- Clear and hide dropdown, update input
             if self.targetSearchInput then
                 self.targetSearchInput:setText("")
             end
             self:setTargetDropdownVisible(false)
+
+            -- Clear unload target (not applicable for courseplay)
+            self.stepUnloadTarget = ""
+            if self.unloadTargetSearchInput then
+                self.unloadTargetSearchInput:setText("")
+            end
+            self:setUnloadTargetDropdownVisible(false)
+
+            -- Clear fill type (not applicable for courseplay)
+            self.stepFillType = ""
+            if self.fillTypeSearchInput then
+                self.fillTypeSearchInput:setText("")
+            end
+            self:setFillTypeDropdownVisible(false)
+
             self:refreshTargetList()
             self:refreshActionDropdown()
             self:refreshTargetDisplay()
@@ -505,10 +541,34 @@ function WMStepDialog:onTypeChanged(state)
 end
 
 ---Called when action dropdown changes
-function WMStepDialog:onActionChanged(state)
+function WMStepDialog:onActionChanged(element, state)
+    -- Handle both (state) and (element, state) signatures
+    if state == nil then
+        state = element
+    end
+
     local actions = self:getAvailableActions()
-    if state > 0 and state <= #actions then
+    if type(state) == "number" and state > 0 and state <= #actions then
         self.stepAction = actions[state]
+
+        -- Clear unload target if new action doesn't need it
+        if not self:actionNeedsUnloadTarget() then
+            self.stepUnloadTarget = ""
+            if self.unloadTargetSearchInput then
+                self.unloadTargetSearchInput:setText("")
+            end
+            self:setUnloadTargetDropdownVisible(false)
+        end
+
+        -- Clear fill type if new action doesn't need it
+        if not self:actionNeedsFillType() then
+            self.stepFillType = ""
+            if self.fillTypeSearchInput then
+                self.fillTypeSearchInput:setText("")
+            end
+            self:setFillTypeDropdownVisible(false)
+        end
+
         self:updateFieldVisibility()
     end
 end
