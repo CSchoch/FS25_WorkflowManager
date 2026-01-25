@@ -37,10 +37,8 @@ function WMStepDialog.new(target)
     self.filteredFillTypeItems = {}
     self.selectedFillTypeIndex = 0
 
-    -- Dropdown visibility state
-    self.targetDropdownVisible = false
-    self.unloadTargetDropdownVisible = false
-    self.fillTypeDropdownVisible = false
+    -- Flag to prevent selection callbacks during filtering
+    self.isFiltering = false
 
     return self
 end
@@ -67,25 +65,44 @@ function WMStepDialog:onOpen()
         end
     end
 
-    -- Setup list data sources
+    -- Setup list data sources and callbacks
+    local dialog = self
     if self.targetList ~= nil then
         self.targetList:setDataSource(self)
         self.targetList.dataSourceId = "target"
+        self.targetList.target = self
+        self.targetList.onSelectionChanged = function(list, section, index)
+            dialog:onTargetListSelectionChanged(list, section, index)
+        end
+        if self.targetList.setCallback then
+            self.targetList:setCallback("onSelectionChanged", self, "onTargetListSelectionChanged")
+        end
     end
     if self.unloadTargetList ~= nil then
         self.unloadTargetList:setDataSource(self)
         self.unloadTargetList.dataSourceId = "unloadTarget"
+        self.unloadTargetList.target = self
+        self.unloadTargetList.onSelectionChanged = function(list, section, index)
+            dialog:onUnloadTargetListSelectionChanged(list, section, index)
+        end
+        if self.unloadTargetList.setCallback then
+            self.unloadTargetList:setCallback("onSelectionChanged", self, "onUnloadTargetListSelectionChanged")
+        end
     end
     if self.fillTypeList ~= nil then
         self.fillTypeList:setDataSource(self)
         self.fillTypeList.dataSourceId = "fillType"
+        self.fillTypeList.target = self
+        self.fillTypeList.onSelectionChanged = function(list, section, index)
+            dialog:onFillTypeListSelectionChanged(list, section, index)
+        end
+        if self.fillTypeList.setCallback then
+            self.fillTypeList:setCallback("onSelectionChanged", self, "onFillTypeListSelectionChanged")
+        end
     end
 
     -- Load available targets and fill types
     self:loadAvailableData()
-
-    -- Hide all dropdowns initially
-    self:hideAllDropdowns()
 
     -- Apply initial values
     self:refreshDisplay()
@@ -283,6 +300,22 @@ function WMStepDialog:getNumberOfItemsInSection(list, section)
     return 0
 end
 
+---SmoothList data source: Called when selection changes (delegate method)
+function WMStepDialog:onListSelectionChanged(list, section, index)
+    -- Ignore selection changes during filtering to prevent feedback loop
+    if self.isFiltering then
+        return
+    end
+
+    if list.dataSourceId == "target" then
+        self:onTargetListSelectionChanged(list, section, index)
+    elseif list.dataSourceId == "unloadTarget" then
+        self:onUnloadTargetListSelectionChanged(list, section, index)
+    elseif list.dataSourceId == "fillType" then
+        self:onFillTypeListSelectionChanged(list, section, index)
+    end
+end
+
 ---SmoothList data source: Populate cell
 function WMStepDialog:populateCellForItemInSection(list, section, index, cell)
     if list.dataSourceId == "target" then
@@ -314,6 +347,9 @@ end
 
 ---Refresh target list display
 function WMStepDialog:refreshTargetDisplay()
+    -- Set flag to ignore selection callbacks during refresh
+    self.isFiltering = true
+
     -- Refresh target list
     if self.targetList then
         self.targetList:reloadData()
@@ -358,21 +394,23 @@ function WMStepDialog:refreshTargetDisplay()
             end
         end
     end
+
+    -- Clear filtering flag
+    self.isFiltering = false
 end
 
 ---Set input field values from current step data (called on open for edit mode)
 function WMStepDialog:setInputFieldValues()
-    -- Set target input
+    -- Input fields are for filtering only, so leave them empty
+    -- The selected value is shown by the highlighted item in the list
     if self.targetSearchInput then
-        self.targetSearchInput:setText(self.stepTarget)
+        self.targetSearchInput:setText("")
     end
-    -- Set unload target input
     if self.unloadTargetSearchInput then
-        self.unloadTargetSearchInput:setText(self.stepUnloadTarget)
+        self.unloadTargetSearchInput:setText("")
     end
-    -- Set fill type input
     if self.fillTypeSearchInput then
-        self.fillTypeSearchInput:setText(self.stepFillType)
+        self.fillTypeSearchInput:setText("")
     end
 end
 
@@ -381,11 +419,20 @@ function WMStepDialog:updateFieldVisibility()
     local needsUnloadTarget = self:actionNeedsUnloadTarget()
     local needsFillType = self:actionNeedsFillType()
 
+    -- Unload target section and list
     if self.unloadTargetSection then
         self.unloadTargetSection:setVisible(needsUnloadTarget)
     end
+    if self.unloadTargetDropdownContainer then
+        self.unloadTargetDropdownContainer:setVisible(needsUnloadTarget)
+    end
+
+    -- Fill type section and list
     if self.fillTypeSection then
         self.fillTypeSection:setVisible(needsFillType)
+    end
+    if self.fillTypeDropdownContainer then
+        self.fillTypeDropdownContainer:setVisible(needsFillType)
     end
 end
 
@@ -420,7 +467,12 @@ function WMStepDialog:filterTargets(searchText)
         end
     end
 
-    self:refreshTargetDisplay()
+    -- Set flag to ignore selection callbacks during reload
+    self.isFiltering = true
+    if self.targetList then
+        self.targetList:reloadData()
+    end
+    self.isFiltering = false
 end
 
 ---Filter unload target list by search text
@@ -438,7 +490,12 @@ function WMStepDialog:filterUnloadTargets(searchText)
         end
     end
 
-    self:refreshTargetDisplay()
+    -- Set flag to ignore selection callbacks during reload
+    self.isFiltering = true
+    if self.unloadTargetList then
+        self.unloadTargetList:reloadData()
+    end
+    self.isFiltering = false
 end
 
 ---Filter fill type list by search text
@@ -456,40 +513,12 @@ function WMStepDialog:filterFillTypes(searchText)
         end
     end
 
-    self:refreshTargetDisplay()
-end
-
--- Dropdown visibility management
-
----Hide all dropdowns
-function WMStepDialog:hideAllDropdowns()
-    self:setTargetDropdownVisible(false)
-    self:setUnloadTargetDropdownVisible(false)
-    self:setFillTypeDropdownVisible(false)
-end
-
----Set target dropdown visibility
-function WMStepDialog:setTargetDropdownVisible(visible)
-    self.targetDropdownVisible = visible
-    if self.targetDropdownContainer then
-        self.targetDropdownContainer:setVisible(visible)
+    -- Set flag to ignore selection callbacks during reload
+    self.isFiltering = true
+    if self.fillTypeList then
+        self.fillTypeList:reloadData()
     end
-end
-
----Set unload target dropdown visibility
-function WMStepDialog:setUnloadTargetDropdownVisible(visible)
-    self.unloadTargetDropdownVisible = visible
-    if self.unloadTargetDropdownContainer then
-        self.unloadTargetDropdownContainer:setVisible(visible)
-    end
-end
-
----Set fill type dropdown visibility
-function WMStepDialog:setFillTypeDropdownVisible(visible)
-    self.fillTypeDropdownVisible = visible
-    if self.fillTypeDropdownContainer then
-        self.fillTypeDropdownContainer:setVisible(visible)
-    end
+    self.isFiltering = false
 end
 
 -- Event handlers
@@ -506,7 +535,6 @@ function WMStepDialog:onTypeChanged(element, state)
 
     if type(state) == "number" and state > 0 and state <= #types then
         local newType = types[state]
-        WMLogger:debug("onTypeChanged - newType: %s, current stepType: %s", newType, self.stepType)
         if self.stepType ~= newType then
             self.stepType = newType
             self.stepAction = defaultActions[newType]
@@ -516,21 +544,18 @@ function WMStepDialog:onTypeChanged(element, state)
             if self.targetSearchInput then
                 self.targetSearchInput:setText("")
             end
-            self:setTargetDropdownVisible(false)
 
             -- Clear unload target (not applicable for courseplay)
             self.stepUnloadTarget = ""
             if self.unloadTargetSearchInput then
                 self.unloadTargetSearchInput:setText("")
             end
-            self:setUnloadTargetDropdownVisible(false)
 
             -- Clear fill type (not applicable for courseplay)
             self.stepFillType = ""
             if self.fillTypeSearchInput then
                 self.fillTypeSearchInput:setText("")
             end
-            self:setFillTypeDropdownVisible(false)
 
             self:refreshTargetList()
             self:refreshActionDropdown()
@@ -557,7 +582,6 @@ function WMStepDialog:onActionChanged(element, state)
             if self.unloadTargetSearchInput then
                 self.unloadTargetSearchInput:setText("")
             end
-            self:setUnloadTargetDropdownVisible(false)
         end
 
         -- Clear fill type if new action doesn't need it
@@ -566,26 +590,15 @@ function WMStepDialog:onActionChanged(element, state)
             if self.fillTypeSearchInput then
                 self.fillTypeSearchInput:setText("")
             end
-            self:setFillTypeDropdownVisible(false)
         end
 
         self:updateFieldVisibility()
     end
 end
 
----Called when target input gets focus
-function WMStepDialog:onTargetInputFocus()
-    -- Hide other dropdowns and show this one
-    self:setUnloadTargetDropdownVisible(false)
-    self:setFillTypeDropdownVisible(false)
-    self:setTargetDropdownVisible(true)
-end
-
 ---Called when target search text changes
 function WMStepDialog:onTargetSearchChanged()
     if self.targetSearchInput then
-        -- Ensure dropdown is visible when typing
-        self:setTargetDropdownVisible(true)
         self:filterTargets(self.targetSearchInput.text)
     end
 end
@@ -596,28 +609,12 @@ function WMStepDialog:onTargetListSelectionChanged(list, section, index)
     if index > 0 and index <= #self.filteredTargetItems then
         local item = self.filteredTargetItems[index]
         self.stepTarget = item.name
-        -- Update input field with selection
-        if self.targetSearchInput then
-            self.targetSearchInput:setText(item.display)
-        end
-        -- Hide dropdown after selection
-        self:setTargetDropdownVisible(false)
     end
-end
-
----Called when unload target input gets focus
-function WMStepDialog:onUnloadTargetInputFocus()
-    -- Hide other dropdowns and show this one
-    self:setTargetDropdownVisible(false)
-    self:setFillTypeDropdownVisible(false)
-    self:setUnloadTargetDropdownVisible(true)
 end
 
 ---Called when unload target search text changes
 function WMStepDialog:onUnloadTargetSearchChanged()
     if self.unloadTargetSearchInput then
-        -- Ensure dropdown is visible when typing
-        self:setUnloadTargetDropdownVisible(true)
         self:filterUnloadTargets(self.unloadTargetSearchInput.text)
     end
 end
@@ -628,28 +625,12 @@ function WMStepDialog:onUnloadTargetListSelectionChanged(list, section, index)
     if index > 0 and index <= #self.filteredUnloadTargetItems then
         local item = self.filteredUnloadTargetItems[index]
         self.stepUnloadTarget = item.name
-        -- Update input field with selection
-        if self.unloadTargetSearchInput then
-            self.unloadTargetSearchInput:setText(item.display)
-        end
-        -- Hide dropdown after selection
-        self:setUnloadTargetDropdownVisible(false)
     end
-end
-
----Called when fill type input gets focus
-function WMStepDialog:onFillTypeInputFocus()
-    -- Hide other dropdowns and show this one
-    self:setTargetDropdownVisible(false)
-    self:setUnloadTargetDropdownVisible(false)
-    self:setFillTypeDropdownVisible(true)
 end
 
 ---Called when fill type search text changes
 function WMStepDialog:onFillTypeSearchChanged()
     if self.fillTypeSearchInput then
-        -- Ensure dropdown is visible when typing
-        self:setFillTypeDropdownVisible(true)
         self:filterFillTypes(self.fillTypeSearchInput.text)
     end
 end
@@ -660,24 +641,13 @@ function WMStepDialog:onFillTypeListSelectionChanged(list, section, index)
     if index > 0 and index <= #self.filteredFillTypeItems then
         local item = self.filteredFillTypeItems[index]
         self.stepFillType = item.name
-        -- Update input field with selection
-        if self.fillTypeSearchInput then
-            self.fillTypeSearchInput:setText(item.display)
-        end
-        -- Hide dropdown after selection
-        self:setFillTypeDropdownVisible(false)
     end
 end
 
 ---Called when Confirm button is clicked
 function WMStepDialog:onClickConfirm()
-    WMLogger:debug("WMStepDialog:onClickConfirm")
-
-    -- Validate
+    -- Validate - target is required
     if self.stepTarget == "" then
-        g_gui:showInfoDialog({
-            text = g_i18n:getText("wm_error_no_selection") or "Please select a target"
-        })
         return
     end
 

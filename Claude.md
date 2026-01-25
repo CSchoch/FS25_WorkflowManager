@@ -115,7 +115,7 @@ Workflow = {
 * [ ] Relocate double click to edit hint in edit workflow gui to the bottom
 * [ ] Edit workflow gui has an X to close in the top right corner which works
 * [ ] Do not show vehicle hint in gui
-* [ ] Edit step GUI looks different from the others (Header)
+* [x] Edit step GUI looks different from the others (Header) - DONE: Consistent 900px dialog width
 * [ ] Fix Warning (performance): Texture .../textures/white.png raw format
 
 ### Milestone 6: Folder view
@@ -124,8 +124,8 @@ Workflow = {
 * [ ] Collapse all / Expand all buttons
 
 ### Milestone 7: Search
-* [ ] Search in dropdowns (typing while open)
-* [ ] Dropdown content shrinks according to input
+* [x] Search in dropdowns (typing while open) - DONE: Filter input fields in WMStepDialog
+* [x] Dropdown content shrinks according to input - DONE: Lists filter based on search text
 
 ### Milestone 8: Refinement
 * [ ] Implement error handling
@@ -187,8 +187,9 @@ FS25_WorkflowManager/
 │   ├── WorkflowExecutor.lua         # Execution engine
 │   ├── WorkflowStorage.lua          # XML read/write
 │   ├── gui/
-│   │   ├── WorkflowManagerGUI.lua   # Main GUI (draw-based)
-│   │   ├── WorkflowEditorGUI.lua    # Editor GUI (draw-based)
+│   │   ├── WMMainDialog.lua         # Main dialog (workflow list)
+│   │   ├── WMEditorDialog.lua       # Workflow editor dialog
+│   │   ├── WMStepDialog.lua         # Step add/edit dialog with searchable lists
 │   │   └── WorkflowManagerMenuFrame.lua # ESC menu integration
 │   ├── integration/
 │   │   ├── AutoDriveIntegration.lua # AD API wrapper
@@ -207,9 +208,11 @@ FS25_WorkflowManager/
 ├── docs/
 │   └── API_Analysis.md              # AD/CP API documentation
 └── xml/gui/
-    ├── WorkflowManagerGUI.xml
-    ├── WorkflowEditorGUI.xml
-    └── WorkflowManagerMenuFrame.xml
+    ├── guiProfiles.xml              # Custom GUI profiles
+    ├── WMMainDialog.xml             # Main dialog layout
+    ├── WMEditorDialog.xml           # Editor dialog layout
+    ├── WMStepDialog.xml             # Step dialog layout
+    └── WorkflowManagerMenuFrame.xml # ESC menu integration
 ```
 
 ## Key Implementation Notes
@@ -244,4 +247,4 @@ FS25_WorkflowManager/
 ---
 
 **Status**: Phase 1 COMPLETE – Ready for Phase 2
-**Last updated**: 2026-01-22
+**Last updated**: 2026-01-25

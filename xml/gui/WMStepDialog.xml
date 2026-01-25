@@ -2,7 +2,7 @@
 <GUI onOpen="onOpen" onClose="onClose" onCreate="onCreate">
     <GuiElement profile="newLayer"/>
     <Bitmap profile="dialogFullscreenBg"/>
-    <GuiElement profile="fs25_dialogBg" size="750px 800px">
+    <GuiElement profile="fs25_dialogBg" size="900px 800px">
         <ThreePartBitmap profile="fs25_dialogBgMiddleSmall"/>
         <ThreePartBitmap profile="fs25_dialogBgTopSmall"/>
         <ThreePartBitmap profile="fs25_dialogBgBottom"/>
@@ -14,32 +14,33 @@
             <ThreePartBitmap profile="wm_dialogTitleLineSeparator"/>
 
             <!-- Step Type Selection -->
-            <BoxLayout profile="wm_hBox" size="700px 50px">
-                <Text profile="wm_dialogText" text="$l10n_wm_editor_type" size="100px 40px" textAutoWidth="true"/>
-                <MultiTextOption profile="fs25_settingsMultiTextOption" id="typeDropdown" onStateChanged="onTypeChanged" size="350px 40px" focusId="typeDropdown"/>
+            <BoxLayout profile="wm_hBox" size="860px 45px">
+                <Text profile="wm_dialogText" text="$l10n_wm_editor_type" size="150px 40px"/>
+                <MultiTextOption profile="fs25_settingsMultiTextOption" id="typeDropdown" onStateChanged="onTypeChanged" size="500px 40px" focusId="typeDropdown"/>
             </BoxLayout>
 
             <!-- Action Dropdown -->
-            <BoxLayout profile="wm_hBox" size="700px 50px">
-                <Text profile="wm_dialogText" text="$l10n_wm_editor_action" size="100px 40px" textAutoWidth="true"/>
-                <MultiTextOption profile="fs25_settingsMultiTextOption" id="actionDropdown" onStateChanged="onActionChanged" size="350px 40px"/>
+            <BoxLayout profile="wm_hBox" size="860px 45px">
+                <Text profile="wm_dialogText" text="$l10n_wm_editor_action" size="150px 40px"/>
+                <MultiTextOption profile="fs25_settingsMultiTextOption" id="actionDropdown" onStateChanged="onActionChanged" size="500px 40px"/>
             </BoxLayout>
 
             <!-- Target Section -->
-            <BoxLayout profile="wm_hBox" size="700px 35px">
-                <Text profile="wm_dialogText" text="$l10n_wm_editor_target" size="100px 30px" textAutoWidth="true"/>
-                <TextInput profile="fs25_dialogTextInput" id="targetSearchInput" onTextChanged="onTargetSearchChanged" onFocusEnter="onTargetInputFocus" maxCharacters="50" size="350px 30px" focusId="targetSearch">
+            <BoxLayout profile="wm_hBox" size="860px 40px">
+                <Text profile="wm_dialogText" text="$l10n_wm_editor_target" size="150px 35px"/>
+                <TextInput profile="fs25_dialogTextInput" id="targetSearchInput" onTextChanged="onTargetSearchChanged" maxCharacters="50" size="500px 35px" focusId="targetSearch">
                     <ThreePartBitmap profile="fs25_textInputBg"/>
                 </TextInput>
             </BoxLayout>
 
-            <GuiElement id="targetDropdownContainer" size="700px 150px">
-                <BoxLayout absoluteSizeOffset="40px 150px" margin="0 0 0 110px">
+            <BoxLayout profile="wm_hBox" id="targetDropdownContainer" size="860px 120px">
+                <GuiElement size="150px 120px"/>
+                <BoxLayout flowDirection="horizontal" size="500px 120px">
                     <SmoothList profile="wm_list" id="targetList"
                                 onSelectionChanged="onTargetListSelectionChanged"
-                                size="350px 150px"
+                                size="500px 120px"
                                 focusId="targetList">
-                        <ListItem profile="wm_listItem" size="350px 30px">
+                        <ListItem profile="wm_listItem" size="500px 30px">
                             <BoxLayout flowDirection="horizontal" alignmentY="middle" size="100% 100%">
                                 <Text name="targetText" profile="wm_listItemText" size="100% 100%"/>
                             </BoxLayout>
@@ -50,65 +51,67 @@
                         <Slider profile="fs25_listSlider" dataElementId="targetList"/>
                     </ThreePartBitmap>
                 </BoxLayout>
-            </GuiElement>
+            </BoxLayout>
 
             <!-- Unload Target Section (conditional) -->
-            <GuiElement id="unloadTargetSection" size="700px 180px">
-                <BoxLayout profile="wm_hBox" size="700px 35px">
-                    <Text profile="wm_dialogText" text="$l10n_wm_editor_unload_target" size="120px 30px" textAutoWidth="true"/>
-                    <TextInput profile="fs25_dialogTextInput" id="unloadTargetSearchInput" onTextChanged="onUnloadTargetSearchChanged" onFocusEnter="onUnloadTargetInputFocus" maxCharacters="50" size="350px 30px" focusId="unloadSearch">
+            <GuiElement id="unloadTargetSection" size="860px 40px">
+                <BoxLayout profile="wm_hBox" size="860px 40px">
+                    <Text profile="wm_dialogText" text="$l10n_wm_editor_unload_target" size="150px 35px"/>
+                    <TextInput profile="fs25_dialogTextInput" id="unloadTargetSearchInput" onTextChanged="onUnloadTargetSearchChanged" maxCharacters="50" size="500px 35px" focusId="unloadSearch">
                         <ThreePartBitmap profile="fs25_textInputBg"/>
                     </TextInput>
                 </BoxLayout>
-
-                <GuiElement id="unloadTargetDropdownContainer" size="700px 140px">
-                    <BoxLayout absoluteSizeOffset="40px 140px" margin="0 0 0 130px">
-                        <SmoothList profile="wm_list" id="unloadTargetList"
-                                    onSelectionChanged="onUnloadTargetListSelectionChanged"
-                                    size="350px 140px"
-                                    focusId="unloadList">
-                            <ListItem profile="wm_listItem" size="350px 30px">
-                                <BoxLayout flowDirection="horizontal" alignmentY="middle" size="100% 100%">
-                                    <Text name="unloadTargetText" profile="wm_listItemText" size="100% 100%"/>
-                                </BoxLayout>
-                            </ListItem>
-                        </SmoothList>
-
-                        <ThreePartBitmap profile="fs25_listSliderBox">
-                            <Slider profile="fs25_listSlider" dataElementId="unloadTargetList"/>
-                        </ThreePartBitmap>
-                    </BoxLayout>
-                </GuiElement>
             </GuiElement>
+
+            <BoxLayout profile="wm_hBox" id="unloadTargetDropdownContainer" size="860px 120px">
+                <GuiElement size="150px 120px"/>
+                <BoxLayout flowDirection="horizontal" size="500px 120px">
+                    <SmoothList profile="wm_list" id="unloadTargetList"
+                                onSelectionChanged="onUnloadTargetListSelectionChanged"
+                                size="500px 120px"
+                                focusId="unloadList">
+                        <ListItem profile="wm_listItem" size="500px 30px">
+                            <BoxLayout flowDirection="horizontal" alignmentY="middle" size="100% 100%">
+                                <Text name="unloadTargetText" profile="wm_listItemText" size="100% 100%"/>
+                            </BoxLayout>
+                        </ListItem>
+                    </SmoothList>
+
+                    <ThreePartBitmap profile="fs25_listSliderBox">
+                        <Slider profile="fs25_listSlider" dataElementId="unloadTargetList"/>
+                    </ThreePartBitmap>
+                </BoxLayout>
+            </BoxLayout>
 
             <!-- Fill Type Section (conditional) -->
-            <GuiElement id="fillTypeSection" size="700px 180px">
-                <BoxLayout profile="wm_hBox" size="700px 35px">
-                    <Text profile="wm_dialogText" text="$l10n_wm_editor_fill_type" size="120px 30px" textAutoWidth="true"/>
-                    <TextInput profile="fs25_dialogTextInput" id="fillTypeSearchInput" onTextChanged="onFillTypeSearchChanged" onFocusEnter="onFillTypeInputFocus" maxCharacters="50" size="350px 30px" focusId="fillTypeSearch">
+            <GuiElement id="fillTypeSection" size="860px 40px">
+                <BoxLayout profile="wm_hBox" size="860px 40px">
+                    <Text profile="wm_dialogText" text="$l10n_wm_editor_fill_type" size="150px 35px"/>
+                    <TextInput profile="fs25_dialogTextInput" id="fillTypeSearchInput" onTextChanged="onFillTypeSearchChanged" maxCharacters="50" size="500px 35px" focusId="fillTypeSearch">
                         <ThreePartBitmap profile="fs25_textInputBg"/>
                     </TextInput>
                 </BoxLayout>
-
-                <GuiElement id="fillTypeDropdownContainer" size="700px 140px">
-                    <BoxLayout absoluteSizeOffset="40px 140px" margin="0 0 0 130px">
-                        <SmoothList profile="wm_list" id="fillTypeList"
-                                    onSelectionChanged="onFillTypeListSelectionChanged"
-                                    size="350px 140px"
-                                    focusId="fillTypeList">
-                            <ListItem profile="wm_listItem" size="350px 30px">
-                                <BoxLayout flowDirection="horizontal" alignmentY="middle" size="100% 100%">
-                                    <Text name="fillTypeText" profile="wm_listItemText" size="100% 100%"/>
-                                </BoxLayout>
-                            </ListItem>
-                        </SmoothList>
-
-                        <ThreePartBitmap profile="fs25_listSliderBox">
-                            <Slider profile="fs25_listSlider" dataElementId="fillTypeList"/>
-                        </ThreePartBitmap>
-                    </BoxLayout>
-                </GuiElement>
             </GuiElement>
+
+            <BoxLayout profile="wm_hBox" id="fillTypeDropdownContainer" size="860px 120px">
+                <GuiElement size="150px 120px"/>
+                <BoxLayout flowDirection="horizontal" size="500px 120px">
+                    <SmoothList profile="wm_list" id="fillTypeList"
+                                onSelectionChanged="onFillTypeListSelectionChanged"
+                                size="500px 120px"
+                                focusId="fillTypeList">
+                        <ListItem profile="wm_listItem" size="500px 30px">
+                            <BoxLayout flowDirection="horizontal" alignmentY="middle" size="100% 100%">
+                                <Text name="fillTypeText" profile="wm_listItemText" size="100% 100%"/>
+                            </BoxLayout>
+                        </ListItem>
+                    </SmoothList>
+
+                    <ThreePartBitmap profile="fs25_listSliderBox">
+                        <Slider profile="fs25_listSlider" dataElementId="fillTypeList"/>
+                    </ThreePartBitmap>
+                </BoxLayout>
+            </BoxLayout>
         </BoxLayout>
 
         <!-- Bottom Buttons -->
