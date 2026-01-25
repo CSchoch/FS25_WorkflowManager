@@ -197,42 +197,11 @@ function CPCoursesLoader:extractCoursesFromFileSystem(fileSystem)
     -- FileSystem has rootDirectoryView and currentDirectoryView
     local directoryView = fileSystem.currentDirectoryView or fileSystem.rootDirectoryView
     if directoryView then
-        WMLogger:debug("Found FileSystem with DirectoryView")
-        WMLogger:debug("  currentDirectoryView: %s", tostring(fileSystem.currentDirectoryView ~= nil))
-        WMLogger:debug("  rootDirectoryView: %s", tostring(fileSystem.rootDirectoryView ~= nil))
-
-        -- Log directory name if available
-        if directoryView.name then
-            WMLogger:debug("  directoryView.name: %s", tostring(directoryView.name))
-        end
-        if type(directoryView.getName) == "function" then
-            local success, name = pcall(directoryView.getName, directoryView)
-            if success then
-                WMLogger:debug("  directoryView:getName(): %s", tostring(name))
-            end
-        end
-
-        -- Log available properties on directoryView
-        WMLogger:debug("  directoryView properties:")
-        for key, value in pairs(directoryView) do
-            local valueType = type(value)
-            if valueType == "table" then
-                local count = 0
-                for _ in pairs(value) do count = count + 1 end
-                WMLogger:debug("    %s: <table> (%d items)", tostring(key), count)
-            elseif valueType == "function" then
-                WMLogger:debug("    %s: <function>", tostring(key))
-            elseif valueType ~= "function" then
-                WMLogger:debug("    %s: %s", tostring(key), tostring(value))
-            end
-        end
-
         self:collectCoursesFromDirectoryView(directoryView, courses, 0, "")
     end
 
     -- Method 2: FileSystem with rootDirectory (raw Directory object)
     if #courses == 0 and fileSystem.rootDirectory then
-        WMLogger:debug("Trying rootDirectory...")
         self:collectCoursesFromDirectory(fileSystem.rootDirectory, courses, 0, "")
     end
 
@@ -301,17 +270,11 @@ function CPCoursesLoader:collectCoursesFromDirectoryView(directoryView, courses,
         local success, result = pcall(directoryView.getEntries, directoryView)
         if success then
             entries = result
-            WMLogger:debug("DirectoryView:getEntries() returned %d entries at depth %d (path: %s)",
-                entries and #entries or 0, depth, newFolderPath)
-        else
-            WMLogger:debug("DirectoryView:getEntries() failed: %s", tostring(result))
         end
     end
 
     -- Also try fileViews and directoryViews arrays directly
     if (not entries or #entries == 0) and directoryView.fileViews then
-        WMLogger:debug("Trying directoryView.fileViews directly, count: %d",
-            directoryView.fileViews and #directoryView.fileViews or 0)
         if directoryView.fileViews and #directoryView.fileViews > 0 then
             for _, fileView in ipairs(directoryView.fileViews) do
                 local name = nil
@@ -332,7 +295,6 @@ function CPCoursesLoader:collectCoursesFromDirectoryView(directoryView, courses,
                             courseName = newFolderPath .. "/" .. courseName
                         end
                         table.insert(courses, courseName)
-                        WMLogger:debug("Found course from fileViews: %s", courseName)
                     end
                 end
             end
