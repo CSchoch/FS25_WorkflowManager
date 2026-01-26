@@ -163,6 +163,8 @@ function WMExecutor:stopWorkflow(workflow)
 end
 
 ---Pause a running workflow
+---When paused, workflow tracking is interrupted and stays in current step
+---even if AD or CP finishes their current operation
 ---@param workflow table Workflow to pause
 ---@return boolean success True if paused successfully
 function WMExecutor:pauseWorkflow(workflow)
@@ -181,12 +183,26 @@ function WMExecutor:pauseWorkflow(workflow)
         return false
     end
 
-    -- Pause current step
-    self:pauseCurrentStep(workflow)
-
+    -- Mark as paused FIRST to stop tracking in update loop
     workflow.status = WorkflowManager.STATUS_PAUSED
 
-    WMLogger:info("Paused workflow: %s at step %d", workflow.name, workflow.currentStep)
+    -- Store tracking state so we can restore it on resume
+    activeData.pausedTrackingState = {
+        waitingForCompletion = activeData.waitingForCompletion,
+        currentStepType = activeData.currentStepType,
+        willHandoffToCP = activeData.willHandoffToCP,
+        cpHandedOffToAD = activeData.cpHandedOffToAD,
+        cpWasRunning = activeData.cpWasRunning
+    }
+
+    -- Stop waiting for completion while paused
+    -- This ensures we stay in the current step even if AD/CP finishes
+    activeData.waitingForCompletion = false
+
+    -- Pause current step (AD/CP)
+    self:pauseCurrentStep(workflow)
+
+    WMLogger:info("Paused workflow: %s at step %d (tracking interrupted)", workflow.name, workflow.currentStep)
 
     -- Fire event
     WMEventHandler:fireEvent(WMEventHandler.EVENT_WORKFLOW_PAUSED, {
@@ -198,6 +214,7 @@ function WMExecutor:pauseWorkflow(workflow)
 end
 
 ---Resume a paused workflow
+---Restores tracking state and resumes AD/CP operation
 ---@param workflow table Workflow to resume
 ---@return boolean success True if resumed successfully
 function WMExecutor:resumeWorkflow(workflow)
@@ -216,12 +233,25 @@ function WMExecutor:resumeWorkflow(workflow)
         return false
     end
 
+    -- Restore tracking state from before pause
+    if activeData.pausedTrackingState then
+        activeData.waitingForCompletion = activeData.pausedTrackingState.waitingForCompletion
+        activeData.currentStepType = activeData.pausedTrackingState.currentStepType
+        activeData.willHandoffToCP = activeData.pausedTrackingState.willHandoffToCP
+        activeData.cpHandedOffToAD = activeData.pausedTrackingState.cpHandedOffToAD
+        activeData.cpWasRunning = activeData.pausedTrackingState.cpWasRunning
+        activeData.pausedTrackingState = nil
+    else
+        -- Fallback: restore waitingForCompletion
+        activeData.waitingForCompletion = true
+    end
+
     workflow.status = WorkflowManager.STATUS_RUNNING
 
-    -- Resume current step
+    -- Resume current step (AD/CP)
     self:resumeCurrentStep(workflow)
 
-    WMLogger:info("Resumed workflow: %s at step %d", workflow.name, workflow.currentStep)
+    WMLogger:info("Resumed workflow: %s at step %d (tracking restored)", workflow.name, workflow.currentStep)
 
     -- Fire event
     WMEventHandler:fireEvent(WMEventHandler.EVENT_WORKFLOW_RESUMED, {
@@ -641,4 +671,108 @@ end
 ---@return boolean isActive True if workflow is active
 function WMExecutor:isWorkflowActive(workflowId)
     return self.activeWorkflows[workflowId] ~= nil
+end
+
+---Go to the previous step in a workflow
+---Stops current step and moves to the previous one
+---@param workflow table Workflow
+---@return boolean success True if moved to previous step
+function WMExecutor:goToPreviousStep(workflow)
+    if workflow == nil then
+        return false
+    end
+
+    local activeData = self.activeWorkflows[workflow.id]
+    if activeData == nil then
+        WMLogger:warning("Workflow %s is not active", workflow.id)
+        return false
+    end
+
+    if workflow.currentStep <= 1 then
+        WMLogger:warning("Already at first step of workflow %s", workflow.id)
+        return false
+    end
+
+    -- Stop the current step
+    self:stopCurrentStep(workflow)
+
+    -- Move to previous step
+    workflow.currentStep = workflow.currentStep - 1
+
+    WMLogger:info("Moving to previous step %d/%d for workflow %s",
+        workflow.currentStep, #workflow.steps, workflow.name)
+
+    -- Reset waiting state
+    activeData.waitingForCompletion = false
+    activeData.willHandoffToCP = false
+    activeData.cpHandedOffToAD = false
+    activeData.cpWasRunning = false
+    activeData.cpStartedByAD = false
+    activeData.cpStartWaitCount = nil
+
+    -- If workflow was running, start the new step
+    if workflow.status == WorkflowManager.STATUS_RUNNING then
+        self:executeCurrentStep(workflow)
+    end
+
+    -- Fire event
+    WMEventHandler:fireEvent(WMEventHandler.EVENT_STEP_CHANGED, {
+        workflowId = workflow.id,
+        stepNumber = workflow.currentStep,
+        direction = "previous"
+    })
+
+    return true
+end
+
+---Go to the next step in a workflow
+---Stops current step and moves to the next one
+---@param workflow table Workflow
+---@return boolean success True if moved to next step
+function WMExecutor:goToNextStep(workflow)
+    if workflow == nil then
+        return false
+    end
+
+    local activeData = self.activeWorkflows[workflow.id]
+    if activeData == nil then
+        WMLogger:warning("Workflow %s is not active", workflow.id)
+        return false
+    end
+
+    if workflow.currentStep >= #workflow.steps then
+        WMLogger:warning("Already at last step of workflow %s", workflow.id)
+        return false
+    end
+
+    -- Stop the current step
+    self:stopCurrentStep(workflow)
+
+    -- Move to next step
+    workflow.currentStep = workflow.currentStep + 1
+
+    WMLogger:info("Moving to next step %d/%d for workflow %s",
+        workflow.currentStep, #workflow.steps, workflow.name)
+
+    -- Reset waiting state
+    activeData.waitingForCompletion = false
+    activeData.willHandoffToCP = false
+    activeData.cpHandedOffToAD = false
+    activeData.cpWasRunning = false
+    activeData.cpStartedByAD = false
+    activeData.cpStartWaitCount = nil
+
+    -- If workflow was running, start the new step
+    if workflow.status == WorkflowManager.STATUS_RUNNING then
+        self:executeCurrentStep(workflow)
+    end
+
+    -- Fire event
+    WMEventHandler:fireEvent(WMEventHandler.EVENT_STEP_CHANGED, {
+        workflowId = workflow.id,
+        stepNumber = workflow.currentStep,
+        direction = "next"
+    })
+
+    return true
 end

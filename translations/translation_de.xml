@@ -18,6 +18,8 @@
         <text name="input_WM_GUI_STOP" text="Stoppen"/>
         <text name="input_WM_GUI_MOVE_UP" text="Nach oben"/>
         <text name="input_WM_GUI_MOVE_DOWN" text="Nach unten"/>
+        <text name="action_WM_TOGGLE_HUD" text="Workflow-HUD umschalten"/>
+        <text name="input_WM_TOGGLE_HUD" text="Workflow-HUD umschalten"/>
 
         <!-- GUI titles -->
         <text name="wm_title" text="Workflow Manager"/>
@@ -129,5 +131,15 @@
         <text name="wm_error_no_steps" text="Workflow hat keine Schritte"/>
         <text name="wm_error_target_not_found" text="Ziel nicht gefunden: %s"/>
         <text name="wm_error_no_selection" text="Bitte waehlen Sie zuerst einen Workflow"/>
+
+        <!-- HUD texts -->
+        <text name="wm_hud_title" text="Workflow Manager"/>
+        <text name="wm_hud_no_workflow" text="Kein aktiver Workflow"/>
+        <text name="wm_hud_step_format" text="Schritt %d/%d: %s - %s"/>
+        <text name="wm_hud_pause" text="Pause"/>
+        <text name="wm_hud_resume" text="Weiter"/>
+        <text name="wm_hud_stop" text="Stopp"/>
+        <text name="wm_hud_prev" text="Zurueck"/>
+        <text name="wm_hud_next" text="Weiter"/>
     </texts>
 </l10n>

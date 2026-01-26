@@ -36,6 +36,10 @@ source(Utils.getFilename("src/gui/WMMainDialog.lua", g_currentModDirectory))
 source(Utils.getFilename("src/gui/WMEditorDialog.lua", g_currentModDirectory))
 source(Utils.getFilename("src/gui/WMStepDialog.lua", g_currentModDirectory))
 
+-- 7. In-vehicle HUD
+source(Utils.getFilename("src/gui/WMHudElements.lua", g_currentModDirectory))
+source(Utils.getFilename("src/gui/WMHud.lua", g_currentModDirectory))
+
 -- Initialize logger from dev config immediately after loading
 WMLogger:initFromDevConfig()
 
@@ -88,6 +92,14 @@ function WorkflowManager:init()
     -- Initialize legacy GUI (kept for fallback)
     WMManagerGUI:init()
     WMEditorGUI:init()
+
+    -- Initialize in-vehicle HUD
+    WMHud:init()
+
+    -- Subscribe to workflow events to show/hide HUD automatically
+    WMEventHandler:subscribe(WMEventHandler.EVENT_WORKFLOW_STARTED, self, self.onWorkflowStartedEvent)
+    WMEventHandler:subscribe(WMEventHandler.EVENT_WORKFLOW_STOPPED, self, self.onWorkflowStoppedEvent)
+    WMEventHandler:subscribe(WMEventHandler.EVENT_WORKFLOW_COMPLETED, self, self.onWorkflowCompletedEvent)
 
     -- Load new dialog-based GUI (proper input blocking)
     self:loadDialogs()
@@ -447,6 +459,21 @@ function WorkflowManager:registerGlobalActions()
         g_inputBinding:setActionEventTextVisibility(result, false)
         WMLogger:debug("Registered WM_STOP_WORKFLOW")
     end
+
+    -- Register WM_TOGGLE_HUD
+    success, result = pcall(function()
+        local _, eventId = g_inputBinding:registerActionEvent(
+            "WM_TOGGLE_HUD",
+            self,
+            self.onToggleHUD,
+            false, true, false, true
+        )
+        return eventId
+    end)
+    if success and result then
+        g_inputBinding:setActionEventTextVisibility(result, false)
+        WMLogger:debug("Registered WM_TOGGLE_HUD")
+    end
 end
 
 ---Called when start workflow input is triggered
@@ -479,6 +506,70 @@ end
 function WorkflowManager:onToggleGUI()
     WMLogger:info("onToggleGUI called!")
     self:showMainDialog()
+end
+
+---Toggle the in-vehicle HUD visibility
+function WorkflowManager:onToggleHUD()
+    WMLogger:info("onToggleHUD called!")
+    local vehicle = g_currentMission.controlledVehicle
+    if vehicle then
+        WMHud:toggle(vehicle)
+    end
+end
+
+---Called when a workflow starts - show HUD if player is in the vehicle
+---@param eventType string Event type
+---@param data table Event data
+function WorkflowManager:onWorkflowStartedEvent(eventType, data)
+    WMLogger:debug("Workflow started event received")
+
+    -- Get the vehicle for this workflow
+    local activeData = WMExecutor.activeWorkflows[data.workflowId]
+    if activeData and activeData.vehicle then
+        -- Check if player is currently in this vehicle
+        local currentVehicle = g_currentMission.controlledVehicle
+        if currentVehicle == activeData.vehicle then
+            WMHud:show(currentVehicle)
+        end
+    end
+end
+
+---Called when a workflow stops - hide HUD if no more active workflows for this vehicle
+---@param eventType string Event type
+---@param data table Event data
+function WorkflowManager:onWorkflowStoppedEvent(eventType, data)
+    WMLogger:debug("Workflow stopped event received")
+    self:checkAndHideHUD()
+end
+
+---Called when a workflow completes - hide HUD if no more active workflows for this vehicle
+---@param eventType string Event type
+---@param data table Event data
+function WorkflowManager:onWorkflowCompletedEvent(eventType, data)
+    WMLogger:debug("Workflow completed event received")
+    self:checkAndHideHUD()
+end
+
+---Check if HUD should be hidden (no active workflows for current vehicle)
+function WorkflowManager:checkAndHideHUD()
+    local currentVehicle = g_currentMission.controlledVehicle
+    if currentVehicle == nil then
+        return
+    end
+
+    -- Check if there are any active workflows for this vehicle
+    local hasActiveWorkflow = false
+    for _, activeData in pairs(WMExecutor.activeWorkflows) do
+        if activeData.vehicle == currentVehicle then
+            hasActiveWorkflow = true
+            break
+        end
+    end
+
+    -- Hide HUD if no active workflows
+    if not hasActiveWorkflow and WMHud:getIsVisible() then
+        WMHud:hide()
+    end
 end
 
 ---Show the main workflow list dialog
@@ -817,6 +908,13 @@ function WorkflowManager:deleteMap()
         end
     end)
 
+    -- Cleanup in-vehicle HUD
+    pcall(function()
+        if WMHud and WMHud.delete then
+            WMHud:delete()
+        end
+    end)
+
     -- Reset remaining state
     self.guiVisible = false
     self.menuPageAdded = false
@@ -864,6 +962,9 @@ function WorkflowManager:update(dt)
     WMDebugUtil:update(dt)
     WMManagerGUI:update(dt)
     WMEditorGUI:update(dt)
+
+    -- Update in-vehicle HUD
+    WMHud:update(dt)
 end
 
 ---Called for drawing
@@ -878,6 +979,9 @@ function WorkflowManager:draw()
     -- Draw GUI
     WMManagerGUI:draw()
     WMEditorGUI:draw()
+
+    -- Draw in-vehicle HUD
+    WMHud:draw()
 end
 
 ---Called on key events
@@ -888,6 +992,11 @@ end
 function WorkflowManager:mouseEvent(posX, posY, isDown, isUp, button)
     if not self.isInitialized then
         return
+    end
+
+    -- Forward mouse events to in-vehicle HUD first
+    if WMHud:mouseEvent(posX, posY, isDown, isUp, button) then
+        return  -- HUD consumed the event
     end
 
     -- Handle scroll wheel (button 4 = scroll up, button 5 = scroll down in some systems)

@@ -18,6 +18,7 @@ WMEventHandler.EVENT_WORKFLOW_ERROR = "workflowError"
 WMEventHandler.EVENT_STEP_STARTED = "stepStarted"
 WMEventHandler.EVENT_STEP_COMPLETED = "stepCompleted"
 WMEventHandler.EVENT_STEP_ERROR = "stepError"
+WMEventHandler.EVENT_STEP_CHANGED = "stepChanged"
 WMEventHandler.EVENT_AUTODRIVE_FINISHED = "autodriveFinished"
 WMEventHandler.EVENT_COURSEPLAY_FINISHED = "courseplayFinished"
 
