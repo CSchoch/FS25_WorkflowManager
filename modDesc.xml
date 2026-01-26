@@ -49,6 +49,9 @@ Voraussetzungen: AutoDrive, Courseplay
         <action name="WM_TOGGLE_GUI" />
         <action name="WM_START_WORKFLOW" />
         <action name="WM_STOP_WORKFLOW" />
+        <action name="WM_GUI_DELETE" />
+        <action name="WM_GUI_START" />
+        <action name="WM_GUI_STOP" />
     </actions>
 
     <inputBinding>
@@ -61,6 +64,15 @@ Voraussetzungen: AutoDrive, Courseplay
         </actionBinding>
         <actionBinding action="WM_STOP_WORKFLOW">
             <binding device="KB_MOUSE_DEFAULT" input="KEY_lshift KEY_lalt KEY_w" />
+        </actionBinding>
+        <actionBinding action="WM_GUI_DELETE">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_backspace" />
+        </actionBinding>
+        <actionBinding action="WM_GUI_START">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_s" />
+        </actionBinding>
+        <actionBinding action="WM_GUI_STOP">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_x" />
         </actionBinding>
     </inputBinding>
 </modDesc>

@@ -101,4 +101,8 @@
         <textColor value="0.6 0.6 0.6 1"/>
         <textItalic value="true"/>
     </Profile>
+
+    <!-- Button without hotkey (neutral style) -->
+    <Profile name="wm_buttonNeutral" extends="buttonActivate">
+    </Profile>
 </GUIProfiles>

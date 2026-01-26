@@ -5,9 +5,15 @@
         <text name="action_WM_TOGGLE_GUI" text="Workflow Manager umschalten"/>
         <text name="action_WM_START_WORKFLOW" text="Workflow starten"/>
         <text name="action_WM_STOP_WORKFLOW" text="Workflow stoppen"/>
+        <text name="action_WM_GUI_DELETE" text="Loeschen"/>
+        <text name="action_WM_GUI_START" text="Starten"/>
+        <text name="action_WM_GUI_STOP" text="Stoppen"/>
         <text name="input_WM_TOGGLE_GUI" text="Workflow Manager umschalten"/>
         <text name="input_WM_START_WORKFLOW" text="Workflow starten"/>
         <text name="input_WM_STOP_WORKFLOW" text="Workflow stoppen"/>
+        <text name="input_WM_GUI_DELETE" text="Loeschen"/>
+        <text name="input_WM_GUI_START" text="Starten"/>
+        <text name="input_WM_GUI_STOP" text="Stoppen"/>
 
         <!-- GUI titles -->
         <text name="wm_title" text="Workflow Manager"/>

@@ -15,6 +15,7 @@ function WMMainDialog.new(target)
     local self = DialogElement.new(target, WMMainDialog_mt)
     self.selectedWorkflowIndex = 0
     self.workflows = {}
+    self.inputEventIds = {}
     return self
 end
 
@@ -25,6 +26,20 @@ end
 function WMMainDialog:onOpen()
     WMMainDialog:superClass().onOpen(self)
     WMLogger:debug("WMMainDialog:onOpen")
+
+    -- Register custom input events
+    self:registerInputEvents()
+
+    -- Set correct input action indicators on buttons
+    if self.deleteButton then
+        self.deleteButton:setInputAction("WM_GUI_DELETE")
+    end
+    if self.startButton then
+        self.startButton:setInputAction("WM_GUI_START")
+    end
+    if self.stopButton then
+        self.stopButton:setInputAction("WM_GUI_STOP")
+    end
 
     -- Setup list data source
     if self.workflowList ~= nil then
@@ -38,6 +53,9 @@ end
 function WMMainDialog:onClose()
     WMMainDialog:superClass().onClose(self)
     WMLogger:debug("WMMainDialog:onClose")
+
+    -- Unregister custom input events
+    self:unregisterInputEvents()
 end
 
 ---Refresh the workflow list from WorkflowManager
@@ -230,4 +248,64 @@ end
 ---Called when Escape is pressed
 function WMMainDialog:onEscPressed()
     self:onClickClose()
+end
+
+---Register custom input events for hotkeys
+function WMMainDialog:registerInputEvents()
+    self.inputEventIds = {}
+
+    -- Delete: ENTF key
+    local _, eventId = g_inputBinding:registerActionEvent(InputAction.WM_GUI_DELETE, self, self.onInputDelete, false, true, false, true)
+    if eventId ~= nil then
+        table.insert(self.inputEventIds, eventId)
+        g_inputBinding:setActionEventTextPriority(eventId, GS_PRIO_VERY_LOW)
+        g_inputBinding:setActionEventTextVisibility(eventId, false)
+    end
+
+    -- Start: S key
+    _, eventId = g_inputBinding:registerActionEvent(InputAction.WM_GUI_START, self, self.onInputStart, false, true, false, true)
+    if eventId ~= nil then
+        table.insert(self.inputEventIds, eventId)
+        g_inputBinding:setActionEventTextPriority(eventId, GS_PRIO_VERY_LOW)
+        g_inputBinding:setActionEventTextVisibility(eventId, false)
+    end
+
+    -- Stop: Backspace key
+    _, eventId = g_inputBinding:registerActionEvent(InputAction.WM_GUI_STOP, self, self.onInputStop, false, true, false, true)
+    if eventId ~= nil then
+        table.insert(self.inputEventIds, eventId)
+        g_inputBinding:setActionEventTextPriority(eventId, GS_PRIO_VERY_LOW)
+        g_inputBinding:setActionEventTextVisibility(eventId, false)
+    end
+end
+
+---Unregister custom input events
+function WMMainDialog:unregisterInputEvents()
+    if self.inputEventIds then
+        for _, eventId in ipairs(self.inputEventIds) do
+            g_inputBinding:removeActionEvent(eventId)
+        end
+        self.inputEventIds = {}
+    end
+end
+
+---Input handler for Delete key
+function WMMainDialog:onInputDelete(actionName, inputValue)
+    if self.deleteButton and not self.deleteButton.disabled then
+        self:onClickDelete()
+    end
+end
+
+---Input handler for Start key
+function WMMainDialog:onInputStart(actionName, inputValue)
+    if self.startButton and not self.startButton.disabled then
+        self:onClickStart()
+    end
+end
+
+---Input handler for Stop key (Backspace)
+function WMMainDialog:onInputStop(actionName, inputValue)
+    if self.stopButton and not self.stopButton.disabled then
+        self:onClickStop()
+    end
 end

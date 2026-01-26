@@ -105,11 +105,19 @@ Workflow = {
 * **Milestone 3**: Basic GUI - Main window, workflow editor, step management
 * **Milestone 4**: Vehicle Selection - Runtime vehicle detection (uses current vehicle when starting)
 
-### Milestone 5: Logo
+### Milestone 5: Player UI
+* [ ] Create an ui for the payer in the Vehicle like Courseplay has it
+* [ ] Function Pause (Workflow)
+* [ ] Function Resume (Workflow)
+* [ ] Function Stop (Workflow)
+* [ ] Function Previous (Workflow step)
+* [ ] Function Next (Workflow step)
+
+### Milestone 6: Logo
 * [ ] Create a nice logo
 * [ ] Convert to proper format
 
-### Milestone 5: Refinement
+### Milestone 7: Refinement
 * [ ] The ingame help menu F1 overlays the gui
 * [ ] Edit workflow name is possible in edit workflow gui without opening a separate overlay
 * [ ] Relocate double click to edit hint in edit workflow gui to the bottom
@@ -118,21 +126,21 @@ Workflow = {
 * [x] Edit step GUI looks different from the others (Header) - DONE: Consistent 900px dialog width
 * [ ] Fix Warning (performance): Texture .../textures/white.png raw format
 
-### Milestone 6: Folder view
+### Milestone 9: Folder view
 * [ ] Show folders in dropdowns (collapsed by default)
 * [ ] For AD Targets and CP Courses
 * [ ] Collapse all / Expand all buttons
 
-### Milestone 7: Search
+### Milestone 10: Search
 * [x] Search in dropdowns (typing while open) - DONE: Filter input fields in WMStepDialog
 * [x] Dropdown content shrinks according to input - DONE: Lists filter based on search text
 
-### Milestone 8: Refinement
+### Milestone 11: Refinement
 * [ ] Implement error handling
 * [ ] Performance optimization
 * [ ] Documentation
 
-### Milestone 8: Phase 2 Features
+### Milestone 12: Phase 2 Features
 * [ ] Queue system
 * [ ] Advanced conditions
 * [ ] Improve master-detail UI
