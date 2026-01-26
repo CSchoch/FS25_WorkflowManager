@@ -107,11 +107,14 @@ Workflow = {
 
 ### Milestone 5: Player UI
 * [ ] Create an ui for the payer in the Vehicle like Courseplay has it
-* [ ] Function Pause (Workflow)
-* [ ] Function Resume (Workflow)
+* [ ] Function Pause/Resume (Workflow)
+* [ ] Pause should interrupt tracking of the workflow (stays in the current step even if AD or CP finishes)
 * [ ] Function Stop (Workflow)
 * [ ] Function Previous (Workflow step)
 * [ ] Function Next (Workflow step)
+* [ ] Just mouse controlled
+* [ ] Shows active Workflow name of the vehicle
+* [ ] Shows active step of the vehicles workflow 
 
 ### Milestone 6: Logo
 * [ ] Create a nice logo
