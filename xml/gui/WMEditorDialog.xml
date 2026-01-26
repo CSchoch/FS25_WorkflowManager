@@ -24,9 +24,6 @@
                 </TextInput>
             </BoxLayout>
 
-            <!-- Vehicle Hint -->
-            <Text profile="wm_infoText" text="$l10n_wm_vehicle_hint" size="860px 25px"/>
-
             <!-- Steps Section Header with Buttons -->
             <BoxLayout profile="wm_hBox" size="860px 50px">
                 <Text profile="wm_sectionLabel" text="$l10n_wm_editor_steps" size="80px 40px"/>
