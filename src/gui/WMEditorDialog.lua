@@ -15,6 +15,7 @@ function WMEditorDialog.new(target)
     local self = DialogElement.new(target, WMEditorDialog_mt)
     self.workflow = nil
     self.selectedStepIndex = 0
+    self.inputEventIds = {}
     return self
 end
 
@@ -25,6 +26,20 @@ end
 function WMEditorDialog:onOpen()
     WMEditorDialog:superClass().onOpen(self)
     WMLogger:debug("WMEditorDialog:onOpen")
+
+    -- Register custom input events
+    self:registerInputEvents()
+
+    -- Set correct input action indicators on buttons
+    if self.removeStepButton then
+        self.removeStepButton:setInputAction("WM_GUI_DELETE")
+    end
+    if self.moveUpButton then
+        self.moveUpButton:setInputAction("WM_GUI_MOVE_UP")
+    end
+    if self.moveDownButton then
+        self.moveDownButton:setInputAction("WM_GUI_MOVE_DOWN")
+    end
 
     -- Setup list data source
     if self.stepList ~= nil then
@@ -41,6 +56,9 @@ end
 function WMEditorDialog:onClose()
     WMEditorDialog:superClass().onClose(self)
     WMLogger:debug("WMEditorDialog:onClose")
+
+    -- Unregister custom input events
+    self:unregisterInputEvents()
 end
 
 ---Set the workflow to edit
@@ -368,4 +386,64 @@ end
 ---Get cached fill types
 function WMEditorDialog:getFillTypes()
     return self.cachedFillTypes or {}
+end
+
+---Register custom input events for hotkeys
+function WMEditorDialog:registerInputEvents()
+    self.inputEventIds = {}
+
+    -- Remove: Backspace key
+    local _, eventId = g_inputBinding:registerActionEvent(InputAction.WM_GUI_DELETE, self, self.onInputRemove, false, true, false, true)
+    if eventId ~= nil then
+        table.insert(self.inputEventIds, eventId)
+        g_inputBinding:setActionEventTextPriority(eventId, GS_PRIO_VERY_LOW)
+        g_inputBinding:setActionEventTextVisibility(eventId, false)
+    end
+
+    -- Move Up: + key
+    _, eventId = g_inputBinding:registerActionEvent(InputAction.WM_GUI_MOVE_UP, self, self.onInputMoveUp, false, true, false, true)
+    if eventId ~= nil then
+        table.insert(self.inputEventIds, eventId)
+        g_inputBinding:setActionEventTextPriority(eventId, GS_PRIO_VERY_LOW)
+        g_inputBinding:setActionEventTextVisibility(eventId, false)
+    end
+
+    -- Move Down: - key
+    _, eventId = g_inputBinding:registerActionEvent(InputAction.WM_GUI_MOVE_DOWN, self, self.onInputMoveDown, false, true, false, true)
+    if eventId ~= nil then
+        table.insert(self.inputEventIds, eventId)
+        g_inputBinding:setActionEventTextPriority(eventId, GS_PRIO_VERY_LOW)
+        g_inputBinding:setActionEventTextVisibility(eventId, false)
+    end
+end
+
+---Unregister custom input events
+function WMEditorDialog:unregisterInputEvents()
+    if self.inputEventIds then
+        for _, eventId in ipairs(self.inputEventIds) do
+            g_inputBinding:removeActionEvent(eventId)
+        end
+        self.inputEventIds = {}
+    end
+end
+
+---Input handler for Remove key (Backspace)
+function WMEditorDialog:onInputRemove(actionName, inputValue)
+    if self.removeStepButton and not self.removeStepButton.disabled then
+        self:onClickRemoveStep()
+    end
+end
+
+---Input handler for Move Up key (+)
+function WMEditorDialog:onInputMoveUp(actionName, inputValue)
+    if self.moveUpButton and not self.moveUpButton.disabled then
+        self:onClickMoveUp()
+    end
+end
+
+---Input handler for Move Down key (-)
+function WMEditorDialog:onInputMoveDown(actionName, inputValue)
+    if self.moveDownButton and not self.moveDownButton.disabled then
+        self:onClickMoveDown()
+    end
 end

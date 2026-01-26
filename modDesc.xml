@@ -52,6 +52,8 @@ Voraussetzungen: AutoDrive, Courseplay
         <action name="WM_GUI_DELETE" />
         <action name="WM_GUI_START" />
         <action name="WM_GUI_STOP" />
+        <action name="WM_GUI_MOVE_UP" />
+        <action name="WM_GUI_MOVE_DOWN" />
     </actions>
 
     <inputBinding>
@@ -73,6 +75,12 @@ Voraussetzungen: AutoDrive, Courseplay
         </actionBinding>
         <actionBinding action="WM_GUI_STOP">
             <binding device="KB_MOUSE_DEFAULT" input="KEY_x" />
+        </actionBinding>
+        <actionBinding action="WM_GUI_MOVE_UP">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_u" />
+        </actionBinding>
+        <actionBinding action="WM_GUI_MOVE_DOWN">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_d" />
         </actionBinding>
     </inputBinding>
 </modDesc>
