@@ -1,7 +1,7 @@
 --[[
     WorkflowManager - In-Vehicle HUD
     Displays workflow status and controls when a workflow is running
-    Mouse-controlled interface similar to Courseplay's HUD
+    Pure direct rendering (no HUDElement system)
 
     Author: WorkflowManager Team
 ]]
@@ -9,145 +9,72 @@
 ---@class WMHud
 WMHud = {}
 
--- Colors
-WMHud.BACKGROUND_COLOR = {0, 0, 0, 0.75}
-WMHud.HEADER_COLOR = {0.2, 0.4, 0.6, 0.9}
-WMHud.TEXT_COLOR = {1, 1, 1, 1}
-WMHud.STEP_COLOR = {0.8, 0.8, 0.2, 1}
-WMHud.PAUSED_COLOR = {1, 0.6, 0, 1}
-WMHud.RUNNING_COLOR = {0, 0.8, 0, 1}
-
--- Base size in pixels (will be scaled)
-WMHud.basePosition = {x = 10, y = 300}
-WMHud.baseSize = {x = 280, y = 120}
-
-WMHud.headerFontSize = 12
-WMHud.titleFontSize = 14
-WMHud.defaultFontSize = 12
-WMHud.smallFontSize = 10
-
--- State
-WMHud.isInitialized = false
 WMHud.isVisible = false
 WMHud.vehicle = nil
+WMHud.bgOverlay = nil
+WMHud.headerOverlay = nil
 
-function WMHud:init()
-    if self.isInitialized then
+-- Position & size in normalized screen coordinates (set on first draw)
+WMHud.x = nil
+WMHud.y = nil
+WMHud.w = nil
+WMHud.h = nil
+
+function WMHud:ensureOverlays()
+    if self.bgOverlay ~= nil then
         return
     end
 
-    self.uiScale = g_gameSettings:getValue("uiScale") or 1
+    -- Calculate position from pixel values
+    local px, py = getNormalizedScreenValues(10, 300)
+    local pw, ph = getNormalizedScreenValues(280, 130)
 
-    -- Convert pixel positions to normalized screen coordinates
-    self.x, self.y = getNormalizedScreenValues(self.basePosition.x, self.basePosition.y)
-    self.width, self.height = getNormalizedScreenValues(self.baseSize.x, self.baseSize.y)
+    self.x = px
+    self.y = py
+    self.w = pw
+    self.h = ph
 
-    -- Calculate element sizes
-    self.lineHeight = self.height / 5
-    self.margin = self.lineHeight / 3
-    self.buttonSize, _ = getNormalizedScreenValues(24, 24)
+    -- Main background
+    self.bgOverlay = Overlay.new(g_baseUIFilename, self.x, self.y, self.w, self.h)
+    self.bgOverlay:setUVs(g_colorBgUVs)
+    self.bgOverlay:setColor(0, 0, 0, 0.75)
 
-    -- Create background overlay
-    local bgOverlay = Overlay.new(g_baseUIFilename, self.x, self.y, self.width, self.height)
-    bgOverlay:setUVs(g_colorBgUVs)
-    bgOverlay:setColor(unpack(self.BACKGROUND_COLOR))
+    -- Header background
+    local _, headerH = getNormalizedScreenValues(0, 24)
+    self.headerH = headerH
+    self.headerOverlay = Overlay.new(g_baseUIFilename, self.x, self.y + self.h - headerH, self.w, headerH)
+    self.headerOverlay:setUVs(g_colorBgUVs)
+    self.headerOverlay:setColor(0.2, 0.4, 0.6, 0.9)
 
-    self.baseHud = WMHudElement.new(bgOverlay, nil)
-    self.baseHud:setPosition(self.x, self.y)
-    self.baseHud:setDimension(self.width, self.height)
+    -- Text sizes
+    local _, ts14 = getNormalizedScreenValues(0, 14)
+    local _, ts13 = getNormalizedScreenValues(0, 13)
+    local _, ts12 = getNormalizedScreenValues(0, 12)
+    self.titleSize = ts14
+    self.textSize = ts13
+    self.smallSize = ts12
 
-    -- Create header background
-    local headerHeight = self.lineHeight
-    local headerOverlay = Overlay.new(g_baseUIFilename, self.x, self.y + self.height - headerHeight, self.width, headerHeight)
-    headerOverlay:setUVs(g_colorBgUVs)
-    headerOverlay:setColor(unpack(self.HEADER_COLOR))
+    -- Margin
+    local marginX, marginY = getNormalizedScreenValues(8, 6)
+    self.marginX = marginX
+    self.marginY = marginY
 
-    self.headerBg = WMHudElement.new(headerOverlay, self.baseHud)
-    self.headerBg:setPosition(self.x, self.y + self.height - headerHeight)
-    self.headerBg:setDimension(self.width, headerHeight)
-
-    -- Create header title text
-    local titleX = self.x + self.margin
-    local titleY = self.y + self.height - headerHeight + self.margin / 2
-    self.titleText = WMHudTextElement.new(self.baseHud, titleX, titleY, self.titleFontSize, RenderText.ALIGN_LEFT, self.TEXT_COLOR)
-    self.titleText:setText("Workflow Manager")
-
-    -- Create close button (X) in header
-    local closeBtnSize, _ = getNormalizedScreenValues(16, 16)
-    local closeBtnX = self.x + self.width - closeBtnSize - self.margin / 2
-    local closeBtnY = self.y + self.height - headerHeight + (headerHeight - closeBtnSize) / 2
-    self.closeBtn = self:createTextButton(closeBtnX, closeBtnY, "X", self.headerFontSize)
-    self.closeBtn:setCallback("onClickPrimary", self, function(self)
-        self:hide()
-    end)
-
-    -- Create workflow name display (line 1)
-    local line1Y = self.y + self.height - headerHeight - self.lineHeight
-    self.workflowNameText = WMHudTextElement.new(self.baseHud, self.x + self.margin, line1Y, self.defaultFontSize, RenderText.ALIGN_LEFT, self.TEXT_COLOR)
-    self.workflowNameText:setText("No active workflow")
-
-    -- Create step display (line 2)
-    local line2Y = line1Y - self.lineHeight
-    self.stepText = WMHudTextElement.new(self.baseHud, self.x + self.margin, line2Y, self.smallFontSize, RenderText.ALIGN_LEFT, self.STEP_COLOR)
-    self.stepText:setText("")
-
-    -- Create status display (line 3)
-    local line3Y = line2Y - self.lineHeight * 0.7
-    self.statusText = WMHudTextElement.new(self.baseHud, self.x + self.margin, line3Y, self.smallFontSize, RenderText.ALIGN_LEFT, self.RUNNING_COLOR)
-    self.statusText:setText("")
-
-    -- Create control buttons (bottom row)
-    local btnY = self.y + self.margin
-    local btnSpacing, _ = getNormalizedScreenValues(8, 0)
-    local btnWidth, btnHeight = getNormalizedScreenValues(50, 20)
-    local currentX = self.x + self.margin
-
-    -- Previous button
-    self.prevBtn = self:createTextButton(currentX, btnY, "< Prev", self.smallFontSize, btnWidth)
-    self.prevBtn:setCallback("onClickPrimary", self, self.onClickPrevious)
-    currentX = currentX + btnWidth + btnSpacing
-
-    -- Pause/Resume button
-    self.pauseBtn = self:createTextButton(currentX, btnY, "Pause", self.smallFontSize, btnWidth)
-    self.pauseBtn:setCallback("onClickPrimary", self, self.onClickPauseResume)
-    currentX = currentX + btnWidth + btnSpacing
-
-    -- Stop button
-    self.stopBtn = self:createTextButton(currentX, btnY, "Stop", self.smallFontSize, btnWidth)
-    self.stopBtn:setCallback("onClickPrimary", self, self.onClickStop)
-    currentX = currentX + btnWidth + btnSpacing
-
-    -- Next button
-    self.nextBtn = self:createTextButton(currentX, btnY, "Next >", self.smallFontSize, btnWidth)
-    self.nextBtn:setCallback("onClickPrimary", self, self.onClickNext)
-
-    -- Initially hidden
-    self.baseHud:setVisible(false)
-    self.isInitialized = true
-
-    WMLogger:info("WMHud initialized")
+    WMLogger:info("WMHud overlays created: x=%.4f y=%.4f w=%.4f h=%.4f", self.x, self.y, self.w, self.h)
 end
 
-function WMHud:createTextButton(x, y, text, fontSize, width)
-    local btn = WMHudTextElement.new(self.baseHud, x, y, fontSize or self.smallFontSize, RenderText.ALIGN_LEFT, self.TEXT_COLOR)
-    btn:setText(text, width)
-    return btn
+function WMHud:init()
+    -- Nothing needed at load time; overlays created lazily on first draw
+    WMLogger:info("WMHud:init() - lazy init mode")
 end
 
 function WMHud:show(vehicle)
-    if not self.isInitialized then
-        self:init()
-    end
-
     self.vehicle = vehicle
     self.isVisible = true
-    self.baseHud:setVisible(true)
-    WMLogger:debug("WMHud shown for vehicle")
+    WMLogger:info("WMHud shown")
 end
 
 function WMHud:hide()
     self.isVisible = false
-    self.baseHud:setVisible(false)
     WMLogger:debug("WMHud hidden")
 end
 
@@ -163,128 +90,172 @@ function WMHud:getIsVisible()
     return self.isVisible
 end
 
-function WMHud:getActiveWorkflowForVehicle(vehicle)
-    if vehicle == nil then
-        return nil, nil
+function WMHud:getActiveWorkflow()
+    -- Find any active workflow
+    for _, data in pairs(WMExecutor.activeWorkflows) do
+        return data.workflow, data
     end
-
-    -- Find active workflow for this vehicle
-    for workflowId, activeData in pairs(WMExecutor.activeWorkflows) do
-        if activeData.vehicle == vehicle then
-            return activeData.workflow, activeData
-        end
-    end
-
     return nil, nil
 end
 
 function WMHud:update(dt)
-    if not self.isInitialized or not self.isVisible then
+    -- Nothing to do; draw reads live data
+end
+
+function WMHud:draw()
+    if not self.isVisible then
         return
     end
 
-    -- Get current vehicle
-    local vehicle = g_currentMission.controlledVehicle
-    if vehicle == nil then
+    -- Lazy-create overlays on first draw (guarantees screen globals exist)
+    self:ensureOverlays()
+
+    -- Draw backgrounds
+    self.bgOverlay:render()
+    self.headerOverlay:render()
+
+    local x = self.x
+    local y = self.y
+    local w = self.w
+    local h = self.h
+    local mx = self.marginX
+    local my = self.marginY
+
+    -- Get workflow data
+    local workflow = self:getActiveWorkflow()
+
+    -- === Header ===
+    setTextBold(true)
+    setTextColor(1, 1, 1, 1)
+    setTextAlignment(RenderText.ALIGN_LEFT)
+    renderText(x + mx, y + h - self.headerH + my, self.titleSize, "Workflow Manager")
+    setTextBold(false)
+
+    -- Close X
+    setTextAlignment(RenderText.ALIGN_RIGHT)
+    renderText(x + w - mx, y + h - self.headerH + my, self.titleSize, "X")
+    setTextAlignment(RenderText.ALIGN_LEFT)
+
+    -- === Content area ===
+    local lineY = y + h - self.headerH - my - self.textSize
+
+    -- Workflow name
+    setTextColor(1, 1, 1, 1)
+    local name = workflow and workflow.name or "No active workflow"
+    renderText(x + mx, lineY, self.textSize, name)
+
+    -- Step info
+    lineY = lineY - self.textSize - my
+    setTextColor(0.9, 0.9, 0.3, 1)
+    if workflow and workflow.steps then
+        local cs = workflow.currentStep or 1
+        local ts = #workflow.steps
+        local step = workflow.steps[cs]
+        if step then
+            local sType = step.type == WorkflowManager.STEP_AUTODRIVE and "AD" or "CP"
+            renderText(x + mx, lineY, self.smallSize,
+                string.format("Step %d/%d: %s - %s", cs, ts, sType, step.target or "?"))
+        end
+    end
+
+    -- Status
+    lineY = lineY - self.smallSize - my
+    if workflow then
+        local status = workflow.status or "ready"
+        if status == "running" then
+            setTextColor(0.2, 0.9, 0.2, 1)
+            renderText(x + mx, lineY, self.smallSize, "RUNNING")
+        elseif status == "paused" then
+            setTextColor(1, 0.6, 0, 1)
+            renderText(x + mx, lineY, self.smallSize, "PAUSED")
+        end
+    end
+
+    -- === Button row ===
+    local btnY = y + my
+    setTextColor(0.8, 0.8, 0.8, 1)
+    local btnW, _ = getNormalizedScreenValues(52, 0)
+
+    renderText(x + mx, btnY, self.smallSize, "[Prev]")
+    renderText(x + mx + btnW, btnY, self.smallSize,
+        workflow and workflow.status == "paused" and "[Resume]" or "[Pause]")
+    renderText(x + mx + btnW * 2, btnY, self.smallSize, "[Stop]")
+    renderText(x + mx + btnW * 3, btnY, self.smallSize, "[Next]")
+
+    -- Reset
+    setTextColor(1, 1, 1, 1)
+    setTextBold(false)
+    setTextAlignment(RenderText.ALIGN_LEFT)
+end
+
+function WMHud:mouseEvent(posX, posY, isDown, isUp, button)
+    if not self.isVisible or self.x == nil then
+        return false
+    end
+
+    if isDown and button == Input.MOUSE_BUTTON_LEFT then
+        return self:handleClick(posX, posY)
+    end
+
+    return false
+end
+
+function WMHud:handleClick(posX, posY)
+    local x = self.x
+    local y = self.y
+    local w = self.w
+    local h = self.h
+    local mx = self.marginX or 0.008
+
+    -- Outside HUD?
+    if posX < x or posX > x + w or posY < y or posY > y + h then
+        return false
+    end
+
+    -- Close button (top-right corner of header)
+    if posX > x + w - mx * 4 and posY > y + h - self.headerH then
         self:hide()
-        return
+        return true
     end
 
-    -- Check if there's an active workflow for this vehicle
-    local workflow, activeData = self:getActiveWorkflowForVehicle(vehicle)
+    -- Button row (bottom strip)
+    local btnY = y
+    local btnStripH = (self.marginY or 0.006) + (self.smallSize or 0.010) + (self.marginY or 0.006)
+    if posY >= btnY and posY <= btnY + btnStripH then
+        local btnW, _ = getNormalizedScreenValues(52, 0)
+        local bx = x + mx
+        local relX = posX - bx
 
-    if workflow == nil then
-        -- No active workflow - show minimal info
-        self.workflowNameText:setText(g_i18n:getText("wm_hud_no_workflow") or "No active workflow")
-        self.stepText:setText("")
-        self.statusText:setText("")
-        self:updateButtonStates(nil)
-        return
+        if relX >= 0 and relX < btnW then
+            self:onClickPrevious()
+            return true
+        elseif relX >= btnW and relX < btnW * 2 then
+            self:onClickPauseResume()
+            return true
+        elseif relX >= btnW * 2 and relX < btnW * 3 then
+            self:onClickStop()
+            return true
+        elseif relX >= btnW * 3 and relX < btnW * 4 then
+            self:onClickNext()
+            return true
+        end
     end
 
-    -- Update workflow name
-    self.workflowNameText:setText(workflow.name or "Unnamed Workflow")
-
-    -- Update step info
-    local currentStep = workflow.currentStep or 1
-    local totalSteps = #workflow.steps
-    local step = workflow.steps[currentStep]
-    local stepInfo = ""
-
-    if step then
-        local stepType = step.type == WorkflowManager.STEP_AUTODRIVE and "AD" or "CP"
-        local target = step.target or "?"
-        stepInfo = string.format(g_i18n:getText("wm_hud_step_format") or "Step %d/%d: %s - %s",
-            currentStep, totalSteps, stepType, target)
-    end
-    self.stepText:setText(stepInfo)
-
-    -- Update status
-    local status = workflow.status or WorkflowManager.STATUS_READY
-    local statusText = ""
-    local statusColor = self.RUNNING_COLOR
-
-    if status == WorkflowManager.STATUS_RUNNING then
-        statusText = g_i18n:getText("wm_status_running") or "Running"
-        statusColor = self.RUNNING_COLOR
-    elseif status == WorkflowManager.STATUS_PAUSED then
-        statusText = g_i18n:getText("wm_status_paused") or "Paused"
-        statusColor = self.PAUSED_COLOR
-    elseif status == WorkflowManager.STATUS_COMPLETED then
-        statusText = g_i18n:getText("wm_status_completed") or "Completed"
-        statusColor = self.TEXT_COLOR
-    elseif status == WorkflowManager.STATUS_ERROR then
-        statusText = g_i18n:getText("wm_status_error") or "Error"
-        statusColor = {1, 0.2, 0.2, 1}
-    end
-
-    self.statusText:setText(statusText)
-    self.statusText.textColor = statusColor
-
-    -- Update button states
-    self:updateButtonStates(workflow)
+    return true -- consumed (inside HUD)
 end
 
-function WMHud:updateButtonStates(workflow)
-    if workflow == nil then
-        self.prevBtn:setDisabled(true)
-        self.pauseBtn:setDisabled(true)
-        self.stopBtn:setDisabled(true)
-        self.nextBtn:setDisabled(true)
-        return
+function WMHud:isMouseOverArea(posX, posY)
+    if not self.isVisible or self.x == nil then
+        return false
     end
-
-    local isRunning = workflow.status == WorkflowManager.STATUS_RUNNING
-    local isPaused = workflow.status == WorkflowManager.STATUS_PAUSED
-    local isActive = isRunning or isPaused
-
-    -- Previous: enabled if not on first step and workflow is active
-    local canGoPrev = isActive and workflow.currentStep > 1
-    self.prevBtn:setDisabled(not canGoPrev)
-
-    -- Next: enabled if not on last step and workflow is active
-    local canGoNext = isActive and workflow.currentStep < #workflow.steps
-    self.nextBtn:setDisabled(not canGoNext)
-
-    -- Pause/Resume: enabled when workflow is active
-    self.pauseBtn:setDisabled(not isActive)
-    if isPaused then
-        self.pauseBtn:setText("Resume")
-    else
-        self.pauseBtn:setText("Pause")
-    end
-
-    -- Stop: enabled when workflow is active
-    self.stopBtn:setDisabled(not isActive)
+    return posX >= self.x and posX <= self.x + self.w and posY >= self.y and posY <= self.y + self.h
 end
+
+-- === Button callbacks ===
 
 function WMHud:onClickPauseResume()
-    local vehicle = g_currentMission.controlledVehicle
-    local workflow, _ = self:getActiveWorkflowForVehicle(vehicle)
-
-    if workflow == nil then
-        return
-    end
+    local workflow = self:getActiveWorkflow()
+    if workflow == nil then return end
 
     if workflow.status == WorkflowManager.STATUS_RUNNING then
         WorkflowManager:pauseWorkflow(workflow.id)
@@ -296,81 +267,41 @@ function WMHud:onClickPauseResume()
 end
 
 function WMHud:onClickStop()
-    local vehicle = g_currentMission.controlledVehicle
-    local workflow, _ = self:getActiveWorkflowForVehicle(vehicle)
-
-    if workflow == nil then
-        return
-    end
+    local workflow = self:getActiveWorkflow()
+    if workflow == nil then return end
 
     WorkflowManager:stopWorkflow(workflow.id)
     WMLogger:info("Workflow stopped via HUD: %s", workflow.name)
-
-    -- Show notification
     g_currentMission:addIngameNotification(
         FSBaseMission.INGAME_NOTIFICATION_OK,
-        string.format(g_i18n:getText("wm_workflow_stopped") or "Workflow stopped: %s", workflow.name)
-    )
+        string.format(g_i18n:getText("wm_workflow_stopped") or "Workflow stopped: %s", workflow.name))
 end
 
 function WMHud:onClickPrevious()
-    local vehicle = g_currentMission.controlledVehicle
-    local workflow, activeData = self:getActiveWorkflowForVehicle(vehicle)
+    local workflow = self:getActiveWorkflow()
+    if workflow == nil or workflow.currentStep <= 1 then return end
 
-    if workflow == nil or workflow.currentStep <= 1 then
-        return
-    end
-
-    WMLogger:info("Previous step requested via HUD for workflow: %s", workflow.name)
+    WMLogger:info("Previous step via HUD: %s", workflow.name)
     WMExecutor:goToPreviousStep(workflow)
 end
 
 function WMHud:onClickNext()
-    local vehicle = g_currentMission.controlledVehicle
-    local workflow, activeData = self:getActiveWorkflowForVehicle(vehicle)
+    local workflow = self:getActiveWorkflow()
+    if workflow == nil or workflow.currentStep >= #workflow.steps then return end
 
-    if workflow == nil or workflow.currentStep >= #workflow.steps then
-        return
-    end
-
-    WMLogger:info("Next step requested via HUD for workflow: %s", workflow.name)
+    WMLogger:info("Next step via HUD: %s", workflow.name)
     WMExecutor:goToNextStep(workflow)
 end
 
-function WMHud:mouseEvent(posX, posY, isDown, isUp, button)
-    if not self.isInitialized or not self.isVisible then
-        return false
-    end
-
-    if self.baseHud:getIsDisabled() then
-        return false
-    end
-
-    return self.baseHud:mouseEvent(posX, posY, isDown, isUp, button)
-end
-
-function WMHud:isMouseOverArea(posX, posY)
-    if not self.isInitialized or not self.isVisible then
-        return false
-    end
-
-    return self.baseHud:isMouseOverArea(posX, posY)
-end
-
-function WMHud:draw()
-    if not self.isInitialized or not self.isVisible then
-        return
-    end
-
-    self.baseHud:draw()
-end
-
 function WMHud:delete()
-    if self.baseHud then
-        self.baseHud:delete()
-        self.baseHud = nil
+    if self.bgOverlay then
+        self.bgOverlay:delete()
+        self.bgOverlay = nil
     end
-    self.isInitialized = false
+    if self.headerOverlay then
+        self.headerOverlay:delete()
+        self.headerOverlay = nil
+    end
 end
 
 WMLogger:info("WMHud module loaded")

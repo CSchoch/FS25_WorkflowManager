@@ -106,6 +106,28 @@ function WMHudElement:getIsDisabled()
     return self.disabled
 end
 
+function WMHudElement:draw()
+    if not self.visible then
+        return
+    end
+
+    -- Draw self (overlay)
+    WMHudElement:superClass().draw(self)
+
+    -- Draw all children
+    if self.children then
+        for _, child in ipairs(self.children) do
+            if child.draw then
+                child:draw()
+            end
+        end
+    end
+end
+
+function WMHudElement:getVisible()
+    return self.visible
+end
+
 ---@class WMHudButtonElement : WMHudElement
 WMHudButtonElement = {}
 local WMHudButtonElement_mt = Class(WMHudButtonElement, WMHudElement)

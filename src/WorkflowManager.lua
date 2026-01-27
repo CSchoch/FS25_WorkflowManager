@@ -94,7 +94,12 @@ function WorkflowManager:init()
     WMEditorGUI:init()
 
     -- Initialize in-vehicle HUD
-    WMHud:init()
+    local hudSuccess, hudErr = pcall(function()
+        WMHud:init()
+    end)
+    if not hudSuccess then
+        WMLogger:error("Failed to initialize WMHud: %s", tostring(hudErr))
+    end
 
     -- Subscribe to workflow events to show/hide HUD automatically
     WMEventHandler:subscribe(WMEventHandler.EVENT_WORKFLOW_STARTED, self, self.onWorkflowStartedEvent)
@@ -517,19 +522,28 @@ function WorkflowManager:onToggleHUD()
     end
 end
 
----Called when a workflow starts - show HUD if player is in the vehicle
+---Called when a workflow starts - show HUD
 ---@param eventType string Event type
 ---@param data table Event data
 function WorkflowManager:onWorkflowStartedEvent(eventType, data)
-    WMLogger:debug("Workflow started event received")
+    WMLogger:info("Workflow started event received for: %s", tostring(data.workflowId))
 
     -- Get the vehicle for this workflow
     local activeData = WMExecutor.activeWorkflows[data.workflowId]
     if activeData and activeData.vehicle then
-        -- Check if player is currently in this vehicle
+        WMLogger:info("Showing HUD for workflow vehicle")
+        WMHud:show(activeData.vehicle)
+    else
+        -- Fallback: try to get current vehicle
         local currentVehicle = g_currentMission.controlledVehicle
-        if currentVehicle == activeData.vehicle then
+        if currentVehicle == nil and g_localPlayer and g_localPlayer.getCurrentVehicle then
+            currentVehicle = g_localPlayer:getCurrentVehicle()
+        end
+        if currentVehicle then
+            WMLogger:info("Showing HUD for current vehicle (fallback)")
             WMHud:show(currentVehicle)
+        else
+            WMLogger:warning("Cannot show HUD - no vehicle found")
         end
     end
 end
