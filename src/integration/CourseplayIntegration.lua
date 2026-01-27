@@ -690,7 +690,10 @@ function CPIntegration:getProgress(vehicle)
     end
 
     if vehicle.getCpFieldWorkProgress then
-        return vehicle:getCpFieldWorkProgress()
+        local ok, progress = pcall(vehicle.getCpFieldWorkProgress, vehicle)
+        if ok and type(progress) == "number" then
+            return progress
+        end
     end
 
     return nil

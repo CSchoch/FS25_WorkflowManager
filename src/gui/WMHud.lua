@@ -27,7 +27,7 @@ function WMHud:ensureOverlays()
 
     -- Calculate position from pixel values
     local px, py = getNormalizedScreenValues(10, 300)
-    local pw, ph = getNormalizedScreenValues(280, 130)
+    local pw, ph = getNormalizedScreenValues(280, 150)
 
     self.x = px
     self.y = py
@@ -158,17 +158,42 @@ function WMHud:draw()
         end
     end
 
-    -- Status
+    -- Vehicle state
     lineY = lineY - self.smallSize - my
-    if workflow then
-        local status = workflow.status or "ready"
-        if status == "running" then
-            setTextColor(0.2, 0.9, 0.2, 1)
-            renderText(x + mx, lineY, self.smallSize, "RUNNING")
-        elseif status == "paused" then
+    local _, activeData = self:getActiveWorkflow()
+    if activeData and activeData.vehicle then
+        local vehicle = activeData.vehicle
+        local adRunning = ADIntegration:isRunning(vehicle)
+        local cpRunning = CPIntegration:isRunning(vehicle)
+
+        if cpRunning then
+            local progress = nil
+            if vehicle.getCpFieldWorkProgress then
+                local ok, p = pcall(vehicle.getCpFieldWorkProgress, vehicle)
+                if ok and type(p) == "number" then
+                    progress = p
+                end
+            end
+            setTextColor(0.4, 0.8, 1, 1)
+            if progress then
+                renderText(x + mx, lineY, self.smallSize,
+                    string.format("CP active (%.0f%%)", progress * 100))
+            else
+                renderText(x + mx, lineY, self.smallSize, "CP active")
+            end
+        elseif adRunning then
+            setTextColor(0.4, 0.8, 1, 1)
+            renderText(x + mx, lineY, self.smallSize, "AD active")
+        elseif workflow and workflow.status == "paused" then
             setTextColor(1, 0.6, 0, 1)
-            renderText(x + mx, lineY, self.smallSize, "PAUSED")
+            renderText(x + mx, lineY, self.smallSize, "Paused")
+        else
+            setTextColor(0.6, 0.6, 0.6, 1)
+            renderText(x + mx, lineY, self.smallSize, "Idle")
         end
+    elseif not workflow then
+        setTextColor(0.6, 0.6, 0.6, 1)
+        renderText(x + mx, lineY, self.smallSize, "No vehicle")
     end
 
     -- === Button row ===

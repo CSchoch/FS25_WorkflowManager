@@ -116,9 +116,40 @@ Workflow = {
 * [x] Shows active Workflow name of the vehicle
 * [x] Shows active step of the vehicles workflow 
 
+### Milestone 5.1: Fixes 
+* [ ] Fix error (this was introduced by us)
+2026-01-27 07:05:26.243 quit savegame
+2026-01-27 07:05:26.268 :26 [field work lp37055] CP drive to task stopped
+2026-01-27 07:05:26.268 Error: Running LUA method 'mouseEvent'.
+C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_Courseplay/scripts/ai/tasks/CpAITaskDriveTo.lua:18: attempt to index nil with 'stopCpDriver'
+2026-01-27 07:05:26.279 quit savegame
+2026-01-27 07:05:26.280 
+Script error in resetDensityMapVisualizationOverlay: Unknown entity id 1680705 for 'object' in method 'resetDensityMapVisualizationOverlay'.
+
+LUA call stack:
+  =[C]:-1 resetDensityMapVisualizationOverlay
+  =dataS/scripts/gui/base/MapOverlayGenerator.lua:559 reset
+  =dataS/scripts/gui/base/MapOverlayGenerator.lua:104 delete
+  =dataS/scripts/FSBaseMission.lua:228 delete
+  =dataS/scripts/mission00.lua:142 delete
+  =dataS/scripts/menu.lua:145 OnInGameMenuMenu
+  =dataS/scripts/FSBaseMission.lua:2201 update
+  =dataS/scripts/mission00.lua:683 update
+  =dataS/scripts/main.lua:1240 update
+2026-01-27 07:05:26.282 
+Script error in resetDensityMapVisualizationOverlay: Unknown entity id 1680706 for 'object' in method 'resetDensityMapVisualizationOverlay'.
+* [ ] If step is switched manually (PREV/NEXT), AD/CP need to be stopped before
+* [ ] 
+
 ### Milestone 6: Logo
 * [ ] Create a nice logo
-* [ ] Convert to proper format
+  * [ ] Convert to proper format
+* [ ] Create icons for the hud
+  * [ ] Pause: ||
+  * [ ] Resume: >
+  * [ ] Prev: <<
+  * [ ] Next: >>
+  * [ ] Stop: []
 
 ### Milestone 7: Refinement
 * [ ] The ingame help menu F1 overlays the gui
