@@ -545,8 +545,14 @@ function CPIntegration:stopCourse(vehicle)
         return false
     end
 
-    -- Check if actually running
-    if not self:isRunning(vehicle) then
+    -- Check if actually running (use pcall as vehicle may be in bad state during shutdown)
+    local isRunningOk, isRunning = pcall(self.isRunning, self, vehicle)
+    if not isRunningOk then
+        WMLogger:warning("Error checking Courseplay running state: %s", tostring(isRunning))
+        return false
+    end
+
+    if not isRunning then
         WMLogger:debug("Courseplay is not running, nothing to stop")
         return true
     end
@@ -554,7 +560,7 @@ function CPIntegration:stopCourse(vehicle)
     WMLogger:info("Stopping Courseplay")
     WMLogger:apiCall("Courseplay", "stopCurrentAIJob", vehicle)
 
-    -- Use the official stop method
+    -- Use the official stop method (wrapped in pcall for shutdown safety)
     if vehicle.stopCurrentAIJob then
         -- Need to pass a message - use the standard stopped by user message
         local AIMessageSuccessStoppedByUser = AIMessageSuccessStoppedByUser or
@@ -563,17 +569,25 @@ function CPIntegration:stopCourse(vehicle)
              g_currentMission.aiMessageManager.aiMessages.AIMessageSuccessStoppedByUser)
 
         if AIMessageSuccessStoppedByUser and AIMessageSuccessStoppedByUser.new then
-            vehicle:stopCurrentAIJob(AIMessageSuccessStoppedByUser.new())
-            WMLogger:stateChange("Courseplay", "running", "stopped")
-            return true
+            local stopOk, stopErr = pcall(vehicle.stopCurrentAIJob, vehicle, AIMessageSuccessStoppedByUser.new())
+            if stopOk then
+                WMLogger:stateChange("Courseplay", "running", "stopped")
+                return true
+            else
+                WMLogger:warning("Error stopping Courseplay via stopCurrentAIJob: %s", tostring(stopErr))
+            end
         end
     end
 
     -- Alternative: use cpStartStopDriver to toggle off
-    if vehicle.cpStartStopDriver and self:isRunning(vehicle) then
-        vehicle:cpStartStopDriver(false)
-        WMLogger:stateChange("Courseplay", "running", "stopped")
-        return true
+    if vehicle.cpStartStopDriver then
+        local toggleOk, toggleErr = pcall(vehicle.cpStartStopDriver, vehicle, false)
+        if toggleOk then
+            WMLogger:stateChange("Courseplay", "running", "stopped")
+            return true
+        else
+            WMLogger:warning("Error stopping Courseplay via cpStartStopDriver: %s", tostring(toggleErr))
+        end
     end
 
     return false

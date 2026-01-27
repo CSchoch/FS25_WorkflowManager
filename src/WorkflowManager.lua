@@ -64,6 +64,7 @@ WorkflowManager.STEP_COURSEPLAY = "courseplay"
 WorkflowManager.workflows = {}
 WorkflowManager.activeWorkflows = {}
 WorkflowManager.isInitialized = false
+WorkflowManager.isShuttingDown = false
 WorkflowManager.guiVisible = false
 
 ---Initialize the WorkflowManager
@@ -874,8 +875,31 @@ end
 function WorkflowManager:deleteMap()
     WMLogger:info("Map unloading, cleaning up...")
 
+    -- IMMEDIATELY set shuttingDown flag to prevent mouse events from triggering actions
+    self.isShuttingDown = true
+
     -- IMMEDIATELY set isInitialized to false to stop update/draw processing
     self.isInitialized = false
+
+    -- Stop all active workflows before cleanup to prevent CP/AD errors during shutdown
+    pcall(function()
+        for workflowId, activeData in pairs(WMExecutor.activeWorkflows) do
+            -- Clear AD->CP handoff flag FIRST to prevent AD from restarting CP during shutdown
+            if activeData.vehicle then
+                pcall(function() ADIntegration:clearCPHandoff(activeData.vehicle) end)
+            end
+
+            local workflow = activeData.workflow
+            if workflow then
+                WMLogger:info("Stopping active workflow during shutdown: %s", workflow.name or workflowId)
+                pcall(function()
+                    WMExecutor:stopWorkflow(workflow)
+                end)
+            end
+        end
+        -- Clear any remaining active workflows
+        WMExecutor.activeWorkflows = {}
+    end)
 
     -- Save workflows
     pcall(function()
@@ -934,6 +958,7 @@ function WorkflowManager:deleteMap()
     self.menuPageAdded = false
     self.pendingMenuRegistration = false
     self.globalActionsRegistered = false
+    self.isShuttingDown = false
 
     WMLogger:info("WorkflowManager cleanup completed")
 end
@@ -944,7 +969,7 @@ WorkflowManager.lastF9State = false
 ---Called every frame
 ---@param dt number Delta time in milliseconds
 function WorkflowManager:update(dt)
-    if not self.isInitialized then
+    if not self.isInitialized or self.isShuttingDown then
         return
     end
 
@@ -983,7 +1008,7 @@ end
 
 ---Called for drawing
 function WorkflowManager:draw()
-    if not self.isInitialized then
+    if not self.isInitialized or self.isShuttingDown then
         return
     end
 
@@ -1004,7 +1029,7 @@ end
 
 ---Called on mouse events
 function WorkflowManager:mouseEvent(posX, posY, isDown, isUp, button)
-    if not self.isInitialized then
+    if not self.isInitialized or self.isShuttingDown then
         return
     end
 
@@ -1044,6 +1069,34 @@ if FSBaseMission.saveSavegame ~= nil then
         end
     end)
     WMLogger:info("Hooked FSBaseMission.saveSavegame for auto-save")
+end
+
+-- Hook into FSBaseMission.delete BEFORE the original runs to stop active workflows
+-- and clear AD->CP handoff flags before the game destroys vehicles/tasks.
+-- This prevents the CpAITaskDriveTo nil vehicle error during quit.
+if FSBaseMission.delete ~= nil then
+    FSBaseMission.delete = Utils.prependedFunction(FSBaseMission.delete, function()
+        pcall(function()
+            if not WorkflowManager.isInitialized then
+                return
+            end
+            WorkflowManager.isShuttingDown = true
+            WMLogger:info("FSBaseMission.delete - stopping active workflows before shutdown")
+            for workflowId, activeData in pairs(WMExecutor.activeWorkflows) do
+                -- Clear AD->CP handoff flag FIRST to prevent AD from restarting CP
+                if activeData.vehicle then
+                    pcall(function() ADIntegration:clearCPHandoff(activeData.vehicle) end)
+                end
+                -- Stop AD and CP on this vehicle
+                if activeData.vehicle then
+                    pcall(function() ADIntegration:stopRoute(activeData.vehicle) end)
+                    pcall(function() CPIntegration:stopCourse(activeData.vehicle) end)
+                end
+            end
+            WMExecutor.activeWorkflows = {}
+        end)
+    end)
+    WMLogger:info("Hooked FSBaseMission.delete for shutdown cleanup")
 end
 
 WMLogger:info("WorkflowManager module loaded")

@@ -348,46 +348,26 @@ function WMExecutor:executeCurrentStep(workflow)
             step.target or "nil",
             step.action or "nil")
 
-        -- Check if vehicle has the correct course loaded
-        local currentCourse = CPIntegration:getCurrentCourseName(vehicle)
-        local hasCourse = CPIntegration:hasCourse(vehicle)
-        local needsLoad = not hasCourse or currentCourse ~= step.target
-
-        if needsLoad then
-            WMLogger:info("Loading course for step: %s (current: %s)", step.target or "nil", currentCourse or "none")
-            local loadSuccess = CPIntegration:loadCourse(vehicle, step.target)
-            if not loadSuccess then
-                self:handleStepError(workflow, "Failed to load Courseplay course: " .. (step.target or "nil"))
-                return
-            end
-        else
-            WMLogger:debug("Correct course already loaded: %s", currentCourse or "unknown")
-        end
-
-        -- Verify course is now loaded
-        if not CPIntegration:hasCourse(vehicle) then
-            self:handleStepError(workflow, "Vehicle has no Courseplay course loaded for step: " .. (step.target or "nil"))
+        -- If AutoDrive was just stopped (e.g., manual PREV/NEXT), it may still be
+        -- "active" for a frame. Defer CP start to the update loop so AD can fully release.
+        if ADIntegration:isRunning(vehicle) then
+            WMLogger:info("AutoDrive still active after stop - deferring CP start")
+            activeData.waitingForCompletion = true
+            activeData.currentStepType = WorkflowManager.STEP_COURSEPLAY
+            activeData.pendingCPStart = true
+            activeData.pendingCPStartRetries = 0
             return
         end
 
-        -- Determine start position based on action
-        local startAtFirst = (step.action == "first" or step.action == "start")
-        local success = CPIntegration:startFieldWork(vehicle, startAtFirst)
-
-        if success then
-            activeData.waitingForCompletion = true
-            activeData.currentStepType = WorkflowManager.STEP_COURSEPLAY
-            activeData.cpWasRunning = true  -- Track that we started CP
-            WMLogger:info("Courseplay step started successfully, polling for completion")
-        else
-            self:handleStepError(workflow, "Failed to start Courseplay field work")
-        end
+        self:startCourseplayStep(workflow, activeData, vehicle, step)
     else
         self:handleStepError(workflow, "Unknown step type: " .. tostring(step.type))
     end
 end
 
 ---Stop the current step
+---Handles both running and paused states (unfreezes CP / unpauses AD before stopping)
+---Also handles cyclic handoffs: when CP step has handed off to AD, stops AD too
 ---Milestone 4: Uses activeData.vehicle instead of workflow.vehicle
 ---@param workflow table Workflow
 function WMExecutor:stopCurrentStep(workflow)
@@ -404,10 +384,72 @@ function WMExecutor:stopCurrentStep(workflow)
         return
     end
 
+    -- Always clear the AD->CP handoff flag to prevent AD from restarting CP during shutdown
+    pcall(function() ADIntegration:clearCPHandoff(vehicle) end)
+
     if step.type == WorkflowManager.STEP_AUTODRIVE then
-        ADIntegration:stopRoute(vehicle)
+        -- Resume AD first if it was paused (HoldDriving), then stop
+        if workflow.status == WorkflowManager.STATUS_PAUSED then
+            pcall(function() ADIntegration:resumeRoute(vehicle) end)
+        end
+        pcall(function() ADIntegration:stopRoute(vehicle) end)
     elseif step.type == WorkflowManager.STEP_COURSEPLAY then
-        CPIntegration:stopCourse(vehicle)
+        -- During CP steps, AD may be running due to cyclic handoff (CP->AD for unload)
+        -- Stop both AD and CP to ensure clean shutdown
+        if activeData.cpHandedOffToAD or ADIntegration:isRunning(vehicle) then
+            WMLogger:info("Stopping AutoDrive (running during CP step due to handoff)")
+            pcall(function() ADIntegration:stopRoute(vehicle) end)
+        end
+
+        -- Unfreeze CP first if it was frozen (paused), then stop
+        if workflow.status == WorkflowManager.STATUS_PAUSED then
+            pcall(function() CPIntegration:resumeCourse(vehicle) end)
+        end
+        pcall(function() CPIntegration:stopCourse(vehicle) end)
+    end
+end
+
+---Start a Courseplay step (extracted for reuse by deferred start)
+---@param workflow table Workflow
+---@param activeData table Active workflow data
+---@param vehicle table Vehicle
+---@param step table Step data
+function WMExecutor:startCourseplayStep(workflow, activeData, vehicle, step)
+    -- Check if vehicle has the correct course loaded
+    local currentCourse = CPIntegration:getCurrentCourseName(vehicle)
+    local hasCourse = CPIntegration:hasCourse(vehicle)
+    local needsLoad = not hasCourse or currentCourse ~= step.target
+
+    if needsLoad then
+        WMLogger:info("Loading course for step: %s (current: %s)", step.target or "nil", currentCourse or "none")
+        local loadSuccess = CPIntegration:loadCourse(vehicle, step.target)
+        if not loadSuccess then
+            self:handleStepError(workflow, "Failed to load Courseplay course: " .. (step.target or "nil"))
+            return
+        end
+    else
+        WMLogger:debug("Correct course already loaded: %s", currentCourse or "unknown")
+    end
+
+    -- Verify course is now loaded
+    if not CPIntegration:hasCourse(vehicle) then
+        self:handleStepError(workflow, "Vehicle has no Courseplay course loaded for step: " .. (step.target or "nil"))
+        return
+    end
+
+    -- Determine start position based on action
+    local startAtFirst = (step.action == "first" or step.action == "start")
+    local success = CPIntegration:startFieldWork(vehicle, startAtFirst)
+
+    if success then
+        activeData.waitingForCompletion = true
+        activeData.currentStepType = WorkflowManager.STEP_COURSEPLAY
+        activeData.cpWasRunning = true  -- Track that we started CP
+        activeData.pendingCPStart = nil
+        activeData.pendingCPStartRetries = nil
+        WMLogger:info("Courseplay step started successfully, polling for completion")
+    else
+        self:handleStepError(workflow, "Failed to start Courseplay field work")
     end
 end
 
@@ -566,91 +608,123 @@ function WMExecutor:update(dt)
         local vehicle = activeData.vehicle  -- Milestone 4: Use vehicle from activeData
 
         if workflow.status == WorkflowManager.STATUS_RUNNING and activeData.waitingForCompletion then
-            local isComplete = false
-
-            -- Check completion based on current step type
-            if activeData.currentStepType == WorkflowManager.STEP_AUTODRIVE then
-                -- AutoDrive: Check if route is complete (polling fallback, callbacks preferred)
-                isComplete = ADIntegration:isRouteComplete(vehicle)
-
-            elseif activeData.currentStepType == WorkflowManager.STEP_COURSEPLAY then
-                -- Courseplay: Check if CP is no longer running
-                -- We need to detect transition from running -> not running
-                -- Also handle cyclic handoffs: CP → AD (unload) → CP (continue) → AD → ...
-                local cpRunning = CPIntegration:isRunning(vehicle)
+            -- Handle deferred CP start: AD was just stopped and CP needs to start
+            if activeData.pendingCPStart then
                 local adRunning = ADIntegration:isRunning(vehicle)
+                if not adRunning then
+                    -- AD has fully stopped, now start CP
+                    WMLogger:info("AutoDrive fully stopped - starting deferred Courseplay step")
+                    activeData.pendingCPStart = nil
+                    activeData.pendingCPStartRetries = nil
+                    activeData.waitingForCompletion = false
+                    local step = workflow.steps[workflow.currentStep]
+                    if step then
+                        self:startCourseplayStep(workflow, activeData, vehicle, step)
+                    end
+                else
+                    activeData.pendingCPStartRetries = (activeData.pendingCPStartRetries or 0) + 1
+                    -- Give up after 20 checks (10 seconds) to avoid hanging
+                    if activeData.pendingCPStartRetries > 20 then
+                        WMLogger:warning("AutoDrive did not stop after 10s - forcing CP start")
+                        activeData.pendingCPStart = nil
+                        activeData.pendingCPStartRetries = nil
+                        activeData.waitingForCompletion = false
+                        local step = workflow.steps[workflow.currentStep]
+                        if step then
+                            self:startCourseplayStep(workflow, activeData, vehicle, step)
+                        end
+                    else
+                        WMLogger:debug("Waiting for AD to stop before starting CP (%d/20)", activeData.pendingCPStartRetries)
+                    end
+                end
+            else
+                -- Normal completion check
+                local isComplete = false
 
-                -- Handle case: CP handed off to AD and we're waiting for AD to complete
-                if activeData.cpHandedOffToAD then
-                    if not adRunning then
-                        -- AD finished after CP handed off to it
-                        -- But check if CP started again (AD may have restarted CP)
-                        if cpRunning then
-                            WMLogger:debug("AutoDrive completed and Courseplay restarted - continuing to monitor CP")
-                            activeData.cpHandedOffToAD = false
-                            activeData.cpWasRunning = true  -- Track that CP is running again
+                -- Check completion based on current step type
+                if activeData.currentStepType == WorkflowManager.STEP_AUTODRIVE then
+                    -- AutoDrive: Check if route is complete (polling fallback, callbacks preferred)
+                    isComplete = ADIntegration:isRouteComplete(vehicle)
+
+                elseif activeData.currentStepType == WorkflowManager.STEP_COURSEPLAY then
+                    -- Courseplay: Check if CP is no longer running
+                    -- We need to detect transition from running -> not running
+                    -- Also handle cyclic handoffs: CP → AD (unload) → CP (continue) → AD → ...
+                    local cpRunning = CPIntegration:isRunning(vehicle)
+                    local adRunning = ADIntegration:isRunning(vehicle)
+
+                    -- Handle case: CP handed off to AD and we're waiting for AD to complete
+                    if activeData.cpHandedOffToAD then
+                        if not adRunning then
+                            -- AD finished after CP handed off to it
+                            -- But check if CP started again (AD may have restarted CP)
+                            if cpRunning then
+                                WMLogger:debug("AutoDrive completed and Courseplay restarted - continuing to monitor CP")
+                                activeData.cpHandedOffToAD = false
+                                activeData.cpWasRunning = true  -- Track that CP is running again
+                            else
+                                -- Neither CP nor AD running - truly complete
+                                WMLogger:debug("AutoDrive completed after Courseplay handoff - CP step complete")
+                                isComplete = true
+                                activeData.cpHandedOffToAD = false
+                            end
+                        -- else: still waiting for AD, no log needed (would spam every 500ms)
+                        end
+                    elseif activeData.cpWasRunning and not cpRunning then
+                        -- CP was running and now stopped
+                        -- Check if CP handed off to AutoDrive
+                        if adRunning then
+                            -- CP stopped but AD is now running - CP internally started AD
+                            -- This happens when CP finishes fieldwork and starts AD for unloading
+                            WMLogger:debug("Courseplay stopped but AutoDrive is running - waiting for AD")
+                            activeData.cpHandedOffToAD = true
+                            -- Don't mark as complete - wait for AD to finish
                         else
-                            -- Neither CP nor AD running - truly complete
-                            WMLogger:debug("AutoDrive completed after Courseplay handoff - CP step complete")
+                            -- CP stopped and AD is not running = truly completed
                             isComplete = true
-                            activeData.cpHandedOffToAD = false
+                            WMLogger:debug("Courseplay step completed (was running, now stopped)")
                         end
-                    -- else: still waiting for AD, no log needed (would spam every 500ms)
-                    end
-                elseif activeData.cpWasRunning and not cpRunning then
-                    -- CP was running and now stopped
-                    -- Check if CP handed off to AutoDrive
-                    if adRunning then
-                        -- CP stopped but AD is now running - CP internally started AD
-                        -- This happens when CP finishes fieldwork and starts AD for unloading
-                        WMLogger:debug("Courseplay stopped but AutoDrive is running - waiting for AD")
-                        activeData.cpHandedOffToAD = true
-                        -- Don't mark as complete - wait for AD to finish
-                    else
-                        -- CP stopped and AD is not running = truly completed
-                        isComplete = true
-                        WMLogger:debug("Courseplay step completed (was running, now stopped)")
-                    end
-                elseif not cpRunning and not activeData.cpWasRunning then
-                    -- CP not running and was never detected running
-                    -- Check if AD is running (might have started before we could detect CP)
-                    if adRunning then
-                        WMLogger:debug("AutoDrive detected running at start of CP step - waiting for AD")
-                        activeData.cpHandedOffToAD = true
-                    elseif activeData.cpStartedByAD then
-                        -- AD handed off to CP - give it some time to actually start
-                        -- Initialize wait counter if not set
-                        if activeData.cpStartWaitCount == nil then
-                            activeData.cpStartWaitCount = 0
-                        end
-                        activeData.cpStartWaitCount = activeData.cpStartWaitCount + 1
+                    elseif not cpRunning and not activeData.cpWasRunning then
+                        -- CP not running and was never detected running
+                        -- Check if AD is running (might have started before we could detect CP)
+                        if adRunning then
+                            WMLogger:debug("AutoDrive detected running at start of CP step - waiting for AD")
+                            activeData.cpHandedOffToAD = true
+                        elseif activeData.cpStartedByAD then
+                            -- AD handed off to CP - give it some time to actually start
+                            -- Initialize wait counter if not set
+                            if activeData.cpStartWaitCount == nil then
+                                activeData.cpStartWaitCount = 0
+                            end
+                            activeData.cpStartWaitCount = activeData.cpStartWaitCount + 1
 
-                        -- Wait up to 10 checks (5 seconds at 500ms interval) for CP to start
-                        if activeData.cpStartWaitCount > 10 then
-                            WMLogger:warning("Courseplay did not start after AD handoff for workflow %s", workflow.name)
-                            isComplete = true  -- Treat as complete to avoid hanging
+                            -- Wait up to 10 checks (5 seconds at 500ms interval) for CP to start
+                            if activeData.cpStartWaitCount > 10 then
+                                WMLogger:warning("Courseplay did not start after AD handoff for workflow %s", workflow.name)
+                                isComplete = true  -- Treat as complete to avoid hanging
+                            else
+                                WMLogger:debug("Waiting for CP to start after AD handoff (%d/10)", activeData.cpStartWaitCount)
+                            end
                         else
-                            WMLogger:debug("Waiting for CP to start after AD handoff (%d/10)", activeData.cpStartWaitCount)
+                            -- CP never started or failed to start (not from AD handoff)
+                            WMLogger:warning("Courseplay never started for workflow %s", workflow.name)
+                            isComplete = true  -- Treat as complete to avoid hanging
                         end
-                    else
-                        -- CP never started or failed to start (not from AD handoff)
-                        WMLogger:warning("Courseplay never started for workflow %s", workflow.name)
-                        isComplete = true  -- Treat as complete to avoid hanging
+                    elseif cpRunning and activeData.cpStartedByAD then
+                        -- CP started successfully after AD handoff
+                        WMLogger:debug("Courseplay started successfully after AD handoff")
+                        activeData.cpStartedByAD = false  -- Clear the flag
+                        activeData.cpStartWaitCount = nil
                     end
-                elseif cpRunning and activeData.cpStartedByAD then
-                    -- CP started successfully after AD handoff
-                    WMLogger:debug("Courseplay started successfully after AD handoff")
-                    activeData.cpStartedByAD = false  -- Clear the flag
-                    activeData.cpStartWaitCount = nil
+
+                    -- Update tracking
+                    activeData.cpWasRunning = cpRunning
                 end
 
-                -- Update tracking
-                activeData.cpWasRunning = cpRunning
-            end
-
-            if isComplete then
-                activeData.waitingForCompletion = false
-                self:onStepCompleted(workflow)
+                if isComplete then
+                    activeData.waitingForCompletion = false
+                    self:onStepCompleted(workflow)
+                end
             end
         end
     end
@@ -693,7 +767,10 @@ function WMExecutor:goToPreviousStep(workflow)
         return false
     end
 
-    -- Stop the current step
+    -- Remember if workflow was paused so we can resume after step change
+    local wasPaused = workflow.status == WorkflowManager.STATUS_PAUSED
+
+    -- Stop the current step (handles paused state internally)
     self:stopCurrentStep(workflow)
 
     -- Move to previous step
@@ -709,8 +786,16 @@ function WMExecutor:goToPreviousStep(workflow)
     activeData.cpWasRunning = false
     activeData.cpStartedByAD = false
     activeData.cpStartWaitCount = nil
+    activeData.pausedTrackingState = nil
+    activeData.pendingCPStart = nil
+    activeData.pendingCPStartRetries = nil
 
-    -- If workflow was running, start the new step
+    -- Resume workflow to running state if it was paused, then execute new step
+    if wasPaused then
+        workflow.status = WorkflowManager.STATUS_RUNNING
+    end
+
+    -- If workflow is running, start the new step
     if workflow.status == WorkflowManager.STATUS_RUNNING then
         self:executeCurrentStep(workflow)
     end
@@ -745,7 +830,10 @@ function WMExecutor:goToNextStep(workflow)
         return false
     end
 
-    -- Stop the current step
+    -- Remember if workflow was paused so we can resume after step change
+    local wasPaused = workflow.status == WorkflowManager.STATUS_PAUSED
+
+    -- Stop the current step (handles paused state internally)
     self:stopCurrentStep(workflow)
 
     -- Move to next step
@@ -761,8 +849,16 @@ function WMExecutor:goToNextStep(workflow)
     activeData.cpWasRunning = false
     activeData.cpStartedByAD = false
     activeData.cpStartWaitCount = nil
+    activeData.pausedTrackingState = nil
+    activeData.pendingCPStart = nil
+    activeData.pendingCPStartRetries = nil
 
-    -- If workflow was running, start the new step
+    -- Resume workflow to running state if it was paused, then execute new step
+    if wasPaused then
+        workflow.status = WorkflowManager.STATUS_RUNNING
+    end
+
+    -- If workflow is running, start the new step
     if workflow.status == WorkflowManager.STATUS_RUNNING then
         self:executeCurrentStep(workflow)
     end
