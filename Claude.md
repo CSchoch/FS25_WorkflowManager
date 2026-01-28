@@ -104,58 +104,30 @@ Workflow = {
 * **Milestone 2**: Core Functionality - WorkflowManager, XML storage, Executor, AD/CP integration
 * **Milestone 3**: Basic GUI - Main window, workflow editor, step management
 * **Milestone 4**: Vehicle Selection - Runtime vehicle detection (uses current vehicle when starting)
+* **Milestone 5**: Player UI - In-vehicle HUD with workflow controls (pause/resume, stop, prev/next steps)
+* **Milestone 6**: Logo & Icons - Mod icon (modIcon.png) and HUD button icons with hover effects
+* **Milestone 10**: Search - Searchable dropdowns in step dialog for AD targets and CP courses
 
-### Milestone 5: Player UI
-* [x] Create an ui for the payer in the Vehicle like Courseplay has it
-* [x] Function Pause/Resume (Workflow)
-* [x] Pause should interrupt tracking of the workflow (stays in the current step even if AD or CP finishes)
-* [x] Function Stop (Workflow)
-* [x] Function Previous (Workflow step)
-* [x] Function Next (Workflow step)
-* [x] Just mouse controlled
-* [x] Shows active Workflow name of the vehicle
-* [x] Shows active step of the vehicles workflow 
-
-### Milestone 5.1: Fixes
-* [x] Fix error (this was introduced by us) - DONE: Added isShuttingDown flag, stop active workflows in deleteMap(), wrapped CP stop calls in pcall
-* [x] If step is switched manually (PREV/NEXT), AD/CP need to be stopped before - DONE: stopCurrentStep now unfreezes/unpauses before stopping, PREV/NEXT resume paused workflows
-
-### Milestone 6: Logo - COMPLETE
-* [x] Create a nice logo - DONE: modIcon.png (256x256) with workflow nodes and "WM" branding
-  * [x] Convert to proper format - DONE: PNG format (FS25 compatible)
-* [x] Create icons for the hud - DONE: 32x32 PNG icons in textures folder
-  * [x] Pause: || - textures/icon_pause.png
-  * [x] Resume: > - textures/icon_play.png
-  * [x] Prev: << - textures/icon_prev.png
-  * [x] Next: >> - textures/icon_next.png
-  * [x] Stop: [] - textures/icon_stop.png
-  * [x] Implement in HUD - DONE: WMHud.lua updated with icon overlays, hover effects, and color states
-
-### Milestone 7: Refinement
+### Milestone 7: GUI Refinement
 * [ ] The ingame help menu F1 overlays the gui
-* [ ] Edit workflow name is possible in edit workflow gui without opening a separate overlay
-* [ ] Relocate double click to edit hint in edit workflow gui to the bottom
-* [ ] Edit workflow gui has an X to close in the top right corner which works
+* [ ] Edit workflow name inline (without separate overlay)
+* [ ] Relocate double click to edit hint to the bottom
+* [ ] Edit workflow gui has an X to close in the top right corner
 * [ ] Do not show vehicle hint in gui
-* [x] Edit step GUI looks different from the others (Header) - DONE: Consistent 900px dialog width
 * [ ] Fix Warning (performance): Texture .../textures/white.png raw format
 
-### Milestone 9: Folder view
+### Milestone 8: Folder View
 * [ ] Show folders in dropdowns (collapsed by default)
 * [ ] For AD Targets and CP Courses
 * [ ] Collapse all / Expand all buttons
 
-### Milestone 10: Search
-* [x] Search in dropdowns (typing while open) - DONE: Filter input fields in WMStepDialog
-* [x] Dropdown content shrinks according to input - DONE: Lists filter based on search text
-
-### Milestone 11: Refinement
-* [ ] Implement error handling
+### Milestone 9: Polish
+* [ ] Error handling improvements
 * [ ] Performance optimization
 * [ ] Documentation
 
-### Milestone 12: Phase 2 Features
-* [ ] Queue system
+### Milestone 10: Phase 2 Features
+* [ ] Queue system for multiple vehicles
 * [ ] Advanced conditions
 * [ ] Improve master-detail UI
 
@@ -199,7 +171,7 @@ Full API documentation: `docs/API_Analysis.md`
 ```
 FS25_WorkflowManager/
 ├── modDesc.xml
-├── modIcon.dds                      # TODO: Create icon
+├── modIcon.png                      # Mod icon (256x256)
 ├── CLAUDE.md
 ├── .vscode/                         # VS Code workspace config
 ├── src/
@@ -212,6 +184,8 @@ FS25_WorkflowManager/
 │   │   ├── WMMainDialog.lua         # Main dialog (workflow list)
 │   │   ├── WMEditorDialog.lua       # Workflow editor dialog
 │   │   ├── WMStepDialog.lua         # Step add/edit dialog with searchable lists
+│   │   ├── WMHud.lua                # In-vehicle HUD with icon buttons
+│   │   ├── WMHudElements.lua        # HUD element classes
 │   │   └── WorkflowManagerMenuFrame.lua # ESC menu integration
 │   ├── integration/
 │   │   ├── AutoDriveIntegration.lua # AD API wrapper
@@ -226,7 +200,12 @@ FS25_WorkflowManager/
 │   ├── translation_en.xml
 │   └── translation_de.xml
 ├── textures/
-│   └── white.png                    # 1x1 white pixel for GUI backgrounds
+│   ├── white.png                    # 1x1 white pixel for GUI backgrounds
+│   ├── icon_prev.png                # HUD button: Previous step (<<)
+│   ├── icon_pause.png               # HUD button: Pause (||)
+│   ├── icon_play.png                # HUD button: Resume (>)
+│   ├── icon_stop.png                # HUD button: Stop ([])
+│   └── icon_next.png                # HUD button: Next step (>>)
 ├── docs/
 │   └── API_Analysis.md              # AD/CP API documentation
 └── xml/gui/
@@ -259,6 +238,11 @@ FS25_WorkflowManager/
 - AD destinations and CP courses loaded once when GUI opens
 - Cache cleared on GUI close to avoid conflicts with CP internal state
 
+### HUD Icons
+- 32x32 PNG icons with white shapes on transparent background
+- Color-tinted at runtime: normal (white), hover (cyan), disabled (gray), active (green)
+- Hover tracking for visual feedback on mouse-over
+
 ## Resources
 
 * LS25 Modding Documentation: https://gdn.giants-software.com/
@@ -269,4 +253,4 @@ FS25_WorkflowManager/
 ---
 
 **Status**: Phase 1 COMPLETE – Ready for Phase 2
-**Last updated**: 2026-01-25
+**Last updated**: 2026-01-28
