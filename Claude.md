@@ -120,15 +120,16 @@ Workflow = {
 * [x] Fix error (this was introduced by us) - DONE: Added isShuttingDown flag, stop active workflows in deleteMap(), wrapped CP stop calls in pcall
 * [x] If step is switched manually (PREV/NEXT), AD/CP need to be stopped before - DONE: stopCurrentStep now unfreezes/unpauses before stopping, PREV/NEXT resume paused workflows
 
-### Milestone 6: Logo
-* [ ] Create a nice logo
-  * [ ] Convert to proper format
-* [ ] Create icons for the hud
-  * [ ] Pause: ||
-  * [ ] Resume: >
-  * [ ] Prev: <<
-  * [ ] Next: >>
-  * [ ] Stop: []
+### Milestone 6: Logo - COMPLETE
+* [x] Create a nice logo - DONE: modIcon.png (256x256) with workflow nodes and "WM" branding
+  * [x] Convert to proper format - DONE: PNG format (FS25 compatible)
+* [x] Create icons for the hud - DONE: 32x32 PNG icons in textures folder
+  * [x] Pause: || - textures/icon_pause.png
+  * [x] Resume: > - textures/icon_play.png
+  * [x] Prev: << - textures/icon_prev.png
+  * [x] Next: >> - textures/icon_next.png
+  * [x] Stop: [] - textures/icon_stop.png
+  * [x] Implement in HUD - DONE: WMHud.lua updated with icon overlays, hover effects, and color states
 
 ### Milestone 7: Refinement
 * [ ] The ingame help menu F1 overlays the gui

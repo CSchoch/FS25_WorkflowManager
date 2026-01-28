@@ -35,7 +35,7 @@ Voraussetzungen: AutoDrive, Courseplay
     </description>
     <version>1.0.0.0</version>
     <multiplayer supported="true" />
-    <!-- TODO: Create modIcon.dds (256x256 or 64x64 DDS icon) -->
+    <iconFilename>modIcon.png</iconFilename>
 
     <extraSourceFiles>
         <!-- Load spec first so it registers to vehicle types before vehicles are created -->

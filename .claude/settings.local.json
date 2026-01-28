@@ -5,7 +5,8 @@
       "Bash(findstr:*)",
       "Bash(unzip:*)",
       "Bash(find:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(dir \"C:\\\\Users\\\\Chef\\\\Documents\\\\My Games\\\\FarmingSimulator2025\\\\mods\\\\FS25_WorkflowManager\\\\textures\")"
     ]
   }
 }
