@@ -1,0 +1,62 @@
+/**
+ * FS25 Workflow Manager - Custom Styles
+ * Green farming theme
+ */
+
+:root {
+  --ifm-color-primary: #4a7c34;
+  --ifm-color-primary-dark: #42702f;
+  --ifm-color-primary-darker: #3e6a2c;
+  --ifm-color-primary-darkest: #335724;
+  --ifm-color-primary-light: #528839;
+  --ifm-color-primary-lighter: #568e3c;
+  --ifm-color-primary-lightest: #62a144;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #7cb342;
+  --ifm-color-primary-dark: #6fa23a;
+  --ifm-color-primary-darker: #699937;
+  --ifm-color-primary-darkest: #577e2d;
+  --ifm-color-primary-light: #89c04a;
+  --ifm-color-primary-lighter: #8fc44d;
+  --ifm-color-primary-lightest: #a1d161;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* Hero banner */
+.hero--primary {
+  background: linear-gradient(135deg, #2d5016 0%, #4a7c34 50%, #6b9b4d 100%);
+}
+
+/* Code blocks - Lua syntax */
+.prism-code {
+  font-size: 14px;
+}
+
+/* Table styling */
+table {
+  display: table;
+  width: 100%;
+}
+
+th {
+  background-color: var(--ifm-color-primary-lightest);
+  color: #fff;
+}
+
+[data-theme='dark'] th {
+  background-color: var(--ifm-color-primary-darkest);
+}
+
+/* Admonition styling */
+.admonition {
+  border-radius: 8px;
+}
+
+/* Feature icons */
+.features span {
+  display: block;
+}

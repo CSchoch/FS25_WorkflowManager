@@ -1,0 +1,13 @@
+# Website (Docusaurus)
+website/node_modules/
+website/build/
+website/.docusaurus/
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
