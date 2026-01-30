@@ -135,9 +135,10 @@ Workflow = {
 
 ### AutoDrive
 
-Key functions from `ExternalInterface.lua` and `GraphManager.lua`:
+Key functions from `ExternalInterface.lua`, `Specialization.lua` and `GraphManager.lua`:
 
 * **Start route**: `AutoDrive:StartDriving(vehicle, destinationID, unloadDestinationID, callBackObject, callBackFunction, callBackArg)`
+* **Stop route**: `vehicle:stopAutoDrive()` - proper stop with braking, cruise control off, module resets
 * **Pause route**: `AutoDrive:HoldDriving(vehicle)`
 * **Get destinations**: `AutoDrive:GetAvailableDestinations()` - returns `{markerID = {name, x, y, z, id}}`
 * **Check active**: `vehicle.ad.stateModule:isActive()`
@@ -229,6 +230,12 @@ FS25_WorkflowManager/
 - When AD finishes and restarts CP, executor continues monitoring CP
 - Step only completes when BOTH CP and AD are not running
 
+### Manual Step Switching (Prev/Next)
+- Uses `vehicle:stopAutoDrive()` for proper AD stopping (handles braking, cruise control, module resets)
+- AD→AD transitions use deferred start: waits ~1 second for AD to fully reset before starting new route
+- AD→CP transitions also defer CP start until AD is fully stopped
+- Tracked via `justStoppedAD` flag and `pendingADStart`/`pendingCPStart` in update loop
+
 ### GUI Input
 - Works both when walking and in a vehicle
 - Uses vehicle specialization (`WorkflowManagerSpec`) for in-vehicle input
@@ -253,4 +260,4 @@ FS25_WorkflowManager/
 ---
 
 **Status**: Phase 1 COMPLETE – Ready for Phase 2
-**Last updated**: 2026-01-28
+**Last updated**: 2026-01-30

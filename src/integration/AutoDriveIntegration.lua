@@ -630,37 +630,38 @@ function ADIntegration:stopRoute(vehicle)
 
     local stopped = false
 
-    -- Step 1: Stop the current mode's operation
-    if vehicle.ad.stateModule and vehicle.ad.stateModule.getCurrentMode then
-        local currentMode = vehicle.ad.stateModule:getCurrentMode()
-        if currentMode and currentMode.stop then
-            local success = pcall(function() currentMode:stop() end)
-            if success then stopped = true end
+    -- Primary method: Use AutoDrive's own stopAutoDrive function
+    -- This properly handles braking, cruise control, module resets, etc.
+    if vehicle.stopAutoDrive then
+        local success = pcall(function() vehicle:stopAutoDrive() end)
+        if success then
+            stopped = true
+            WMLogger:debug("Stopped via vehicle:stopAutoDrive()")
         end
     end
 
-    -- Step 2: ALWAYS clear the active state (mode:stop() doesn't always do this)
-    if vehicle.ad.stateModule and vehicle.ad.stateModule.setActive then
-        local success = pcall(function() vehicle.ad.stateModule:setActive(false) end)
-        if success then stopped = true end
-    end
+    -- Fallback: Manual stop if stopAutoDrive didn't work or isn't available
+    if not stopped or self:isRunning(vehicle) then
+        -- Stop the current mode's operation
+        if vehicle.ad.stateModule and vehicle.ad.stateModule.getCurrentMode then
+            local currentMode = vehicle.ad.stateModule:getCurrentMode()
+            if currentMode and currentMode.stop then
+                pcall(function() currentMode:stop() end)
+            end
+        end
 
-    -- Step 3: Try toggleStartStop if still running
-    if self:isRunning(vehicle) and vehicle.ad.stateModule and vehicle.ad.stateModule.toggleStartStop then
-        pcall(function() vehicle.ad.stateModule:toggleStartStop() end)
-        stopped = true
-    end
+        -- Clear the active state
+        if vehicle.ad.stateModule and vehicle.ad.stateModule.setActive then
+            pcall(function() vehicle.ad.stateModule:setActive(false) end)
+            stopped = true
+        end
 
-    -- Step 4: Try disableAutoDriveFunctions if still running
-    if self:isRunning(vehicle) and AutoDrive and AutoDrive.disableAutoDriveFunctions then
-        pcall(function() AutoDrive.disableAutoDriveFunctions(vehicle) end)
-        stopped = true
-    end
-
-    -- Step 5: Try stopCurrentAIJob as last resort
-    if self:isRunning(vehicle) and vehicle.stopCurrentAIJob then
-        pcall(function() vehicle:stopCurrentAIJob() end)
-        stopped = true
+        -- Disable cruise control
+        pcall(function()
+            if vehicle.setCruiseControlState then
+                vehicle:setCruiseControlState(Drivable.CRUISECONTROL_STATE_OFF)
+            end
+        end)
     end
 
     -- Verify the stop worked
