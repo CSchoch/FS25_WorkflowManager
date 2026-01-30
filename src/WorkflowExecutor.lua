@@ -297,49 +297,21 @@ function WMExecutor:executeCurrentStep(workflow)
             step.unloadTarget or "nil",
             step.fillType or "nil")
 
-        -- Check if next step is Courseplay - if so, configure AD to hand off to CP
-        local nextStep = workflow.steps[workflow.currentStep + 1]
-        local willHandoffToCP = false
-
-        if nextStep ~= nil and nextStep.type == WorkflowManager.STEP_COURSEPLAY then
-            WMLogger:info("Next step is Courseplay - configuring AD->CP handoff")
-
-            -- Pre-load the Courseplay course onto the vehicle
-            if not CPIntegration:hasCourse(vehicle) or true then  -- Always try to load correct course
-                WMLogger:info("Pre-loading Courseplay course for handoff: %s", nextStep.target or "nil")
-                local loadSuccess = CPIntegration:loadCourse(vehicle, nextStep.target)
-                if loadSuccess then
-                    -- Configure AutoDrive to start Courseplay when it completes
-                    -- Uses stateModule:setStartHelper(true) - AD will start CP automatically
-                    ADIntegration:setStartCPOnCompletion(vehicle, true)
-                    willHandoffToCP = true
-                    WMLogger:info("AD->CP handoff configured, course pre-loaded, setStartHelper enabled")
-                else
-                    WMLogger:warning("Failed to pre-load CP course, will start CP manually after AD completes")
-                end
-            end
-        end
-
-        local success = ADIntegration:startRoute(
-            vehicle,
-            step.target,
-            step.action,
-            step.unloadTarget,
-            step.fillType
-        )
-        if success then
+        -- If AutoDrive was just stopped (e.g., manual PREV/NEXT from another AD step),
+        -- we must wait for AD to fully reset before starting a new route.
+        -- isRunning() may return false immediately after setActive(false), but AD's internal
+        -- state may not be fully reset yet.
+        if ADIntegration:isRunning(vehicle) or activeData.justStoppedAD then
+            WMLogger:debug("Deferring AD start for reset (isRunning=%s, justStopped=%s)",
+                tostring(ADIntegration:isRunning(vehicle)), tostring(activeData.justStoppedAD or false))
             activeData.waitingForCompletion = true
             activeData.currentStepType = WorkflowManager.STEP_AUTODRIVE
-            activeData.willHandoffToCP = willHandoffToCP  -- Track that AD will start CP
-            WMLogger:info("AutoDrive step started successfully, waiting for completion (handoffToCP=%s)",
-                tostring(willHandoffToCP))
-        else
-            -- Clear handoff flag if AD failed to start
-            if willHandoffToCP then
-                ADIntegration:clearCPHandoff(vehicle)
-            end
-            self:handleStepError(workflow, "Failed to start AutoDrive route: " .. (step.target or "nil"))
+            activeData.pendingADStart = true
+            activeData.pendingADStartRetries = 0
+            return
         end
+
+        self:startAutoDriveStep(workflow, activeData, vehicle, step)
 
     elseif step.type == WorkflowManager.STEP_COURSEPLAY then
         -- Courseplay: The 'target' field specifies which course to load
@@ -393,6 +365,8 @@ function WMExecutor:stopCurrentStep(workflow)
             pcall(function() ADIntegration:resumeRoute(vehicle) end)
         end
         pcall(function() ADIntegration:stopRoute(vehicle) end)
+        -- Mark that we just stopped AD - next AD start needs to wait a frame
+        activeData.justStoppedAD = true
     elseif step.type == WorkflowManager.STEP_COURSEPLAY then
         -- During CP steps, AD may be running due to cyclic handoff (CP->AD for unload)
         -- Stop both AD and CP to ensure clean shutdown
@@ -406,6 +380,60 @@ function WMExecutor:stopCurrentStep(workflow)
             pcall(function() CPIntegration:resumeCourse(vehicle) end)
         end
         pcall(function() CPIntegration:stopCourse(vehicle) end)
+    end
+end
+
+---Start an AutoDrive step (extracted for reuse by deferred start)
+---@param workflow table Workflow
+---@param activeData table Active workflow data
+---@param vehicle table Vehicle
+---@param step table Step data
+function WMExecutor:startAutoDriveStep(workflow, activeData, vehicle, step)
+    -- Check if next step is Courseplay - if so, configure AD to hand off to CP
+    local nextStep = workflow.steps[workflow.currentStep + 1]
+    local willHandoffToCP = false
+
+    if nextStep ~= nil and nextStep.type == WorkflowManager.STEP_COURSEPLAY then
+        WMLogger:info("Next step is Courseplay - configuring AD->CP handoff")
+
+        -- Pre-load the Courseplay course onto the vehicle
+        if not CPIntegration:hasCourse(vehicle) or true then  -- Always try to load correct course
+            WMLogger:info("Pre-loading Courseplay course for handoff: %s", nextStep.target or "nil")
+            local loadSuccess = CPIntegration:loadCourse(vehicle, nextStep.target)
+            if loadSuccess then
+                -- Configure AutoDrive to start Courseplay when it completes
+                -- Uses stateModule:setStartHelper(true) - AD will start CP automatically
+                ADIntegration:setStartCPOnCompletion(vehicle, true)
+                willHandoffToCP = true
+                WMLogger:info("AD->CP handoff configured, course pre-loaded, setStartHelper enabled")
+            else
+                WMLogger:warning("Failed to pre-load CP course, will start CP manually after AD completes")
+            end
+        end
+    end
+
+    local success = ADIntegration:startRoute(
+        vehicle,
+        step.target,
+        step.action,
+        step.unloadTarget,
+        step.fillType
+    )
+    if success then
+        activeData.waitingForCompletion = true
+        activeData.currentStepType = WorkflowManager.STEP_AUTODRIVE
+        activeData.willHandoffToCP = willHandoffToCP  -- Track that AD will start CP
+        activeData.pendingADStart = nil
+        activeData.pendingADStartRetries = nil
+        activeData.justStoppedAD = nil  -- Clear the flag now that AD has started
+        WMLogger:info("AutoDrive step started successfully, waiting for completion (handoffToCP=%s)",
+            tostring(willHandoffToCP))
+    else
+        -- Clear handoff flag if AD failed to start
+        if willHandoffToCP then
+            ADIntegration:clearCPHandoff(vehicle)
+        end
+        self:handleStepError(workflow, "Failed to start AutoDrive route: " .. (step.target or "nil"))
     end
 end
 
@@ -637,6 +665,40 @@ function WMExecutor:update(dt)
                         WMLogger:debug("Waiting for AD to stop before starting CP (%d/20)", activeData.pendingCPStartRetries)
                     end
                 end
+            -- Handle deferred AD start: AD was just stopped (from another AD step) and needs to restart
+            elseif activeData.pendingADStart then
+                -- Always increment retry counter first - we need at least one wait cycle
+                -- for AD to fully reset internally (even if isRunning returns false immediately)
+                activeData.pendingADStartRetries = (activeData.pendingADStartRetries or 0) + 1
+
+                local adRunning = ADIntegration:isRunning(vehicle)
+                -- Require at least 2 cycles (1 second) for AD to fully reset, or until AD stops running
+                local minWaitCycles = 2
+                local readyToStart = not adRunning and activeData.pendingADStartRetries >= minWaitCycles
+
+                if readyToStart then
+                    -- AD has fully stopped and we've waited enough, now start the new AD route
+                    WMLogger:debug("AD reset complete - starting deferred step")
+                    activeData.pendingADStart = nil
+                    activeData.pendingADStartRetries = nil
+                    activeData.justStoppedAD = nil
+                    activeData.waitingForCompletion = false
+                    local step = workflow.steps[workflow.currentStep]
+                    if step then
+                        self:startAutoDriveStep(workflow, activeData, vehicle, step)
+                    end
+                elseif activeData.pendingADStartRetries > 20 then
+                    -- Give up after 20 checks (10 seconds) to avoid hanging
+                    WMLogger:warning("AutoDrive did not stop after 10s - forcing AD start")
+                    activeData.pendingADStart = nil
+                    activeData.pendingADStartRetries = nil
+                    activeData.justStoppedAD = nil
+                    activeData.waitingForCompletion = false
+                    local step = workflow.steps[workflow.currentStep]
+                    if step then
+                        self:startAutoDriveStep(workflow, activeData, vehicle, step)
+                    end
+                end
             else
                 -- Normal completion check
                 local isComplete = false
@@ -789,6 +851,8 @@ function WMExecutor:goToPreviousStep(workflow)
     activeData.pausedTrackingState = nil
     activeData.pendingCPStart = nil
     activeData.pendingCPStartRetries = nil
+    activeData.pendingADStart = nil
+    activeData.pendingADStartRetries = nil
 
     -- Resume workflow to running state if it was paused, then execute new step
     if wasPaused then
@@ -852,6 +916,8 @@ function WMExecutor:goToNextStep(workflow)
     activeData.pausedTrackingState = nil
     activeData.pendingCPStart = nil
     activeData.pendingCPStartRetries = nil
+    activeData.pendingADStart = nil
+    activeData.pendingADStartRetries = nil
 
     -- Resume workflow to running state if it was paused, then execute new step
     if wasPaused then

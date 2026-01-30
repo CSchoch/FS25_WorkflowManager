@@ -628,17 +628,50 @@ function ADIntegration:stopRoute(vehicle)
     -- Remove from pending callbacks
     self.pendingCallbacks[vehicle] = nil
 
-    -- Use stateModule to stop
+    local stopped = false
+
+    -- Step 1: Stop the current mode's operation
     if vehicle.ad.stateModule and vehicle.ad.stateModule.getCurrentMode then
         local currentMode = vehicle.ad.stateModule:getCurrentMode()
         if currentMode and currentMode.stop then
-            currentMode:stop()
-            WMLogger:stateChange("AutoDrive", "running", "stopped")
-            return true
+            local success = pcall(function() currentMode:stop() end)
+            if success then stopped = true end
         end
     end
 
-    return false
+    -- Step 2: ALWAYS clear the active state (mode:stop() doesn't always do this)
+    if vehicle.ad.stateModule and vehicle.ad.stateModule.setActive then
+        local success = pcall(function() vehicle.ad.stateModule:setActive(false) end)
+        if success then stopped = true end
+    end
+
+    -- Step 3: Try toggleStartStop if still running
+    if self:isRunning(vehicle) and vehicle.ad.stateModule and vehicle.ad.stateModule.toggleStartStop then
+        pcall(function() vehicle.ad.stateModule:toggleStartStop() end)
+        stopped = true
+    end
+
+    -- Step 4: Try disableAutoDriveFunctions if still running
+    if self:isRunning(vehicle) and AutoDrive and AutoDrive.disableAutoDriveFunctions then
+        pcall(function() AutoDrive.disableAutoDriveFunctions(vehicle) end)
+        stopped = true
+    end
+
+    -- Step 5: Try stopCurrentAIJob as last resort
+    if self:isRunning(vehicle) and vehicle.stopCurrentAIJob then
+        pcall(function() vehicle:stopCurrentAIJob() end)
+        stopped = true
+    end
+
+    -- Verify the stop worked
+    local stillRunning = self:isRunning(vehicle)
+    if stillRunning then
+        WMLogger:warning("AutoDrive still active after stop attempts")
+    else
+        WMLogger:stateChange("AutoDrive", "running", "stopped")
+    end
+
+    return stopped and not stillRunning
 end
 
 ---Pause AutoDrive for a vehicle
