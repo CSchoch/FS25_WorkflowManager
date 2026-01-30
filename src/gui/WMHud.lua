@@ -24,6 +24,7 @@ WMHud.ICON_HOVER = {0.165, 0.757, 0.929, 1}  -- Cyan/blue
 WMHud.ICON_DISABLED = {0.4, 0.4, 0.4, 0.5}
 WMHud.ICON_ACTIVE = {0.3, 0.9, 0.3, 1}  -- Green for active/resume
 
+
 -- Position & size in normalized screen coordinates (set on first draw)
 WMHud.x = nil
 WMHud.y = nil
@@ -169,10 +170,42 @@ function WMHud:getIsVisible()
 end
 
 function WMHud:getActiveWorkflow()
-    -- Find any active workflow
-    for _, data in pairs(WMExecutor.activeWorkflows) do
-        return data.workflow, data
+    -- Find active workflow for the current controlled vehicle
+    local controlledVehicle = g_currentMission.controlledVehicle
+
+    -- Fallback: try g_localPlayer:getCurrentVehicle()
+    if controlledVehicle == nil and g_localPlayer and g_localPlayer.getCurrentVehicle then
+        controlledVehicle = g_localPlayer:getCurrentVehicle()
     end
+
+    -- Fallback: try g_currentMission.playerSystem
+    if controlledVehicle == nil and g_currentMission.playerSystem then
+        local player = g_currentMission.playerSystem:getLocalPlayer()
+        if player and player.getCurrentVehicle then
+            controlledVehicle = player:getCurrentVehicle()
+        end
+    end
+
+    if controlledVehicle == nil then
+        return nil, nil
+    end
+
+    -- Get root vehicle (in case we're in an implement or attached vehicle)
+    local controlledRoot = controlledVehicle.rootVehicle or controlledVehicle
+
+    for _, data in pairs(WMExecutor.activeWorkflows) do
+        local workflowVehicle = data.vehicle
+        local workflowRoot = workflowVehicle and (workflowVehicle.rootVehicle or workflowVehicle)
+
+        -- Compare both direct reference and root vehicle
+        if workflowVehicle == controlledVehicle or
+           workflowVehicle == controlledRoot or
+           workflowRoot == controlledVehicle or
+           workflowRoot == controlledRoot then
+            return data.workflow, data
+        end
+    end
+
     return nil, nil
 end
 
