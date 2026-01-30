@@ -218,6 +218,21 @@ function WMHud:draw()
         return
     end
 
+    -- Don't draw if player is not in a vehicle
+    local controlledVehicle = g_currentMission.controlledVehicle
+    if controlledVehicle == nil and g_localPlayer and g_localPlayer.getCurrentVehicle then
+        controlledVehicle = g_localPlayer:getCurrentVehicle()
+    end
+    if controlledVehicle == nil and g_currentMission.playerSystem then
+        local player = g_currentMission.playerSystem:getLocalPlayer()
+        if player and player.getCurrentVehicle then
+            controlledVehicle = player:getCurrentVehicle()
+        end
+    end
+    if controlledVehicle == nil then
+        return
+    end
+
     -- Lazy-create overlays on first draw (guarantees screen globals exist)
     self:ensureOverlays()
 
