@@ -60,7 +60,6 @@ Voraussetzungen: AutoDrive, Courseplay
     <inputBinding>
         <actionBinding action="WM_TOGGLE_GUI">
             <binding device="KB_MOUSE_DEFAULT" input="KEY_lalt KEY_w" />
-            <binding device="KB_MOUSE_DEFAULT" input="KEY_F9" />
         </actionBinding>
         <actionBinding action="WM_START_WORKFLOW">
             <binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lalt KEY_w" />

@@ -220,9 +220,9 @@ end
 function WorkflowManager:setupInGameMenu()
     -- DISABLED: InGameMenu integration causes state corruption during cleanup
     -- that triggers errors in other mods like Courseplay.
-    -- Use standalone GUI (Alt+W or F9) instead.
+    -- Use standalone GUI (Alt+W) instead.
     -- TODO: Re-enable when proper page registration/unregistration is implemented
-    WMLogger:info("InGameMenu integration disabled - use Alt+W or F9 to open GUI")
+    WMLogger:info("InGameMenu integration disabled - use Alt+W to open GUI")
     return
 
     --[[ Original implementation preserved for future use:

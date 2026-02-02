@@ -211,7 +211,7 @@ Created → Queued → Running → Completed
 2. **Priority**: Can higher-priority workflows preempt?
 3. **Conflicts**: What if two workflows need same vehicle?
 4. **Errors**: How to handle errors in multi-vehicle scenario?
-5. **UI Location**: New ESC menu tab or extend existing dialogs?
+5. **UI Location**: Extend existing dialogs?
 
 ---
 
