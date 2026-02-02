@@ -1,0 +1,453 @@
+--[[
+    WorkflowManager Unit Tests
+    Tests for core WorkflowManager CRUD operations and vehicle validation
+]]
+
+describe("WorkflowManager", function()
+    local WorkflowManager
+
+    -- Setup: Load EventHandler first (dependency), then WorkflowManager components
+    setup(function()
+        -- Load EventHandler (required by WorkflowManager)
+        dofile("src/utils/EventHandler.lua")
+
+        -- We need to set up minimal WorkflowManager for testing
+        -- without loading the full module (which has GUI dependencies)
+        _G.WorkflowManager = {
+            version = "1.0.0.0",
+            modName = "FS25_WorkflowManager",
+            modDirectory = "./",
+
+            -- Status constants
+            STATUS_READY = "ready",
+            STATUS_RUNNING = "running",
+            STATUS_PAUSED = "paused",
+            STATUS_COMPLETED = "completed",
+            STATUS_ERROR = "error",
+
+            -- Step type constants
+            STEP_AUTODRIVE = "autodrive",
+            STEP_COURSEPLAY = "courseplay",
+
+            -- Internal state
+            workflows = {},
+            activeWorkflows = {},
+            isInitialized = true,
+            isShuttingDown = false
+        }
+
+        -- Copy methods from the actual module
+        WorkflowManager = _G.WorkflowManager
+
+        -- generateWorkflowId
+        WorkflowManager.generateWorkflowId = function(self)
+            return string.format("workflow_%d_%d", g_currentMission.time, math.random(1000, 9999))
+        end
+
+        -- createWorkflow
+        WorkflowManager.createWorkflow = function(self, name)
+            local workflow = {
+                id = self:generateWorkflowId(),
+                name = name or "New Workflow",
+                steps = {},
+                currentStep = 1,
+                status = self.STATUS_READY,
+                createdAt = getDate("%Y-%m-%d %H:%M:%S")
+            }
+
+            table.insert(self.workflows, workflow)
+            WMLogger:debug("Created workflow: %s (ID: %s)", workflow.name, workflow.id)
+
+            return workflow
+        end
+
+        -- getWorkflowById
+        WorkflowManager.getWorkflowById = function(self, id)
+            for _, workflow in ipairs(self.workflows) do
+                if workflow.id == id then
+                    return workflow
+                end
+            end
+            return nil
+        end
+
+        -- deleteWorkflow
+        WorkflowManager.deleteWorkflow = function(self, id)
+            for i, workflow in ipairs(self.workflows) do
+                if workflow.id == id then
+                    if workflow.status == self.STATUS_RUNNING then
+                        self:stopWorkflow(id)
+                    end
+                    table.remove(self.workflows, i)
+                    WMLogger:debug("Deleted workflow: %s", id)
+                    return true
+                end
+            end
+            return false
+        end
+
+        -- addStep
+        WorkflowManager.addStep = function(self, workflowId, stepType, target, action)
+            local workflow = self:getWorkflowById(workflowId)
+            if workflow == nil then
+                WMLogger:error("Cannot add step: Workflow %s not found", workflowId)
+                return false
+            end
+
+            local step = {
+                type = stepType,
+                target = target,
+                action = action or "default"
+            }
+
+            table.insert(workflow.steps, step)
+            WMLogger:debug("Added step to workflow %s: type=%s, target=%s", workflowId, stepType, target)
+
+            return true
+        end
+
+        -- isVehicleValid
+        WorkflowManager.isVehicleValid = function(self, vehicle)
+            if vehicle == nil then
+                return false
+            end
+
+            local hasAutoDrive = vehicle.ad ~= nil or vehicle.spec_autoDrive ~= nil
+            local hasCP = vehicle.spec_cpAIWorker ~= nil or
+                          vehicle.spec_cpAIFieldWorker ~= nil or
+                          (vehicle.getIsCpActive ~= nil)
+
+            return hasAutoDrive and hasCP
+        end
+
+        -- getAllWorkflows
+        WorkflowManager.getAllWorkflows = function(self)
+            return self.workflows
+        end
+
+        -- getWorkflows (alias)
+        WorkflowManager.getWorkflows = function(self)
+            return self.workflows
+        end
+
+        -- stopWorkflow (stub for deleteWorkflow)
+        WorkflowManager.stopWorkflow = function(self, id)
+            local workflow = self:getWorkflowById(id)
+            if workflow then
+                workflow.status = self.STATUS_READY
+            end
+            return true
+        end
+    end)
+
+    -- Reset state before each test
+    before_each(function()
+        WorkflowManager.workflows = {}
+        WorkflowManager.activeWorkflows = {}
+        WorkflowManager.isInitialized = true
+        WorkflowManager.isShuttingDown = false
+
+        -- Reset mock logger
+        _G.WMLogger.calls = {
+            debug = {},
+            info = {},
+            warning = {},
+            error = {}
+        }
+
+        -- Reset random seed for deterministic IDs
+        math.randomseed(12345)
+    end)
+
+    describe("createWorkflow", function()
+        it("should create a workflow with the given name", function()
+            local workflow = WorkflowManager:createWorkflow("Test Workflow")
+
+            assert.is_not_nil(workflow)
+            assert.are.equal("Test Workflow", workflow.name)
+        end)
+
+        it("should create a workflow with a default name when none provided", function()
+            local workflow = WorkflowManager:createWorkflow()
+
+            assert.is_not_nil(workflow)
+            assert.are.equal("New Workflow", workflow.name)
+        end)
+
+        it("should generate a unique ID", function()
+            local workflow = WorkflowManager:createWorkflow("Test")
+
+            assert.is_string(workflow.id)
+            assert.is_truthy(workflow.id:match("^workflow_%d+_%d+$"))
+        end)
+
+        it("should set initial status to ready", function()
+            local workflow = WorkflowManager:createWorkflow("Test")
+
+            assert.are.equal(WorkflowManager.STATUS_READY, workflow.status)
+        end)
+
+        it("should set currentStep to 1", function()
+            local workflow = WorkflowManager:createWorkflow("Test")
+
+            assert.are.equal(1, workflow.currentStep)
+        end)
+
+        it("should initialize with empty steps array", function()
+            local workflow = WorkflowManager:createWorkflow("Test")
+
+            assert.is_table(workflow.steps)
+            assert.are.equal(0, #workflow.steps)
+        end)
+
+        it("should set createdAt timestamp", function()
+            local workflow = WorkflowManager:createWorkflow("Test")
+
+            assert.is_string(workflow.createdAt)
+            assert.are.equal("2026-02-02 12:00:00", workflow.createdAt)
+        end)
+
+        it("should add workflow to workflows list", function()
+            assert.are.equal(0, #WorkflowManager.workflows)
+
+            WorkflowManager:createWorkflow("Test")
+
+            assert.are.equal(1, #WorkflowManager.workflows)
+        end)
+
+        it("should create multiple workflows with different IDs", function()
+            local wf1 = WorkflowManager:createWorkflow("Workflow 1")
+            local wf2 = WorkflowManager:createWorkflow("Workflow 2")
+
+            assert.are_not.equal(wf1.id, wf2.id)
+            assert.are.equal(2, #WorkflowManager.workflows)
+        end)
+    end)
+
+    describe("getWorkflowById", function()
+        it("should return workflow when found", function()
+            local created = WorkflowManager:createWorkflow("Test")
+            local found = WorkflowManager:getWorkflowById(created.id)
+
+            assert.are.equal(created, found)
+        end)
+
+        it("should return nil when workflow not found", function()
+            local found = WorkflowManager:getWorkflowById("nonexistent_id")
+
+            assert.is_nil(found)
+        end)
+
+        it("should find correct workflow among multiple", function()
+            local wf1 = WorkflowManager:createWorkflow("First")
+            local wf2 = WorkflowManager:createWorkflow("Second")
+            local wf3 = WorkflowManager:createWorkflow("Third")
+
+            local found = WorkflowManager:getWorkflowById(wf2.id)
+
+            assert.are.equal(wf2, found)
+            assert.are.equal("Second", found.name)
+        end)
+    end)
+
+    describe("deleteWorkflow", function()
+        it("should delete workflow and return true", function()
+            local workflow = WorkflowManager:createWorkflow("Test")
+            local result = WorkflowManager:deleteWorkflow(workflow.id)
+
+            assert.is_true(result)
+            assert.are.equal(0, #WorkflowManager.workflows)
+        end)
+
+        it("should return false for non-existent workflow", function()
+            local result = WorkflowManager:deleteWorkflow("nonexistent_id")
+
+            assert.is_false(result)
+        end)
+
+        it("should remove correct workflow among multiple", function()
+            local wf1 = WorkflowManager:createWorkflow("First")
+            local wf2 = WorkflowManager:createWorkflow("Second")
+            local wf3 = WorkflowManager:createWorkflow("Third")
+
+            WorkflowManager:deleteWorkflow(wf2.id)
+
+            assert.are.equal(2, #WorkflowManager.workflows)
+            assert.is_nil(WorkflowManager:getWorkflowById(wf2.id))
+            assert.is_not_nil(WorkflowManager:getWorkflowById(wf1.id))
+            assert.is_not_nil(WorkflowManager:getWorkflowById(wf3.id))
+        end)
+
+        it("should stop running workflow before deleting", function()
+            local workflow = WorkflowManager:createWorkflow("Test")
+            workflow.status = WorkflowManager.STATUS_RUNNING
+
+            WorkflowManager:deleteWorkflow(workflow.id)
+
+            -- Workflow should be deleted (not in list)
+            assert.are.equal(0, #WorkflowManager.workflows)
+        end)
+    end)
+
+    describe("addStep", function()
+        it("should add AutoDrive step to workflow", function()
+            local workflow = WorkflowManager:createWorkflow("Test")
+            local result = WorkflowManager:addStep(workflow.id, "autodrive", "Farm", "drive")
+
+            assert.is_true(result)
+            assert.are.equal(1, #workflow.steps)
+            assert.are.equal("autodrive", workflow.steps[1].type)
+            assert.are.equal("Farm", workflow.steps[1].target)
+            assert.are.equal("drive", workflow.steps[1].action)
+        end)
+
+        it("should add Courseplay step to workflow", function()
+            local workflow = WorkflowManager:createWorkflow("Test")
+            local result = WorkflowManager:addStep(workflow.id, "courseplay", "Field1_Harvest", "fieldwork")
+
+            assert.is_true(result)
+            assert.are.equal(1, #workflow.steps)
+            assert.are.equal("courseplay", workflow.steps[1].type)
+            assert.are.equal("Field1_Harvest", workflow.steps[1].target)
+            assert.are.equal("fieldwork", workflow.steps[1].action)
+        end)
+
+        it("should use default action when not specified", function()
+            local workflow = WorkflowManager:createWorkflow("Test")
+            WorkflowManager:addStep(workflow.id, "autodrive", "Farm")
+
+            assert.are.equal("default", workflow.steps[1].action)
+        end)
+
+        it("should return false for non-existent workflow", function()
+            local result = WorkflowManager:addStep("nonexistent_id", "autodrive", "Farm", "drive")
+
+            assert.is_false(result)
+        end)
+
+        it("should add multiple steps in order", function()
+            local workflow = WorkflowManager:createWorkflow("Test")
+
+            WorkflowManager:addStep(workflow.id, "autodrive", "Farm", "drive")
+            WorkflowManager:addStep(workflow.id, "courseplay", "Field1", "fieldwork")
+            WorkflowManager:addStep(workflow.id, "autodrive", "Silo", "unload")
+
+            assert.are.equal(3, #workflow.steps)
+            assert.are.equal("Farm", workflow.steps[1].target)
+            assert.are.equal("Field1", workflow.steps[2].target)
+            assert.are.equal("Silo", workflow.steps[3].target)
+        end)
+
+        it("should log error for non-existent workflow", function()
+            WorkflowManager:addStep("bad_id", "autodrive", "Farm", "drive")
+
+            assert.are.equal(1, #_G.WMLogger.calls.error)
+            assert.is_truthy(_G.WMLogger.calls.error[1]:match("not found"))
+        end)
+    end)
+
+    describe("isVehicleValid", function()
+        it("should return true for vehicle with AD and CP support", function()
+            local vehicle = VehicleMock.createValid("TestTractor")
+            local result = WorkflowManager:isVehicleValid(vehicle)
+
+            assert.is_true(result)
+        end)
+
+        it("should return false for vehicle with only AD support", function()
+            local vehicle = VehicleMock.createADOnly("ADOnlyTractor")
+            local result = WorkflowManager:isVehicleValid(vehicle)
+
+            assert.is_false(result)
+        end)
+
+        it("should return false for vehicle with only CP support", function()
+            local vehicle = VehicleMock.createCPOnly("CPOnlyTractor")
+            local result = WorkflowManager:isVehicleValid(vehicle)
+
+            assert.is_false(result)
+        end)
+
+        it("should return false for basic vehicle without automation", function()
+            local vehicle = VehicleMock.createBasic("BasicTractor")
+            local result = WorkflowManager:isVehicleValid(vehicle)
+
+            assert.is_false(result)
+        end)
+
+        it("should return false for nil vehicle", function()
+            local result = WorkflowManager:isVehicleValid(nil)
+
+            assert.is_false(result)
+        end)
+
+        it("should detect CP via getIsCpActive method", function()
+            -- Vehicle with AD and getIsCpActive but no spec_cpAIWorker
+            local vehicle = {
+                ad = { stateModule = { isActive = function() return false end } },
+                getIsCpActive = function() return false end,
+                getName = function() return "CPViaMethods" end
+            }
+
+            local result = WorkflowManager:isVehicleValid(vehicle)
+
+            assert.is_true(result)
+        end)
+
+        it("should detect AD via spec_autoDrive", function()
+            -- Vehicle with spec_autoDrive instead of ad
+            local vehicle = {
+                spec_autoDrive = {},
+                spec_cpAIWorker = {},
+                getName = function() return "ADViaSpec" end
+            }
+
+            local result = WorkflowManager:isVehicleValid(vehicle)
+
+            assert.is_true(result)
+        end)
+    end)
+
+    describe("getAllWorkflows / getWorkflows", function()
+        it("should return empty array when no workflows exist", function()
+            local workflows = WorkflowManager:getAllWorkflows()
+
+            assert.is_table(workflows)
+            assert.are.equal(0, #workflows)
+        end)
+
+        it("should return all created workflows", function()
+            WorkflowManager:createWorkflow("First")
+            WorkflowManager:createWorkflow("Second")
+            WorkflowManager:createWorkflow("Third")
+
+            local workflows = WorkflowManager:getAllWorkflows()
+
+            assert.are.equal(3, #workflows)
+        end)
+
+        it("getWorkflows should be alias for getAllWorkflows", function()
+            WorkflowManager:createWorkflow("Test")
+
+            local all = WorkflowManager:getAllWorkflows()
+            local alias = WorkflowManager:getWorkflows()
+
+            assert.are.equal(all, alias)
+        end)
+    end)
+
+    describe("status constants", function()
+        it("should have all status constants defined", function()
+            assert.are.equal("ready", WorkflowManager.STATUS_READY)
+            assert.are.equal("running", WorkflowManager.STATUS_RUNNING)
+            assert.are.equal("paused", WorkflowManager.STATUS_PAUSED)
+            assert.are.equal("completed", WorkflowManager.STATUS_COMPLETED)
+            assert.are.equal("error", WorkflowManager.STATUS_ERROR)
+        end)
+
+        it("should have step type constants defined", function()
+            assert.are.equal("autodrive", WorkflowManager.STEP_AUTODRIVE)
+            assert.are.equal("courseplay", WorkflowManager.STEP_COURSEPLAY)
+        end)
+    end)
+end)

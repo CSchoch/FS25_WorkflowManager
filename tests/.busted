@@ -1,0 +1,16 @@
+return {
+    default = {
+        verbose = true,
+        output = "utfTerminal",
+        pattern = "_spec",
+        ROOT = {"tests/specs"},
+        helper = "tests/mocks/init.lua"
+    },
+    ci = {
+        verbose = true,
+        output = "TAP",
+        pattern = "_spec",
+        ROOT = {"tests/specs"},
+        helper = "tests/mocks/init.lua"
+    }
+}
