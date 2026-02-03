@@ -4,9 +4,9 @@
 ]]
 
 describe("WMExecutor", function()
-    local WMExecutor
-    local testWorkflow
-    local testVehicle
+    -- Use globals for test fixtures to work with simple test runner
+    _G._testWorkflow = nil
+    _G._testVehicle = nil
 
     -- Setup: Load dependencies and create WMExecutor
     setup(function()
@@ -324,7 +324,7 @@ describe("WMExecutor", function()
         WMExecutor:init()
 
         -- Create a test workflow
-        testWorkflow = {
+        _G._testWorkflow = {
             id = "test_workflow_001",
             name = "Test Workflow",
             steps = {
@@ -337,7 +337,7 @@ describe("WMExecutor", function()
         }
 
         -- Create a test vehicle
-        testVehicle = VehicleMock.createValid("TestTractor")
+        _G._testVehicle = VehicleMock.createValid("TestTractor")
 
         -- Reset logger calls
         _G.WMLogger.calls = {
@@ -366,31 +366,31 @@ describe("WMExecutor", function()
 
     describe("startWorkflow", function()
         it("should start workflow and set status to running", function()
-            local result = WMExecutor:startWorkflow(testWorkflow, testVehicle)
+            local result = WMExecutor:startWorkflow(_G._testWorkflow, _G._testVehicle)
 
             assert.is_true(result)
-            assert.are.equal(WorkflowManager.STATUS_RUNNING, testWorkflow.status)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, _G._testWorkflow.status)
         end)
 
         it("should add workflow to activeWorkflows", function()
-            WMExecutor:startWorkflow(testWorkflow, testVehicle)
+            WMExecutor:startWorkflow(_G._testWorkflow, _G._testVehicle)
 
-            assert.is_true(WMExecutor:isWorkflowActive(testWorkflow.id))
+            assert.is_true(WMExecutor:isWorkflowActive(_G._testWorkflow.id))
             assert.are.equal(1, WMExecutor:getActiveWorkflowCount())
         end)
 
         it("should store vehicle in activeData", function()
-            WMExecutor:startWorkflow(testWorkflow, testVehicle)
+            WMExecutor:startWorkflow(_G._testWorkflow, _G._testVehicle)
 
-            local activeData = WMExecutor.activeWorkflows[testWorkflow.id]
-            assert.are.equal(testVehicle, activeData.vehicle)
+            local activeData = WMExecutor.activeWorkflows[_G._testWorkflow.id]
+            assert.are.equal(_G._testVehicle, activeData.vehicle)
         end)
 
         it("should reset currentStep to 1", function()
-            testWorkflow.currentStep = 3
-            WMExecutor:startWorkflow(testWorkflow, testVehicle)
+            _G._testWorkflow.currentStep = 3
+            WMExecutor:startWorkflow(_G._testWorkflow, _G._testVehicle)
 
-            assert.are.equal(1, testWorkflow.currentStep)
+            assert.are.equal(1, _G._testWorkflow.currentStep)
         end)
 
         it("should fire WORKFLOW_STARTED event", function()
@@ -402,34 +402,34 @@ describe("WMExecutor", function()
                 eventData = data
             end)
 
-            WMExecutor:startWorkflow(testWorkflow, testVehicle)
+            WMExecutor:startWorkflow(_G._testWorkflow, _G._testVehicle)
 
             assert.is_true(eventFired)
-            assert.are.equal(testWorkflow.id, eventData.workflowId)
+            assert.are.equal(_G._testWorkflow.id, eventData.workflowId)
         end)
 
         it("should return false for nil workflow", function()
-            local result = WMExecutor:startWorkflow(nil, testVehicle)
+            local result = WMExecutor:startWorkflow(nil, _G._testVehicle)
 
             assert.is_false(result)
         end)
 
         it("should return false for nil vehicle", function()
-            local result = WMExecutor:startWorkflow(testWorkflow, nil)
+            local result = WMExecutor:startWorkflow(_G._testWorkflow, nil)
 
             assert.is_false(result)
         end)
 
         it("should return false for workflow with no steps", function()
-            testWorkflow.steps = {}
-            local result = WMExecutor:startWorkflow(testWorkflow, testVehicle)
+            _G._testWorkflow.steps = {}
+            local result = WMExecutor:startWorkflow(_G._testWorkflow, _G._testVehicle)
 
             assert.is_false(result)
         end)
 
         it("should return false if workflow already active", function()
-            WMExecutor:startWorkflow(testWorkflow, testVehicle)
-            local result = WMExecutor:startWorkflow(testWorkflow, testVehicle)
+            WMExecutor:startWorkflow(_G._testWorkflow, _G._testVehicle)
+            local result = WMExecutor:startWorkflow(_G._testWorkflow, _G._testVehicle)
 
             assert.is_false(result)
         end)
@@ -437,20 +437,20 @@ describe("WMExecutor", function()
 
     describe("stopWorkflow", function()
         before_each(function()
-            WMExecutor:startWorkflow(testWorkflow, testVehicle)
+            WMExecutor:startWorkflow(_G._testWorkflow, _G._testVehicle)
         end)
 
         it("should stop running workflow", function()
-            local result = WMExecutor:stopWorkflow(testWorkflow)
+            local result = WMExecutor:stopWorkflow(_G._testWorkflow)
 
             assert.is_true(result)
-            assert.are.equal(WorkflowManager.STATUS_READY, testWorkflow.status)
+            assert.are.equal(WorkflowManager.STATUS_READY, _G._testWorkflow.status)
         end)
 
         it("should remove workflow from activeWorkflows", function()
-            WMExecutor:stopWorkflow(testWorkflow)
+            WMExecutor:stopWorkflow(_G._testWorkflow)
 
-            assert.is_false(WMExecutor:isWorkflowActive(testWorkflow.id))
+            assert.is_false(WMExecutor:isWorkflowActive(_G._testWorkflow.id))
             assert.are.equal(0, WMExecutor:getActiveWorkflowCount())
         end)
 
@@ -461,14 +461,14 @@ describe("WMExecutor", function()
                 eventFired = true
             end)
 
-            WMExecutor:stopWorkflow(testWorkflow)
+            WMExecutor:stopWorkflow(_G._testWorkflow)
 
             assert.is_true(eventFired)
         end)
 
         it("should return false for non-active workflow", function()
-            WMExecutor:stopWorkflow(testWorkflow)  -- Stop first
-            local result = WMExecutor:stopWorkflow(testWorkflow)  -- Try again
+            WMExecutor:stopWorkflow(_G._testWorkflow)  -- Stop first
+            local result = WMExecutor:stopWorkflow(_G._testWorkflow)  -- Try again
 
             assert.is_false(result)
         end)
@@ -482,30 +482,30 @@ describe("WMExecutor", function()
 
     describe("pauseWorkflow", function()
         before_each(function()
-            WMExecutor:startWorkflow(testWorkflow, testVehicle)
+            WMExecutor:startWorkflow(_G._testWorkflow, _G._testVehicle)
         end)
 
         it("should pause running workflow", function()
-            local result = WMExecutor:pauseWorkflow(testWorkflow)
+            local result = WMExecutor:pauseWorkflow(_G._testWorkflow)
 
             assert.is_true(result)
-            assert.are.equal(WorkflowManager.STATUS_PAUSED, testWorkflow.status)
+            assert.are.equal(WorkflowManager.STATUS_PAUSED, _G._testWorkflow.status)
         end)
 
         it("should store tracking state for resume", function()
-            local activeData = WMExecutor.activeWorkflows[testWorkflow.id]
+            local activeData = WMExecutor.activeWorkflows[_G._testWorkflow.id]
             activeData.waitingForCompletion = true
 
-            WMExecutor:pauseWorkflow(testWorkflow)
+            WMExecutor:pauseWorkflow(_G._testWorkflow)
 
             assert.is_not_nil(activeData.pausedTrackingState)
             assert.is_true(activeData.pausedTrackingState.waitingForCompletion)
         end)
 
         it("should set waitingForCompletion to false", function()
-            WMExecutor:pauseWorkflow(testWorkflow)
+            WMExecutor:pauseWorkflow(_G._testWorkflow)
 
-            local activeData = WMExecutor.activeWorkflows[testWorkflow.id]
+            local activeData = WMExecutor.activeWorkflows[_G._testWorkflow.id]
             assert.is_false(activeData.waitingForCompletion)
         end)
 
@@ -516,21 +516,21 @@ describe("WMExecutor", function()
                 eventFired = true
             end)
 
-            WMExecutor:pauseWorkflow(testWorkflow)
+            WMExecutor:pauseWorkflow(_G._testWorkflow)
 
             assert.is_true(eventFired)
         end)
 
         it("should return false for non-running workflow", function()
-            testWorkflow.status = WorkflowManager.STATUS_READY
-            local result = WMExecutor:pauseWorkflow(testWorkflow)
+            _G._testWorkflow.status = WorkflowManager.STATUS_READY
+            local result = WMExecutor:pauseWorkflow(_G._testWorkflow)
 
             assert.is_false(result)
         end)
 
         it("should return false for non-active workflow", function()
-            WMExecutor:stopWorkflow(testWorkflow)
-            local result = WMExecutor:pauseWorkflow(testWorkflow)
+            WMExecutor:stopWorkflow(_G._testWorkflow)
+            local result = WMExecutor:pauseWorkflow(_G._testWorkflow)
 
             assert.is_false(result)
         end)
@@ -538,21 +538,21 @@ describe("WMExecutor", function()
 
     describe("resumeWorkflow", function()
         before_each(function()
-            WMExecutor:startWorkflow(testWorkflow, testVehicle)
-            WMExecutor:pauseWorkflow(testWorkflow)
+            WMExecutor:startWorkflow(_G._testWorkflow, _G._testVehicle)
+            WMExecutor:pauseWorkflow(_G._testWorkflow)
         end)
 
         it("should resume paused workflow", function()
-            local result = WMExecutor:resumeWorkflow(testWorkflow)
+            local result = WMExecutor:resumeWorkflow(_G._testWorkflow)
 
             assert.is_true(result)
-            assert.are.equal(WorkflowManager.STATUS_RUNNING, testWorkflow.status)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, _G._testWorkflow.status)
         end)
 
         it("should restore tracking state", function()
-            local activeData = WMExecutor.activeWorkflows[testWorkflow.id]
+            local activeData = WMExecutor.activeWorkflows[_G._testWorkflow.id]
 
-            WMExecutor:resumeWorkflow(testWorkflow)
+            WMExecutor:resumeWorkflow(_G._testWorkflow)
 
             assert.is_nil(activeData.pausedTrackingState)
         end)
@@ -564,14 +564,14 @@ describe("WMExecutor", function()
                 eventFired = true
             end)
 
-            WMExecutor:resumeWorkflow(testWorkflow)
+            WMExecutor:resumeWorkflow(_G._testWorkflow)
 
             assert.is_true(eventFired)
         end)
 
         it("should return false for non-paused workflow", function()
-            WMExecutor:resumeWorkflow(testWorkflow)  -- Resume to running
-            local result = WMExecutor:resumeWorkflow(testWorkflow)  -- Try again
+            WMExecutor:resumeWorkflow(_G._testWorkflow)  -- Resume to running
+            local result = WMExecutor:resumeWorkflow(_G._testWorkflow)  -- Try again
 
             assert.is_false(result)
         end)
@@ -579,15 +579,15 @@ describe("WMExecutor", function()
 
     describe("goToPreviousStep", function()
         before_each(function()
-            WMExecutor:startWorkflow(testWorkflow, testVehicle)
-            testWorkflow.currentStep = 2  -- Start at step 2
+            WMExecutor:startWorkflow(_G._testWorkflow, _G._testVehicle)
+            _G._testWorkflow.currentStep = 2  -- Start at step 2
         end)
 
         it("should move to previous step", function()
-            local result = WMExecutor:goToPreviousStep(testWorkflow)
+            local result = WMExecutor:goToPreviousStep(_G._testWorkflow)
 
             assert.is_true(result)
-            assert.are.equal(1, testWorkflow.currentStep)
+            assert.are.equal(1, _G._testWorkflow.currentStep)
         end)
 
         it("should fire STEP_CHANGED event", function()
@@ -597,44 +597,44 @@ describe("WMExecutor", function()
                 eventData = data
             end)
 
-            WMExecutor:goToPreviousStep(testWorkflow)
+            WMExecutor:goToPreviousStep(_G._testWorkflow)
 
             assert.is_not_nil(eventData)
             assert.are.equal("previous", eventData.direction)
         end)
 
         it("should return false at first step", function()
-            testWorkflow.currentStep = 1
-            local result = WMExecutor:goToPreviousStep(testWorkflow)
+            _G._testWorkflow.currentStep = 1
+            local result = WMExecutor:goToPreviousStep(_G._testWorkflow)
 
             assert.is_false(result)
         end)
 
         it("should return false for non-active workflow", function()
-            WMExecutor:stopWorkflow(testWorkflow)
-            local result = WMExecutor:goToPreviousStep(testWorkflow)
+            WMExecutor:stopWorkflow(_G._testWorkflow)
+            local result = WMExecutor:goToPreviousStep(_G._testWorkflow)
 
             assert.is_false(result)
         end)
 
         it("should resume from paused when navigating", function()
-            WMExecutor:pauseWorkflow(testWorkflow)
-            WMExecutor:goToPreviousStep(testWorkflow)
+            WMExecutor:pauseWorkflow(_G._testWorkflow)
+            WMExecutor:goToPreviousStep(_G._testWorkflow)
 
-            assert.are.equal(WorkflowManager.STATUS_RUNNING, testWorkflow.status)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, _G._testWorkflow.status)
         end)
     end)
 
     describe("goToNextStep", function()
         before_each(function()
-            WMExecutor:startWorkflow(testWorkflow, testVehicle)
+            WMExecutor:startWorkflow(_G._testWorkflow, _G._testVehicle)
         end)
 
         it("should move to next step", function()
-            local result = WMExecutor:goToNextStep(testWorkflow)
+            local result = WMExecutor:goToNextStep(_G._testWorkflow)
 
             assert.is_true(result)
-            assert.are.equal(2, testWorkflow.currentStep)
+            assert.are.equal(2, _G._testWorkflow.currentStep)
         end)
 
         it("should fire STEP_CHANGED event", function()
@@ -644,37 +644,37 @@ describe("WMExecutor", function()
                 eventData = data
             end)
 
-            WMExecutor:goToNextStep(testWorkflow)
+            WMExecutor:goToNextStep(_G._testWorkflow)
 
             assert.is_not_nil(eventData)
             assert.are.equal("next", eventData.direction)
         end)
 
         it("should return false at last step", function()
-            testWorkflow.currentStep = 3  -- Last step
-            local result = WMExecutor:goToNextStep(testWorkflow)
+            _G._testWorkflow.currentStep = 3  -- Last step
+            local result = WMExecutor:goToNextStep(_G._testWorkflow)
 
             assert.is_false(result)
         end)
 
         it("should return false for non-active workflow", function()
-            WMExecutor:stopWorkflow(testWorkflow)
-            local result = WMExecutor:goToNextStep(testWorkflow)
+            WMExecutor:stopWorkflow(_G._testWorkflow)
+            local result = WMExecutor:goToNextStep(_G._testWorkflow)
 
             assert.is_false(result)
         end)
 
         it("should resume from paused when navigating", function()
-            WMExecutor:pauseWorkflow(testWorkflow)
-            WMExecutor:goToNextStep(testWorkflow)
+            WMExecutor:pauseWorkflow(_G._testWorkflow)
+            WMExecutor:goToNextStep(_G._testWorkflow)
 
-            assert.are.equal(WorkflowManager.STATUS_RUNNING, testWorkflow.status)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, _G._testWorkflow.status)
         end)
     end)
 
     describe("onStepCompleted", function()
         before_each(function()
-            WMExecutor:startWorkflow(testWorkflow, testVehicle)
+            WMExecutor:startWorkflow(_G._testWorkflow, _G._testVehicle)
         end)
 
         it("should fire STEP_COMPLETED event", function()
@@ -684,49 +684,49 @@ describe("WMExecutor", function()
                 eventFired = true
             end)
 
-            WMExecutor:onStepCompleted(testWorkflow)
+            WMExecutor:onStepCompleted(_G._testWorkflow)
 
             assert.is_true(eventFired)
         end)
 
         it("should advance to next step", function()
-            WMExecutor:onStepCompleted(testWorkflow)
+            WMExecutor:onStepCompleted(_G._testWorkflow)
 
-            assert.are.equal(2, testWorkflow.currentStep)
+            assert.are.equal(2, _G._testWorkflow.currentStep)
         end)
 
         it("should complete workflow after last step", function()
-            testWorkflow.currentStep = 3  -- Last step
+            _G._testWorkflow.currentStep = 3  -- Last step
 
-            WMExecutor:onStepCompleted(testWorkflow)
+            WMExecutor:onStepCompleted(_G._testWorkflow)
 
-            assert.are.equal(WorkflowManager.STATUS_COMPLETED, testWorkflow.status)
-            assert.is_false(WMExecutor:isWorkflowActive(testWorkflow.id))
+            assert.are.equal(WorkflowManager.STATUS_COMPLETED, _G._testWorkflow.status)
+            assert.is_false(WMExecutor:isWorkflowActive(_G._testWorkflow.id))
         end)
     end)
 
     describe("onWorkflowCompleted", function()
         before_each(function()
-            WMExecutor:startWorkflow(testWorkflow, testVehicle)
+            WMExecutor:startWorkflow(_G._testWorkflow, _G._testVehicle)
         end)
 
         it("should set status to completed", function()
-            WMExecutor:onWorkflowCompleted(testWorkflow)
+            WMExecutor:onWorkflowCompleted(_G._testWorkflow)
 
-            assert.are.equal(WorkflowManager.STATUS_COMPLETED, testWorkflow.status)
+            assert.are.equal(WorkflowManager.STATUS_COMPLETED, _G._testWorkflow.status)
         end)
 
         it("should reset currentStep to 1", function()
-            testWorkflow.currentStep = 3
-            WMExecutor:onWorkflowCompleted(testWorkflow)
+            _G._testWorkflow.currentStep = 3
+            WMExecutor:onWorkflowCompleted(_G._testWorkflow)
 
-            assert.are.equal(1, testWorkflow.currentStep)
+            assert.are.equal(1, _G._testWorkflow.currentStep)
         end)
 
         it("should remove from activeWorkflows", function()
-            WMExecutor:onWorkflowCompleted(testWorkflow)
+            WMExecutor:onWorkflowCompleted(_G._testWorkflow)
 
-            assert.is_false(WMExecutor:isWorkflowActive(testWorkflow.id))
+            assert.is_false(WMExecutor:isWorkflowActive(_G._testWorkflow.id))
         end)
 
         it("should fire WORKFLOW_COMPLETED event", function()
@@ -736,10 +736,10 @@ describe("WMExecutor", function()
                 eventData = data
             end)
 
-            WMExecutor:onWorkflowCompleted(testWorkflow)
+            WMExecutor:onWorkflowCompleted(_G._testWorkflow)
 
             assert.is_not_nil(eventData)
-            assert.are.equal(testWorkflow.id, eventData.workflowId)
+            assert.are.equal(_G._testWorkflow.id, eventData.workflowId)
         end)
     end)
 
@@ -749,7 +749,7 @@ describe("WMExecutor", function()
         end)
 
         it("should return correct count", function()
-            WMExecutor:startWorkflow(testWorkflow, testVehicle)
+            WMExecutor:startWorkflow(_G._testWorkflow, _G._testVehicle)
 
             local workflow2 = {
                 id = "test_workflow_002",
@@ -771,9 +771,9 @@ describe("WMExecutor", function()
         end)
 
         it("should return true for active workflow", function()
-            WMExecutor:startWorkflow(testWorkflow, testVehicle)
+            WMExecutor:startWorkflow(_G._testWorkflow, _G._testVehicle)
 
-            assert.is_true(WMExecutor:isWorkflowActive(testWorkflow.id))
+            assert.is_true(WMExecutor:isWorkflowActive(_G._testWorkflow.id))
         end)
     end)
 end)

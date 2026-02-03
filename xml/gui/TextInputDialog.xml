@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
-<GUI onOpen="onOpen" onClose="onClose" onCreate="onCreate">
+<GUI inputContext="DIALOG_WMTextInputDialog" onOpen="onOpen" onClose="onClose" onCreate="onCreate">
     <GuiElement profile="newLayer"/>
     <Bitmap profile="dialogFullscreenBg"/>
     <GuiElement profile="fs25_dialogBg" size="600px 240px">

@@ -6,7 +6,10 @@
       "Bash(unzip:*)",
       "Bash(find:*)",
       "WebSearch",
-      "Bash(dir \"C:\\\\Users\\\\Chef\\\\Documents\\\\My Games\\\\FarmingSimulator2025\\\\mods\\\\FS25_WorkflowManager\\\\textures\")"
+      "Bash(dir \"C:\\\\Users\\\\Chef\\\\Documents\\\\My Games\\\\FarmingSimulator2025\\\\mods\\\\FS25_WorkflowManager\\\\textures\")",
+      "Bash(\"/c/Program Files \\(x86\\)/Lua/5.1/lua.exe\" tests/run_tests.lua)",
+      "Bash(\"/c/Program Files \\(x86\\)/Lua/5.1/lua.exe\":*)",
+      "Bash(\"/c/Program Files \\(x86\\)/Lua/5.1/lua.exe\" -e:*)"
     ]
   }
 }

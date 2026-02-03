@@ -5,25 +5,28 @@
 
 describe("WMLogger", function()
     local WMLogger
-    local capturedOutput = {}
+    local originalPrint = print  -- Preserve original print for test runner
+
+    -- Global captured output (accessible from all scopes)
+    _G._loggerTestOutput = {}
+
+    -- Custom print that captures AND outputs
+    local function capturingPrint(...)
+        table.insert(_G._loggerTestOutput, table.concat({...}, " "))
+    end
 
     -- Setup: Load the actual Logger source
     setup(function()
-        -- Mock print to capture output
-        _G.print = function(...)
-            table.insert(capturedOutput, table.concat({...}, " "))
-        end
-
         -- Mock Logging object (FS25's logging system)
         _G.Logging = {
             info = function(format, ...)
-                table.insert(capturedOutput, string.format("[INFO] " .. format, ...))
+                table.insert(_G._loggerTestOutput, string.format("[INFO] " .. format, ...))
             end,
             warning = function(format, ...)
-                table.insert(capturedOutput, string.format("[WARNING] " .. format, ...))
+                table.insert(_G._loggerTestOutput, string.format("[WARNING] " .. format, ...))
             end,
             error = function(format, ...)
-                table.insert(capturedOutput, string.format("[ERROR] " .. format, ...))
+                table.insert(_G._loggerTestOutput, string.format("[ERROR] " .. format, ...))
             end
         }
 
@@ -35,14 +38,23 @@ describe("WMLogger", function()
             shouldLogStateChanges = function() return false end
         }
 
+        -- Temporarily override print to capture output during Logger load
+        local tempPrint = _G.print
+        _G.print = capturingPrint
+
         -- Load the Logger source
         dofile("src/utils/Logger.lua")
         WMLogger = _G.WMLogger
+
+        -- Restore print for test runner
+        _G.print = tempPrint
     end)
 
     -- Reset state before each test
     before_each(function()
-        capturedOutput = {}
+        _G._loggerTestOutput = {}
+        -- Set up print capture for this test
+        _G.print = capturingPrint
         WMLogger.currentLevel = WMLogger.LEVEL_INFO
         WMLogger.initializedFromConfig = false
     end)
@@ -90,31 +102,31 @@ describe("WMLogger", function()
             WMLogger:setLevel(WMLogger.LEVEL_DEBUG)
             WMLogger:debug("Test debug message")
 
-            assert.are.equal(1, #capturedOutput)
-            assert.is_truthy(capturedOutput[1]:match("DEBUG"))
-            assert.is_truthy(capturedOutput[1]:match("Test debug message"))
+            assert.are.equal(1, #_G._loggerTestOutput)
+            assert.is_truthy(_G._loggerTestOutput[1]:match("DEBUG"))
+            assert.is_truthy(_G._loggerTestOutput[1]:match("Test debug message"))
         end)
 
         it("should NOT output when level is INFO", function()
             WMLogger:setLevel(WMLogger.LEVEL_INFO)
             WMLogger:debug("Test debug message")
 
-            assert.are.equal(0, #capturedOutput)
+            assert.are.equal(0, #_G._loggerTestOutput)
         end)
 
         it("should format message with arguments", function()
             WMLogger:setLevel(WMLogger.LEVEL_DEBUG)
             WMLogger:debug("Value: %d, Name: %s", 42, "test")
 
-            assert.is_truthy(capturedOutput[1]:match("Value: 42"))
-            assert.is_truthy(capturedOutput[1]:match("Name: test"))
+            assert.is_truthy(_G._loggerTestOutput[1]:match("Value: 42"))
+            assert.is_truthy(_G._loggerTestOutput[1]:match("Name: test"))
         end)
 
         it("should include prefix", function()
             WMLogger:setLevel(WMLogger.LEVEL_DEBUG)
             WMLogger:debug("Test")
 
-            assert.is_truthy(capturedOutput[1]:match("%[WorkflowManager%]"))
+            assert.is_truthy(_G._loggerTestOutput[1]:match("%[WorkflowManager%]"))
         end)
     end)
 
@@ -123,21 +135,21 @@ describe("WMLogger", function()
             WMLogger:setLevel(WMLogger.LEVEL_INFO)
             WMLogger:info("Test info message")
 
-            assert.are.equal(1, #capturedOutput)
-            assert.is_truthy(capturedOutput[1]:match("INFO"))
+            assert.are.equal(1, #_G._loggerTestOutput)
+            assert.is_truthy(_G._loggerTestOutput[1]:match("INFO"))
         end)
 
         it("should NOT output when level is WARNING", function()
             WMLogger:setLevel(WMLogger.LEVEL_WARNING)
             WMLogger:info("Test info message")
 
-            assert.are.equal(0, #capturedOutput)
+            assert.are.equal(0, #_G._loggerTestOutput)
         end)
 
         it("should format message with arguments", function()
             WMLogger:info("Count: %d", 123)
 
-            assert.is_truthy(capturedOutput[1]:match("Count: 123"))
+            assert.is_truthy(_G._loggerTestOutput[1]:match("Count: 123"))
         end)
     end)
 
@@ -146,21 +158,21 @@ describe("WMLogger", function()
             WMLogger:setLevel(WMLogger.LEVEL_WARNING)
             WMLogger:warning("Test warning message")
 
-            assert.are.equal(1, #capturedOutput)
-            assert.is_truthy(capturedOutput[1]:match("WARNING"))
+            assert.are.equal(1, #_G._loggerTestOutput)
+            assert.is_truthy(_G._loggerTestOutput[1]:match("WARNING"))
         end)
 
         it("should NOT output when level is ERROR", function()
             WMLogger:setLevel(WMLogger.LEVEL_ERROR)
             WMLogger:warning("Test warning message")
 
-            assert.are.equal(0, #capturedOutput)
+            assert.are.equal(0, #_G._loggerTestOutput)
         end)
 
         it("should format message with arguments", function()
             WMLogger:warning("File not found: %s", "config.xml")
 
-            assert.is_truthy(capturedOutput[1]:match("File not found: config.xml"))
+            assert.is_truthy(_G._loggerTestOutput[1]:match("File not found: config.xml"))
         end)
     end)
 
@@ -169,8 +181,8 @@ describe("WMLogger", function()
             WMLogger:setLevel(WMLogger.LEVEL_ERROR)
             WMLogger:error("Test error message")
 
-            assert.are.equal(1, #capturedOutput)
-            assert.is_truthy(capturedOutput[1]:match("ERROR"))
+            assert.are.equal(1, #_G._loggerTestOutput)
+            assert.is_truthy(_G._loggerTestOutput[1]:match("ERROR"))
         end)
 
         it("should output at all log levels", function()
@@ -182,11 +194,11 @@ describe("WMLogger", function()
             }
 
             for _, level in ipairs(levels) do
-                capturedOutput = {}
+                _G._loggerTestOutput = {}
                 WMLogger:setLevel(level)
                 WMLogger:error("Error at level %d", level)
 
-                assert.are.equal(1, #capturedOutput,
+                assert.are.equal(1, #_G._loggerTestOutput,
                     "Error should output at level " .. level)
             end
         end)
@@ -194,8 +206,8 @@ describe("WMLogger", function()
         it("should format message with arguments", function()
             WMLogger:error("Failed to load: %s (code: %d)", "file.xml", 404)
 
-            assert.is_truthy(capturedOutput[1]:match("Failed to load: file.xml"))
-            assert.is_truthy(capturedOutput[1]:match("code: 404"))
+            assert.is_truthy(_G._loggerTestOutput[1]:match("Failed to load: file.xml"))
+            assert.is_truthy(_G._loggerTestOutput[1]:match("code: 404"))
         end)
     end)
 
@@ -207,28 +219,28 @@ describe("WMLogger", function()
         it("should handle message without arguments", function()
             WMLogger:debug("Simple message")
 
-            assert.is_truthy(capturedOutput[1]:match("Simple message"))
+            assert.is_truthy(_G._loggerTestOutput[1]:match("Simple message"))
         end)
 
         it("should handle string formatting", function()
             WMLogger:debug("Hello %s!", "World")
 
-            assert.is_truthy(capturedOutput[1]:match("Hello World!"))
+            assert.is_truthy(_G._loggerTestOutput[1]:match("Hello World!"))
         end)
 
         it("should handle number formatting", function()
             WMLogger:debug("Integer: %d, Float: %.2f", 42, 3.14159)
 
-            assert.is_truthy(capturedOutput[1]:match("Integer: 42"))
-            assert.is_truthy(capturedOutput[1]:match("Float: 3.14"))
+            assert.is_truthy(_G._loggerTestOutput[1]:match("Integer: 42"))
+            assert.is_truthy(_G._loggerTestOutput[1]:match("Float: 3.14"))
         end)
 
         it("should handle multiple arguments", function()
             WMLogger:debug("A=%s B=%d C=%s", "one", 2, "three")
 
-            assert.is_truthy(capturedOutput[1]:match("A=one"))
-            assert.is_truthy(capturedOutput[1]:match("B=2"))
-            assert.is_truthy(capturedOutput[1]:match("C=three"))
+            assert.is_truthy(_G._loggerTestOutput[1]:match("A=one"))
+            assert.is_truthy(_G._loggerTestOutput[1]:match("B=2"))
+            assert.is_truthy(_G._loggerTestOutput[1]:match("C=three"))
         end)
     end)
 
@@ -290,10 +302,10 @@ describe("WMLogger", function()
 
             WMLogger:apiCall("AutoDrive", "StartDriving", "vehicle1", "destination")
 
-            assert.are.equal(1, #capturedOutput)
-            assert.is_truthy(capturedOutput[1]:match("API"))
-            assert.is_truthy(capturedOutput[1]:match("AutoDrive"))
-            assert.is_truthy(capturedOutput[1]:match("StartDriving"))
+            assert.are.equal(1, #_G._loggerTestOutput)
+            assert.is_truthy(_G._loggerTestOutput[1]:match("API"))
+            assert.is_truthy(_G._loggerTestOutput[1]:match("AutoDrive"))
+            assert.is_truthy(_G._loggerTestOutput[1]:match("StartDriving"))
         end)
 
         it("should NOT log API calls when disabled", function()
@@ -301,7 +313,7 @@ describe("WMLogger", function()
 
             WMLogger:apiCall("AutoDrive", "StartDriving")
 
-            assert.are.equal(0, #capturedOutput)
+            assert.are.equal(0, #_G._loggerTestOutput)
         end)
     end)
 
@@ -311,9 +323,9 @@ describe("WMLogger", function()
 
             WMLogger:event("workflowStarted", { workflowId = "wf001" })
 
-            assert.are.equal(1, #capturedOutput)
-            assert.is_truthy(capturedOutput[1]:match("EVENT"))
-            assert.is_truthy(capturedOutput[1]:match("workflowStarted"))
+            assert.are.equal(1, #_G._loggerTestOutput)
+            assert.is_truthy(_G._loggerTestOutput[1]:match("EVENT"))
+            assert.is_truthy(_G._loggerTestOutput[1]:match("workflowStarted"))
         end)
 
         it("should NOT log events when disabled", function()
@@ -321,7 +333,7 @@ describe("WMLogger", function()
 
             WMLogger:event("workflowStarted", { workflowId = "wf001" })
 
-            assert.are.equal(0, #capturedOutput)
+            assert.are.equal(0, #_G._loggerTestOutput)
         end)
 
         it("should handle nil data", function()
@@ -339,10 +351,10 @@ describe("WMLogger", function()
 
             WMLogger:stateChange("Workflow", "ready", "running")
 
-            assert.are.equal(1, #capturedOutput)
-            assert.is_truthy(capturedOutput[1]:match("STATE"))
-            assert.is_truthy(capturedOutput[1]:match("ready"))
-            assert.is_truthy(capturedOutput[1]:match("running"))
+            assert.are.equal(1, #_G._loggerTestOutput)
+            assert.is_truthy(_G._loggerTestOutput[1]:match("STATE"))
+            assert.is_truthy(_G._loggerTestOutput[1]:match("ready"))
+            assert.is_truthy(_G._loggerTestOutput[1]:match("running"))
         end)
 
         it("should NOT log state changes when disabled", function()
@@ -350,7 +362,7 @@ describe("WMLogger", function()
 
             WMLogger:stateChange("Workflow", "ready", "running")
 
-            assert.are.equal(0, #capturedOutput)
+            assert.are.equal(0, #_G._loggerTestOutput)
         end)
 
         it("should handle nil oldState", function()
@@ -360,7 +372,7 @@ describe("WMLogger", function()
                 WMLogger:stateChange("Workflow", nil, "running")
             end)
 
-            assert.is_truthy(capturedOutput[1]:match("-> running"))
+            assert.is_truthy(_G._loggerTestOutput[1]:match("-> running"))
         end)
     end)
 end)
