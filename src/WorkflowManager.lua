@@ -104,6 +104,7 @@ function WorkflowManager:init()
 
     -- Subscribe to workflow events to show/hide HUD automatically
     WMEventHandler:subscribe(WMEventHandler.EVENT_WORKFLOW_STARTED, self, self.onWorkflowStartedEvent)
+    WMEventHandler:subscribe(WMEventHandler.EVENT_WORKFLOW_RESUMED, self, self.onWorkflowResumedEvent)
     WMEventHandler:subscribe(WMEventHandler.EVENT_WORKFLOW_STOPPED, self, self.onWorkflowStoppedEvent)
     WMEventHandler:subscribe(WMEventHandler.EVENT_WORKFLOW_COMPLETED, self, self.onWorkflowCompletedEvent)
 
@@ -549,6 +550,32 @@ function WorkflowManager:onWorkflowStartedEvent(eventType, data)
     end
 end
 
+---Called when a workflow is resumed - show HUD
+---@param eventType string Event type
+---@param data table Event data
+function WorkflowManager:onWorkflowResumedEvent(eventType, data)
+    WMLogger:info("Workflow resumed event received for: %s", tostring(data.workflowId))
+
+    -- Get the vehicle for this workflow
+    local activeData = WMExecutor.activeWorkflows[data.workflowId]
+    if activeData and activeData.vehicle then
+        WMLogger:info("Showing HUD for resumed workflow vehicle")
+        WMHud:show(activeData.vehicle)
+    else
+        -- Fallback: try to get current vehicle
+        local currentVehicle = g_currentMission.controlledVehicle
+        if currentVehicle == nil and g_localPlayer and g_localPlayer.getCurrentVehicle then
+            currentVehicle = g_localPlayer:getCurrentVehicle()
+        end
+        if currentVehicle then
+            WMLogger:info("Showing HUD for current vehicle (fallback)")
+            WMHud:show(currentVehicle)
+        else
+            WMLogger:warning("Cannot show HUD - no vehicle found")
+        end
+    end
+end
+
 ---Called when a workflow stops - hide HUD if no more active workflows for this vehicle
 ---@param eventType string Event type
 ---@param data table Event data
@@ -828,6 +855,68 @@ function WorkflowManager:resumeWorkflow(workflowId)
     end
 
     return WMExecutor:resumeWorkflow(workflow)
+end
+
+---Resume a workflow from its saved state (after game load)
+---Uses the current vehicle the player is driving
+---@param workflowId string Workflow ID to resume
+---@return boolean success True if resumed successfully
+function WorkflowManager:resumeFromSaveWorkflow(workflowId)
+    local workflow = self:getWorkflowById(workflowId)
+    if workflow == nil then
+        WMLogger:error("Cannot resume from save: Workflow %s not found", workflowId)
+        return false
+    end
+
+    -- Get the current vehicle the player is driving
+    local currentVehicle = nil
+    if g_localPlayer and g_localPlayer.getCurrentVehicle then
+        currentVehicle = g_localPlayer:getCurrentVehicle()
+    end
+
+    if currentVehicle == nil then
+        -- Show in-game warning to user
+        local warningText = g_i18n:getText("wm_warning_no_vehicle") or "Enter a vehicle to start the workflow"
+        if g_currentMission and g_currentMission.hud and g_currentMission.hud.showBlinkingWarning then
+            g_currentMission.hud:showBlinkingWarning(warningText, 2000)
+        end
+        WMLogger:warning("Cannot resume: Player is not in a vehicle")
+        return false
+    end
+
+    -- Validate vehicle has required AutoDrive + Courseplay support
+    if not self:isVehicleValid(currentVehicle) then
+        local vehicleName = currentVehicle.getName and currentVehicle:getName() or "unknown"
+        -- Show in-game warning to user
+        local warningText = string.format(g_i18n:getText("wm_warning_incompatible_vehicle") or "Vehicle '%s' needs AutoDrive + Courseplay", vehicleName)
+        if g_currentMission and g_currentMission.hud and g_currentMission.hud.showBlinkingWarning then
+            g_currentMission.hud:showBlinkingWarning(warningText, 2000)
+        end
+        WMLogger:warning("Cannot resume: Vehicle '%s' does not support workflows (needs AutoDrive + Courseplay)", vehicleName)
+        return false
+    end
+
+    WMLogger:info("Resuming workflow from save '%s' at step %d with vehicle: %s",
+        workflow.name,
+        workflow.currentStep or 1,
+        currentVehicle.getName and currentVehicle:getName() or "unknown")
+
+    -- Use resumeFromSave which preserves the saved currentStep
+    return WMExecutor:resumeFromSave(workflow, currentVehicle)
+end
+
+---Reset a workflow to ready state (clears saved progress)
+---Used for paused/resumable workflows that are not currently active
+---@param workflowId string Workflow ID to reset
+---@return boolean success True if reset successfully
+function WorkflowManager:resetWorkflow(workflowId)
+    local workflow = self:getWorkflowById(workflowId)
+    if workflow == nil then
+        WMLogger:error("Cannot reset: Workflow %s not found", workflowId)
+        return false
+    end
+
+    return WMExecutor:resetWorkflow(workflow)
 end
 
 ---DEPRECATED: Vehicles are now detected at runtime when starting a workflow (Milestone 4)

@@ -104,7 +104,9 @@
         <text name="wm_current_vehicle" text="Aktuell"/>
         <text name="wm_vehicle_hint" text="Fahrzeug: Verwendet aktuelles Fahrzeug beim Starten"/>
         <text name="wm_workflow_started" text="Workflow gestartet: %s"/>
+        <text name="wm_workflow_resumed" text="Workflow fortgesetzt: %s (Schritt %d)"/>
         <text name="wm_workflow_stopped" text="Workflow gestoppt: %s"/>
+        <text name="wm_workflow_reset" text="Workflow zurückgesetzt: %s"/>
         <text name="wm_workflow_completed" text="Workflow abgeschlossen: %s"/>
         <text name="wm_workflow_error" text="Workflow-Fehler: %s"/>
         <text name="wm_step_started" text="Starte Schritt %d: %s"/>

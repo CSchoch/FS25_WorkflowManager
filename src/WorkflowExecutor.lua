@@ -146,13 +146,14 @@ function WMExecutor:stopWorkflow(workflow)
     -- Stop current step
     self:stopCurrentStep(workflow)
 
-    -- Update status
+    -- Reset to initial state (same as resetWorkflow)
+    workflow.currentStep = 1
     workflow.status = WorkflowManager.STATUS_READY
 
     -- Remove from active
     self.activeWorkflows[workflow.id] = nil
 
-    WMLogger:info("Stopped workflow: %s", workflow.name)
+    WMLogger:info("Stopped workflow: %s (reset to step 1)", workflow.name)
 
     -- Fire event
     WMEventHandler:fireEvent(WMEventHandler.EVENT_WORKFLOW_STOPPED, {
@@ -807,6 +808,126 @@ end
 ---@return boolean isActive True if workflow is active
 function WMExecutor:isWorkflowActive(workflowId)
     return self.activeWorkflows[workflowId] ~= nil
+end
+
+---Check if a workflow can be resumed from a saved state
+---Returns true if workflow has saved progress (paused or partially completed)
+---and is not already active
+---@param workflow table Workflow to check
+---@return boolean isResumable True if workflow can be resumed from save
+function WMExecutor:isWorkflowResumable(workflow)
+    if workflow == nil then
+        return false
+    end
+
+    -- Already active - not resumable (use regular resume instead)
+    if self.activeWorkflows[workflow.id] ~= nil then
+        return false
+    end
+
+    -- Check if workflow has saved progress worth resuming
+    local hasSavedProgress = workflow.status == WorkflowManager.STATUS_PAUSED or
+                             (workflow.currentStep ~= nil and workflow.currentStep > 1)
+
+    return hasSavedProgress
+end
+
+---Resume a workflow from its saved state (after game load)
+---Unlike startWorkflow, this preserves the saved currentStep
+---@param workflow table Workflow to resume
+---@param vehicle table Vehicle to use for execution
+---@return boolean success True if resumed successfully
+function WMExecutor:resumeFromSave(workflow, vehicle)
+    if workflow == nil then
+        WMLogger:error("Cannot resume nil workflow")
+        return false
+    end
+
+    if vehicle == nil then
+        WMLogger:error("Cannot resume workflow without a vehicle")
+        return false
+    end
+
+    -- Check if already running
+    if self.activeWorkflows[workflow.id] ~= nil then
+        WMLogger:warning("Workflow %s is already active", workflow.id)
+        return false
+    end
+
+    -- Validate workflow has steps
+    if #workflow.steps == 0 then
+        WMLogger:error("Workflow %s has no steps", workflow.id)
+        return false
+    end
+
+    -- Validate currentStep is within bounds
+    if workflow.currentStep == nil or workflow.currentStep < 1 then
+        workflow.currentStep = 1
+    elseif workflow.currentStep > #workflow.steps then
+        -- Already completed all steps, start from beginning
+        WMLogger:info("Workflow %s was at step %d but only has %d steps, starting from 1",
+            workflow.id, workflow.currentStep, #workflow.steps)
+        workflow.currentStep = 1
+    end
+
+    -- Set status to running (preserving currentStep unlike startWorkflow)
+    workflow.status = WorkflowManager.STATUS_RUNNING
+
+    -- Store in activeWorkflows
+    self.activeWorkflows[workflow.id] = {
+        workflow = workflow,
+        vehicle = vehicle,
+        startTime = g_currentMission.time,
+        waitingForCompletion = false
+    }
+
+    local vehicleName = vehicle.getName and vehicle:getName() or "unknown"
+    WMLogger:info("Resuming workflow from save: %s with vehicle: %s (Step %d/%d)",
+        workflow.name, vehicleName, workflow.currentStep, #workflow.steps)
+
+    -- Fire event
+    WMEventHandler:fireEvent(WMEventHandler.EVENT_WORKFLOW_RESUMED, {
+        workflowId = workflow.id,
+        workflowName = workflow.name,
+        vehicleName = vehicleName,
+        currentStep = workflow.currentStep
+    })
+
+    -- Execute the saved current step
+    self:executeCurrentStep(workflow)
+
+    return true
+end
+
+---Reset a workflow to ready state (clears saved progress)
+---Used for non-active workflows that have saved progress (paused/resumable)
+---@param workflow table Workflow to reset
+---@return boolean success True if reset successfully
+function WMExecutor:resetWorkflow(workflow)
+    if workflow == nil then
+        WMLogger:error("Cannot reset nil workflow")
+        return false
+    end
+
+    -- Cannot reset an active workflow - use stopWorkflow instead
+    if self.activeWorkflows[workflow.id] ~= nil then
+        WMLogger:warning("Workflow %s is active, use stopWorkflow instead", workflow.id)
+        return false
+    end
+
+    -- Reset to initial state
+    workflow.currentStep = 1
+    workflow.status = WorkflowManager.STATUS_READY
+
+    WMLogger:info("Reset workflow to ready state: %s", workflow.name)
+
+    -- Fire event
+    WMEventHandler:fireEvent(WMEventHandler.EVENT_WORKFLOW_STOPPED, {
+        workflowId = workflow.id,
+        reset = true
+    })
+
+    return true
 end
 
 ---Go to the previous step in a workflow

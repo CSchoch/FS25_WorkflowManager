@@ -95,11 +95,17 @@ function WMMainDialog:populateCellForItemInSection(list, section, index, cell)
         nameElement:setText(workflow.name or "Unnamed")
     end
 
-    -- Set step count
+    -- Set step count (show progress if resumable)
     local stepsElement = cell:getDescendantByName("workflowSteps")
     if stepsElement then
         local stepCount = workflow.steps and #workflow.steps or 0
-        stepsElement:setText(tostring(stepCount))
+        local isResumable = WMExecutor:isWorkflowResumable(workflow)
+        if isResumable and workflow.currentStep and workflow.currentStep > 1 then
+            -- Show progress: "3/5"
+            stepsElement:setText(string.format("%d/%d", workflow.currentStep, stepCount))
+        else
+            stepsElement:setText(tostring(stepCount))
+        end
     end
 
     -- Set status
@@ -130,6 +136,7 @@ function WMMainDialog:updateButtons()
     local hasSelection = self.selectedWorkflowIndex > 0 and self.selectedWorkflowIndex <= #self.workflows
     local selectedWorkflow = hasSelection and self.workflows[self.selectedWorkflowIndex] or nil
     local isRunning = selectedWorkflow and selectedWorkflow.status == "running"
+    local isResumable = selectedWorkflow and WMExecutor:isWorkflowResumable(selectedWorkflow)
 
     if self.editButton then
         self.editButton:setDisabled(not hasSelection)
@@ -139,9 +146,16 @@ function WMMainDialog:updateButtons()
     end
     if self.startButton then
         self.startButton:setDisabled(not hasSelection or isRunning)
+        -- Change button text to "Resume" if workflow is resumable
+        if isResumable then
+            self.startButton:setText(g_i18n:getText("wm_button_resume") or "Resume")
+        else
+            self.startButton:setText(g_i18n:getText("wm_button_start") or "Start")
+        end
     end
     if self.stopButton then
-        self.stopButton:setDisabled(not hasSelection or not isRunning)
+        -- Stop available when running OR when resumable (to reset saved progress)
+        self.stopButton:setDisabled(not hasSelection or (not isRunning and not isResumable))
     end
 end
 
@@ -211,13 +225,30 @@ function WMMainDialog:onClickStart()
     if self.selectedWorkflowIndex > 0 and self.selectedWorkflowIndex <= #self.workflows then
         local workflow = self.workflows[self.selectedWorkflowIndex]
 
-        local success, errorMsg = WorkflowManager:startWorkflow(workflow.id)
-        if success then
-            g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_OK,
-                string.format(g_i18n:getText("wm_workflow_started") or "Workflow started: %s", workflow.name))
+        -- Check if workflow is resumable (has saved progress)
+        local isResumable = WMExecutor:isWorkflowResumable(workflow)
+        local success, errorMsg
+
+        if isResumable then
+            -- Resume from saved state
+            success, errorMsg = WorkflowManager:resumeFromSaveWorkflow(workflow.id)
+            if success then
+                g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_OK,
+                    string.format(g_i18n:getText("wm_workflow_resumed") or "Workflow resumed: %s (Step %d)", workflow.name, workflow.currentStep or 1))
+            else
+                g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_CRITICAL,
+                    errorMsg or g_i18n:getText("wm_workflow_error") or "Failed to resume workflow")
+            end
         else
-            g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_CRITICAL,
-                errorMsg or g_i18n:getText("wm_workflow_error") or "Failed to start workflow")
+            -- Start from beginning
+            success, errorMsg = WorkflowManager:startWorkflow(workflow.id)
+            if success then
+                g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_OK,
+                    string.format(g_i18n:getText("wm_workflow_started") or "Workflow started: %s", workflow.name))
+            else
+                g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_CRITICAL,
+                    errorMsg or g_i18n:getText("wm_workflow_error") or "Failed to start workflow")
+            end
         end
 
         self:refreshWorkflowList()
@@ -230,10 +261,20 @@ function WMMainDialog:onClickStop()
 
     if self.selectedWorkflowIndex > 0 and self.selectedWorkflowIndex <= #self.workflows then
         local workflow = self.workflows[self.selectedWorkflowIndex]
+        local isRunning = workflow.status == "running"
+        local isResumable = WMExecutor:isWorkflowResumable(workflow)
 
-        WorkflowManager:stopWorkflow(workflow.id)
-        g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_OK,
-            string.format(g_i18n:getText("wm_workflow_stopped") or "Workflow stopped: %s", workflow.name))
+        if isRunning then
+            -- Stop active workflow
+            WorkflowManager:stopWorkflow(workflow.id)
+            g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_OK,
+                string.format(g_i18n:getText("wm_workflow_stopped") or "Workflow stopped: %s", workflow.name))
+        elseif isResumable then
+            -- Reset paused workflow (clear saved progress)
+            WorkflowManager:resetWorkflow(workflow.id)
+            g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_OK,
+                string.format(g_i18n:getText("wm_workflow_reset") or "Workflow reset: %s", workflow.name))
+        end
 
         self:refreshWorkflowList()
     end
