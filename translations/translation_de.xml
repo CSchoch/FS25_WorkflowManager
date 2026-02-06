@@ -64,6 +64,7 @@
         <text name="wm_editor_load_target" text="Beladen bei"/>
         <text name="wm_editor_unload_first" text="Entladen"/>
         <text name="wm_editor_unload_target" text="Liefern an"/>
+        <text name="wm_editor_load_point" text="Ladepunkt"/>
         <text name="wm_editor_return_target" text="Zurueck zu"/>
         <text name="wm_editor_fill_type" text="Fuelltyp"/>
         <text name="wm_editor_no_steps" text="Keine Schritte definiert. Klicken Sie +, um einen Schritt hinzuzufuegen."/>

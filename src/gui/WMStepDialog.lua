@@ -419,6 +419,15 @@ function WMStepDialog:updateFieldVisibility()
     local needsUnloadTarget = self:actionNeedsUnloadTarget()
     local needsFillType = self:actionNeedsFillType()
 
+    -- Update unload target label based on action
+    if self.unloadTargetLabel then
+        if self.stepAction == "load" then
+            self.unloadTargetLabel:setText(g_i18n:getText("wm_editor_load_point") or "Load Point")
+        else
+            self.unloadTargetLabel:setText(g_i18n:getText("wm_editor_unload_target") or "Deliver To")
+        end
+    end
+
     -- Unload target section and list
     if self.unloadTargetSection then
         self.unloadTargetSection:setVisible(needsUnloadTarget)

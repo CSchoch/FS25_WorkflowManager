@@ -56,7 +56,7 @@
             <!-- Unload Target Section (conditional) -->
             <GuiElement id="unloadTargetSection" size="860px 40px">
                 <BoxLayout profile="wm_hBox" size="860px 40px">
-                    <Text profile="wm_dialogText" text="$l10n_wm_editor_unload_target" size="150px 35px"/>
+                    <Text profile="wm_dialogText" id="unloadTargetLabel" text="$l10n_wm_editor_unload_target" size="150px 35px"/>
                     <TextInput profile="fs25_dialogTextInput" id="unloadTargetSearchInput" onTextChanged="onUnloadTargetSearchChanged" maxCharacters="50" size="500px 35px" focusId="unloadSearch">
                         <ThreePartBitmap profile="fs25_textInputBg"/>
                     </TextInput>
