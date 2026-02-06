@@ -43,7 +43,7 @@
             </BoxLayout>
 
             <!-- Step List -->
-            <BoxLayout absoluteSizeOffset="40px 380px" margin="0 0 0 10px">
+            <BoxLayout flowDirection="horizontal" size="860px 380px" margin="0 0 0 10px">
                 <SmoothList profile="wm_list" id="stepList"
                             onSelectionChanged="onStepListSelectionChanged"
                             onDoubleClick="onStepListDoubleClick"

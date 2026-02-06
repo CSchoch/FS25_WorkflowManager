@@ -30,7 +30,7 @@
             </BoxLayout>
 
             <!-- Workflow List -->
-            <BoxLayout absoluteSizeOffset="40px 420px" margin="0 0 0 10px">
+            <BoxLayout flowDirection="horizontal" size="860px 420px" margin="0 0 0 10px">
                 <SmoothList profile="wm_list" id="workflowList"
                             onSelectionChanged="onListSelectionChanged"
                             onDoubleClick="onListDoubleClick"
