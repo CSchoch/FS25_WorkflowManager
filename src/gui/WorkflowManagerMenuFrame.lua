@@ -202,15 +202,16 @@ function WMMenuFrame:onClickDelete()
         local workflow = self.workflows[self.selectedIndex]
 
         -- Show confirmation dialog
-        g_gui:showYesNoDialog({
-            text = string.format(g_i18n:getText("wm_confirm_delete") or "Delete workflow '%s'?", workflow.name),
-            callback = function(yes)
-                if yes then
+        YesNoDialog.show(
+            function(dialog, clickOk)
+                if clickOk then
                     WorkflowManager:deleteWorkflow(workflow.id)
                     self:refreshWorkflowList()
                 end
-            end
-        })
+            end,
+            self,
+            string.format(g_i18n:getText("wm_confirm_delete") or "Delete workflow '%s'?", workflow.name)
+        )
     end
 end
 
