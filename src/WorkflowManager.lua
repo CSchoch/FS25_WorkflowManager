@@ -919,16 +919,6 @@ function WorkflowManager:resetWorkflow(workflowId)
     return WMExecutor:resetWorkflow(workflow)
 end
 
----DEPRECATED: Vehicles are now detected at runtime when starting a workflow (Milestone 4)
----This function is kept for backward compatibility but does nothing
----@param workflowId string Workflow ID
----@param vehicle table Vehicle object (ignored)
----@return boolean success Always returns true
-function WorkflowManager:assignVehicle(workflowId, vehicle)
-    WMLogger:debug("assignVehicle called but ignored (deprecated - vehicles detected at runtime)")
-    return true
-end
-
 ---Get all workflows
 ---@return table workflows List of all workflows
 function WorkflowManager:getAllWorkflows()

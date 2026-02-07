@@ -91,8 +91,6 @@
         <!-- Courseplay Actions -->
         <text name="wm_action_fieldwork" text="Field Work"/>
         <text name="wm_action_bale_collect" text="Bale Collect"/>
-        <text name="wm_action_first" text="Start at First WP"/>
-        <text name="wm_action_last" text="Start at Last WP"/>
 
         <!-- Status texts -->
         <text name="wm_status_ready" text="Ready"/>
@@ -110,41 +108,28 @@
         <text name="wm_workflow_resumed" text="Workflow resumed: %s (Step %d)"/>
         <text name="wm_workflow_stopped" text="Workflow stopped: %s"/>
         <text name="wm_workflow_reset" text="Workflow reset: %s"/>
-        <text name="wm_workflow_completed" text="Workflow completed: %s"/>
         <text name="wm_workflow_error" text="Workflow error: %s"/>
-        <text name="wm_step_started" text="Starting step %d: %s"/>
-        <text name="wm_step_completed" text="Step %d completed"/>
-        <text name="wm_select_workflow" text="Select a workflow"/>
         <text name="wm_workflows_count" text="%d workflow(s)"/>
         <text name="wm_new_workflow_name" text="New Workflow"/>
         <text name="wm_unnamed" text="Unnamed"/>
         <text name="wm_confirm_delete" text="Delete workflow '%s'?"/>
         <text name="wm_tab_title" text="Workflows"/>
 
-        <!-- Vehicle dropdown -->
-        <text name="wm_select_vehicle" text="-- Select Vehicle --"/>
         <text name="wm_none" text="(none)"/>
 
         <!-- Warnings -->
         <text name="wm_warning_no_vehicle" text="Enter a vehicle to start the workflow"/>
         <text name="wm_warning_incompatible_vehicle" text="Vehicle '%s' needs AutoDrive + Courseplay"/>
 
-        <!-- Errors -->
-        <text name="wm_error_no_autodrive" text="AutoDrive not available"/>
-        <text name="wm_error_no_courseplay" text="Courseplay not available"/>
-        <text name="wm_error_no_vehicle" text="No vehicle assigned to workflow"/>
-        <text name="wm_error_no_steps" text="Workflow has no steps"/>
-        <text name="wm_error_target_not_found" text="Target not found: %s"/>
-        <text name="wm_error_no_selection" text="Please select a workflow first"/>
-
         <!-- HUD texts -->
         <text name="wm_hud_title" text="Workflow Manager"/>
         <text name="wm_hud_no_workflow" text="No active workflow"/>
         <text name="wm_hud_step_format" text="Step %d/%d: %s - %s"/>
-        <text name="wm_hud_pause" text="Pause"/>
-        <text name="wm_hud_resume" text="Resume"/>
-        <text name="wm_hud_stop" text="Stop"/>
-        <text name="wm_hud_prev" text="Prev"/>
-        <text name="wm_hud_next" text="Next"/>
+        <text name="wm_hud_cp_active" text="CP active"/>
+        <text name="wm_hud_cp_active_progress" text="CP active (%d%%)"/>
+        <text name="wm_hud_ad_active" text="AD active"/>
+        <text name="wm_hud_paused" text="Paused"/>
+        <text name="wm_hud_idle" text="Idle"/>
+        <text name="wm_hud_no_vehicle" text="No vehicle"/>
     </texts>
 </l10n>

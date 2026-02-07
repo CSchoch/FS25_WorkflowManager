@@ -254,7 +254,7 @@ function WMHud:draw()
     setTextBold(true)
     setTextColor(1, 1, 1, 1)
     setTextAlignment(RenderText.ALIGN_LEFT)
-    renderText(x + mx, y + h - self.headerH + my, self.titleSize, "Workflow Manager")
+    renderText(x + mx, y + h - self.headerH + my, self.titleSize, g_i18n:getText("wm_hud_title"))
     setTextBold(false)
 
     -- Close X
@@ -267,7 +267,7 @@ function WMHud:draw()
 
     -- Workflow name
     setTextColor(1, 1, 1, 1)
-    local name = workflow and workflow.name or "No active workflow"
+    local name = workflow and workflow.name or g_i18n:getText("wm_hud_no_workflow")
     renderText(x + mx, lineY, self.textSize, name)
 
     -- Step info
@@ -280,7 +280,7 @@ function WMHud:draw()
         if step then
             local sType = step.type == WorkflowManager.STEP_AUTODRIVE and "AD" or "CP"
             renderText(x + mx, lineY, self.smallSize,
-                string.format("Step %d/%d: %s - %s", cs, ts, sType, step.target or "?"))
+                string.format(g_i18n:getText("wm_hud_step_format"), cs, ts, sType, step.target or "?"))
         end
     end
 
@@ -303,23 +303,23 @@ function WMHud:draw()
             setTextColor(0.4, 0.8, 1, 1)
             if progress then
                 renderText(x + mx, lineY, self.smallSize,
-                    string.format("CP active (%.0f%%)", progress * 100))
+                    string.format(g_i18n:getText("wm_hud_cp_active_progress"), progress * 100))
             else
-                renderText(x + mx, lineY, self.smallSize, "CP active")
+                renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_cp_active"))
             end
         elseif adRunning then
             setTextColor(0.4, 0.8, 1, 1)
-            renderText(x + mx, lineY, self.smallSize, "AD active")
+            renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_ad_active"))
         elseif workflow and workflow.status == "paused" then
             setTextColor(1, 0.6, 0, 1)
-            renderText(x + mx, lineY, self.smallSize, "Paused")
+            renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_paused"))
         else
             setTextColor(0.6, 0.6, 0.6, 1)
-            renderText(x + mx, lineY, self.smallSize, "Idle")
+            renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_idle"))
         end
     elseif not workflow then
         setTextColor(0.6, 0.6, 0.6, 1)
-        renderText(x + mx, lineY, self.smallSize, "No vehicle")
+        renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_no_vehicle"))
     end
 
     -- === Button row (icons) ===
