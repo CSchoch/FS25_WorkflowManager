@@ -467,8 +467,10 @@ function WMExecutor:startCourseplayStep(workflow, activeData, vehicle, step)
     end
 
     -- Determine start position based on action
+    local startAtNearest = activeData.resuming or false
     local startAtFirst = (step.action == "first" or step.action == "start")
-    local success = CPIntegration:startFieldWork(vehicle, startAtFirst)
+    local success = CPIntegration:startFieldWork(vehicle, startAtFirst, startAtNearest)
+    activeData.resuming = nil
 
     if success then
         activeData.waitingForCompletion = true
@@ -878,7 +880,8 @@ function WMExecutor:resumeFromSave(workflow, vehicle)
         workflow = workflow,
         vehicle = vehicle,
         startTime = g_currentMission.time,
-        waitingForCompletion = false
+        waitingForCompletion = false,
+        resuming = true
     }
 
     local vehicleName = vehicle.getName and vehicle:getName() or "unknown"

@@ -478,8 +478,9 @@ end
 ---Uses the actual FS25 CP API: startCpAtLastWp() or startCpAtFirstWp()
 ---@param vehicle table Vehicle to control
 ---@param startAtFirst boolean|nil If true, start at first waypoint (default: last)
+---@param startAtNearest boolean|nil If true, start at nearest waypoint (for resume from save)
 ---@return boolean success True if started successfully
-function CPIntegration:startFieldWork(vehicle, startAtFirst)
+function CPIntegration:startFieldWork(vehicle, startAtFirst, startAtNearest)
     if not self.isAvailable then
         WMLogger:error("Cannot start Courseplay - Courseplay not available")
         return false
@@ -506,6 +507,14 @@ function CPIntegration:startFieldWork(vehicle, startAtFirst)
     if vehicle.getCanStartCpFieldWork and not vehicle:getCanStartCpFieldWork() then
         WMLogger:error("Vehicle cannot start Courseplay field work")
         return false
+    end
+
+    -- Resume from save: start at nearest waypoint
+    if startAtNearest and vehicle.cpStartStopDriver then
+        WMLogger:info("Starting Courseplay field work at nearest waypoint (resume)")
+        vehicle:cpStartStopDriver(false)
+        WMLogger:stateChange("Courseplay", nil, "started (nearest wp)")
+        return true
     end
 
     WMLogger:info("Starting Courseplay field work")
