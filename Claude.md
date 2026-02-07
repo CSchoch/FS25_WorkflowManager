@@ -1,49 +1,33 @@
-# LS25 Workflow Manager – Development Documentation
+# FS25 Workflow Manager
 
 ## Project Overview
 
 A mod for Farming Simulator 25 that combines AutoDrive and Courseplay to create automated workflows. The mod allows multiple fields to be processed sequentially by using AutoDrive for transport between fields and Courseplay for the actual field work.
 
-## Project Goals
-
-### Phase 1: Core Functionality (MVP) - COMPLETE
-
-* Linking AutoDrive routes with Courseplay courses
-* Simple workflow: Field 1 → Field 2
-* GUI for workflow creation (tabular view)
-* Storage of workflows in XML (per savegame)
-* Automatic switching between AutoDrive and Courseplay
-
-### Phase 2: Advanced Features
-
-* Queue system for multiple vehicles
-* Support for more than 2 fields per workflow (DONE)
-* Advanced workflow options (conditions, pauses, etc.)
-* Master-detail UI for more complex workflows
-
 ## Technical Stack
 
-* **Language**: Lua (LS25-compatible)
+* **Language**: Lua (FS25-compatible)
 * **Integration**: AutoDrive API, Courseplay API
-* **UI Framework**: LS25 GUI system
+* **UI Framework**: FS25 GUI system
 * **Data Storage**: XML (in the savegame folder)
-* **Mod Structure**: Standard LS25 ModDesc.xml
+* **Mod Structure**: Standard FS25 ModDesc.xml
 
-## Architecture Concept
+## Architecture
 
 ### Main Components
 
 1. **WorkflowManager** (Core) - Manages all workflows, loads/saves from XML, coordinates execution
 2. **WorkflowExecutor** - Executes workflows, switches between AD/CP, monitors progress
-3. **WorkflowGUI** - Tabular view for workflow management
-4. **IntegrationLayer** - AD/CP API wrappers with event handling
+3. **WorkflowStorage** - XML read/write for workflow persistence
+4. **GUI Layer** - Main dialog, editor, step dialog, HUD, ESC menu integration
+5. **Integration Layer** - AD/CP API wrappers, course loader, vehicle loader
 
 ### Data Structure
 
 ```lua
 Workflow = {
     id = "workflow_001",
-    name = "Harvest wheat – fields 1–2",
+    name = "Harvest wheat - fields 1-2",
     -- Vehicle detected at runtime via g_currentMission.controlledVehicle
     steps = {
         {
@@ -87,7 +71,7 @@ Workflow = {
 <?xml version="1.0" encoding="utf-8"?>
 <WorkflowManager>
     <workflows>
-        <workflow id="workflow_001" name="Harvest wheat – fields 1–2" currentStep="1" status="ready">
+        <workflow id="workflow_001" name="Harvest wheat - fields 1-2" currentStep="1" status="ready">
             <step type="autodrive" target="Route_Field1" action="drive"/>
             <step type="courseplay" target="Field1_Harvest" action="fieldwork"/>
             <step type="autodrive" target="Farm/Silo" action="pickup_deliver" unloadTarget="Sell/BGA" fillType="WHEAT"/>
@@ -98,7 +82,7 @@ Workflow = {
 
 ## Development Roadmap
 
-### Completed Milestones
+### Completed
 
 * **Milestone 1**: Project Setup - ModDesc.xml, Lua structure, API analysis
 * **Milestone 2**: Core Functionality - WorkflowManager, XML storage, Executor, AD/CP integration
@@ -106,30 +90,31 @@ Workflow = {
 * **Milestone 4**: Vehicle Selection - Runtime vehicle detection (uses current vehicle when starting)
 * **Milestone 5**: Player UI - In-vehicle HUD with workflow controls (pause/resume, stop, prev/next steps)
 * **Milestone 6**: Logo & Icons - Mod icon (modIcon.png) and HUD button icons with hover effects
-* **Milestone 10**: Search - Searchable dropdowns in step dialog for AD targets and CP courses
+* **Milestone 7**: Search - Searchable dropdowns in step dialog for AD targets and CP courses
+* Multi-field workflows (more than 2 fields per workflow)
+* Vehicle hint removed from GUI
+* Delete confirmation, delete shortcut, scrollbar, step editor descriptions fixed
 
-### Milestone 7: GUI Refinement
-* [ ] The ingame help menu F1 overlays the gui
+### Milestone 8: GUI Refinement
+* [ ] F1 ingame help menu overlays the GUI
 * [ ] Edit workflow name inline (without separate overlay)
-* [ ] Relocate double click to edit hint to the bottom
-* [ ] Edit workflow gui has an X to close in the top right corner
-* [ ] Do not show vehicle hint in gui
+* [ ] Relocate double-click-to-edit hint to the bottom
+* [ ] Editor dialog X button to close in top right corner
 * [ ] Fix Warning (performance): Texture .../textures/white.png raw format
 
-### Milestone 8: Folder View
+### Milestone 9: Folder View
 * [ ] Show folders in dropdowns (collapsed by default)
 * [ ] For AD Targets and CP Courses
 * [ ] Collapse all / Expand all buttons
 
-### Milestone 9: Polish
+### Milestone 10: Polish
 * [ ] Error handling improvements
 * [ ] Performance optimization
-* [ ] Documentation
 
-### Milestone 10: Phase 2 Features
+### Milestone 11: Phase 2 Features
 * [ ] Queue system for multiple vehicles
 * [ ] Advanced conditions
-* [ ] Improve master-detail UI
+* [ ] Linked workflow pairs for coordinated operations
 
 ## API Integration
 
@@ -144,7 +129,7 @@ Key functions from `ExternalInterface.lua`, `Specialization.lua` and `GraphManag
 * **Check active**: `vehicle.ad.stateModule:isActive()`
 * **Mode constants**: `MODE_DRIVETO=1`, `MODE_PICKUPANDDELIVER=2`, `MODE_DELIVERTO=3`, etc.
 
-**AD → CP Handoff**:
+**AD -> CP Handoff**:
 * `vehicle.ad.stateModule:setStartHelper(true)` - tells AD to start helper on completion
 * Pre-load CP course before starting AD, AD handles the switch automatically
 
@@ -172,49 +157,59 @@ Full API documentation: `docs/API_Analysis.md`
 ```
 FS25_WorkflowManager/
 ├── modDesc.xml
-├── modIcon.png                      # Mod icon (256x256)
+├── modIcon.png                        # Mod icon (256x256)
 ├── CLAUDE.md
-├── .vscode/                         # VS Code workspace config
+├── .vscode/                           # VS Code workspace config
 ├── src/
-│   ├── DevConfig.lua                # Development configuration
-│   ├── WorkflowManager.lua          # Main class & entry point
-│   ├── WorkflowManagerSpec.lua      # Vehicle specialization (for in-vehicle input)
-│   ├── WorkflowExecutor.lua         # Execution engine
-│   ├── WorkflowStorage.lua          # XML read/write
+│   ├── DevConfig.lua                  # Development configuration
+│   ├── WorkflowManager.lua            # Main class & entry point
+│   ├── WorkflowManagerSpec.lua        # Vehicle specialization (for in-vehicle input)
+│   ├── WorkflowExecutor.lua           # Execution engine
+│   ├── WorkflowStorage.lua            # XML read/write
 │   ├── gui/
-│   │   ├── WMMainDialog.lua         # Main dialog (workflow list)
-│   │   ├── WMEditorDialog.lua       # Workflow editor dialog
-│   │   ├── WMStepDialog.lua         # Step add/edit dialog with searchable lists
-│   │   ├── WMHud.lua                # In-vehicle HUD with icon buttons
-│   │   ├── WMHudElements.lua        # HUD element classes
+│   │   ├── WMMainDialog.lua           # Main dialog (workflow list)
+│   │   ├── WMEditorDialog.lua         # Workflow editor dialog
+│   │   ├── WMStepDialog.lua           # Step add/edit dialog with searchable lists
+│   │   ├── WMTextInputDialog.lua      # Text input overlay dialog
+│   │   ├── WMHud.lua                  # In-vehicle HUD with icon buttons
+│   │   ├── WMHudElements.lua          # HUD element classes
+│   │   ├── WorkflowManagerGUI.lua     # GUI manager / controller
+│   │   ├── WorkflowEditorGUI.lua      # Editor GUI controller
 │   │   └── WorkflowManagerMenuFrame.lua # ESC menu integration
 │   ├── integration/
-│   │   ├── AutoDriveIntegration.lua # AD API wrapper
-│   │   ├── CourseplayIntegration.lua # CP API wrapper
+│   │   ├── AutoDriveIntegration.lua   # AD API wrapper
+│   │   ├── CourseplayIntegration.lua  # CP API wrapper
 │   │   ├── CourseplayCoursesLoader.lua # CP saved courses loader
 │   │   └── CourseplayVehiclesLoader.lua # Vehicle loader (AD+CP filter)
 │   └── utils/
-│       ├── Logger.lua               # Logging utility
-│       ├── EventHandler.lua         # Event system
-│       └── DebugUtil.lua            # Debug utilities
+│       ├── Logger.lua                 # Logging utility
+│       ├── EventHandler.lua           # Event system
+│       └── DebugUtil.lua              # Debug utilities
 ├── translations/
 │   ├── translation_en.xml
 │   └── translation_de.xml
 ├── textures/
-│   ├── white.png                    # 1x1 white pixel for GUI backgrounds
-│   ├── icon_prev.png                # HUD button: Previous step (<<)
-│   ├── icon_pause.png               # HUD button: Pause (||)
-│   ├── icon_play.png                # HUD button: Resume (>)
-│   ├── icon_stop.png                # HUD button: Stop ([])
-│   └── icon_next.png                # HUD button: Next step (>>)
+│   ├── white.png                      # 1x1 white pixel for GUI backgrounds
+│   ├── icon_prev.png                  # HUD button: Previous step (<<)
+│   ├── icon_pause.png                 # HUD button: Pause (||)
+│   ├── icon_play.png                  # HUD button: Resume (>)
+│   ├── icon_stop.png                  # HUD button: Stop ([])
+│   └── icon_next.png                  # HUD button: Next step (>>)
+├── testdata/
+│   └── sample_workflows.xml           # Test workflow data
 ├── docs/
-│   └── API_Analysis.md              # AD/CP API documentation
+│   ├── API_Analysis.md                # AD/CP API documentation
+│   ├── LinkedWorkflowPairsConcept.md  # Linked workflows design doc
+│   └── QueueSystemConcept.md          # Queue system design doc
 └── xml/gui/
-    ├── guiProfiles.xml              # Custom GUI profiles
-    ├── WMMainDialog.xml             # Main dialog layout
-    ├── WMEditorDialog.xml           # Editor dialog layout
-    ├── WMStepDialog.xml             # Step dialog layout
-    └── WorkflowManagerMenuFrame.xml # ESC menu integration
+    ├── guiProfiles.xml                # Custom GUI profiles
+    ├── WMMainDialog.xml               # Main dialog layout
+    ├── WMEditorDialog.xml             # Editor dialog layout
+    ├── WMStepDialog.xml               # Step dialog layout
+    ├── TextInputDialog.xml            # Text input dialog layout
+    ├── WorkflowManagerGUI.xml         # Main GUI layout
+    ├── WorkflowEditorGUI.xml          # Editor GUI layout
+    └── WorkflowManagerMenuFrame.xml   # ESC menu integration
 ```
 
 ## Key Implementation Notes
@@ -225,15 +220,15 @@ FS25_WorkflowManager/
 - Vehicle must have both AutoDrive AND Courseplay support
 - Validation via `WorkflowManager.isVehicleValid()`
 
-### CP↔AD Cyclic Handoff
+### CP<->AD Cyclic Handoff
 - When CP finishes and starts AD internally (e.g., for unloading), executor waits for AD
 - When AD finishes and restarts CP, executor continues monitoring CP
 - Step only completes when BOTH CP and AD are not running
 
 ### Manual Step Switching (Prev/Next)
 - Uses `vehicle:stopAutoDrive()` for proper AD stopping (handles braking, cruise control, module resets)
-- AD→AD transitions use deferred start: waits ~1 second for AD to fully reset before starting new route
-- AD→CP transitions also defer CP start until AD is fully stopped
+- AD->AD transitions use deferred start: waits ~1 second for AD to fully reset before starting new route
+- AD->CP transitions also defer CP start until AD is fully stopped
 - Tracked via `justStoppedAD` flag and `pendingADStart`/`pendingCPStart` in update loop
 
 ### GUI Input
@@ -252,12 +247,12 @@ FS25_WorkflowManager/
 
 ## Resources
 
-* LS25 Modding Documentation: https://gdn.giants-software.com/
+* FS25 Modding Documentation: https://gdn.giants-software.com/
 * AutoDrive source: `FS25_AutoDrive`
 * Courseplay source: `FS25_Courseplay`
-* LS25 Forum: https://forum.giants-software.com/
+* FS25 Forum: https://forum.giants-software.com/
 
 ---
 
-**Status**: Phase 1 COMPLETE – Ready for Phase 2
-**Last updated**: 2026-01-30
+**Status**: Phase 1 COMPLETE - Working on GUI refinement
+**Last updated**: 2026-02-07
