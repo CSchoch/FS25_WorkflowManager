@@ -53,6 +53,19 @@ Courses must be saved in Courseplay before they appear. Check:
 
 ## Execution
 
+### How do I open the Workflow Manager?
+
+Press **Left Alt + W** from anywhere (on foot or in a vehicle). You can also find it in the ESC menu.
+
+### What are the keyboard shortcuts?
+
+| Shortcut | Action |
+|----------|--------|
+| **Left Alt + W** | Open/close the Workflow Manager |
+| **Left Ctrl + Left Alt + W** | Quick-start a workflow |
+| **Left Shift + Left Alt + W** | Stop the active workflow |
+| **Left Alt + H** | Toggle the HUD overlay |
+
 ### Why won't my workflow start?
 
 Check:
@@ -72,9 +85,13 @@ The workflow continues running. You can re-enter the vehicle to see the HUD.
 
 Currently, only one workflow per vehicle. Multiple vehicles can run different workflows.
 
+### What happens after I reload a savegame?
+
+Workflows that were running are set to paused. Open the Workflow Manager and resume them to continue from the saved step.
+
 ### What if a step fails?
 
-The workflow pauses and shows an error. Fix the issue and use the HUD to resume or skip the step.
+The workflow stops and shows an error. Fix the issue, then restart or use the HUD to skip the step.
 
 ---
 
@@ -92,7 +109,7 @@ Yes, you can edit the XML file directly when the game is not running.
 
 ### Does Workflow Manager affect performance?
 
-Impact is minimal. The mod only checks workflow state once per frame when a workflow is running.
+Impact is minimal. The mod checks workflow state twice per second (every 500ms) when a workflow is running.
 
 ### Is there a debug mode?
 

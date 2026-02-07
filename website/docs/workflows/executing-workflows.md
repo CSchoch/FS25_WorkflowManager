@@ -17,14 +17,21 @@ Before starting a workflow:
 2. Ensure required **implements are attached**
 3. The vehicle should not have another AD or CP job running
 
-### Starting from the Menu
+### Starting from the GUI
 
-1. Open the game menu (ESC)
-2. Navigate to **Workflow Manager**
-3. Select a workflow from the list
-4. Click **Start**
+1. Press **Left Alt + W** to open the Workflow Manager (or use the ESC menu)
+2. Select a workflow from the list
+3. Click **Start** (or press **S**)
 
 The workflow begins with the first step and the dialog closes automatically.
+
+### Quick Start
+
+Press **Left Ctrl + Left Alt + W** while in a vehicle to quickly start the first available workflow.
+
+### Quick Stop
+
+Press **Left Shift + Left Alt + W** to stop the currently running workflow.
 
 ## Workflow Status
 
@@ -150,11 +157,15 @@ In multiplayer:
 - All players can see workflow status
 - Only the controlling player can modify execution
 
+## Resume After Save
+
+If you save the game while a workflow is running, the workflow is set to **paused** on reload. Open the Workflow Manager, select the workflow, and click **Start** to resume from the saved step.
+
 ## Performance
 
 Workflows are monitored via the game's update loop:
 - Minimal performance impact
-- Status checks every frame when running
+- Status checks every 500ms when running
 - No polling when idle
 
 ## Best Practices

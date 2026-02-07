@@ -102,23 +102,22 @@ Action: bale_collect
 
 ## Step Transitions
 
-### AutoDrive → Courseplay
+### AutoDrive to Courseplay
 
-When an AutoDrive step completes and the next step is Courseplay:
-1. AutoDrive signals completion
-2. Workflow Manager loads the Courseplay course
-3. Courseplay starts automatically at the last waypoint
+When an AutoDrive step finishes and the next step is Courseplay:
+1. The Courseplay course is pre-loaded onto the vehicle
+2. AutoDrive hands off to Courseplay automatically
+3. Courseplay starts field work without any manual input
 
-### Courseplay → AutoDrive
+### Courseplay to AutoDrive
 
-When a Courseplay step completes and the next step is AutoDrive:
-1. Courseplay signals job completion
-2. Workflow Manager starts the AutoDrive route
-3. AutoDrive begins navigation to the target
+When a Courseplay step finishes and the next step is AutoDrive:
+1. Workflow Manager detects that Courseplay has stopped
+2. The next AutoDrive route starts automatically
 
-### Courseplay ↔ AutoDrive Internal Handoff
+### Internal Handoffs
 
-Courseplay and AutoDrive can also hand off to each other internally (e.g., for unloading during harvest). The Workflow Executor monitors both mods and waits for full completion before advancing.
+During Courseplay field work, AutoDrive may be triggered internally (e.g., a harvester calling an unloader via AutoDrive). The mod handles this automatically - it waits for both AutoDrive and Courseplay to finish before moving to the next step.
 
 ## Step Order Considerations
 

@@ -25,7 +25,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'API Reference',
+      label: 'Reference',
       items: [
         'api/autodrive',
         'api/courseplay',

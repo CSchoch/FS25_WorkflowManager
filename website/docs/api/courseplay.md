@@ -1,256 +1,83 @@
 ---
 id: courseplay
-title: Courseplay API
+title: Courseplay Reference
 sidebar_position: 2
 ---
 
-# Courseplay API Reference
+# Courseplay Reference
 
-This page documents the Courseplay API functions used by Workflow Manager.
+This page explains how Workflow Manager uses Courseplay and what you need to know to set up Courseplay steps.
 
-## Availability Check
+## What Courseplay Does
 
-```lua
--- Global CP object
-local cpAvailable = g_Courseplay ~= nil
+Courseplay handles all **field work** in your workflows. It runs saved courses on your vehicle to perform operations like harvesting, cultivating, seeding, and baling.
 
--- Check for specialization on vehicle
-local hasCP = vehicle.spec_cpAIWorker ~= nil
+## Setting Up Courseplay
+
+Before using Courseplay steps in workflows, you need:
+
+1. **Generate a course** for each field and operation (e.g., a harvesting course for Field 1)
+2. **Save the course** in Courseplay's course manager
+3. **Attach the right implements** to your vehicle for the operation
+
+### Where Courses Are Stored
+
+Courseplay saves courses per map in:
+```
+Documents/My Games/FarmingSimulator2025/modSettings/FS25_Courseplay/Courses/[MapName]/
 ```
 
-## Core Functions (CpAIWorker)
+You can organize courses in subfolders. When selecting courses in Workflow Manager, folder paths appear as `FolderName/CourseName`.
 
-### Start and Stop
+## Courseplay Actions
 
-```lua
--- Toggle start/stop (main function)
-vehicle:cpStartStopDriver(isStartedByHud)
+### Field Work
 
--- Stop explicitly
-vehicle:stopCurrentAIJob(AIMessageSuccessStoppedByUser.new())
+Runs the saved Courseplay course for general field operations.
 
--- Check if CP is active
-vehicle:getIsCpActive()
+**Use for:** Harvesting, cultivating, seeding, spraying, fertilizing, mowing, and any other field operation Courseplay supports.
 
--- Check if can start CP
-vehicle:getCanStartCp()
-```
+**How it works:**
+1. Workflow Manager loads the specified course onto the vehicle
+2. Courseplay starts the field work
+3. When the course finishes, the workflow moves to the next step
 
-### Field Work (CpAIFieldWorker)
+### Bale Collect
 
-```lua
--- Start at first waypoint
-vehicle:startCpAtFirstWp()
+Collects, loads, and wraps bales in the field.
 
--- Start at last waypoint (used by AutoDrive)
-vehicle:startCpAtLastWp()
+**Use for:** Picking up bales after mowing/baling operations.
 
--- Check field work status
-vehicle:getIsCpFieldWorkActive()
-vehicle:getCpFieldWorkProgress()
-```
+## Course Selection
 
-### Harvester Functions
+In the step editor, the course dropdown shows all saved courses for the current map:
 
-```lua
--- Harvester status checks
-vehicle:getIsCpHarvesterWaitingForUnload()
-vehicle:getIsCpHarvesterWaitingForUnloadInPocket()
-vehicle:getIsCpHarvesterWaitingForUnloadAfterPulledBack()
-vehicle:getIsCpHarvesterManeuvering()
+- Courses are listed alphabetically
+- Courses in folders appear as `Folder/CourseName`
+- Use the **search box** to quickly find courses by name
 
--- Temporarily hold harvester
-vehicle:holdCpHarvesterTemporarily(periodMs)
-```
+## How Courseplay Completion Works
 
-## Course Management (CpCourseManager)
+Workflow Manager monitors Courseplay and waits for it to finish before moving to the next step.
 
-### Set and Get Courses
+### Simple Case
+Courseplay finishes the course, the workflow advances.
 
-```lua
--- Set field work course
-vehicle:setFieldWorkCourse(course)
+### With Internal AutoDrive
+Sometimes Courseplay triggers AutoDrive internally (e.g., a harvester sends an unloader to deliver grain via AutoDrive). Workflow Manager handles this automatically:
 
--- Get current course
-vehicle:getFieldWorkCourse()
+1. Courseplay pauses and starts AutoDrive for the delivery
+2. AutoDrive delivers and returns
+3. Courseplay resumes field work
+4. This cycle repeats until the course is complete
+5. Only when both Courseplay AND AutoDrive are finished does the workflow advance
 
--- Get all courses on vehicle
-vehicle:getCpCourses()
+You don't need to set this up separately - it happens automatically if your vehicle is configured for it in AutoDrive/Courseplay.
 
--- Check if vehicle has a course
-vehicle:hasCpCourse()
-```
+## Tips
 
-### Reset Courses
-
-```lua
--- Reset all courses
-vehicle:resetCpCourses()
-
--- Reset from GUI
-vehicle:resetCpCoursesFromGui()
-```
-
-### Course Names
-
-```lua
--- Get current course name
-vehicle:getCurrentCpCourseName()
-
--- Set course name
-vehicle:setCpCourseName(name)
-```
-
-### Load and Save
-
-```lua
--- Load course from file/entity
-vehicle:appendLoadedCpCourse(file)
-
--- Save courses
-vehicle:saveCpCourses(file, text)
-
--- Copy course from another vehicle
-vehicle:cpCopyCourse(course)
-```
-
-## Hold and Freeze
-
-```lua
--- Freeze driver (debug)
-vehicle:freezeCp()
-vehicle:unfreezeCp()
-
--- Temporary hold
-vehicle:cpHold(ms, fuelSaveAllowed)
-
--- Brake to stop
-vehicle:cpBrakeToStop()
-```
-
-## Events
-
-Courseplay fires events for external listeners:
-
-| Event | Description |
-|-------|-------------|
-| `onCpFinished` | Job completed |
-| `onCpEmpty` | Implement empty |
-| `onCpFull` | Implement full |
-| `onCpFuelEmpty` | Need refuel |
-| `onCpBroken` | Need repair |
-| `onCpCourseChange` | Course changed |
-| `onCpFieldworkWaypointChanged` | Progress update |
-
-### Listening for Events
-
-```lua
--- Register event listener
-SpecializationUtil.registerEventListener(
-    vehicle,
-    "onCpFinished",
-    self
-)
-
--- Handler function
-function MyClass:onCpFinished(vehicle)
-    -- Handle completion
-end
-```
-
-## Course Storage
-
-Courses are saved in the modSettings folder:
-
-```
-[UserProfile]/modSettings/FS25_Courseplay/Courses/[MapId]/
-```
-
-Structure:
-```
-Courses/
-└── MapName/
-    ├── Course1.xml
-    ├── Course2.xml
-    └── Folder/
-        └── Course3.xml
-```
-
-## Example: Starting Field Work
-
-```lua
-function startCPFieldWork(vehicle)
-    -- Check prerequisites
-    if not vehicle:hasCpCourse() then
-        print("No course loaded")
-        return false
-    end
-
-    if not vehicle:getCanStartCpFieldWork() then
-        print("Cannot start field work")
-        return false
-    end
-
-    -- Start at last waypoint
-    vehicle:startCpAtLastWp()
-    return true
-end
-```
-
-## Example: Monitoring Completion
-
-### Polling Method
-
-```lua
-local wasRunningCP = false
-
-function onUpdate(dt)
-    local isActive = vehicle:getIsCpActive()
-
-    if wasRunningCP and not isActive then
-        -- CP just finished
-        onCPComplete()
-    end
-
-    wasRunningCP = isActive
-end
-```
-
-### Event Method
-
-```lua
-function setupEventListener(vehicle)
-    SpecializationUtil.registerEventListener(
-        vehicle,
-        "onCpFinished",
-        self
-    )
-end
-
-function MyClass:onCpFinished(vehicle)
-    -- Courseplay finished
-    executeNextStep()
-end
-```
-
-## Global Access
-
-Access Courseplay globals through the mod namespace:
-
-```lua
--- Correct way to access
-local Courseplay = FS25_Courseplay.g_Courseplay
-
--- Check if available
-if FS25_Courseplay and FS25_Courseplay.g_Courseplay then
-    -- Courseplay is available
-end
-```
-
-## Important Notes
-
-1. **Course requirement**: CP requires a course to be loaded before starting
-2. **Vehicle state**: Check vehicle is not already running AD/CP before starting
-3. **Events**: Use event system for reliable completion notification
-4. **Server-side**: Control functions should be called on the server
-5. **Specializations**: Check for `spec_cpAIWorker` and `spec_cpCourseManager`
+- **Save courses before creating workflows.** The course must exist in Courseplay's saved courses before you can select it in a workflow step.
+- **Course names are exact.** If you rename or move a course file, update your workflow steps.
+- **Attach implements first.** Make sure the right implements are attached to the vehicle before starting the workflow (e.g., a header for harvesting).
+- **Test courses first.** Run each course manually in Courseplay to verify it works correctly before adding it to a workflow.
+- **One course per step.** Each Courseplay step uses one saved course. For multiple fields, add separate steps.

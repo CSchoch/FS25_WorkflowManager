@@ -10,8 +10,8 @@ The Main Dialog is the entry point for managing all your workflows.
 
 ## Accessing the Dialog
 
-1. Press **ESC** to open the game menu
-2. Click on **Workflow Manager** in the menu
+- Press **Left Alt + W** from anywhere (on foot or in a vehicle)
+- Or press **ESC** and click **Workflow Manager** in the menu
 
 ## Interface Overview
 
@@ -93,11 +93,22 @@ This resets the workflow to step 1 and sets status to "ready".
 
 ## Keyboard Shortcuts
 
+### Global (work anywhere)
+
+| Shortcut | Action |
+|----------|--------|
+| **Left Alt + W** | Open/close the Workflow Manager |
+| **Left Ctrl + Left Alt + W** | Quick-start a workflow with current vehicle |
+| **Left Shift + Left Alt + W** | Stop the active workflow |
+
+### In the Dialog
+
 | Key | Action |
 |-----|--------|
-| ESC | Close dialog |
-| Enter | Start selected workflow (when in vehicle) |
-| Delete | Delete selected workflow |
+| **S** | Start selected workflow |
+| **X** | Stop selected workflow |
+| **D** | Delete selected workflow |
+| Double-click | Edit workflow |
 
 ## Status Colors
 
@@ -108,12 +119,11 @@ This resets the workflow to step 1 and sets status to "ready".
 | paused | Yellow |
 | completed | Blue |
 
-## Filtering
+## Resume After Save
 
-Currently, all workflows are shown. Future updates may add:
-- Search by name
-- Filter by status
-- Sort options
+If you save the game while a workflow is running, it will be set to **paused** on reload. Select the workflow and click **Start** to resume from the saved step.
+
+To reset a paused workflow back to step 1, click **Stop** first, then **Start**.
 
 ## Persistence
 

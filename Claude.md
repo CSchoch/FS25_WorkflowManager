@@ -201,6 +201,11 @@ FS25_WorkflowManager/
 │   ├── API_Analysis.md                # AD/CP API documentation
 │   ├── LinkedWorkflowPairsConcept.md  # Linked workflows design doc
 │   └── QueueSystemConcept.md          # Queue system design doc
+├── website/                           # Docusaurus documentation site
+│   ├── docs/                          # User-facing documentation (markdown)
+│   ├── src/                           # Site components
+│   ├── docusaurus.config.ts           # Site configuration
+│   └── package.json                   # Dependencies
 └── xml/gui/
     ├── guiProfiles.xml                # Custom GUI profiles
     ├── WMMainDialog.xml               # Main dialog layout

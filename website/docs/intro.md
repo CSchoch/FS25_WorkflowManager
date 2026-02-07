@@ -22,7 +22,7 @@ Workflow Manager bridges the gap between AutoDrive and Courseplay, allowing you 
 
 ## How It Works
 
-1. **Create a workflow** with multiple steps using the GUI (accessible via ESC menu)
+1. **Create a workflow** with multiple steps using the GUI (press **Left Alt + W**)
 2. **Define steps** - each step is either an AutoDrive route or a Courseplay course
 3. **Start the workflow** from your vehicle
 4. **Watch automation** - the mod handles transitions between steps automatically

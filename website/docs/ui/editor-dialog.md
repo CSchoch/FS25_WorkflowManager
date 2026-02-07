@@ -145,12 +145,17 @@ Fields shown depend on step type and action:
 - Target (course)
 - Action
 
+## Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| **Backspace** | Delete selected step |
+| **+** | Move step up |
+| **-** | Move step down |
+
 ## Workflow Name
 
-The workflow name is shown in the title bar. To rename:
-- Close the editor
-- Select the workflow in the main list
-- Future: Inline editing planned
+The workflow name is shown in the title bar. You can rename it via the main dialog.
 
 ## Saving
 

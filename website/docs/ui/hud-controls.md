@@ -132,8 +132,9 @@ All buttons use 32x32 PNG icons:
 - Move mouse over buttons to see hover effect
 - Click to activate the button
 
-### Keyboard Shortcuts
-Currently, HUD buttons are mouse-only. Keyboard shortcuts may be added in future updates.
+### Toggle HUD
+
+Press **Left Alt + H** to show or hide the HUD overlay.
 
 ## When HUD Appears
 
@@ -155,11 +156,7 @@ The HUD updates in real-time:
 
 ## Customization
 
-Currently, HUD appearance is fixed. Future updates may include:
-- Position adjustment
-- Size scaling
-- Show/hide options
-- Additional information display
+You can toggle the HUD with **Left Alt + H**. The HUD appearance is otherwise fixed.
 
 ## Troubleshooting
 

@@ -84,7 +84,7 @@ const config: Config = {
               to: '/docs/workflows/creating-workflows',
             },
             {
-              label: 'API Reference',
+              label: 'AutoDrive Reference',
               to: '/docs/api/autodrive',
             },
           ],

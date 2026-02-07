@@ -4,9 +4,9 @@ title: XML Format
 sidebar_position: 3
 ---
 
-# XML Format Reference
+# XML Format
 
-Workflow Manager stores workflows in XML format within each savegame.
+Workflow Manager saves your workflows in an XML file within each savegame. You normally don't need to touch this file, but it can be useful for manual editing, backup, or troubleshooting.
 
 ## File Location
 

@@ -1,230 +1,89 @@
 ---
 id: autodrive
-title: AutoDrive API
+title: AutoDrive Reference
 sidebar_position: 1
 ---
 
-# AutoDrive API Reference
+# AutoDrive Reference
 
-This page documents the AutoDrive API functions used by Workflow Manager.
+This page explains how Workflow Manager uses AutoDrive and what you need to know to set up AutoDrive steps.
 
-## Availability Check
+## What AutoDrive Does
 
-```lua
--- Check if AutoDrive is available
-local adAvailable = AutoDrive ~= nil
+AutoDrive handles all **navigation and transport** in your workflows. It drives your vehicle between locations using the AutoDrive road network you've set up on the map.
 
--- Check if vehicle has AD spec
-local hasAD = vehicle.ad ~= nil
-```
+## Setting Up AutoDrive
 
-## Core Functions
+Before using AutoDrive steps in workflows, you need:
 
-### Get Available Destinations
+1. **Create an AutoDrive network** on your map (roads connecting your fields, farm, sell points, etc.)
+2. **Set up destinations** (markers) at key locations like field entrances, silos, and sell points
+3. **Organize destinations in groups** (optional) for easier management
 
-```lua
--- Returns table: {markerID = {name, x, y, z, id}, ...}
-AutoDrive:GetAvailableDestinations()
+### Destination Groups
 
--- Direct access to map markers
-ADGraphManager:getMapMarkers()
-ADGraphManager:getMapMarkerById(markerID)
-```
+AutoDrive lets you organize markers into groups (folders). In Workflow Manager, grouped destinations appear with their group prefix:
 
-### Start Driving
+- Destinations in the "All" group show as just their name: `Field 1`
+- Grouped destinations show as: `Farm/Silo`, `Sell/Mill`, etc.
 
-```lua
--- Main function to start AutoDrive
-AutoDrive:StartDriving(
-    vehicle,            -- Vehicle object
-    destinationID,      -- Target marker ID
-    unloadDestinationID, -- Secondary destination
-    callBackObject,     -- Object to call when complete
-    callBackFunction,   -- Function to call when complete
-    callBackArg         -- Argument passed to callback
-)
+## AutoDrive Actions
 
--- With pathfinder (handles special modes)
-AutoDrive:StartDrivingWithPathFinder(
-    vehicle,
-    destinationID,
-    unloadDestinationID,
-    callBackObject,
-    callBackFunction,
-    callBackArg
-)
-```
+### Drive To
 
-#### Secondary Destination Values
+The simplest mode. Drives the vehicle from its current position to the target destination.
 
-| Value | Meaning |
-|-------|---------|
-| `-1` | No secondary destination |
-| `-2` | Refuel |
-| `-3` | Park |
-| `> 0` | Marker ID for unload destination |
+**Use for:** Getting to a field, returning to the farm, moving between locations.
 
-### Pause and Resume
+**Targets needed:** 1 (destination)
 
-```lua
--- Pause current route
-AutoDrive:HoldDriving(vehicle)
+### Pickup and Deliver
 
--- Internal pause control
-vehicle.ad.drivePathModule:setPaused()
-vehicle.ad.drivePathModule:setUnPaused()
-vehicle.ad.drivePathModule:isPaused()
-```
+Loads cargo at the target location, then delivers it to a second location.
 
-### Stop and Status
+**Use for:** Collecting grain from a silo and delivering to a sell point.
 
-```lua
--- Check if active
-vehicle.ad.stateModule:isActive()
+**Targets needed:** 2 (pickup location + delivery location)
 
--- Get current mode
-vehicle.ad.stateModule:getMode()
+**Fill Type:** Optional. Filters what cargo to pick up (e.g., only Wheat).
 
--- Stop current mode
-vehicle.ad.stateModule:getCurrentMode():stop()
-```
+### Deliver
 
-## Destination Listener
+Delivers the vehicle's current cargo to the target destination.
 
-Register to be notified when ANY AutoDrive route completes:
+**Use for:** Taking what's already loaded to a sell point or storage.
 
-```lua
--- Register listener
-AutoDrive:registerDestinationListener(callBackObject, callBackFunction)
+**Targets needed:** 1 (delivery destination)
 
--- Unregister listener
-AutoDrive:unRegisterDestinationListener(callBackObject)
+### Load
 
--- Trigger notification (internal)
-AutoDrive:notifyDestinationListeners()
+Loads cargo at the target location, then returns to a second location.
 
--- Callback signature
-function callBackFunction(callBackObject, success)
-    -- success: boolean indicating if route completed successfully
-end
-```
+**Use for:** Picking up seeds/fertilizer and returning to a field.
 
-## Mode Constants
+**Targets needed:** 2 (load point + return location)
 
-```lua
-AutoDrive.MODE_DRIVETO = 1           -- Simple drive to destination
-AutoDrive.MODE_PICKUPANDDELIVER = 2  -- Load at first, unload at second
-AutoDrive.MODE_DELIVERTO = 3         -- Deliver load to destination
-AutoDrive.MODE_LOAD = 4              -- Load mode
-AutoDrive.MODE_UNLOAD = 5            -- Unload mode
-AutoDrive.MODE_BGA = 6               -- BGA mode
-```
+**Fill Type:** Optional. Filters what cargo to load.
 
-## Utility Functions
+### Unload Combine
 
-```lua
--- Get driver name
-AutoDrive:GetDriverName(vehicle)
+Follows a combine and unloads its grain, then delivers to a destination.
 
--- Get park destination
-AutoDrive:GetParkDestination(vehicle)
+**Use for:** Running an unloader/grain cart alongside a harvester.
 
--- Get path between points
-AutoDrive:GetPath(startX, startZ, startYRot, destinationID, options)
+**Targets needed:** 2 (combine field area + unload/delivery point)
 
--- Get path via intermediate point
-AutoDrive:GetPathVia(startX, startZ, startYRot, viaID, destinationID, options)
+## Fill Type Filtering
 
--- Find closest network point
-AutoDrive:GetClosestPointToLocation(x, z, minDistance)
-```
+For Pickup and Deliver and Load actions, you can select a specific fill type:
 
-## Courseplay Integration (via AD)
+- Limits what the vehicle will pick up
+- Useful when multiple cargo types are available at one location
+- Common fill types: Wheat, Barley, Canola, Corn, Sunflower, Soybeans, etc.
 
-AutoDrive provides functions to control Courseplay:
+## Tips
 
-```lua
--- Start CP at last waypoint
-AutoDrive:StartCP(vehicle)
-
--- Restart CP
-AutoDrive:RestartCP(vehicle)
-
--- Stop CP if active
-AutoDrive:StopCP(vehicle)
-
--- Check CP status
-AutoDrive:getIsCPActive(vehicle)
-AutoDrive:getIsCPWaitingForUnload(vehicle)
-AutoDrive:getIsCPTurning(vehicle)
-AutoDrive:getIsCPCombineInPocket(vehicle)
-
--- Hold CP combine
-AutoDrive:holdCPCombine(vehicle)
-```
-
-## AD → CP Handoff
-
-AutoDrive can automatically start Courseplay on completion:
-
-```lua
--- Tell AD to start helper on completion
-vehicle.ad.stateModule:setStartHelper(true)
-
--- Pre-load CP course before starting AD
--- AD handles the switch automatically
-```
-
-## Destination Groups/Folders
-
-AutoDrive organizes destinations in groups:
-
-```lua
--- Get all markers with group info
-local markers = ADGraphManager:getMapMarkers()
-
--- Markers structure
-for _, marker in pairs(markers) do
-    local name = marker.name
-    local group = marker.group
-    -- Markers in "All" group shown without prefix
-    -- Others as "Group/Name"
-end
-```
-
-## Example: Starting a Route
-
-```lua
-function startADRoute(vehicle, targetName, onComplete)
-    local destinations = AutoDrive:GetAvailableDestinations()
-
-    -- Find destination by name
-    local targetId = nil
-    for id, dest in pairs(destinations) do
-        if dest.name == targetName then
-            targetId = id
-            break
-        end
-    end
-
-    if targetId then
-        AutoDrive:StartDriving(
-            vehicle,
-            targetId,
-            -1,          -- no second destination
-            self,        -- callback object
-            onComplete,  -- callback function
-            vehicle      -- callback arg
-        )
-        return true
-    end
-    return false
-end
-```
-
-## Important Notes
-
-1. **Server-side**: Control functions should be called on the server (`self.isServer`)
-2. **Callbacks**: AD callbacks are reliable for completion notification
-3. **restartCP flag**: AD uses `vehicle.ad.restartCP` to indicate CP should continue after AD finishes
-4. **State module**: Always check `stateModule:isActive()` before starting a new route
+- **Test routes first.** Before adding an AutoDrive step to a workflow, test the route manually in AutoDrive to make sure it works.
+- **Vehicle must be on the AD network.** The vehicle needs to be near an AutoDrive road to start navigating.
+- **Destination names are exact.** The step uses the exact destination name - if you rename a destination in AutoDrive, update your workflow steps too.
+- **Make sure paths exist.** AutoDrive needs a valid path between the vehicle's position and the target. If there's no path, the step will fail.

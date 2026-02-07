@@ -18,13 +18,12 @@ A workflow consists of:
 
 ## Creating a New Workflow
 
-### From the Main Menu
+### From the Workflow Manager
 
-1. Open the game menu (ESC)
-2. Navigate to **Workflow Manager**
-3. Click **New Workflow**
-4. Enter a workflow name
-5. Click **OK** to open the editor
+1. Press **Left Alt + W** to open the Workflow Manager (or use the ESC menu)
+2. Click **New**
+3. Enter a workflow name
+4. The workflow editor opens
 
 ### Naming Best Practices
 
@@ -74,7 +73,7 @@ Steps are added in the workflow editor.
 ### Reordering Steps
 
 - Select a step and use **Move Up** / **Move Down** buttons
-- Or drag and drop steps in the list
+- Or use keyboard shortcuts: **+** to move up, **-** to move down
 
 ### Modifying a Step
 
@@ -85,8 +84,7 @@ Steps are added in the workflow editor.
 ### Deleting Steps
 
 1. Select the step
-2. Click **Delete**
-3. Confirm deletion
+2. Click **Delete** or press **Backspace**
 
 ## Workflow Example
 
