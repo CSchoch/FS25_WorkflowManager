@@ -7,7 +7,7 @@
       "Bash(find:*)",
       "WebSearch",
       "Bash(dir \"C:\\\\Users\\\\Chef\\\\Documents\\\\My Games\\\\FarmingSimulator2025\\\\mods\\\\FS25_WorkflowManager\\\\textures\")",
-      "Bash(powershell -File - <<'PS1'\n$env:PATH = \"C:\\\\Program Files\\\\nodejs;\" + $env:PATH\ncd \"C:\\\\Users\\\\Chef\\\\Documents\\\\My Games\\\\FarmingSimulator2025\\\\mods\\\\FS25_WorkflowManager\\\\website\"\nnpm run build 2>&1\nPS1)"
+      "Bash(powershell -File - <<'PS1'\n$env:PATH = \"C:\\\\Program Files\\\\nodejs;\" + $env:PATH\ncd \"C:\\\\Users\\\\Chef\\\\Documents\\\\My Games\\\\FarmingSimulator2025\\\\mods\\\\FS25_WorkflowManager\\\\website\"\nnpm run build 2>&1\nPS1)",
       "Bash(\"/c/Program Files \\(x86\\)/Lua/5.1/lua.exe\" tests/run_tests.lua)",
       "Bash(\"/c/Program Files \\(x86\\)/Lua/5.1/lua.exe\":*)",
       "Bash(\"/c/Program Files \\(x86\\)/Lua/5.1/lua.exe\" -e:*)"

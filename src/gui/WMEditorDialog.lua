@@ -100,10 +100,13 @@ function WMEditorDialog:loadDataCaches()
         end
     end
 
-    -- Cache fill types
+    -- Cache fill types as {name, title} pairs (name = internal ID like "WHEAT", title = display like "Wheat")
     self.cachedFillTypes = {}
     if ADIntegration and ADIntegration.isAvailable then
-        self.cachedFillTypes = ADIntegration:getFillTypeNames()
+        local fillTypes = ADIntegration:getAvailableFillTypes()
+        for _, ft in ipairs(fillTypes) do
+            table.insert(self.cachedFillTypes, {name = ft.name, title = ft.title or ft.name})
+        end
     end
 
     WMLogger:debug("Data caches loaded: %d AD, %d CP, %d fillTypes",

@@ -145,13 +145,13 @@ function WMStepDialog:loadAvailableData()
     -- Load targets based on type
     self:refreshTargetList()
 
-    -- Load fill types
+    -- Load fill types (name = internal ID like "WHEAT", display = localized title like "Wheat")
     self.fillTypeItems = {}
     table.insert(self.fillTypeItems, {name = "", display = g_i18n:getText("wm_none") or "(None)"})
     if editor then
         local fillTypes = editor:getFillTypes()
         for _, ft in ipairs(fillTypes) do
-            table.insert(self.fillTypeItems, {name = ft, display = ft})
+            table.insert(self.fillTypeItems, {name = ft.name, display = ft.title or ft.name})
         end
     end
     self.filteredFillTypeItems = self.fillTypeItems
