@@ -24,9 +24,8 @@
 
             <!-- Column Headers -->
             <BoxLayout profile="wm_hBox" size="860px 30px">
-                <Text profile="wm_columnHeader" text="$l10n_wm_header_name" size="500px 30px"/>
+                <Text profile="wm_columnHeader" text="$l10n_wm_header_name" size="680px 30px"/>
                 <Text profile="wm_columnHeader" text="$l10n_wm_header_steps" size="120px 30px"/>
-                <Text profile="wm_columnHeader" text="$l10n_wm_header_status" size="180px 30px"/>
             </BoxLayout>
 
             <!-- Workflow List -->
@@ -38,9 +37,8 @@
                             focusId="workflowList">
                     <ListItem profile="wm_listItem" size="820px 40px">
                         <BoxLayout flowDirection="horizontal" alignmentY="middle" size="100% 100%">
-                            <Text name="workflowName" profile="wm_listItemText" size="500px 100%"/>
-                            <Text name="workflowSteps" profile="wm_listItemText" size="120px 100%"/>
-                            <Text name="workflowStatus" profile="wm_listItemText" size="180px 100%"/>
+                            <Text name="workflowName" profile="wm_listItemText" size="750px 100%"/>
+                            <Text name="workflowSteps" profile="wm_listItemText" size="50px 100%"/>
                         </BoxLayout>
                     </ListItem>
                 </SmoothList>

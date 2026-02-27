@@ -102,7 +102,6 @@ function WMMainDialog:populateCellForItemInSection(list, section, index, cell)
     end
     local activeData = vehicle and WorkflowManager:getVehicleWorkflowState(vehicle)
     local isThisWorkflow = activeData and activeData.workflow.id == workflow.id
-    local status = isThisWorkflow and activeData.status or WorkflowManager.STATUS_READY
     local currentStep = isThisWorkflow and activeData.currentStep or 1
 
     -- Set step count (show progress if running/paused)
@@ -116,28 +115,6 @@ function WMMainDialog:populateCellForItemInSection(list, section, index, cell)
             stepsElement:setText(tostring(stepCount))
         end
     end
-
-    -- Set status
-    local statusElement = cell:getDescendantByName("workflowStatus")
-    if statusElement then
-        local statusText = self:getStatusText(status)
-        statusElement:setText(statusText)
-    end
-end
-
----Get localized status text
----@param status string Status key
----@return string statusText Localized status
-function WMMainDialog:getStatusText(status)
-    local statusKeys = {
-        ready = "wm_status_ready",
-        running = "wm_status_running",
-        paused = "wm_status_paused",
-        completed = "wm_status_completed",
-        error = "wm_status_error"
-    }
-    local key = statusKeys[status] or statusKeys.ready
-    return g_i18n:getText(key) or status or "Ready"
 end
 
 ---Update button states based on selection
