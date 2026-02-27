@@ -26,21 +26,90 @@ end
 ---@param vehicleType table The vehicle type
 function WorkflowManagerSpec.registerEventListeners(vehicleType)
     SpecializationUtil.registerEventListener(vehicleType, "onLoad", WorkflowManagerSpec)
+    SpecializationUtil.registerEventListener(vehicleType, "onPostLoad", WorkflowManagerSpec)
     SpecializationUtil.registerEventListener(vehicleType, "onDelete", WorkflowManagerSpec)
     SpecializationUtil.registerEventListener(vehicleType, "onRegisterActionEvents", WorkflowManagerSpec)
+    SpecializationUtil.registerEventListener(vehicleType, "saveToXMLFile", WorkflowManagerSpec)
 end
 
----Called when the vehicle is loaded
+---Called when the vehicle is loaded (early init only)
 ---@param savegame table The savegame data
 function WorkflowManagerSpec:onLoad(savegame)
-    self.spec_workflowManagerSpec = {}
-    self.spec_workflowManagerSpec.actionEvents = {}
+    self.spec_workflowManagerSpec = {
+        actionEvents = {},
+        wmExecution = nil   -- set by WMExecutor when a workflow starts on this vehicle
+    }
+end
+
+---Called after all vehicles are loaded and initialised.
+---WorkflowManager.workflows is populated by this point (loadMap runs before onPostLoad).
+---@param savegame table The savegame data
+function WorkflowManagerSpec:onPostLoad(savegame)
+    if savegame == nil or savegame.resetVehicles then return end
+
+    local key = savegame.key .. ".FS25_WorkflowManager.workflowManagerSpec"
+    local workflowId = savegame.xmlFile:getValue(key .. "#workflowId")
+    if workflowId ~= nil and workflowId ~= "" then
+        local currentStep = savegame.xmlFile:getValue(key .. "#currentStep") or 1
+        -- Resolve workflow immediately - loadMap has already run by now
+        local workflow = nil
+        for _, wf in ipairs(WorkflowManager.workflows) do
+            if wf.id == workflowId then
+                workflow = wf
+                break
+            end
+        end
+        if workflow then
+            self.spec_workflowManagerSpec.wmExecution = {
+                workflow = workflow,
+                vehicle = self,
+                status = WorkflowManager.STATUS_PAUSED,
+                currentStep = currentStep,
+                startTime = g_currentMission.time,
+                waitingForCompletion = false,
+                autoResumeUntil = g_currentMission.time + 10000
+            }
+            WMExecutor.activeVehicles[self] = true
+            WMHud:show(self)
+            WMLogger:info("Restored workflow '%s' at step %d on '%s' (paused)",
+                workflow.name, currentStep, self.getName and self:getName() or "unknown")
+        else
+            WMLogger:warning("Cannot restore workflow: id '%s' not found", workflowId)
+        end
+    end
+end
+
+---Called when the vehicle is saved to the savegame XML.
+---Note: FS25 calls saveToXMLFile (no 'on' prefix) directly on the spec.
+---@param xmlFile XMLFile The savegame XML file
+---@param key string Base key for this vehicle
+---@param usedModNames table Mod names that wrote data
+function WorkflowManagerSpec:saveToXMLFile(xmlFile, key, usedModNames)
+    local spec = self.spec_workflowManagerSpec
+    if spec == nil or spec.wmExecution == nil then return end
+
+    local activeData = spec.wmExecution
+    -- 'key' already contains the full path including our mod/spec namespace
+    -- (e.g. "vehicles.vehicle(49).FS25_WorkflowManager.workflowManagerSpec")
+    xmlFile:setValue(key .. "#workflowId", activeData.workflow.id)
+    xmlFile:setValue(key .. "#currentStep", activeData.currentStep)
+
+    WMLogger:info("Saved workflow state: id=%s step=%d", activeData.workflow.id, activeData.currentStep)
 end
 
 ---Called when the vehicle is deleted
 function WorkflowManagerSpec:onDelete()
-    if self.spec_workflowManagerSpec and self.spec_workflowManagerSpec.actionEvents then
-        self:clearActionEventsTable(self.spec_workflowManagerSpec.actionEvents)
+    -- Stop workflow if running (prevents dangling state when vehicle is deleted mid-workflow)
+    local spec = self.spec_workflowManagerSpec
+    if spec and spec.wmExecution then
+        pcall(function()
+            WMLogger:info("Vehicle deleted while running workflow - stopping: %s",
+                spec.wmExecution.workflow and spec.wmExecution.workflow.name or "unknown")
+            WMExecutor:stopWorkflow(self)
+        end)
+    end
+    if spec and spec.actionEvents then
+        self:clearActionEventsTable(spec.actionEvents)
     end
 end
 
@@ -171,6 +240,18 @@ local function initSpecialization()
         print("[WorkflowManager] TypeManager not available, registering immediately")
         WorkflowManagerSpec.registerToVehicleTypes()
     end
+end
+
+---Called by FS25 when the specialization is initialised (after all classes are loaded).
+---This is the correct place to register savegame XML schema entries.
+function WorkflowManagerSpec.initSpecialization()
+    local schema = Vehicle.xmlSchemaSavegame
+    local key = "vehicles.vehicle(?).FS25_WorkflowManager.workflowManagerSpec"
+    schema:register(XMLValueType.STRING, key .. "#workflowId",
+        "Active workflow ID for WorkflowManager")
+    schema:register(XMLValueType.INT, key .. "#currentStep",
+        "Current workflow step for WorkflowManager")
+    print("[WorkflowManager] Registered savegame XML schema")
 end
 
 -- Call initialization

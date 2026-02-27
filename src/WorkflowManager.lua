@@ -62,7 +62,6 @@ WorkflowManager.STEP_COURSEPLAY = "courseplay"
 
 -- Internal state
 WorkflowManager.workflows = {}
-WorkflowManager.activeWorkflows = {}
 WorkflowManager.isInitialized = false
 WorkflowManager.isShuttingDown = false
 WorkflowManager.guiVisible = false
@@ -530,11 +529,10 @@ end
 function WorkflowManager:onWorkflowStartedEvent(eventType, data)
     WMLogger:info("Workflow started event received for: %s", tostring(data.workflowId))
 
-    -- Get the vehicle for this workflow
-    local activeData = WMExecutor.activeWorkflows[data.workflowId]
-    if activeData and activeData.vehicle then
+    -- Use vehicle from event data (set by executor)
+    if data.vehicle then
         WMLogger:info("Showing HUD for workflow vehicle")
-        WMHud:show(activeData.vehicle)
+        WMHud:show(data.vehicle)
     else
         -- Fallback: try to get current vehicle
         local currentVehicle = g_currentMission.controlledVehicle
@@ -556,11 +554,10 @@ end
 function WorkflowManager:onWorkflowResumedEvent(eventType, data)
     WMLogger:info("Workflow resumed event received for: %s", tostring(data.workflowId))
 
-    -- Get the vehicle for this workflow
-    local activeData = WMExecutor.activeWorkflows[data.workflowId]
-    if activeData and activeData.vehicle then
+    -- Use vehicle from event data (set by executor)
+    if data.vehicle then
         WMLogger:info("Showing HUD for resumed workflow vehicle")
-        WMHud:show(activeData.vehicle)
+        WMHud:show(data.vehicle)
     else
         -- Fallback: try to get current vehicle
         local currentVehicle = g_currentMission.controlledVehicle
@@ -601,8 +598,8 @@ function WorkflowManager:checkAndHideHUD()
 
     -- Check if there are any active workflows for this vehicle
     local hasActiveWorkflow = false
-    for _, activeData in pairs(WMExecutor.activeWorkflows) do
-        if activeData.vehicle == currentVehicle then
+    for vehicle, _ in pairs(WMExecutor.activeVehicles) do
+        if vehicle == currentVehicle then
             hasActiveWorkflow = true
             break
         end
@@ -665,11 +662,9 @@ function WorkflowManager:createWorkflow(name)
     local workflow = {
         id = self:generateWorkflowId(),
         name = name or "New Workflow",
-        -- NOTE: vehicle is no longer stored with workflow (Milestone 4)
         -- Vehicle is detected at runtime when starting the workflow
+        -- currentStep and status are per-vehicle runtime state (in vehicle.spec_workflowManagerSpec.wmExecution)
         steps = {},
-        currentStep = 1,
-        status = self.STATUS_READY,
         createdAt = getDate("%Y-%m-%d %H:%M:%S")
     }
 
@@ -703,8 +698,8 @@ end
 function WorkflowManager:deleteWorkflow(id)
     for i, workflow in ipairs(self.workflows) do
         if workflow.id == id then
-            -- Stop if running
-            if workflow.status == self.STATUS_RUNNING then
+            -- Stop if running on any vehicle
+            if WMExecutor:isWorkflowActive(id) then
                 self:stopWorkflow(id)
             end
             table.remove(self.workflows, i)
@@ -751,11 +746,6 @@ function WorkflowManager:startWorkflow(workflowId)
         return false
     end
 
-    if workflow.status == self.STATUS_RUNNING then
-        WMLogger:warning("Workflow %s is already running", workflowId)
-        return false
-    end
-
     if #workflow.steps == 0 then
         WMLogger:error("Cannot start: Workflow %s has no steps", workflowId)
         return false
@@ -775,6 +765,16 @@ function WorkflowManager:startWorkflow(workflowId)
             g_currentMission.hud:showBlinkingWarning(warningText, 2000)
         end
         WMLogger:warning("Cannot start: Player is not in a vehicle")
+        return false
+    end
+
+    -- Prevent starting a new workflow on a vehicle that is already running one
+    if WMExecutor:isWorkflowActiveOnVehicle(currentVehicle) then
+        WMLogger:warning("Cannot start: Vehicle is already running a workflow")
+        local warningText = g_i18n:getText("wm_warning_vehicle_busy") or "Vehicle is already running a workflow"
+        if g_currentMission and g_currentMission.hud and g_currentMission.hud.showBlinkingWarning then
+            g_currentMission.hud:showBlinkingWarning(warningText, 2000)
+        end
         return false
     end
 
@@ -818,105 +818,116 @@ function WorkflowManager:isVehicleValid(vehicle)
     return hasAutoDrive and hasCP
 end
 
----Stop a running workflow
+---Stop the workflow running on the current vehicle (matched by workflowId)
 ---@param workflowId string Workflow ID to stop
 ---@return boolean success True if stopped successfully
 function WorkflowManager:stopWorkflow(workflowId)
-    local workflow = self:getWorkflowById(workflowId)
-    if workflow == nil then
-        WMLogger:error("Cannot stop: Workflow %s not found", workflowId)
+    local vehicle = g_currentMission.controlledVehicle
+    if vehicle == nil and g_localPlayer and g_localPlayer.getCurrentVehicle then
+        vehicle = g_localPlayer:getCurrentVehicle()
+    end
+    if vehicle == nil then
+        WMLogger:warning("Cannot stop: no controlled vehicle")
         return false
     end
-
-    return WMExecutor:stopWorkflow(workflow)
+    local activeData = WMExecutor:getActiveDataForVehicle(vehicle)
+    if activeData == nil or activeData.workflow.id ~= workflowId then
+        -- Also try stopping by scanning all active vehicles (for non-controlled vehicle case)
+        for v, _ in pairs(WMExecutor.activeVehicles) do
+            local ad = v.spec_workflowManagerSpec and v.spec_workflowManagerSpec.wmExecution
+            if ad and ad.workflow.id == workflowId then
+                return WMExecutor:stopWorkflow(v)
+            end
+        end
+        WMLogger:warning("Cannot stop: Workflow %s not active on current vehicle", workflowId)
+        return false
+    end
+    return WMExecutor:stopWorkflow(vehicle)
 end
 
----Pause a running workflow
+---Pause the workflow running on the current vehicle (matched by workflowId)
 ---@param workflowId string Workflow ID to pause
 ---@return boolean success True if paused successfully
 function WorkflowManager:pauseWorkflow(workflowId)
-    local workflow = self:getWorkflowById(workflowId)
-    if workflow == nil then
-        WMLogger:error("Cannot pause: Workflow %s not found", workflowId)
+    local vehicle = g_currentMission.controlledVehicle
+    if vehicle == nil and g_localPlayer and g_localPlayer.getCurrentVehicle then
+        vehicle = g_localPlayer:getCurrentVehicle()
+    end
+    if vehicle == nil then
+        WMLogger:warning("Cannot pause: no controlled vehicle")
         return false
     end
-
-    return WMExecutor:pauseWorkflow(workflow)
+    local activeData = WMExecutor:getActiveDataForVehicle(vehicle)
+    if activeData == nil or activeData.workflow.id ~= workflowId then
+        for v, _ in pairs(WMExecutor.activeVehicles) do
+            local ad = v.spec_workflowManagerSpec and v.spec_workflowManagerSpec.wmExecution
+            if ad and ad.workflow.id == workflowId then
+                return WMExecutor:pauseWorkflow(v)
+            end
+        end
+        WMLogger:warning("Cannot pause: Workflow %s not active on current vehicle", workflowId)
+        return false
+    end
+    return WMExecutor:pauseWorkflow(vehicle)
 end
 
----Resume a paused workflow
+---Resume the paused workflow on the current vehicle (matched by workflowId)
 ---@param workflowId string Workflow ID to resume
 ---@return boolean success True if resumed successfully
 function WorkflowManager:resumeWorkflow(workflowId)
-    local workflow = self:getWorkflowById(workflowId)
-    if workflow == nil then
-        WMLogger:error("Cannot resume: Workflow %s not found", workflowId)
+    local vehicle = g_currentMission.controlledVehicle
+    if vehicle == nil and g_localPlayer and g_localPlayer.getCurrentVehicle then
+        vehicle = g_localPlayer:getCurrentVehicle()
+    end
+    if vehicle == nil then
+        WMLogger:warning("Cannot resume: no controlled vehicle")
         return false
     end
-
-    return WMExecutor:resumeWorkflow(workflow)
+    local activeData = WMExecutor:getActiveDataForVehicle(vehicle)
+    if activeData == nil or activeData.workflow.id ~= workflowId then
+        for v, _ in pairs(WMExecutor.activeVehicles) do
+            local ad = v.spec_workflowManagerSpec and v.spec_workflowManagerSpec.wmExecution
+            if ad and ad.workflow.id == workflowId then
+                return WMExecutor:resumeWorkflow(v)
+            end
+        end
+        WMLogger:warning("Cannot resume: Workflow %s not active on current vehicle", workflowId)
+        return false
+    end
+    return WMExecutor:resumeWorkflow(vehicle)
 end
 
----Resume a workflow from its saved state (after game load)
----Uses the current vehicle the player is driving
----@param workflowId string Workflow ID to resume
----@return boolean success True if resumed successfully
-function WorkflowManager:resumeFromSaveWorkflow(workflowId)
-    local workflow = self:getWorkflowById(workflowId)
-    if workflow == nil then
-        WMLogger:error("Cannot resume from save: Workflow %s not found", workflowId)
-        return false
-    end
-
-    -- Get the current vehicle the player is driving
-    local currentVehicle = nil
-    if g_localPlayer and g_localPlayer.getCurrentVehicle then
-        currentVehicle = g_localPlayer:getCurrentVehicle()
-    end
-
-    if currentVehicle == nil then
-        -- Show in-game warning to user
-        local warningText = g_i18n:getText("wm_warning_no_vehicle") or "Enter a vehicle to start the workflow"
-        if g_currentMission and g_currentMission.hud and g_currentMission.hud.showBlinkingWarning then
-            g_currentMission.hud:showBlinkingWarning(warningText, 2000)
-        end
-        WMLogger:warning("Cannot resume: Player is not in a vehicle")
-        return false
-    end
-
-    -- Validate vehicle has required AutoDrive + Courseplay support
-    if not self:isVehicleValid(currentVehicle) then
-        local vehicleName = currentVehicle.getName and currentVehicle:getName() or "unknown"
-        -- Show in-game warning to user
-        local warningText = string.format(g_i18n:getText("wm_warning_incompatible_vehicle") or "Vehicle '%s' needs AutoDrive + Courseplay", vehicleName)
-        if g_currentMission and g_currentMission.hud and g_currentMission.hud.showBlinkingWarning then
-            g_currentMission.hud:showBlinkingWarning(warningText, 2000)
-        end
-        WMLogger:warning("Cannot resume: Vehicle '%s' does not support workflows (needs AutoDrive + Courseplay)", vehicleName)
-        return false
-    end
-
-    WMLogger:info("Resuming workflow from save '%s' at step %d with vehicle: %s",
-        workflow.name,
-        workflow.currentStep or 1,
-        currentVehicle.getName and currentVehicle:getName() or "unknown")
-
-    -- Use resumeFromSave which preserves the saved currentStep
-    return WMExecutor:resumeFromSave(workflow, currentVehicle)
-end
-
----Reset a workflow to ready state (clears saved progress)
----Used for paused/resumable workflows that are not currently active
+---Reset (stop) the workflow on the current vehicle
 ---@param workflowId string Workflow ID to reset
 ---@return boolean success True if reset successfully
 function WorkflowManager:resetWorkflow(workflowId)
-    local workflow = self:getWorkflowById(workflowId)
-    if workflow == nil then
-        WMLogger:error("Cannot reset: Workflow %s not found", workflowId)
+    local vehicle = g_currentMission.controlledVehicle
+    if vehicle == nil and g_localPlayer and g_localPlayer.getCurrentVehicle then
+        vehicle = g_localPlayer:getCurrentVehicle()
+    end
+    if vehicle == nil then
+        WMLogger:warning("Cannot reset: no controlled vehicle")
         return false
     end
+    local activeData = WMExecutor:getActiveDataForVehicle(vehicle)
+    if activeData == nil or activeData.workflow.id ~= workflowId then
+        for v, _ in pairs(WMExecutor.activeVehicles) do
+            local ad = v.spec_workflowManagerSpec and v.spec_workflowManagerSpec.wmExecution
+            if ad and ad.workflow.id == workflowId then
+                return WMExecutor:resetWorkflow(v)
+            end
+        end
+        WMLogger:warning("Cannot reset: Workflow %s not active on any vehicle", workflowId)
+        return false
+    end
+    return WMExecutor:resetWorkflow(vehicle)
+end
 
-    return WMExecutor:resetWorkflow(workflow)
+---Get the active execution state for a vehicle (for GUI state display)
+---@param vehicle table Vehicle to query
+---@return table|nil activeData Execution state or nil if not active
+function WorkflowManager:getVehicleWorkflowState(vehicle)
+    return WMExecutor:getActiveDataForVehicle(vehicle)
 end
 
 ---Get all workflows
@@ -948,6 +959,8 @@ function WorkflowManager:loadMap(name)
     WMLogger:info("Map loaded: %s", name)
     self:init()
     self:loadWorkflows()
+    -- Per-vehicle workflow restore is handled by WorkflowManagerSpec:onPostLoad,
+    -- which fires after this and has access to the now-populated self.workflows.
 end
 
 ---Called when map is deleted/unloaded
@@ -962,22 +975,23 @@ function WorkflowManager:deleteMap()
 
     -- Stop all active workflows before cleanup to prevent CP/AD errors during shutdown
     pcall(function()
-        for workflowId, activeData in pairs(WMExecutor.activeWorkflows) do
+        for vehicle, _ in pairs(WMExecutor.activeVehicles) do
+            local activeData = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
             -- Clear AD->CP handoff flag FIRST to prevent AD from restarting CP during shutdown
-            if activeData.vehicle then
+            if activeData and activeData.vehicle then
                 pcall(function() ADIntegration:clearCPHandoff(activeData.vehicle) end)
             end
 
-            local workflow = activeData.workflow
+            local workflow = activeData and activeData.workflow
             if workflow then
-                WMLogger:info("Stopping active workflow during shutdown: %s", workflow.name or workflowId)
+                WMLogger:info("Stopping active workflow during shutdown: %s", workflow.name)
                 pcall(function()
-                    WMExecutor:stopWorkflow(workflow)
+                    WMExecutor:stopWorkflow(vehicle)
                 end)
             end
         end
-        -- Clear any remaining active workflows
-        WMExecutor.activeWorkflows = {}
+        -- Clear any remaining active vehicles
+        WMExecutor.activeVehicles = {}
     end)
 
     -- Save workflows
@@ -1161,18 +1175,17 @@ if FSBaseMission.delete ~= nil then
             end
             WorkflowManager.isShuttingDown = true
             WMLogger:info("FSBaseMission.delete - stopping active workflows before shutdown")
-            for workflowId, activeData in pairs(WMExecutor.activeWorkflows) do
+            for vehicle, _ in pairs(WMExecutor.activeVehicles) do
+                local activeData = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
                 -- Clear AD->CP handoff flag FIRST to prevent AD from restarting CP
-                if activeData.vehicle then
+                if activeData and activeData.vehicle then
                     pcall(function() ADIntegration:clearCPHandoff(activeData.vehicle) end)
                 end
                 -- Stop AD and CP on this vehicle
-                if activeData.vehicle then
-                    pcall(function() ADIntegration:stopRoute(activeData.vehicle) end)
-                    pcall(function() CPIntegration:stopCourse(activeData.vehicle) end)
-                end
+                pcall(function() ADIntegration:stopRoute(vehicle) end)
+                pcall(function() CPIntegration:stopCourse(vehicle) end)
             end
-            WMExecutor.activeWorkflows = {}
+            WMExecutor.activeVehicles = {}
         end)
     end)
     WMLogger:info("Hooked FSBaseMission.delete for shutdown cleanup")

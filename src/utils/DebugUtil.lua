@@ -156,14 +156,21 @@ function WMDebugUtil:logWorkflowState(workflow)
 
     print(string.format("[WM Debug] Workflow State: %s", workflow.name or "unnamed"))
     print(string.format("  ID: %s", workflow.id or "none"))
-    print(string.format("  Status: %s", workflow.status or "unknown"))
-    print(string.format("  Current Step: %d / %d", workflow.currentStep or 0, #(workflow.steps or {})))
+    print(string.format("  Steps: %d", #(workflow.steps or {})))
 
-    if workflow.vehicle then
-        local vehicleName = workflow.vehicle.getName and workflow.vehicle:getName() or "unknown"
-        print(string.format("  Vehicle: %s", vehicleName))
-    else
-        print("  Vehicle: none assigned")
+    -- Runtime state is per-vehicle; scan activeVehicles for this workflow
+    local found = false
+    for vehicle, _ in pairs(WMExecutor.activeVehicles) do
+        local activeData = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
+        if activeData and activeData.workflow.id == workflow.id then
+            local vehicleName = vehicle.getName and vehicle:getName() or "unknown"
+            print(string.format("  Status: %s (on vehicle: %s)", activeData.status or "unknown", vehicleName))
+            print(string.format("  Current Step: %d / %d", activeData.currentStep or 0, #(workflow.steps or {})))
+            found = true
+        end
+    end
+    if not found then
+        print("  Status: ready (not active on any vehicle)")
     end
 end
 

@@ -126,7 +126,15 @@ function WMMenuFrame:updateListItem(item, workflow, index)
     end
 
     if statusElement then
-        local statusKey = "wm_status_" .. (workflow.status or "ready")
+        -- Get runtime status from vehicle-aware state
+        local vehicle = g_currentMission and g_currentMission.controlledVehicle
+        if vehicle == nil and g_localPlayer and g_localPlayer.getCurrentVehicle then
+            vehicle = g_localPlayer:getCurrentVehicle()
+        end
+        local activeData = vehicle and WorkflowManager:getVehicleWorkflowState(vehicle)
+        local isThisWorkflow = activeData and activeData.workflow.id == workflow.id
+        local status = isThisWorkflow and activeData.status or WorkflowManager.STATUS_READY
+        local statusKey = "wm_status_" .. (status or "ready")
         statusElement:setText(g_i18n:getText(statusKey))
     end
 end
@@ -135,9 +143,16 @@ end
 function WMMenuFrame:updateButtonStates()
     local hasSelection = self.selectedIndex > 0 and self.selectedIndex <= #self.workflows
     local workflow = hasSelection and self.workflows[self.selectedIndex] or nil
-    local isRunning = workflow and workflow.status == WorkflowManager.STATUS_RUNNING
+    -- Get runtime status from vehicle-aware state
+    local vehicle = g_currentMission and g_currentMission.controlledVehicle
+    if vehicle == nil and g_localPlayer and g_localPlayer.getCurrentVehicle then
+        vehicle = g_localPlayer:getCurrentVehicle()
+    end
+    local activeData = vehicle and WorkflowManager:getVehicleWorkflowState(vehicle)
+    local isThisWorkflow = activeData and workflow and activeData.workflow.id == workflow.id
+    local isRunning = isThisWorkflow and activeData.status == WorkflowManager.STATUS_RUNNING
     local hasSteps = workflow and #workflow.steps > 0
-    local hasVehicle = workflow and workflow.vehicle ~= nil
+    local hasVehicle = isThisWorkflow and activeData.vehicle ~= nil
 
     if self.buttonEdit then
         self.buttonEdit:setDisabled(not hasSelection)

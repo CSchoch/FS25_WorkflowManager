@@ -6,14 +6,19 @@
     - AutoDrive: StartDriving with callback for completion
     - Courseplay: startCpAtLastWp/startCpAtFirstWp, poll getIsCpActive
 
+    Per-vehicle execution state lives on vehicle.spec_workflowManagerSpec.wmExecution.
+    Workflow definitions are immutable templates; all mutable runtime state
+    (status, currentStep, tracking flags) lives in activeData on the spec.
+    activeVehicles is a lightweight set {[vehicle]=true} for update-loop iteration.
+
     Author: WorkflowManager Team
 ]]
 
 ---@class WMExecutor
 WMExecutor = {}
 
--- Executor state
-WMExecutor.activeWorkflows = {}
+-- Lightweight set of vehicles with active workflows (for iteration)
+WMExecutor.activeVehicles = {}
 WMExecutor.isInitialized = false
 
 -- Update interval for checking step completion (ms)
@@ -25,7 +30,7 @@ WMExecutor.pendingADCallbacks = {}
 
 ---Initialize the executor
 function WMExecutor:init()
-    self.activeWorkflows = {}
+    self.activeVehicles = {}
     self.pendingADCallbacks = {}
     self.updateTimer = 0
     self.isInitialized = true
@@ -57,24 +62,25 @@ function WMExecutor:onADFinishedEvent(eventData)
     end
 
     -- Find the workflow that was waiting for this vehicle
-    for workflowId, activeData in pairs(self.activeWorkflows) do
-        local workflow = activeData.workflow
-        -- Milestone 4: Use activeData.vehicle instead of workflow.vehicle
-        if activeData.vehicle == eventData.vehicle and
-           activeData.waitingForCompletion and
-           activeData.currentStepType == WorkflowManager.STEP_AUTODRIVE then
+    for vehicle, _ in pairs(self.activeVehicles) do
+        local activeData = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
+        if activeData ~= nil then
+            local workflow = activeData.workflow
+            if activeData.vehicle == eventData.vehicle and
+               activeData.waitingForCompletion and
+               activeData.currentStepType == WorkflowManager.STEP_AUTODRIVE then
 
-            WMLogger:info("AutoDrive step completed for workflow %s (via callback)", workflow.name)
-            activeData.waitingForCompletion = false
-            self:onStepCompleted(workflow)
-            return
+                WMLogger:info("AutoDrive step completed for workflow %s (via callback)", workflow.name)
+                activeData.waitingForCompletion = false
+                self:onStepCompleted(activeData)
+                return
+            end
         end
     end
 end
 
----Start executing a workflow
----Milestone 4: Vehicle is now passed as a parameter instead of being stored in workflow
----@param workflow table Workflow to execute
+---Start executing a workflow on a vehicle
+---@param workflow table Workflow definition (immutable template)
 ---@param vehicle table Vehicle to use for this workflow execution
 ---@return boolean success True if started successfully
 function WMExecutor:startWorkflow(workflow, vehicle)
@@ -88,9 +94,15 @@ function WMExecutor:startWorkflow(workflow, vehicle)
         return false
     end
 
-    -- Check if already running
-    if self.activeWorkflows[workflow.id] ~= nil then
-        WMLogger:warning("Workflow %s is already active", workflow.id)
+    -- Check if vehicle spec is present
+    if vehicle.spec_workflowManagerSpec == nil then
+        WMLogger:error("Vehicle does not have WorkflowManagerSpec - cannot start workflow")
+        return false
+    end
+
+    -- Check if this vehicle is already running a workflow
+    if vehicle.spec_workflowManagerSpec.wmExecution ~= nil then
+        WMLogger:warning("Vehicle is already running a workflow")
         return false
     end
 
@@ -100,58 +112,60 @@ function WMExecutor:startWorkflow(workflow, vehicle)
         return false
     end
 
-    -- Always start from beginning (reset to step 1)
-    workflow.currentStep = 1
-    workflow.status = WorkflowManager.STATUS_RUNNING
+    local vehicleName = vehicle.getName and vehicle:getName() or "unknown"
 
-    -- Milestone 4: Store vehicle in activeData instead of workflow
-    self.activeWorkflows[workflow.id] = {
+    -- Create per-vehicle execution state on the spec (does NOT mutate workflow definition)
+    vehicle.spec_workflowManagerSpec.wmExecution = {
         workflow = workflow,
-        vehicle = vehicle,  -- Vehicle is stored here at runtime, not in workflow
+        vehicle = vehicle,
+        status = WorkflowManager.STATUS_RUNNING,
+        currentStep = 1,
         startTime = g_currentMission.time,
         waitingForCompletion = false
     }
+    self.activeVehicles[vehicle] = true
 
-    local vehicleName = vehicle.getName and vehicle:getName() or "unknown"
+    local activeData = vehicle.spec_workflowManagerSpec.wmExecution
+
     WMLogger:info("Starting workflow: %s with vehicle: %s (Step %d/%d)",
-        workflow.name, vehicleName, workflow.currentStep, #workflow.steps)
+        workflow.name, vehicleName, activeData.currentStep, #workflow.steps)
 
     -- Fire event
     WMEventHandler:fireEvent(WMEventHandler.EVENT_WORKFLOW_STARTED, {
         workflowId = workflow.id,
         workflowName = workflow.name,
+        vehicle = vehicle,
         vehicleName = vehicleName
     })
 
     -- Execute first step
-    self:executeCurrentStep(workflow)
+    self:executeCurrentStep(activeData)
 
     return true
 end
 
----Stop a running workflow
----@param workflow table Workflow to stop
+---Stop a running workflow on a vehicle
+---@param vehicle table Vehicle whose workflow to stop
 ---@return boolean success True if stopped successfully
-function WMExecutor:stopWorkflow(workflow)
-    if workflow == nil then
+function WMExecutor:stopWorkflow(vehicle)
+    if vehicle == nil then
         return false
     end
 
-    local activeData = self.activeWorkflows[workflow.id]
+    local activeData = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
     if activeData == nil then
-        WMLogger:warning("Workflow %s is not active", workflow.id)
+        WMLogger:warning("No active workflow for vehicle")
         return false
     end
+
+    local workflow = activeData.workflow
 
     -- Stop current step
-    self:stopCurrentStep(workflow)
-
-    -- Reset to initial state (same as resetWorkflow)
-    workflow.currentStep = 1
-    workflow.status = WorkflowManager.STATUS_READY
+    self:stopCurrentStep(activeData)
 
     -- Remove from active
-    self.activeWorkflows[workflow.id] = nil
+    vehicle.spec_workflowManagerSpec.wmExecution = nil
+    self.activeVehicles[vehicle] = nil
 
     WMLogger:info("Stopped workflow: %s (reset to step 1)", workflow.name)
 
@@ -163,29 +177,29 @@ function WMExecutor:stopWorkflow(workflow)
     return true
 end
 
----Pause a running workflow
+---Pause a running workflow on a vehicle
 ---When paused, workflow tracking is interrupted and stays in current step
 ---even if AD or CP finishes their current operation
----@param workflow table Workflow to pause
+---@param vehicle table Vehicle whose workflow to pause
 ---@return boolean success True if paused successfully
-function WMExecutor:pauseWorkflow(workflow)
-    if workflow == nil then
+function WMExecutor:pauseWorkflow(vehicle)
+    if vehicle == nil then
         return false
     end
 
-    local activeData = self.activeWorkflows[workflow.id]
+    local activeData = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
     if activeData == nil then
-        WMLogger:warning("Workflow %s is not active", workflow.id)
+        WMLogger:warning("No active workflow for vehicle")
         return false
     end
 
-    if workflow.status ~= WorkflowManager.STATUS_RUNNING then
-        WMLogger:warning("Workflow %s is not running", workflow.id)
+    if activeData.status ~= WorkflowManager.STATUS_RUNNING then
+        WMLogger:warning("Workflow %s is not running", activeData.workflow.id)
         return false
     end
 
     -- Mark as paused FIRST to stop tracking in update loop
-    workflow.status = WorkflowManager.STATUS_PAUSED
+    activeData.status = WorkflowManager.STATUS_PAUSED
 
     -- Store tracking state so we can restore it on resume
     activeData.pausedTrackingState = {
@@ -201,36 +215,36 @@ function WMExecutor:pauseWorkflow(workflow)
     activeData.waitingForCompletion = false
 
     -- Pause current step (AD/CP)
-    self:pauseCurrentStep(workflow)
+    self:pauseCurrentStep(activeData)
 
-    WMLogger:info("Paused workflow: %s at step %d (tracking interrupted)", workflow.name, workflow.currentStep)
+    WMLogger:info("Paused workflow: %s at step %d (tracking interrupted)", activeData.workflow.name, activeData.currentStep)
 
     -- Fire event
     WMEventHandler:fireEvent(WMEventHandler.EVENT_WORKFLOW_PAUSED, {
-        workflowId = workflow.id,
-        currentStep = workflow.currentStep
+        workflowId = activeData.workflow.id,
+        currentStep = activeData.currentStep
     })
 
     return true
 end
 
----Resume a paused workflow
+---Resume a paused workflow on a vehicle
 ---Restores tracking state and resumes AD/CP operation
----@param workflow table Workflow to resume
+---@param vehicle table Vehicle whose workflow to resume
 ---@return boolean success True if resumed successfully
-function WMExecutor:resumeWorkflow(workflow)
-    if workflow == nil then
+function WMExecutor:resumeWorkflow(vehicle)
+    if vehicle == nil then
         return false
     end
 
-    local activeData = self.activeWorkflows[workflow.id]
+    local activeData = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
     if activeData == nil then
-        WMLogger:warning("Workflow %s is not active", workflow.id)
+        WMLogger:warning("No active workflow for vehicle")
         return false
     end
 
-    if workflow.status ~= WorkflowManager.STATUS_PAUSED then
-        WMLogger:warning("Workflow %s is not paused", workflow.id)
+    if activeData.status ~= WorkflowManager.STATUS_PAUSED then
+        WMLogger:warning("Workflow %s is not paused", activeData.workflow.id)
         return false
     end
 
@@ -247,45 +261,45 @@ function WMExecutor:resumeWorkflow(workflow)
         activeData.waitingForCompletion = true
     end
 
-    workflow.status = WorkflowManager.STATUS_RUNNING
+    activeData.status = WorkflowManager.STATUS_RUNNING
 
     -- Resume current step (AD/CP)
-    self:resumeCurrentStep(workflow)
+    self:resumeCurrentStep(activeData)
 
-    WMLogger:info("Resumed workflow: %s at step %d (tracking restored)", workflow.name, workflow.currentStep)
+    WMLogger:info("Resumed workflow: %s at step %d (tracking restored)", activeData.workflow.name, activeData.currentStep)
 
     -- Fire event
     WMEventHandler:fireEvent(WMEventHandler.EVENT_WORKFLOW_RESUMED, {
-        workflowId = workflow.id,
-        currentStep = workflow.currentStep
+        workflowId = activeData.workflow.id,
+        vehicle = vehicle,
+        currentStep = activeData.currentStep
     })
 
     return true
 end
 
 ---Execute the current step of a workflow
----Milestone 4: Uses activeData.vehicle instead of workflow.vehicle
----@param workflow table Workflow
-function WMExecutor:executeCurrentStep(workflow)
-    local step = workflow.steps[workflow.currentStep]
+---@param activeData table Per-vehicle execution state
+function WMExecutor:executeCurrentStep(activeData)
+    local workflow = activeData.workflow
+    local step = workflow.steps[activeData.currentStep]
     if step == nil then
-        WMLogger:error("Step %d not found in workflow %s", workflow.currentStep, workflow.id)
+        WMLogger:error("Step %d not found in workflow %s", activeData.currentStep, workflow.id)
         return
     end
 
     WMLogger:info("Executing step %d/%d: %s -> %s",
-        workflow.currentStep, #workflow.steps, step.type, step.target)
+        activeData.currentStep, #workflow.steps, step.type, step.target)
 
     -- Fire step started event
     WMEventHandler:fireEvent(WMEventHandler.EVENT_STEP_STARTED, {
         workflowId = workflow.id,
-        stepNumber = workflow.currentStep,
+        stepNumber = activeData.currentStep,
         stepType = step.type,
         target = step.target
     })
 
-    local activeData = self.activeWorkflows[workflow.id]
-    local vehicle = activeData.vehicle  -- Milestone 4: Get vehicle from activeData
+    local vehicle = activeData.vehicle
 
     -- Execute based on step type
     if step.type == WorkflowManager.STEP_AUTODRIVE then
@@ -312,7 +326,7 @@ function WMExecutor:executeCurrentStep(workflow)
             return
         end
 
-        self:startAutoDriveStep(workflow, activeData, vehicle, step)
+        self:startAutoDriveStep(activeData, vehicle, step)
 
     elseif step.type == WorkflowManager.STEP_COURSEPLAY then
         -- Courseplay: The 'target' field specifies which course to load
@@ -332,25 +346,24 @@ function WMExecutor:executeCurrentStep(workflow)
             return
         end
 
-        self:startCourseplayStep(workflow, activeData, vehicle, step)
+        self:startCourseplayStep(activeData, vehicle, step)
     else
-        self:handleStepError(workflow, "Unknown step type: " .. tostring(step.type))
+        self:handleStepError(activeData, "Unknown step type: " .. tostring(step.type))
     end
 end
 
 ---Stop the current step
 ---Handles both running and paused states (unfreezes CP / unpauses AD before stopping)
 ---Also handles cyclic handoffs: when CP step has handed off to AD, stops AD too
----Milestone 4: Uses activeData.vehicle instead of workflow.vehicle
----@param workflow table Workflow
-function WMExecutor:stopCurrentStep(workflow)
-    local step = workflow.steps[workflow.currentStep]
+---@param activeData table Per-vehicle execution state
+function WMExecutor:stopCurrentStep(activeData)
+    local workflow = activeData.workflow
+    local step = workflow.steps[activeData.currentStep]
     if step == nil then
         return
     end
 
-    local activeData = self.activeWorkflows[workflow.id]
-    local vehicle = activeData and activeData.vehicle or nil
+    local vehicle = activeData.vehicle
 
     if vehicle == nil then
         WMLogger:warning("Cannot stop step - no vehicle in activeData")
@@ -362,7 +375,7 @@ function WMExecutor:stopCurrentStep(workflow)
 
     if step.type == WorkflowManager.STEP_AUTODRIVE then
         -- Resume AD first if it was paused (HoldDriving), then stop
-        if workflow.status == WorkflowManager.STATUS_PAUSED then
+        if activeData.status == WorkflowManager.STATUS_PAUSED then
             pcall(function() ADIntegration:resumeRoute(vehicle) end)
         end
         pcall(function() ADIntegration:stopRoute(vehicle) end)
@@ -377,7 +390,7 @@ function WMExecutor:stopCurrentStep(workflow)
         end
 
         -- Unfreeze CP first if it was frozen (paused), then stop
-        if workflow.status == WorkflowManager.STATUS_PAUSED then
+        if activeData.status == WorkflowManager.STATUS_PAUSED then
             pcall(function() CPIntegration:resumeCourse(vehicle) end)
         end
         pcall(function() CPIntegration:stopCourse(vehicle) end)
@@ -385,13 +398,13 @@ function WMExecutor:stopCurrentStep(workflow)
 end
 
 ---Start an AutoDrive step (extracted for reuse by deferred start)
----@param workflow table Workflow
----@param activeData table Active workflow data
+---@param activeData table Per-vehicle execution state
 ---@param vehicle table Vehicle
 ---@param step table Step data
-function WMExecutor:startAutoDriveStep(workflow, activeData, vehicle, step)
+function WMExecutor:startAutoDriveStep(activeData, vehicle, step)
+    local workflow = activeData.workflow
     -- Check if next step is Courseplay - if so, configure AD to hand off to CP
-    local nextStep = workflow.steps[workflow.currentStep + 1]
+    local nextStep = workflow.steps[activeData.currentStep + 1]
     local willHandoffToCP = false
 
     if nextStep ~= nil and nextStep.type == WorkflowManager.STEP_COURSEPLAY then
@@ -434,16 +447,15 @@ function WMExecutor:startAutoDriveStep(workflow, activeData, vehicle, step)
         if willHandoffToCP then
             ADIntegration:clearCPHandoff(vehicle)
         end
-        self:handleStepError(workflow, "Failed to start AutoDrive route: " .. (step.target or "nil"))
+        self:handleStepError(activeData, "Failed to start AutoDrive route: " .. (step.target or "nil"))
     end
 end
 
 ---Start a Courseplay step (extracted for reuse by deferred start)
----@param workflow table Workflow
----@param activeData table Active workflow data
+---@param activeData table Per-vehicle execution state
 ---@param vehicle table Vehicle
 ---@param step table Step data
-function WMExecutor:startCourseplayStep(workflow, activeData, vehicle, step)
+function WMExecutor:startCourseplayStep(activeData, vehicle, step)
     -- Check if vehicle has the correct course loaded
     local currentCourse = CPIntegration:getCurrentCourseName(vehicle)
     local hasCourse = CPIntegration:hasCourse(vehicle)
@@ -453,7 +465,7 @@ function WMExecutor:startCourseplayStep(workflow, activeData, vehicle, step)
         WMLogger:info("Loading course for step: %s (current: %s)", step.target or "nil", currentCourse or "none")
         local loadSuccess = CPIntegration:loadCourse(vehicle, step.target)
         if not loadSuccess then
-            self:handleStepError(workflow, "Failed to load Courseplay course: " .. (step.target or "nil"))
+            self:handleStepError(activeData, "Failed to load Courseplay course: " .. (step.target or "nil"))
             return
         end
     else
@@ -462,7 +474,7 @@ function WMExecutor:startCourseplayStep(workflow, activeData, vehicle, step)
 
     -- Verify course is now loaded
     if not CPIntegration:hasCourse(vehicle) then
-        self:handleStepError(workflow, "Vehicle has no Courseplay course loaded for step: " .. (step.target or "nil"))
+        self:handleStepError(activeData, "Vehicle has no Courseplay course loaded for step: " .. (step.target or "nil"))
         return
     end
 
@@ -480,21 +492,20 @@ function WMExecutor:startCourseplayStep(workflow, activeData, vehicle, step)
         activeData.pendingCPStartRetries = nil
         WMLogger:info("Courseplay step started successfully, polling for completion")
     else
-        self:handleStepError(workflow, "Failed to start Courseplay field work")
+        self:handleStepError(activeData, "Failed to start Courseplay field work")
     end
 end
 
 ---Pause the current step
----Milestone 4: Uses activeData.vehicle instead of workflow.vehicle
----@param workflow table Workflow
-function WMExecutor:pauseCurrentStep(workflow)
-    local step = workflow.steps[workflow.currentStep]
+---@param activeData table Per-vehicle execution state
+function WMExecutor:pauseCurrentStep(activeData)
+    local workflow = activeData.workflow
+    local step = workflow.steps[activeData.currentStep]
     if step == nil then
         return
     end
 
-    local activeData = self.activeWorkflows[workflow.id]
-    local vehicle = activeData and activeData.vehicle or nil
+    local vehicle = activeData.vehicle
 
     if vehicle == nil then
         WMLogger:warning("Cannot pause step - no vehicle in activeData")
@@ -510,16 +521,15 @@ function WMExecutor:pauseCurrentStep(workflow)
 end
 
 ---Resume the current step
----Milestone 4: Uses activeData.vehicle instead of workflow.vehicle
----@param workflow table Workflow
-function WMExecutor:resumeCurrentStep(workflow)
-    local step = workflow.steps[workflow.currentStep]
+---@param activeData table Per-vehicle execution state
+function WMExecutor:resumeCurrentStep(activeData)
+    local workflow = activeData.workflow
+    local step = workflow.steps[activeData.currentStep]
     if step == nil then
         return
     end
 
-    local activeData = self.activeWorkflows[workflow.id]
-    local vehicle = activeData and activeData.vehicle or nil
+    local vehicle = activeData.vehicle
 
     if vehicle == nil then
         WMLogger:warning("Cannot resume step - no vehicle in activeData")
@@ -534,10 +544,10 @@ function WMExecutor:resumeCurrentStep(workflow)
 end
 
 ---Handle step completion
----@param workflow table Workflow
-function WMExecutor:onStepCompleted(workflow)
-    local activeData = self.activeWorkflows[workflow.id]
-    local completedStepNum = workflow.currentStep
+---@param activeData table Per-vehicle execution state
+function WMExecutor:onStepCompleted(activeData)
+    local workflow = activeData.workflow
+    local completedStepNum = activeData.currentStep
 
     WMLogger:info("Step %d completed for workflow %s", completedStepNum, workflow.name)
 
@@ -548,24 +558,24 @@ function WMExecutor:onStepCompleted(workflow)
     })
 
     -- Check if AD handed off to CP (AD already started CP for us)
-    local adHandedOffToCP = activeData and activeData.willHandoffToCP
+    local adHandedOffToCP = activeData.willHandoffToCP
 
     -- Move to next step
-    workflow.currentStep = workflow.currentStep + 1
+    activeData.currentStep = activeData.currentStep + 1
 
     -- Check if workflow is complete
-    if workflow.currentStep > #workflow.steps then
-        self:onWorkflowCompleted(workflow)
+    if activeData.currentStep > #workflow.steps then
+        self:onWorkflowCompleted(activeData)
     elseif adHandedOffToCP then
         -- AD already started Courseplay - just set up monitoring, don't call executeCurrentStep
-        local nextStep = workflow.steps[workflow.currentStep]
+        local nextStep = workflow.steps[activeData.currentStep]
         WMLogger:info("AD handed off to CP - skipping CP start, monitoring step %d: %s",
-            workflow.currentStep, nextStep.target or "unknown")
+            activeData.currentStep, nextStep.target or "unknown")
 
         -- Fire step started event for the CP step
         WMEventHandler:fireEvent(WMEventHandler.EVENT_STEP_STARTED, {
             workflowId = workflow.id,
-            stepNumber = workflow.currentStep,
+            stepNumber = activeData.currentStep,
             stepType = nextStep.type,
             target = nextStep.target
         })
@@ -578,20 +588,20 @@ function WMExecutor:onStepCompleted(workflow)
         activeData.cpStartedByAD = true  -- Track that AD started CP
     else
         -- Normal case: Execute next step
-        self:executeCurrentStep(workflow)
+        self:executeCurrentStep(activeData)
     end
 end
 
 ---Handle workflow completion
----@param workflow table Workflow
-function WMExecutor:onWorkflowCompleted(workflow)
+---@param activeData table Per-vehicle execution state
+function WMExecutor:onWorkflowCompleted(activeData)
+    local workflow = activeData.workflow
+    local vehicle = activeData.vehicle
     WMLogger:info("Workflow completed: %s", workflow.name)
 
-    workflow.status = WorkflowManager.STATUS_COMPLETED
-    workflow.currentStep = 1 -- Reset for potential re-run
-
     -- Remove from active workflows
-    self.activeWorkflows[workflow.id] = nil
+    vehicle.spec_workflowManagerSpec.wmExecution = nil
+    self.activeVehicles[vehicle] = nil
 
     -- Fire completion event
     WMEventHandler:fireEvent(WMEventHandler.EVENT_WORKFLOW_COMPLETED, {
@@ -601,22 +611,23 @@ function WMExecutor:onWorkflowCompleted(workflow)
 end
 
 ---Handle step error
----@param workflow table Workflow
+---@param activeData table Per-vehicle execution state
 ---@param errorMessage string Error message
-function WMExecutor:handleStepError(workflow, errorMessage)
+function WMExecutor:handleStepError(activeData, errorMessage)
+    local workflow = activeData.workflow
     WMLogger:error("Step error in workflow %s: %s", workflow.name, errorMessage)
 
-    workflow.status = WorkflowManager.STATUS_ERROR
+    activeData.status = WorkflowManager.STATUS_ERROR
 
     -- Fire error event
     WMEventHandler:fireEvent(WMEventHandler.EVENT_STEP_ERROR, {
         workflowId = workflow.id,
-        stepNumber = workflow.currentStep,
+        stepNumber = activeData.currentStep,
         error = errorMessage
     })
 
     -- Stop the workflow
-    self:stopWorkflow(workflow)
+    self:stopWorkflow(activeData.vehicle)
 end
 
 ---Update function called every frame
@@ -634,11 +645,44 @@ function WMExecutor:update(dt)
     self.updateTimer = 0
 
     -- Check each active workflow for step completion
-    for workflowId, activeData in pairs(self.activeWorkflows) do
-        local workflow = activeData.workflow
-        local vehicle = activeData.vehicle  -- Milestone 4: Use vehicle from activeData
+    for vehicle, _ in pairs(self.activeVehicles) do
+        local activeData = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
+        if activeData ~= nil then
+            local workflow = activeData.workflow
 
-        if workflow.status == WorkflowManager.STATUS_RUNNING and activeData.waitingForCompletion then
+            -- Auto-resume check: poll every tick for the first 10 seconds after restore.
+            -- If AD auto-started after load we catch it as soon as it begins running.
+            if activeData.status == WorkflowManager.STATUS_PAUSED and activeData.autoResumeUntil ~= nil then
+                local step = workflow.steps[activeData.currentStep]
+                local adRunning = step and ADIntegration:isRunning(vehicle)
+                local cpRunning = step and CPIntegration:isRunning(vehicle)
+
+                if adRunning or cpRunning then
+                    activeData.autoResumeUntil = nil  -- found - stop polling
+
+                    WMLogger:info("Auto-resuming workflow '%s' at step %d - %s running after load",
+                        workflow.name, activeData.currentStep,
+                        adRunning and "AutoDrive" or "Courseplay")
+
+                    activeData.status = WorkflowManager.STATUS_RUNNING
+                    activeData.waitingForCompletion = true
+                    activeData.currentStepType = step.type
+                    if cpRunning then
+                        activeData.cpWasRunning = true
+                    end
+
+                    WMEventHandler:fireEvent(WMEventHandler.EVENT_WORKFLOW_RESUMED, {
+                        workflowId = workflow.id,
+                        vehicle = vehicle,
+                        currentStep = activeData.currentStep
+                    })
+                elseif g_currentMission.time >= activeData.autoResumeUntil then
+                    activeData.autoResumeUntil = nil  -- window expired - stay paused
+                    WMLogger:info("Auto-resume window expired for '%s', staying paused", workflow.name)
+                end
+            end
+
+            if activeData.status == WorkflowManager.STATUS_RUNNING and activeData.waitingForCompletion then
             -- Handle deferred CP start: AD was just stopped and CP needs to start
             if activeData.pendingCPStart then
                 local adRunning = ADIntegration:isRunning(vehicle)
@@ -648,9 +692,9 @@ function WMExecutor:update(dt)
                     activeData.pendingCPStart = nil
                     activeData.pendingCPStartRetries = nil
                     activeData.waitingForCompletion = false
-                    local step = workflow.steps[workflow.currentStep]
+                    local step = workflow.steps[activeData.currentStep]
                     if step then
-                        self:startCourseplayStep(workflow, activeData, vehicle, step)
+                        self:startCourseplayStep(activeData, vehicle, step)
                     end
                 else
                     activeData.pendingCPStartRetries = (activeData.pendingCPStartRetries or 0) + 1
@@ -660,9 +704,9 @@ function WMExecutor:update(dt)
                         activeData.pendingCPStart = nil
                         activeData.pendingCPStartRetries = nil
                         activeData.waitingForCompletion = false
-                        local step = workflow.steps[workflow.currentStep]
+                        local step = workflow.steps[activeData.currentStep]
                         if step then
-                            self:startCourseplayStep(workflow, activeData, vehicle, step)
+                            self:startCourseplayStep(activeData, vehicle, step)
                         end
                     else
                         WMLogger:debug("Waiting for AD to stop before starting CP (%d/20)", activeData.pendingCPStartRetries)
@@ -686,9 +730,9 @@ function WMExecutor:update(dt)
                     activeData.pendingADStartRetries = nil
                     activeData.justStoppedAD = nil
                     activeData.waitingForCompletion = false
-                    local step = workflow.steps[workflow.currentStep]
+                    local step = workflow.steps[activeData.currentStep]
                     if step then
-                        self:startAutoDriveStep(workflow, activeData, vehicle, step)
+                        self:startAutoDriveStep(activeData, vehicle, step)
                     end
                 elseif activeData.pendingADStartRetries > 20 then
                     -- Give up after 20 checks (10 seconds) to avoid hanging
@@ -697,9 +741,9 @@ function WMExecutor:update(dt)
                     activeData.pendingADStartRetries = nil
                     activeData.justStoppedAD = nil
                     activeData.waitingForCompletion = false
-                    local step = workflow.steps[workflow.currentStep]
+                    local step = workflow.steps[activeData.currentStep]
                     if step then
-                        self:startAutoDriveStep(workflow, activeData, vehicle, step)
+                        self:startAutoDriveStep(activeData, vehicle, step)
                     end
                 end
             else
@@ -788,10 +832,11 @@ function WMExecutor:update(dt)
 
                 if isComplete then
                     activeData.waitingForCompletion = false
-                    self:onStepCompleted(workflow)
+                    self:onStepCompleted(activeData)
                 end
-            end
-        end
+            end  -- if pendingCPStart/pendingADStart/else
+            end  -- if STATUS_RUNNING and waitingForCompletion
+        end  -- if activeData ~= nil
     end
 end
 
@@ -799,134 +844,77 @@ end
 ---@return number count Number of active workflows
 function WMExecutor:getActiveWorkflowCount()
     local count = 0
-    for _ in pairs(self.activeWorkflows) do
+    for _ in pairs(self.activeVehicles) do
         count = count + 1
     end
     return count
 end
 
----Check if a workflow is active
+---Check if a workflow (by ID) is active on any vehicle
 ---@param workflowId string Workflow ID
----@return boolean isActive True if workflow is active
+---@return boolean isActive True if workflow is active on any vehicle
 function WMExecutor:isWorkflowActive(workflowId)
-    return self.activeWorkflows[workflowId] ~= nil
+    for vehicle, _ in pairs(self.activeVehicles) do
+        local activeData = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
+        if activeData and activeData.workflow.id == workflowId then
+            return true
+        end
+    end
+    return false
 end
 
----Check if a workflow can be resumed from a saved state
----Returns true if workflow has saved progress (paused or partially completed)
----and is not already active
----@param workflow table Workflow to check
----@return boolean isResumable True if workflow can be resumed from save
-function WMExecutor:isWorkflowResumable(workflow)
-    if workflow == nil then
-        return false
-    end
-
-    -- Already active - not resumable (use regular resume instead)
-    if self.activeWorkflows[workflow.id] ~= nil then
-        return false
-    end
-
-    -- Check if workflow has saved progress worth resuming
-    local hasSavedProgress = workflow.status == WorkflowManager.STATUS_PAUSED or
-                             (workflow.currentStep ~= nil and workflow.currentStep > 1)
-
-    return hasSavedProgress
+---Get the active execution data for a specific vehicle
+---@param vehicle table Vehicle to look up
+---@return table|nil activeData The execution state, or nil if not active
+function WMExecutor:getActiveDataForVehicle(vehicle)
+    if vehicle == nil or vehicle.spec_workflowManagerSpec == nil then return nil end
+    return vehicle.spec_workflowManagerSpec.wmExecution
 end
 
----Resume a workflow from its saved state (after game load)
----Unlike startWorkflow, this preserves the saved currentStep
----@param workflow table Workflow to resume
----@param vehicle table Vehicle to use for execution
----@return boolean success True if resumed successfully
-function WMExecutor:resumeFromSave(workflow, vehicle)
-    if workflow == nil then
-        WMLogger:error("Cannot resume nil workflow")
-        return false
-    end
-
-    if vehicle == nil then
-        WMLogger:error("Cannot resume workflow without a vehicle")
-        return false
-    end
-
-    -- Check if already running
-    if self.activeWorkflows[workflow.id] ~= nil then
-        WMLogger:warning("Workflow %s is already active", workflow.id)
-        return false
-    end
-
-    -- Validate workflow has steps
-    if #workflow.steps == 0 then
-        WMLogger:error("Workflow %s has no steps", workflow.id)
-        return false
-    end
-
-    -- Validate currentStep is within bounds
-    if workflow.currentStep == nil or workflow.currentStep < 1 then
-        workflow.currentStep = 1
-    elseif workflow.currentStep > #workflow.steps then
-        -- Already completed all steps, start from beginning
-        WMLogger:info("Workflow %s was at step %d but only has %d steps, starting from 1",
-            workflow.id, workflow.currentStep, #workflow.steps)
-        workflow.currentStep = 1
-    end
-
-    -- Set status to running (preserving currentStep unlike startWorkflow)
-    workflow.status = WorkflowManager.STATUS_RUNNING
-
-    -- Store in activeWorkflows
-    self.activeWorkflows[workflow.id] = {
-        workflow = workflow,
-        vehicle = vehicle,
-        startTime = g_currentMission.time,
-        waitingForCompletion = false,
-        resuming = true
-    }
-
-    local vehicleName = vehicle.getName and vehicle:getName() or "unknown"
-    WMLogger:info("Resuming workflow from save: %s with vehicle: %s (Step %d/%d)",
-        workflow.name, vehicleName, workflow.currentStep, #workflow.steps)
-
-    -- Fire event
-    WMEventHandler:fireEvent(WMEventHandler.EVENT_WORKFLOW_RESUMED, {
-        workflowId = workflow.id,
-        workflowName = workflow.name,
-        vehicleName = vehicleName,
-        currentStep = workflow.currentStep
-    })
-
-    -- Execute the saved current step
-    self:executeCurrentStep(workflow)
-
-    return true
+---Get the workflow definition currently running on a vehicle
+---@param vehicle table Vehicle to look up
+---@return table|nil workflow The workflow definition, or nil if not active
+function WMExecutor:getWorkflowForVehicle(vehicle)
+    local d = self:getActiveDataForVehicle(vehicle)
+    return d and d.workflow or nil
 end
 
----Reset a workflow to ready state (clears saved progress)
----Used for non-active workflows that have saved progress (paused/resumable)
----@param workflow table Workflow to reset
+---Check if a specific vehicle is currently running a workflow
+---@param vehicle table Vehicle to check
+---@return boolean isActive True if vehicle is running a workflow
+function WMExecutor:isWorkflowActiveOnVehicle(vehicle)
+    if vehicle == nil or vehicle.spec_workflowManagerSpec == nil then return false end
+    return vehicle.spec_workflowManagerSpec.wmExecution ~= nil
+end
+
+---Reset a workflow on a vehicle (stops AD/CP and removes from active list)
+---Equivalent to stopWorkflow but named separately for semantic clarity
+---@param vehicle table Vehicle whose workflow to reset
 ---@return boolean success True if reset successfully
-function WMExecutor:resetWorkflow(workflow)
-    if workflow == nil then
-        WMLogger:error("Cannot reset nil workflow")
+function WMExecutor:resetWorkflow(vehicle)
+    if vehicle == nil then
+        WMLogger:error("Cannot reset: nil vehicle")
         return false
     end
 
-    -- Cannot reset an active workflow - use stopWorkflow instead
-    if self.activeWorkflows[workflow.id] ~= nil then
-        WMLogger:warning("Workflow %s is active, use stopWorkflow instead", workflow.id)
+    local activeData = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
+    if activeData == nil then
+        WMLogger:warning("No active workflow for vehicle to reset")
         return false
     end
 
-    -- Reset to initial state
-    workflow.currentStep = 1
-    workflow.status = WorkflowManager.STATUS_READY
+    -- Stop current step (stops AD/CP)
+    self:stopCurrentStep(activeData)
 
-    WMLogger:info("Reset workflow to ready state: %s", workflow.name)
+    -- Remove from active
+    vehicle.spec_workflowManagerSpec.wmExecution = nil
+    self.activeVehicles[vehicle] = nil
+
+    WMLogger:info("Reset workflow: %s", activeData.workflow.name)
 
     -- Fire event
     WMEventHandler:fireEvent(WMEventHandler.EVENT_WORKFLOW_STOPPED, {
-        workflowId = workflow.id,
+        workflowId = activeData.workflow.id,
         reset = true
     })
 
@@ -935,35 +923,35 @@ end
 
 ---Go to the previous step in a workflow
 ---Stops current step and moves to the previous one
----@param workflow table Workflow
+---@param vehicle table Vehicle whose workflow to navigate
 ---@return boolean success True if moved to previous step
-function WMExecutor:goToPreviousStep(workflow)
-    if workflow == nil then
+function WMExecutor:goToPreviousStep(vehicle)
+    if vehicle == nil then
         return false
     end
 
-    local activeData = self.activeWorkflows[workflow.id]
+    local activeData = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
     if activeData == nil then
-        WMLogger:warning("Workflow %s is not active", workflow.id)
+        WMLogger:warning("No active workflow for vehicle")
         return false
     end
 
-    if workflow.currentStep <= 1 then
-        WMLogger:warning("Already at first step of workflow %s", workflow.id)
+    if activeData.currentStep <= 1 then
+        WMLogger:warning("Already at first step of workflow %s", activeData.workflow.id)
         return false
     end
 
     -- Remember if workflow was paused so we can resume after step change
-    local wasPaused = workflow.status == WorkflowManager.STATUS_PAUSED
+    local wasPaused = activeData.status == WorkflowManager.STATUS_PAUSED
 
     -- Stop the current step (handles paused state internally)
-    self:stopCurrentStep(workflow)
+    self:stopCurrentStep(activeData)
 
     -- Move to previous step
-    workflow.currentStep = workflow.currentStep - 1
+    activeData.currentStep = activeData.currentStep - 1
 
     WMLogger:info("Moving to previous step %d/%d for workflow %s",
-        workflow.currentStep, #workflow.steps, workflow.name)
+        activeData.currentStep, #activeData.workflow.steps, activeData.workflow.name)
 
     -- Reset waiting state
     activeData.waitingForCompletion = false
@@ -980,18 +968,18 @@ function WMExecutor:goToPreviousStep(workflow)
 
     -- Resume workflow to running state if it was paused, then execute new step
     if wasPaused then
-        workflow.status = WorkflowManager.STATUS_RUNNING
+        activeData.status = WorkflowManager.STATUS_RUNNING
     end
 
     -- If workflow is running, start the new step
-    if workflow.status == WorkflowManager.STATUS_RUNNING then
-        self:executeCurrentStep(workflow)
+    if activeData.status == WorkflowManager.STATUS_RUNNING then
+        self:executeCurrentStep(activeData)
     end
 
     -- Fire event
     WMEventHandler:fireEvent(WMEventHandler.EVENT_STEP_CHANGED, {
-        workflowId = workflow.id,
-        stepNumber = workflow.currentStep,
+        workflowId = activeData.workflow.id,
+        stepNumber = activeData.currentStep,
         direction = "previous"
     })
 
@@ -1000,35 +988,35 @@ end
 
 ---Go to the next step in a workflow
 ---Stops current step and moves to the next one
----@param workflow table Workflow
+---@param vehicle table Vehicle whose workflow to navigate
 ---@return boolean success True if moved to next step
-function WMExecutor:goToNextStep(workflow)
-    if workflow == nil then
+function WMExecutor:goToNextStep(vehicle)
+    if vehicle == nil then
         return false
     end
 
-    local activeData = self.activeWorkflows[workflow.id]
+    local activeData = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
     if activeData == nil then
-        WMLogger:warning("Workflow %s is not active", workflow.id)
+        WMLogger:warning("No active workflow for vehicle")
         return false
     end
 
-    if workflow.currentStep >= #workflow.steps then
-        WMLogger:warning("Already at last step of workflow %s", workflow.id)
+    if activeData.currentStep >= #activeData.workflow.steps then
+        WMLogger:warning("Already at last step of workflow %s", activeData.workflow.id)
         return false
     end
 
     -- Remember if workflow was paused so we can resume after step change
-    local wasPaused = workflow.status == WorkflowManager.STATUS_PAUSED
+    local wasPaused = activeData.status == WorkflowManager.STATUS_PAUSED
 
     -- Stop the current step (handles paused state internally)
-    self:stopCurrentStep(workflow)
+    self:stopCurrentStep(activeData)
 
     -- Move to next step
-    workflow.currentStep = workflow.currentStep + 1
+    activeData.currentStep = activeData.currentStep + 1
 
     WMLogger:info("Moving to next step %d/%d for workflow %s",
-        workflow.currentStep, #workflow.steps, workflow.name)
+        activeData.currentStep, #activeData.workflow.steps, activeData.workflow.name)
 
     -- Reset waiting state
     activeData.waitingForCompletion = false
@@ -1045,18 +1033,18 @@ function WMExecutor:goToNextStep(workflow)
 
     -- Resume workflow to running state if it was paused, then execute new step
     if wasPaused then
-        workflow.status = WorkflowManager.STATUS_RUNNING
+        activeData.status = WorkflowManager.STATUS_RUNNING
     end
 
     -- If workflow is running, start the new step
-    if workflow.status == WorkflowManager.STATUS_RUNNING then
-        self:executeCurrentStep(workflow)
+    if activeData.status == WorkflowManager.STATUS_RUNNING then
+        self:executeCurrentStep(activeData)
     end
 
     -- Fire event
     WMEventHandler:fireEvent(WMEventHandler.EVENT_STEP_CHANGED, {
-        workflowId = workflow.id,
-        stepNumber = workflow.currentStep,
+        workflowId = activeData.workflow.id,
+        stepNumber = activeData.currentStep,
         direction = "next"
     })
 

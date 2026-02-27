@@ -54,8 +54,6 @@ function WMStorage:saveWorkflows(workflows)
 
         xmlFile:setString(workflowKey .. "#id", workflow.id)
         xmlFile:setString(workflowKey .. "#name", workflow.name)
-        xmlFile:setInt(workflowKey .. "#currentStep", workflow.currentStep)
-        xmlFile:setString(workflowKey .. "#status", workflow.status)
 
         -- Milestone 4: Vehicle is no longer saved with workflow
         -- Vehicle is detected at runtime when starting the workflow
@@ -118,15 +116,10 @@ function WMStorage:loadWorkflows()
         local workflow = {
             id = workflowId,
             name = xmlFile:getString(workflowKey .. "#name", "Unnamed Workflow"),
-            currentStep = xmlFile:getInt(workflowKey .. "#currentStep", 1),
-            status = xmlFile:getString(workflowKey .. "#status", WorkflowManager.STATUS_READY),
-            -- Milestone 4: Vehicle is no longer stored with workflow
+            -- currentStep and status are per-vehicle runtime state, not persisted
             -- Vehicle is detected at runtime when starting the workflow
             steps = {}
         }
-
-        -- Milestone 4: vehicleId is ignored (old XML files may still have it)
-        -- local vehicleId = xmlFile:getInt(workflowKey .. "#vehicleId")
 
         -- Load steps
         local stepIndex = 0
@@ -149,11 +142,6 @@ function WMStorage:loadWorkflows()
 
             table.insert(workflow.steps, step)
             stepIndex = stepIndex + 1
-        end
-
-        -- Reset status if it was running (can't resume mid-step after reload)
-        if workflow.status == WorkflowManager.STATUS_RUNNING then
-            workflow.status = WorkflowManager.STATUS_PAUSED
         end
 
         table.insert(workflows, workflow)

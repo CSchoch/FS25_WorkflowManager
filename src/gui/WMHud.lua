@@ -193,16 +193,19 @@ function WMHud:getActiveWorkflow()
     -- Get root vehicle (in case we're in an implement or attached vehicle)
     local controlledRoot = controlledVehicle.rootVehicle or controlledVehicle
 
-    for _, data in pairs(WMExecutor.activeWorkflows) do
-        local workflowVehicle = data.vehicle
-        local workflowRoot = workflowVehicle and (workflowVehicle.rootVehicle or workflowVehicle)
+    for vehicle, _ in pairs(WMExecutor.activeVehicles) do
+        local data = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
+        if data ~= nil then
+            local workflowVehicle = data.vehicle
+            local workflowRoot = workflowVehicle and (workflowVehicle.rootVehicle or workflowVehicle)
 
-        -- Compare both direct reference and root vehicle
-        if workflowVehicle == controlledVehicle or
-           workflowVehicle == controlledRoot or
-           workflowRoot == controlledVehicle or
-           workflowRoot == controlledRoot then
-            return data.workflow, data
+            -- Compare both direct reference and root vehicle
+            if workflowVehicle == controlledVehicle or
+               workflowVehicle == controlledRoot or
+               workflowRoot == controlledVehicle or
+               workflowRoot == controlledRoot then
+                return data.workflow, data
+            end
         end
     end
 
@@ -247,8 +250,8 @@ function WMHud:draw()
     local mx = self.marginX
     local my = self.marginY
 
-    -- Get workflow data
-    local workflow = self:getActiveWorkflow()
+    -- Get workflow data (both definition and runtime state)
+    local workflow, activeData = self:getActiveWorkflow()
 
     -- === Header ===
     setTextBold(true)
@@ -270,11 +273,11 @@ function WMHud:draw()
     local name = workflow and workflow.name or g_i18n:getText("wm_hud_no_workflow")
     renderText(x + mx, lineY, self.textSize, name)
 
-    -- Step info
+    -- Step info (read from activeData, not workflow definition)
     lineY = lineY - self.textSize - my
     setTextColor(0.9, 0.9, 0.3, 1)
-    if workflow and workflow.steps then
-        local cs = workflow.currentStep or 1
+    if workflow and activeData and workflow.steps then
+        local cs = activeData.currentStep or 1
         local ts = #workflow.steps
         local step = workflow.steps[cs]
         if step then
@@ -286,7 +289,6 @@ function WMHud:draw()
 
     -- Vehicle state
     lineY = lineY - self.smallSize - my
-    local _, activeData = self:getActiveWorkflow()
     if activeData and activeData.vehicle then
         local vehicle = activeData.vehicle
         local adRunning = ADIntegration:isRunning(vehicle)
@@ -310,7 +312,7 @@ function WMHud:draw()
         elseif adRunning then
             setTextColor(0.4, 0.8, 1, 1)
             renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_ad_active"))
-        elseif workflow and workflow.status == "paused" then
+        elseif activeData.status == WorkflowManager.STATUS_PAUSED then
             setTextColor(1, 0.6, 0, 1)
             renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_paused"))
         else
@@ -323,7 +325,7 @@ function WMHud:draw()
     end
 
     -- === Button row (icons) ===
-    self:drawIconButtons(workflow)
+    self:drawIconButtons(activeData)
 
     -- Reset
     setTextColor(1, 1, 1, 1)
@@ -331,15 +333,17 @@ function WMHud:draw()
     setTextAlignment(RenderText.ALIGN_LEFT)
 end
 
-function WMHud:drawIconButtons(workflow)
+function WMHud:drawIconButtons(activeData)
     if not self.iconOverlays then
         return
     end
 
-    local isPaused = workflow and workflow.status == "paused"
-    local hasWorkflow = workflow ~= nil
-    local canGoPrev = hasWorkflow and (workflow.currentStep or 1) > 1
-    local canGoNext = hasWorkflow and workflow.steps and (workflow.currentStep or 1) < #workflow.steps
+    local hasWorkflow = activeData ~= nil
+    local isPaused = hasWorkflow and activeData.status == WorkflowManager.STATUS_PAUSED
+    local currentStep = hasWorkflow and activeData.currentStep or 1
+    local stepCount = hasWorkflow and activeData.workflow.steps and #activeData.workflow.steps or 0
+    local canGoPrev = hasWorkflow and currentStep > 1
+    local canGoNext = hasWorkflow and currentStep < stepCount
 
     -- Previous button
     local prevColor = self.ICON_DISABLED
@@ -356,7 +360,7 @@ function WMHud:drawIconButtons(workflow)
         self.iconOverlays.play:render()
     else
         local pauseColor = self.ICON_DISABLED
-        if hasWorkflow and workflow.status == "running" then
+        if hasWorkflow and activeData.status == WorkflowManager.STATUS_RUNNING then
             pauseColor = self.hoveredButton == "pauseResume" and self.ICON_HOVER or self.ICON_NORMAL
         end
         self.iconOverlays.pause:setColor(unpack(pauseColor))
@@ -432,11 +436,12 @@ function WMHud:handleClick(posX, posY)
 
     -- Check icon button clicks
     if self.buttonBounds then
-        local workflow = self:getActiveWorkflow()
-        local hasWorkflow = workflow ~= nil
-        local isPaused = hasWorkflow and workflow.status == "paused"
-        local canGoPrev = hasWorkflow and (workflow.currentStep or 1) > 1
-        local canGoNext = hasWorkflow and workflow.steps and (workflow.currentStep or 1) < #workflow.steps
+        local _, activeData = self:getActiveWorkflow()
+        local hasWorkflow = activeData ~= nil
+        local currentStep = hasWorkflow and activeData.currentStep or 1
+        local stepCount = hasWorkflow and activeData.workflow.steps and #activeData.workflow.steps or 0
+        local canGoPrev = hasWorkflow and currentStep > 1
+        local canGoNext = hasWorkflow and currentStep < stepCount
 
         -- Previous button
         local prevBounds = self.buttonBounds.prev
@@ -488,21 +493,21 @@ end
 -- === Button callbacks ===
 
 function WMHud:onClickPauseResume()
-    local workflow = self:getActiveWorkflow()
-    if workflow == nil then return end
+    local workflow, activeData = self:getActiveWorkflow()
+    if activeData == nil then return end
 
-    if workflow.status == WorkflowManager.STATUS_RUNNING then
+    if activeData.status == WorkflowManager.STATUS_RUNNING then
         WorkflowManager:pauseWorkflow(workflow.id)
         WMLogger:info("Workflow paused via HUD: %s", workflow.name)
-    elseif workflow.status == WorkflowManager.STATUS_PAUSED then
+    elseif activeData.status == WorkflowManager.STATUS_PAUSED then
         WorkflowManager:resumeWorkflow(workflow.id)
         WMLogger:info("Workflow resumed via HUD: %s", workflow.name)
     end
 end
 
 function WMHud:onClickStop()
-    local workflow = self:getActiveWorkflow()
-    if workflow == nil then return end
+    local workflow, activeData = self:getActiveWorkflow()
+    if activeData == nil then return end
 
     WorkflowManager:stopWorkflow(workflow.id)
     WMLogger:info("Workflow stopped via HUD: %s", workflow.name)
@@ -512,19 +517,19 @@ function WMHud:onClickStop()
 end
 
 function WMHud:onClickPrevious()
-    local workflow = self:getActiveWorkflow()
-    if workflow == nil or workflow.currentStep <= 1 then return end
+    local _, activeData = self:getActiveWorkflow()
+    if activeData == nil or activeData.currentStep <= 1 then return end
 
-    WMLogger:info("Previous step via HUD: %s", workflow.name)
-    WMExecutor:goToPreviousStep(workflow)
+    WMLogger:info("Previous step via HUD: %s", activeData.workflow.name)
+    WMExecutor:goToPreviousStep(activeData.vehicle)
 end
 
 function WMHud:onClickNext()
-    local workflow = self:getActiveWorkflow()
-    if workflow == nil or workflow.currentStep >= #workflow.steps then return end
+    local _, activeData = self:getActiveWorkflow()
+    if activeData == nil or activeData.currentStep >= #activeData.workflow.steps then return end
 
-    WMLogger:info("Next step via HUD: %s", workflow.name)
-    WMExecutor:goToNextStep(workflow)
+    WMLogger:info("Next step via HUD: %s", activeData.workflow.name)
+    WMExecutor:goToNextStep(activeData.vehicle)
 end
 
 function WMHud:delete()

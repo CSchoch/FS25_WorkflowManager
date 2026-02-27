@@ -173,27 +173,36 @@ function WMManagerGUI:refresh()
 end
 
 ---Get status text for a workflow
----@param workflow table Workflow data
+---Uses vehicle-aware runtime state for active workflows
+---@param workflow table Workflow definition
 ---@return string statusText Formatted status text
 function WMManagerGUI:getStatusText(workflow)
-    local statusText = workflow.status or "unknown"
+    -- Look up runtime state from current vehicle
+    local vehicle = g_currentMission and g_currentMission.controlledVehicle
+    if vehicle == nil and g_localPlayer and g_localPlayer.getCurrentVehicle then
+        vehicle = g_localPlayer:getCurrentVehicle()
+    end
+    local activeData = vehicle and WorkflowManager:getVehicleWorkflowState(vehicle)
+    local isThisWorkflow = activeData and activeData.workflow.id == workflow.id
+    local status = isThisWorkflow and activeData.status or WorkflowManager.STATUS_READY
+    local currentStep = isThisWorkflow and activeData.currentStep or 1
 
-    if workflow.status == WorkflowManager.STATUS_RUNNING then
-        statusText = string.format("%s (%d/%d)",
+    if status == WorkflowManager.STATUS_RUNNING then
+        return string.format("%s (%d/%d)",
             g_i18n:getText("wm_status_running"),
-            workflow.currentStep or 1,
+            currentStep,
             #workflow.steps)
-    elseif workflow.status == WorkflowManager.STATUS_READY then
-        statusText = g_i18n:getText("wm_status_ready")
-    elseif workflow.status == WorkflowManager.STATUS_PAUSED then
-        statusText = g_i18n:getText("wm_status_paused")
-    elseif workflow.status == WorkflowManager.STATUS_COMPLETED then
-        statusText = g_i18n:getText("wm_status_completed")
-    elseif workflow.status == WorkflowManager.STATUS_ERROR then
-        statusText = g_i18n:getText("wm_status_error")
+    elseif status == WorkflowManager.STATUS_READY then
+        return g_i18n:getText("wm_status_ready")
+    elseif status == WorkflowManager.STATUS_PAUSED then
+        return g_i18n:getText("wm_status_paused")
+    elseif status == WorkflowManager.STATUS_COMPLETED then
+        return g_i18n:getText("wm_status_completed")
+    elseif status == WorkflowManager.STATUS_ERROR then
+        return g_i18n:getText("wm_status_error")
     end
 
-    return statusText
+    return status or "unknown"
 end
 
 ---Milestone 4: Vehicle is no longer stored with workflow
@@ -317,10 +326,18 @@ function WMManagerGUI:onClickPause()
     local workflow = workflows[self.selectedWorkflowIndex]
 
     if workflow ~= nil then
-        if workflow.status == WorkflowManager.STATUS_RUNNING then
-            WorkflowManager:pauseWorkflow(workflow.id)
-        elseif workflow.status == WorkflowManager.STATUS_PAUSED then
-            WorkflowManager:resumeWorkflow(workflow.id)
+        local vehicle = g_currentMission and g_currentMission.controlledVehicle
+        if vehicle == nil and g_localPlayer and g_localPlayer.getCurrentVehicle then
+            vehicle = g_localPlayer:getCurrentVehicle()
+        end
+        local activeData = vehicle and WorkflowManager:getVehicleWorkflowState(vehicle)
+        local isThisWorkflow = activeData and activeData.workflow.id == workflow.id
+        if isThisWorkflow then
+            if activeData.status == WorkflowManager.STATUS_RUNNING then
+                WorkflowManager:pauseWorkflow(workflow.id)
+            elseif activeData.status == WorkflowManager.STATUS_PAUSED then
+                WorkflowManager:resumeWorkflow(workflow.id)
+            end
         end
         self:refresh()
     end
@@ -508,15 +525,23 @@ function WMManagerGUI:drawWorkflowRow(baseX, y, index, workflow)
     setOverlayColor(self.overlayId, 0.3, 0.3, 0.35, 0.4)
     renderOverlay(self.overlayId, baseX + 0.02, y - rowHeight + 0.01, 0.46, 0.001)
 
-    -- Row color based on status
+    -- Row color based on runtime status (vehicle-aware)
+    local vehicle = g_currentMission and g_currentMission.controlledVehicle
+    if vehicle == nil and g_localPlayer and g_localPlayer.getCurrentVehicle then
+        vehicle = g_localPlayer:getCurrentVehicle()
+    end
+    local rowActiveData = vehicle and WorkflowManager:getVehicleWorkflowState(vehicle)
+    local rowIsThis = rowActiveData and rowActiveData.workflow.id == workflow.id
+    local rowStatus = rowIsThis and rowActiveData.status or WorkflowManager.STATUS_READY
+
     local textColor = {1, 1, 1, 1}
-    if workflow.status == WorkflowManager.STATUS_RUNNING then
+    if rowStatus == WorkflowManager.STATUS_RUNNING then
         textColor = {0.3, 0.9, 0.3, 1}
-    elseif workflow.status == WorkflowManager.STATUS_PAUSED then
+    elseif rowStatus == WorkflowManager.STATUS_PAUSED then
         textColor = {0.9, 0.9, 0.3, 1}
-    elseif workflow.status == WorkflowManager.STATUS_ERROR then
+    elseif rowStatus == WorkflowManager.STATUS_ERROR then
         textColor = {0.9, 0.3, 0.3, 1}
-    elseif workflow.status == WorkflowManager.STATUS_COMPLETED then
+    elseif rowStatus == WorkflowManager.STATUS_COMPLETED then
         textColor = {0.5, 0.7, 0.9, 1}
     end
 
