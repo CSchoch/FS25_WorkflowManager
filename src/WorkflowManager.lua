@@ -436,36 +436,6 @@ function WorkflowManager:registerGlobalActions()
         WMLogger:error("Failed to register input action WM_TOGGLE_GUI: %s", tostring(result))
     end
 
-    -- Register WM_START_WORKFLOW
-    success, result = pcall(function()
-        local _, eventId = g_inputBinding:registerActionEvent(
-            "WM_START_WORKFLOW",
-            self,
-            self.onStartWorkflowInput,
-            false, true, false, true
-        )
-        return eventId
-    end)
-    if success and result then
-        g_inputBinding:setActionEventTextVisibility(result, false)
-        WMLogger:debug("Registered WM_START_WORKFLOW")
-    end
-
-    -- Register WM_STOP_WORKFLOW
-    success, result = pcall(function()
-        local _, eventId = g_inputBinding:registerActionEvent(
-            "WM_STOP_WORKFLOW",
-            self,
-            self.onStopWorkflowInput,
-            false, true, false, true
-        )
-        return eventId
-    end)
-    if success and result then
-        g_inputBinding:setActionEventTextVisibility(result, false)
-        WMLogger:debug("Registered WM_STOP_WORKFLOW")
-    end
-
     -- Register WM_TOGGLE_HUD
     success, result = pcall(function()
         local _, eventId = g_inputBinding:registerActionEvent(
@@ -482,31 +452,6 @@ function WorkflowManager:registerGlobalActions()
     end
 end
 
----Called when start workflow input is triggered
-function WorkflowManager:onStartWorkflowInput()
-    WMLogger:debug("Start workflow input triggered")
-    -- Start selected workflow if GUI is open
-    if WMManagerGUI.isVisible and WMManagerGUI.selectedWorkflowIndex > 0 then
-        local workflows = self:getAllWorkflows()
-        local workflow = workflows[WMManagerGUI.selectedWorkflowIndex]
-        if workflow then
-            self:startWorkflow(workflow.id)
-        end
-    end
-end
-
----Called when stop workflow input is triggered
-function WorkflowManager:onStopWorkflowInput()
-    WMLogger:debug("Stop workflow input triggered")
-    -- Stop selected workflow if GUI is open
-    if WMManagerGUI.isVisible and WMManagerGUI.selectedWorkflowIndex > 0 then
-        local workflows = self:getAllWorkflows()
-        local workflow = workflows[WMManagerGUI.selectedWorkflowIndex]
-        if workflow then
-            self:stopWorkflow(workflow.id)
-        end
-    end
-end
 
 ---Toggle the main GUI visibility
 function WorkflowManager:onToggleGUI()

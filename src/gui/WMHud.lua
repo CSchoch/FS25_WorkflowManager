@@ -19,10 +19,10 @@ WMHud.iconOverlays = nil
 WMHud.hoveredButton = nil
 
 -- Icon colors
-WMHud.ICON_NORMAL = {1, 1, 1, 0.9}
-WMHud.ICON_HOVER = {0.165, 0.757, 0.929, 1}  -- Cyan/blue
-WMHud.ICON_DISABLED = {0.4, 0.4, 0.4, 0.5}
-WMHud.ICON_ACTIVE = {0.3, 0.9, 0.3, 1}  -- Green for active/resume
+WMHud.ICON_NORMAL = { 1, 1, 1, 0.9 }
+WMHud.ICON_HOVER = { 0.165, 0.757, 0.929, 1 } -- Cyan/blue
+WMHud.ICON_DISABLED = { 0.4, 0.4, 0.4, 0.5 }
+WMHud.ICON_ACTIVE = { 0.3, 0.9, 0.3, 1 }    -- Green for active/resume
 
 
 -- Position & size in normalized screen coordinates (set on first draw)
@@ -77,8 +77,7 @@ function WMHud:ensureOverlays()
 end
 
 function WMHud:createIconOverlays()
-    local iconSize = getNormalizedScreenValues(24, 24)
-    local iconW, iconH = iconSize, iconSize
+    local iconW, iconH = getNormalizedScreenValues(24, 24)
 
     -- Get mod directory for icon paths
     local modDir = WorkflowManager.modDirectory or g_currentModDirectory or ""
@@ -106,7 +105,7 @@ function WMHud:createIconOverlays()
     local prevOverlay = Overlay.new(iconPrev, startX, btnY, iconW, iconH)
     prevOverlay:setColor(unpack(self.ICON_NORMAL))
     self.iconOverlays.prev = prevOverlay
-    self.buttonBounds.prev = {x = startX, y = btnY, w = iconW, h = iconH}
+    self.buttonBounds.prev = { x = startX, y = btnY, w = iconW, h = iconH }
 
     -- Button 2: Pause (will swap with Play based on state)
     local pauseX = startX + btnTotalW
@@ -117,21 +116,21 @@ function WMHud:createIconOverlays()
     local playOverlay = Overlay.new(iconPlay, pauseX, btnY, iconW, iconH)
     playOverlay:setColor(unpack(self.ICON_ACTIVE))
     self.iconOverlays.play = playOverlay
-    self.buttonBounds.pauseResume = {x = pauseX, y = btnY, w = iconW, h = iconH}
+    self.buttonBounds.pauseResume = { x = pauseX, y = btnY, w = iconW, h = iconH }
 
     -- Button 3: Stop
     local stopX = startX + btnTotalW * 2
     local stopOverlay = Overlay.new(iconStop, stopX, btnY, iconW, iconH)
     stopOverlay:setColor(unpack(self.ICON_NORMAL))
     self.iconOverlays.stop = stopOverlay
-    self.buttonBounds.stop = {x = stopX, y = btnY, w = iconW, h = iconH}
+    self.buttonBounds.stop = { x = stopX, y = btnY, w = iconW, h = iconH }
 
     -- Button 4: Next
     local nextX = startX + btnTotalW * 3
     local nextOverlay = Overlay.new(iconNext, nextX, btnY, iconW, iconH)
     nextOverlay:setColor(unpack(self.ICON_NORMAL))
     self.iconOverlays.next = nextOverlay
-    self.buttonBounds.next = {x = nextX, y = btnY, w = iconW, h = iconH}
+    self.buttonBounds.next = { x = nextX, y = btnY, w = iconW, h = iconH }
 
     -- Store icon dimensions for later use
     self.iconW = iconW
@@ -201,9 +200,9 @@ function WMHud:getActiveWorkflow()
 
             -- Compare both direct reference and root vehicle
             if workflowVehicle == controlledVehicle or
-               workflowVehicle == controlledRoot or
-               workflowRoot == controlledVehicle or
-               workflowRoot == controlledRoot then
+                workflowVehicle == controlledRoot or
+                workflowRoot == controlledVehicle or
+                workflowRoot == controlledRoot then
                 return data.workflow, data
             end
         end
@@ -218,6 +217,20 @@ end
 
 function WMHud:draw()
     if not self.isVisible then
+        return
+    end
+    -- Don't draw if player is not in a vehicle
+    local controlledVehicle = g_currentMission.controlledVehicle
+    if controlledVehicle == nil and g_localPlayer and g_localPlayer.getCurrentVehicle then
+        controlledVehicle = g_localPlayer:getCurrentVehicle()
+    end
+    if controlledVehicle == nil and g_currentMission.playerSystem then
+        local player = g_currentMission.playerSystem:getLocalPlayer()
+        if player and player.getCurrentVehicle then
+            controlledVehicle = player:getCurrentVehicle()
+        end
+    end
+    if controlledVehicle == nil then
         return
     end
 
@@ -394,7 +407,7 @@ function WMHud:updateHoverState(posX, posY)
     -- Check each button for hover
     for btnName, bounds in pairs(self.buttonBounds) do
         if posX >= bounds.x and posX <= bounds.x + bounds.w and
-           posY >= bounds.y and posY <= bounds.y + bounds.h then
+            posY >= bounds.y and posY <= bounds.y + bounds.h then
             self.hoveredButton = btnName
             return
         end
@@ -431,8 +444,8 @@ function WMHud:handleClick(posX, posY)
         -- Previous button
         local prevBounds = self.buttonBounds.prev
         if prevBounds and canGoPrev and
-           posX >= prevBounds.x and posX <= prevBounds.x + prevBounds.w and
-           posY >= prevBounds.y and posY <= prevBounds.y + prevBounds.h then
+            posX >= prevBounds.x and posX <= prevBounds.x + prevBounds.w and
+            posY >= prevBounds.y and posY <= prevBounds.y + prevBounds.h then
             self:onClickPrevious()
             return true
         end
@@ -440,8 +453,8 @@ function WMHud:handleClick(posX, posY)
         -- Pause/Resume button
         local pauseBounds = self.buttonBounds.pauseResume
         if pauseBounds and hasWorkflow and
-           posX >= pauseBounds.x and posX <= pauseBounds.x + pauseBounds.w and
-           posY >= pauseBounds.y and posY <= pauseBounds.y + pauseBounds.h then
+            posX >= pauseBounds.x and posX <= pauseBounds.x + pauseBounds.w and
+            posY >= pauseBounds.y and posY <= pauseBounds.y + pauseBounds.h then
             self:onClickPauseResume()
             return true
         end
@@ -449,8 +462,8 @@ function WMHud:handleClick(posX, posY)
         -- Stop button
         local stopBounds = self.buttonBounds.stop
         if stopBounds and hasWorkflow and
-           posX >= stopBounds.x and posX <= stopBounds.x + stopBounds.w and
-           posY >= stopBounds.y and posY <= stopBounds.y + stopBounds.h then
+            posX >= stopBounds.x and posX <= stopBounds.x + stopBounds.w and
+            posY >= stopBounds.y and posY <= stopBounds.y + stopBounds.h then
             self:onClickStop()
             return true
         end
@@ -458,8 +471,8 @@ function WMHud:handleClick(posX, posY)
         -- Next button
         local nextBounds = self.buttonBounds.next
         if nextBounds and canGoNext and
-           posX >= nextBounds.x and posX <= nextBounds.x + nextBounds.w and
-           posY >= nextBounds.y and posY <= nextBounds.y + nextBounds.h then
+            posX >= nextBounds.x and posX <= nextBounds.x + nextBounds.w and
+            posY >= nextBounds.y and posY <= nextBounds.y + nextBounds.h then
             self:onClickNext()
             return true
         end

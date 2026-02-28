@@ -61,13 +61,7 @@ Voraussetzungen: AutoDrive, Courseplay
         <actionBinding action="WM_TOGGLE_GUI">
             <binding device="KB_MOUSE_DEFAULT" input="KEY_lalt KEY_w" />
         </actionBinding>
-        <actionBinding action="WM_START_WORKFLOW">
-            <binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lalt KEY_w" />
-        </actionBinding>
-        <actionBinding action="WM_STOP_WORKFLOW">
-            <binding device="KB_MOUSE_DEFAULT" input="KEY_lshift KEY_lalt KEY_w" />
-        </actionBinding>
-        <actionBinding action="WM_TOGGLE_HUD">
+<actionBinding action="WM_TOGGLE_HUD">
             <binding device="KB_MOUSE_DEFAULT" input="KEY_lalt KEY_h" />
         </actionBinding>
         <actionBinding action="WM_GUI_DELETE">
