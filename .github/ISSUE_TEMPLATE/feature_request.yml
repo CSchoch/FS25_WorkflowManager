@@ -1,0 +1,80 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for FS25 WorkflowManager
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting an improvement! Please fill out the form below to help us understand your idea.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Feature Summary
+      description: A short, clear description of the feature you'd like to see.
+      placeholder: "e.g. Allow workflows to be triggered automatically when a vehicle finishes unloading."
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / Motivation
+      description: What problem does this solve, or what use case does it enable? Why is this valuable?
+      placeholder: "e.g. Currently I have to manually start the next workflow after unloading, which defeats the purpose of automation."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe how you envision this feature working. Be as specific as you like.
+      placeholder: |
+        e.g. Add a "trigger" option to workflow steps that can listen for an event (e.g. vehicle reaches 0% fill level) and automatically advance to the next step or start a linked workflow.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Feature Area
+      description: Which part of the mod does this relate to?
+      options:
+        - Workflow Execution / Automation logic
+        - AutoDrive Integration
+        - Courseplay Integration
+        - GUI – Main Dialog
+        - GUI – Workflow Editor
+        - GUI – Step Dialog
+        - GUI – HUD (in-vehicle controls)
+        - Save / Load / Persistence
+        - Multi-vehicle / Queue system
+        - ESC Menu Integration
+        - Other / New area
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority (from your perspective)
+      options:
+        - Nice to have
+        - Would significantly improve my workflow
+        - Blocking – I cannot use the mod effectively without this
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you tried any workarounds or alternative approaches? Why weren't they sufficient?
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other context, screenshots, mockups, or references that might help explain the idea.

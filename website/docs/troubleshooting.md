@@ -196,10 +196,9 @@ Common issues and solutions for Workflow Manager.
 
 If you encounter issues not covered here:
 
-1. **Enable logging**: Check `DevConfig.lua` for debug settings
-2. **Collect log file**: Find `log.txt` in the game folder
-3. **Note reproduction steps**: How to trigger the issue
-4. **Report on GitHub**: [Issues Page](https://github.com/CSchoch/LS25_WorkflowManager/issues)
+1. **Collect the game log**: Find `log.txt` in your Farming Simulator 25 root folder (the same folder as the game executable)
+2. **Note reproduction steps**: Write down exactly how to trigger the issue
+3. **Report on GitHub**: [Issues Page](https://github.com/CSchoch/LS25_WorkflowManager/issues)
 
 Include:
 - Mod version

@@ -111,9 +111,9 @@ Yes, you can edit the XML file directly when the game is not running.
 
 Impact is minimal. The mod checks workflow state twice per second (every 500ms) when a workflow is running.
 
-### Is there a debug mode?
+### Something went wrong — where do I find error details?
 
-Check `DevConfig.lua` for development settings and logging options.
+The game writes errors to `log.txt` in your Farming Simulator 25 root folder. If you're reporting a bug, include relevant lines from this file.
 
 ---
 

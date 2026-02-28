@@ -32,6 +32,8 @@ The Editor Dialog is where you build and modify workflow steps.
         Double-click a step to edit
 ```
 
+![Editor Dialog](/img/screenshots/editor-dialog.png)
+
 ## Step List
 
 The main area shows all steps in the workflow:
@@ -117,6 +119,9 @@ When adding or editing a step, the Step Dialog appears:
 │              [Cancel]   [OK]                │
 └─────────────────────────────────────────────┘
 ```
+
+![Step Dialog – AutoDrive](/img/screenshots/step-dialog-autodrive.png)
+![Step Dialog – Courseplay](/img/screenshots/step-dialog-courseplay.png)
 
 ### Searchable Dropdowns
 

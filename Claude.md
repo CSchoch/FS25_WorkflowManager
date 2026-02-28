@@ -318,3 +318,47 @@ FS25_WorkflowManager/
 
 **Status**: Phase 1 COMPLETE - Working on GUI refinement
 **Last updated**: 2026-02-28
+
+---
+
+## Screenshots Needed for Documentation
+
+The Docusaurus user documentation uses screenshot placeholders. Please capture the following screenshots in-game and save them at the exact paths listed below.
+
+**Base path**: `website/static/img/screenshots/` (create this folder if it doesn't exist)
+
+### 1. `website/static/img/screenshots/main-dialog.png`
+
+**What to show**: The Workflow Manager main dialog (press **Left Alt + W** in-game)
+- Have 2–3 workflows listed with different names
+- The list should show workflow names and step counts
+
+### 2. `website/static/img/screenshots/editor-dialog.png`
+
+**What to show**: The workflow editor dialog (open a workflow and click Edit)
+- Have 4–6 steps listed — ideally a mix of AutoDrive and Courseplay steps
+- Steps should show real-looking names (e.g., "Field1_Entrance", "Wheat_Harvest_F1", "Farm/Silo")
+
+### 3. `website/static/img/screenshots/step-dialog-autodrive.png`
+
+**What to show**: The step configuration dialog with AutoDrive selected (click Add Step in the editor)
+- Type dropdown showing "AutoDrive"
+- A target destination selected
+- Action set to "drive" (or another action)
+
+### 4. `website/static/img/screenshots/step-dialog-courseplay.png`
+
+**What to show**: The step configuration dialog with Courseplay selected
+- Type dropdown showing "Courseplay"
+- A course name selected in the Target field
+- Action set to "fieldwork"
+
+### 5. `website/static/img/screenshots/hud-running.png`
+
+**What to show**: The in-vehicle HUD overlay while a workflow is actively running
+- Workflow name visible at the top
+- Step counter showing (e.g., "Step 2/5")
+- Step type and target visible
+- All four control buttons (`<<`, `||`, `□`, `>>`) visible
+
+**Note**: All screenshots should be taken at a readable resolution. Crop tightly around the dialog/HUD to avoid unnecessary game background where possible.

@@ -1,0 +1,110 @@
+name: Bug Report
+description: Report a bug or unexpected behavior in FS25 WorkflowManager
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to report a bug! Please fill out the form below as completely as possible.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe what happened...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Step-by-step instructions to reproduce the issue.
+      placeholder: |
+        1. Open the WorkflowManager (Ctrl+W or ESC menu)
+        2. Create a workflow with steps...
+        3. Start the workflow on vehicle...
+        4. Observe that...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected Component
+      description: Which part of the mod is affected?
+      options:
+        - Workflow Execution (AutoDrive / Courseplay handoff)
+        - AutoDrive Integration
+        - Courseplay Integration
+        - GUI – Main Dialog
+        - GUI – Workflow Editor
+        - GUI – Step Dialog
+        - GUI – HUD (in-vehicle controls)
+        - XML Save / Load (savegame persistence)
+        - ESC Menu Integration
+        - Other / Unknown
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: mods
+    attributes:
+      label: Required Mods Present
+      description: Confirm the required mods are installed and active.
+      options:
+        - label: FS25_AutoDrive is installed and active
+          required: true
+        - label: FS25_Courseplay is installed and active
+          required: true
+
+  - type: input
+    id: mod_version
+    attributes:
+      label: WorkflowManager Version
+      description: Which version of this mod are you using? (check modDesc.xml)
+      placeholder: "e.g. 0.1.0.0"
+    validations:
+      required: true
+
+  - type: input
+    id: game_version
+    attributes:
+      label: Farming Simulator 25 Version
+      description: Which version of FS25 are you running?
+      placeholder: "e.g. 1.6.0.0"
+    validations:
+      required: true
+
+  - type: textarea
+    id: log
+    attributes:
+      label: Log Output
+      description: |
+        Paste relevant lines from the game log (`log.txt`). Look for lines containing `WorkflowManager` or `WM`.
+      render: text
+      placeholder: Paste log lines here...
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other information that might be helpful (screenshots, save game details, other active mods, etc.)

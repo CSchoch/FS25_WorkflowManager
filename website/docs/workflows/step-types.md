@@ -12,15 +12,15 @@ Workflow Manager supports two types of steps: **AutoDrive** for navigation and *
 
 AutoDrive handles all navigation and transport operations.
 
-### Actions/Modes
+### Actions
 
-| Action | Mode | Targets | Description |
-|--------|------|---------|-------------|
-| `drive` | MODE_DRIVETO | 1 | Simple point-to-point navigation |
-| `unload` | MODE_UNLOAD | 2 | Unload combine (follows combine, delivers grain) |
-| `pickup_deliver` | MODE_PICKUPANDDELIVER | 2 | Load at target, deliver to unload target |
-| `deliver` | MODE_DELIVERTO | 1 | Deliver current load to target |
-| `load` | MODE_LOAD | 2 | Load at target, return to unload target |
+| Action | Targets needed | Description |
+|--------|---------------|-------------|
+| `drive` | 1 | Simple point-to-point navigation |
+| `unload` | 2 | Unload combine (follows combine, delivers grain) |
+| `pickup_deliver` | 2 | Load at target, deliver to unload target |
+| `deliver` | 1 | Deliver current load to target |
+| `load` | 2 | Load at target, return to unload target |
 
 ### Target Selection
 
