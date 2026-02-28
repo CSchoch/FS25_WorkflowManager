@@ -126,10 +126,10 @@ On `onPostLoad`, this state is restored as `status = "paused"` so the player can
 * **Vehicle savegame persistence** - Active workflow and current step are saved/restored via `WorkflowManagerSpec.saveToXMLFile` / `onPostLoad`; restored as paused so player can resume
 * **Courseplay resume at nearest waypoint** - `CPIntegration:startFieldWork()` accepts `startAtNearest` flag; uses `cpStartStopDriver` to resume at the closest waypoint
 * **Main dialog simplification** - Removed Status column; list shows only Name + Steps; removed Resume/reset flow (Start always starts fresh on current vehicle)
+* **HUD icon scaling fix** - `getNormalizedScreenValues(24, 24)` now correctly captures both X and Y return values so icons render as squares on all aspect ratios
 
 ### Milestone 8: GUI Refinement
 * [ ] F1 ingame help menu overlays the GUI
-* [ ] Edit workflow name inline (without separate overlay)
 * [ ] Relocate double-click-to-edit hint to the bottom
 * [ ] Editor dialog X button to close in top right corner
 * [ ] Fix Warning (performance): Texture .../textures/white.png raw format
@@ -316,49 +316,5 @@ FS25_WorkflowManager/
 
 ---
 
-**Status**: Phase 1 COMPLETE - Working on GUI refinement
+**Status**: Phase 1 COMPLETE - Working on GUI refinement (Milestone 8)
 **Last updated**: 2026-02-28
-
----
-
-## Screenshots Needed for Documentation
-
-The Docusaurus user documentation uses screenshot placeholders. Please capture the following screenshots in-game and save them at the exact paths listed below.
-
-**Base path**: `website/static/img/screenshots/` (create this folder if it doesn't exist)
-
-### 1. `website/static/img/screenshots/main-dialog.png`
-
-**What to show**: The Workflow Manager main dialog (press **Left Alt + W** in-game)
-- Have 2–3 workflows listed with different names
-- The list should show workflow names and step counts
-
-### 2. `website/static/img/screenshots/editor-dialog.png`
-
-**What to show**: The workflow editor dialog (open a workflow and click Edit)
-- Have 4–6 steps listed — ideally a mix of AutoDrive and Courseplay steps
-- Steps should show real-looking names (e.g., "Field1_Entrance", "Wheat_Harvest_F1", "Farm/Silo")
-
-### 3. `website/static/img/screenshots/step-dialog-autodrive.png`
-
-**What to show**: The step configuration dialog with AutoDrive selected (click Add Step in the editor)
-- Type dropdown showing "AutoDrive"
-- A target destination selected
-- Action set to "drive" (or another action)
-
-### 4. `website/static/img/screenshots/step-dialog-courseplay.png`
-
-**What to show**: The step configuration dialog with Courseplay selected
-- Type dropdown showing "Courseplay"
-- A course name selected in the Target field
-- Action set to "fieldwork"
-
-### 5. `website/static/img/screenshots/hud-running.png`
-
-**What to show**: The in-vehicle HUD overlay while a workflow is actively running
-- Workflow name visible at the top
-- Step counter showing (e.g., "Step 2/5")
-- Step type and target visible
-- All four control buttons (`<<`, `||`, `□`, `>>`) visible
-
-**Note**: All screenshots should be taken at a readable resolution. Crop tightly around the dialog/HUD to avoid unnecessary game background where possible.
