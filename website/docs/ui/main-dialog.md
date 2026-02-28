@@ -20,14 +20,16 @@ The Main Dialog is the entry point for managing all your workflows.
 │  Workflow Manager                       [X] │
 ├─────────────────────────────────────────────┤
 │                                             │
-│  [Workflow 1]              ready            │
-│  [Workflow 2]              running          │
-│  [Workflow 3]              completed        │
+│  [Harvest Fields 1-3]          6 steps      │
+│  [Fertilize - North]           4 steps      │
+│  [Baling Route]                3 steps      │
 │                                             │
 ├─────────────────────────────────────────────┤
 │  [New]  [Edit]  [Delete]  [Start]  [Stop]   │
 └─────────────────────────────────────────────┘
 ```
+
+![Main Dialog](/img/screenshots/main-dialog.png)
 
 ## Workflow List
 
@@ -36,7 +38,7 @@ The main area displays all saved workflows with:
 | Column | Description |
 |--------|-------------|
 | Name | Workflow name (click to select) |
-| Status | Current state (ready, running, paused, completed) |
+| Steps | Number of steps in the workflow |
 
 ### Selection
 
@@ -110,20 +112,11 @@ This resets the workflow to step 1 and sets status to "ready".
 | **D** | Delete selected workflow |
 | Double-click | Edit workflow |
 
-## Status Colors
-
-| Status | Color |
-|--------|-------|
-| ready | White |
-| running | Green |
-| paused | Yellow |
-| completed | Blue |
-
 ## Resume After Save
 
-If you save the game while a workflow is running, it will be set to **paused** on reload. Select the workflow and click **Start** to resume from the saved step.
+If you save the game while a workflow is running, it will be paused automatically. When you reload, select the workflow and click **Start** to continue from where it left off.
 
-To reset a paused workflow back to step 1, click **Stop** first, then **Start**.
+To restart a workflow from the beginning instead, click **Stop** first to reset it, then click **Start**.
 
 ## Persistence
 

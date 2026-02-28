@@ -52,6 +52,8 @@ When a workflow is running, an HUD overlay appears showing:
 - Step details (type, target, action)
 - Control buttons
 
+![HUD while workflow is running](/img/screenshots/hud-running.png)
+
 ### HUD Controls
 
 | Button | Icon | Function |
@@ -113,21 +115,14 @@ Stop a workflow completely:
 An AutoDrive step completes when:
 - The vehicle reaches the destination
 - The unload/load operation finishes (for cargo modes)
-- The callback is triggered
 
 ### Courseplay Step Completion
 
-A Courseplay step completes when:
-- The field work course finishes
-- The job completion event is triggered
+A Courseplay step completes when the field work course finishes.
 
 ### Cyclic Operations
 
-Some operations involve internal handoffs:
-- Harvester calls unloader via AD
-- AD delivers and returns to continue CP
-
-The executor waits for both AD and CP to be inactive before advancing.
+Some harvest setups involve a harvester that calls a grain cart or unloader via AutoDrive to deliver grain, then resumes harvesting. Workflow Manager handles this automatically — it waits for both AutoDrive and Courseplay to be fully finished before advancing to the next step. You don't need to set this up specially.
 
 ## Error Handling
 
@@ -159,7 +154,7 @@ In multiplayer:
 
 ## Resume After Save
 
-If you save the game while a workflow is running, the workflow is set to **paused** on reload. Open the Workflow Manager, select the workflow, and click **Start** to resume from the saved step.
+If you save the game while a workflow is running, the workflow is paused automatically. When you reload, open the Workflow Manager, select the workflow, and click **Start** to continue from where it left off.
 
 ## Performance
 

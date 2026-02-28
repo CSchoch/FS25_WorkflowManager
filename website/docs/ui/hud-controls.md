@@ -23,6 +23,8 @@ When a workflow is running, an overlay appears on screen:
 └──────────────────────────────────────┘
 ```
 
+![HUD while workflow is running](/img/screenshots/hud-running.png)
+
 ## HUD Position
 
 The HUD appears in a fixed position on screen:
@@ -118,13 +120,6 @@ Displays:
 | Hover | Cyan | Mouse is over button |
 | Active | Green | Currently active (e.g., running) |
 | Disabled | Gray | Action not available |
-
-### Icon Design
-
-All buttons use 32x32 PNG icons:
-- White shapes on transparent background
-- Color applied at runtime via tinting
-- Hover effect provides feedback
 
 ## Interaction
 

@@ -6,7 +6,11 @@ sidebar_position: 3
 
 # XML Format
 
-Workflow Manager saves your workflows in an XML file within each savegame. You normally don't need to touch this file, but it can be useful for manual editing, backup, or troubleshooting.
+:::info Advanced Users
+This page is for advanced users who want to manually back up, restore, or edit their workflows. Most users do not need to read this — the in-game editor handles everything automatically.
+:::
+
+Workflow Manager saves your workflows in an XML file within each savegame. You normally don't need to touch this file, but it can be useful for manual editing, backup, or sharing workflows between savegames.
 
 ## File Location
 
@@ -34,9 +38,7 @@ The file is created automatically when you save your first workflow.
 ```xml
 <workflow
     id="workflow_001"
-    name="Harvest wheat – fields 1–2"
-    currentStep="1"
-    status="ready">
+    name="Harvest wheat – fields 1–2">
     <!-- Step elements here -->
 </workflow>
 ```
@@ -45,10 +47,8 @@ The file is created automatically when you save your first workflow.
 
 | Attribute | Type | Description |
 |-----------|------|-------------|
-| `id` | string | Unique identifier (auto-generated) |
-| `name` | string | Display name |
-| `currentStep` | integer | Current step number (1-based) |
-| `status` | string | Status: ready, running, paused, completed |
+| `id` | string | Unique identifier (auto-generated, do not change) |
+| `name` | string | Display name shown in the Workflow Manager |
 
 ### Step Element
 
@@ -64,10 +64,10 @@ The file is created automatically when you save your first workflow.
 | Attribute | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `type` | string | Yes | `autodrive` or `courseplay` |
-| `target` | string | Yes | Destination or course name |
+| `target` | string | Yes | Destination name (AutoDrive) or course name (Courseplay) |
 | `action` | string | Yes | Action to perform |
-| `unloadTarget` | string | No | Secondary destination (AD only) |
-| `fillType` | string | No | Cargo filter (AD only) |
+| `unloadTarget` | string | No | Secondary destination (AutoDrive only) |
+| `fillType` | string | No | Cargo filter (AutoDrive only) |
 
 ## Complete Example
 
@@ -75,7 +75,7 @@ The file is created automatically when you save your first workflow.
 <?xml version="1.0" encoding="utf-8"?>
 <WorkflowManager>
     <workflows>
-        <workflow id="workflow_001" name="Harvest wheat – fields 1–2" currentStep="1" status="ready">
+        <workflow id="workflow_001" name="Harvest wheat – fields 1–2">
             <step type="autodrive" target="Route_Field1" action="drive"/>
             <step type="courseplay" target="Field1_Harvest" action="fieldwork"/>
             <step type="autodrive" target="Farm/Silo" action="pickup_deliver" unloadTarget="Sell/BGA" fillType="WHEAT"/>
@@ -83,7 +83,7 @@ The file is created automatically when you save your first workflow.
             <step type="courseplay" target="Field2_Harvest" action="fieldwork"/>
             <step type="autodrive" target="Farm" action="drive"/>
         </workflow>
-        <workflow id="workflow_002" name="Fertilize Fields" currentStep="1" status="ready">
+        <workflow id="workflow_002" name="Fertilize Fields">
             <step type="autodrive" target="Field3_Entrance" action="drive"/>
             <step type="courseplay" target="Field3_Fertilize" action="fieldwork"/>
         </workflow>
@@ -91,7 +91,7 @@ The file is created automatically when you save your first workflow.
 </WorkflowManager>
 ```
 
-## AutoDrive Step Types
+## AutoDrive Step Examples
 
 ### Simple Navigation
 
@@ -131,7 +131,7 @@ The file is created automatically when you save your first workflow.
     fillType="SEEDS"/>
 ```
 
-## Courseplay Step Types
+## Courseplay Step Examples
 
 ### Field Work
 
@@ -145,45 +145,29 @@ The file is created automatically when you save your first workflow.
 <step type="courseplay" target="Meadow_Baling" action="bale_collect"/>
 ```
 
-## Data Types
+## Action Reference
 
-### Action Values
+**AutoDrive actions:**
+- `drive` - Simple point-to-point navigation
+- `unload` - Unload combine (follows combine, delivers grain)
+- `pickup_deliver` - Load at target, deliver to unload target
+- `deliver` - Deliver current load to target
+- `load` - Load at target, return to unload target
 
-**AutoDrive:**
-- `drive` - Simple point-to-point
-- `unload` - Unload mode
-- `pickup_deliver` - Load and deliver
-- `deliver` - Deliver current load
-- `load` - Load and return
+**Courseplay actions:**
+- `fieldwork` - Field operations (harvest, cultivate, seed, spray, etc.)
+- `bale_collect` - Collect and wrap bales
 
-**Courseplay:**
-- `fieldwork` - Field operations
-- `bale_collect` - Bale collection
+## Fill Types
 
-### Status Values
-
-- `ready` - Workflow ready to start
-- `running` - Workflow currently executing
-- `paused` - Workflow paused
-- `completed` - All steps finished
-
-### Fill Types
-
-Standard FS25 fill types:
+Common FS25 fill types for the `fillType` attribute:
 - `WHEAT`
 - `BARLEY`
 - `CANOLA`
 - `CORN`
 - `SUNFLOWER`
 - `SOYBEAN`
-- etc.
-
-## ID Generation
-
-Workflow IDs are generated automatically:
-- Format: `workflow_XXX` where XXX is a three-digit number
-- IDs are unique within a savegame
-- Deleted workflow IDs may be reused
+- (and others — the name is the internal fill type ID shown in the step dialog)
 
 ## Backup and Recovery
 
@@ -194,8 +178,8 @@ Copy `workflowManager.xml` to a safe location before making changes.
 ### Restoring Workflows
 
 1. Stop the game
-2. Copy backup file to savegame folder
-3. Rename to `workflowManager.xml`
+2. Copy the backup file to the savegame folder
+3. Rename it to `workflowManager.xml` (replacing the existing file)
 4. Load the savegame
 
 ### Editing Manually
@@ -203,22 +187,18 @@ Copy `workflowManager.xml` to a safe location before making changes.
 You can edit the XML file directly:
 1. Exit the game
 2. Open `workflowManager.xml` in a text editor
-3. Make changes
+3. Make your changes
 4. Save the file
 5. Load the savegame
 
 :::warning
-Invalid XML will cause loading errors. Always validate your changes.
+Invalid XML will cause loading errors. Make a backup before editing, and double-check your changes.
 :::
 
-## Validation
+## Sharing Workflows
 
-The mod validates workflows on load:
-- Missing required attributes → Step skipped
-- Invalid action → Warning logged
-- Missing target → Step not executable
+To share workflows with another player:
 
-Check the game log for validation warnings:
-```
-[WorkflowManager] Warning: Step missing target attribute
-```
+1. Copy your `workflowManager.xml` to them
+2. They place it in their savegame folder
+3. **Important**: AutoDrive destination names and Courseplay course names must match exactly on their setup, otherwise steps will fail to execute

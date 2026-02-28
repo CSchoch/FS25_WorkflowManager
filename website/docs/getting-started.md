@@ -75,13 +75,15 @@ The **in-vehicle HUD** shows the current workflow status. Use the HUD buttons to
 - **Skip** to next or previous step
 - **Stop** the workflow
 
+![HUD while workflow is running](/img/screenshots/hud-running.png)
+
 ### Resume After Save
 
-If you save the game while a workflow is running, it will be paused on reload. Select the workflow and click **Resume** to continue from where you left off.
+If you save the game while a workflow is running, it will be paused on reload. Select the workflow and click **Start** to continue from where you left off.
 
 ### Workflow Completion
 
-When all steps complete, the workflow status changes to "Completed". You can restart it from the beginning at any time.
+When all steps complete the workflow is done. You can restart it from the beginning at any time by selecting it and clicking **Start**.
 
 ## Example: Simple Harvest Workflow
 
