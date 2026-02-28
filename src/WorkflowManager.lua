@@ -517,10 +517,7 @@ end
 ---Toggle the in-vehicle HUD visibility
 function WorkflowManager:onToggleHUD()
     WMLogger:info("onToggleHUD called!")
-    local vehicle = g_currentMission.controlledVehicle
-    if vehicle then
-        WMHud:toggle(vehicle)
-    end
+    WMHud:toggle(g_currentMission.controlledVehicle)
 end
 
 ---Called when a workflow starts - show HUD
