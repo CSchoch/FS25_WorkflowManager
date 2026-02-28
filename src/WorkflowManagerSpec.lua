@@ -134,12 +134,12 @@ function WorkflowManagerSpec:onRegisterActionEvents(isActiveForInput, isActiveFo
         return
     end
 
-    -- Register WM_TOGGLE_GUI action (use InputAction table like Courseplay does)
+    -- Register WM_TOGGLE_HUD action for in-vehicle HUD toggle
     local _, actionEventId = self:addActionEvent(
         spec.actionEvents,
-        InputAction.WM_TOGGLE_GUI,
+        InputAction.WM_TOGGLE_HUD,
         self,
-        WorkflowManagerSpec.actionEventToggleGUI,
+        WorkflowManagerSpec.actionEventToggleHUD,
         false,  -- triggerUp
         true,   -- triggerDown
         false,  -- triggerAlways
@@ -153,14 +153,14 @@ function WorkflowManagerSpec:onRegisterActionEvents(isActiveForInput, isActiveFo
     end
 end
 
----Called when the toggle GUI action is triggered
+---Called when the toggle HUD action is triggered (in-vehicle)
 ---@param actionName string The action name
 ---@param inputValue number The input value
 ---@param callbackState any The callback state
 ---@param isAnalog boolean Whether this is an analog input
-function WorkflowManagerSpec:actionEventToggleGUI(actionName, inputValue, callbackState, isAnalog)
-    if WorkflowManager and WorkflowManager.onToggleGUI then
-        WorkflowManager:onToggleGUI()
+function WorkflowManagerSpec:actionEventToggleHUD(actionName, inputValue, callbackState, isAnalog)
+    if WorkflowManager and WorkflowManager.onToggleHUD then
+        WorkflowManager:onToggleHUD()
     end
 end
 
