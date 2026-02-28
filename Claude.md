@@ -9,7 +9,7 @@ A mod for Farming Simulator 25 that combines AutoDrive and Courseplay to create 
 * **Language**: Lua (FS25-compatible)
 * **Integration**: AutoDrive API, Courseplay API
 * **UI Framework**: FS25 GUI system
-* **Data Storage**: XML (in the savegame folder)
+* **Data Storage**: XML (workflow definitions in savegame folder; runtime state in vehicle XML)
 * **Mod Structure**: Standard FS25 ModDesc.xml
 
 ## Architecture
@@ -18,17 +18,18 @@ A mod for Farming Simulator 25 that combines AutoDrive and Courseplay to create 
 
 1. **WorkflowManager** (Core) - Manages all workflows, loads/saves from XML, coordinates execution
 2. **WorkflowExecutor** - Executes workflows, switches between AD/CP, monitors progress
-3. **WorkflowStorage** - XML read/write for workflow persistence
+3. **WorkflowStorage** - XML read/write for workflow definitions (no runtime state)
 4. **GUI Layer** - Main dialog, editor, step dialog, HUD, ESC menu integration
 5. **Integration Layer** - AD/CP API wrappers, course loader, vehicle loader
 
 ### Data Structure
 
+**Workflow definition** (immutable template, stored in XML):
 ```lua
 Workflow = {
     id = "workflow_001",
     name = "Harvest wheat - fields 1-2",
-    -- Vehicle detected at runtime via g_currentMission.controlledVehicle
+    -- currentStep and status are NOT stored here; they are per-vehicle runtime state
     steps = {
         {
             type = "autodrive",  -- "autodrive" or "courseplay"
@@ -43,10 +44,23 @@ Workflow = {
             action = "fieldwork"  -- Courseplay: fieldwork, bale_collect
         }
     },
-    currentStep = 1,
-    status = "ready"  -- "ready", "running", "paused", "completed"
+    createdAt = "2026-02-28 10:00:00"
 }
 ```
+
+**Runtime state** (per-vehicle, stored on `vehicle.spec_workflowManagerSpec.wmExecution`):
+```lua
+activeData = {
+    workflow = <workflow reference>,  -- pointer to immutable template
+    vehicle = <vehicle reference>,
+    status = "ready",  -- "ready", "running", "paused", "completed"
+    currentStep = 1,
+    waitingForCompletion = false,
+    -- plus internal tracking flags (justStoppedAD, pendingADStart, etc.)
+}
+```
+
+`WMExecutor.activeVehicles` is a lightweight `{[vehicle] = true}` set used for update-loop iteration.
 
 #### AutoDrive Actions/Modes
 
@@ -67,11 +81,12 @@ Workflow = {
 
 ### XML Structure (Savegame)
 
+Workflow **definitions** (no runtime state):
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <WorkflowManager>
     <workflows>
-        <workflow id="workflow_001" name="Harvest wheat - fields 1-2" currentStep="1" status="ready">
+        <workflow id="workflow_001" name="Harvest wheat - fields 1-2">
             <step type="autodrive" target="Route_Field1" action="drive"/>
             <step type="courseplay" target="Field1_Harvest" action="fieldwork"/>
             <step type="autodrive" target="Farm/Silo" action="pickup_deliver" unloadTarget="Sell/BGA" fillType="WHEAT"/>
@@ -79,6 +94,18 @@ Workflow = {
     </workflows>
 </WorkflowManager>
 ```
+
+Vehicle workflow **runtime state** (stored in vehicle savegame XML via `WorkflowManagerSpec`):
+```xml
+<vehicles>
+    <vehicle ...>
+        <FS25_WorkflowManager>
+            <workflowManagerSpec workflowId="workflow_001" currentStep="3"/>
+        </FS25_WorkflowManager>
+    </vehicle>
+</vehicles>
+```
+On `onPostLoad`, this state is restored as `status = "paused"` so the player can resume.
 
 ## Development Roadmap
 
@@ -94,6 +121,11 @@ Workflow = {
 * Multi-field workflows (more than 2 fields per workflow)
 * Vehicle hint removed from GUI
 * Delete confirmation, delete shortcut, scrollbar, step editor descriptions fixed
+* Fill type dropdown shows localized names (title) instead of internal IDs
+* **Per-vehicle runtime state** - Workflow definitions are immutable; `currentStep`/`status` live on the vehicle spec (`wmExecution`). `WMExecutor.activeVehicles` replaces `activeWorkflows`
+* **Vehicle savegame persistence** - Active workflow and current step are saved/restored via `WorkflowManagerSpec.saveToXMLFile` / `onPostLoad`; restored as paused so player can resume
+* **Courseplay resume at nearest waypoint** - `CPIntegration:startFieldWork()` accepts `startAtNearest` flag; uses `cpStartStopDriver` to resume at the closest waypoint
+* **Main dialog simplification** - Removed Status column; list shows only Name + Steps; removed Resume/reset flow (Start always starts fresh on current vehicle)
 
 ### Milestone 8: GUI Refinement
 * [ ] F1 ingame help menu overlays the GUI
@@ -143,6 +175,7 @@ Key functions from `CpAIWorker.lua` and `CpAIFieldWorker.lua`:
 
 * **Check available**: `g_Courseplay ~= nil`
 * **Start field work**: `vehicle:startCpAtLastWp()` or `vehicle:startCpAtFirstWp()`
+* **Resume at nearest wp**: `vehicle:cpStartStopDriver(false)` (used when restoring from save)
 * **Stop**: `vehicle:stopCurrentAIJob(AIMessageSuccessStoppedByUser.new())`
 * **Check active**: `vehicle:getIsCpActive()`
 * **Has course**: `vehicle:hasCpCourse()`
@@ -163,11 +196,11 @@ FS25_WorkflowManager/
 ├── src/
 │   ├── DevConfig.lua                  # Development configuration
 │   ├── WorkflowManager.lua            # Main class & entry point
-│   ├── WorkflowManagerSpec.lua        # Vehicle specialization (for in-vehicle input)
-│   ├── WorkflowExecutor.lua           # Execution engine
-│   ├── WorkflowStorage.lua            # XML read/write
+│   ├── WorkflowManagerSpec.lua        # Vehicle specialization (runtime state, save/load)
+│   ├── WorkflowExecutor.lua           # Execution engine (per-vehicle activeVehicles set)
+│   ├── WorkflowStorage.lua            # XML read/write for workflow definitions only
 │   ├── gui/
-│   │   ├── WMMainDialog.lua           # Main dialog (workflow list)
+│   │   ├── WMMainDialog.lua           # Main dialog (workflow list, 2-column: name + steps)
 │   │   ├── WMEditorDialog.lua         # Workflow editor dialog
 │   │   ├── WMStepDialog.lua           # Step add/edit dialog with searchable lists
 │   │   ├── WMTextInputDialog.lua      # Text input overlay dialog
@@ -178,7 +211,7 @@ FS25_WorkflowManager/
 │   │   └── WorkflowManagerMenuFrame.lua # ESC menu integration
 │   ├── integration/
 │   │   ├── AutoDriveIntegration.lua   # AD API wrapper
-│   │   ├── CourseplayIntegration.lua  # CP API wrapper
+│   │   ├── CourseplayIntegration.lua  # CP API wrapper (startAtNearest support)
 │   │   ├── CourseplayCoursesLoader.lua # CP saved courses loader
 │   │   └── CourseplayVehiclesLoader.lua # Vehicle loader (AD+CP filter)
 │   └── utils/
@@ -208,7 +241,7 @@ FS25_WorkflowManager/
 │   └── package.json                   # Dependencies
 └── xml/gui/
     ├── guiProfiles.xml                # Custom GUI profiles
-    ├── WMMainDialog.xml               # Main dialog layout
+    ├── WMMainDialog.xml               # Main dialog layout (2 columns: name + steps)
     ├── WMEditorDialog.xml             # Editor dialog layout
     ├── WMStepDialog.xml               # Step dialog layout
     ├── TextInputDialog.xml            # Text input dialog layout
@@ -220,10 +253,23 @@ FS25_WorkflowManager/
 ## Key Implementation Notes
 
 ### Vehicle Detection
-- Vehicles are NOT stored with workflows
+- Vehicles are NOT stored with workflows (definitions are immutable templates)
 - When starting a workflow, uses `g_currentMission.controlledVehicle`
 - Vehicle must have both AutoDrive AND Courseplay support
 - Validation via `WorkflowManager.isVehicleValid()`
+- Prevents starting a new workflow on a vehicle already running one (`isWorkflowActiveOnVehicle`)
+
+### Per-Vehicle Runtime State
+- All mutable execution state lives on `vehicle.spec_workflowManagerSpec.wmExecution` (`activeData`)
+- `WMExecutor.activeVehicles` is `{[vehicle]=true}` — a lightweight set for update-loop iteration
+- GUI components query `WorkflowManager:getVehicleWorkflowState(vehicle)` for current vehicle's state
+- Workflow definitions only contain `id`, `name`, `steps`, `createdAt` — never `status` or `currentStep`
+
+### Vehicle Savegame Persistence
+- `WorkflowManagerSpec.saveToXMLFile` saves `workflowId` + `currentStep` into the vehicle's XML
+- `WorkflowManagerSpec.onPostLoad` restores state as `status = "paused"` after game load
+- XML schema keys registered in `WorkflowManagerSpec.initSpecialization()`
+- On vehicle delete, `onDelete` stops the workflow to prevent dangling state
 
 ### CP<->AD Cyclic Handoff
 - When CP finishes and starts AD internally (e.g., for unloading), executor waits for AD
@@ -235,6 +281,17 @@ FS25_WorkflowManager/
 - AD->AD transitions use deferred start: waits ~1 second for AD to fully reset before starting new route
 - AD->CP transitions also defer CP start until AD is fully stopped
 - Tracked via `justStoppedAD` flag and `pendingADStart`/`pendingCPStart` in update loop
+- HUD calls `WMExecutor:goToPreviousStep(vehicle)` / `goToNextStep(vehicle)` (vehicle reference, not workflow)
+
+### Courseplay Resume
+- Normal start: `vehicle:startCpAtLastWp()` or `vehicle:startCpAtFirstWp()`
+- Resume from save: `vehicle:cpStartStopDriver(false)` to start at nearest waypoint
+- Controlled via `startAtNearest` parameter in `CPIntegration:startFieldWork()`
+
+### Fill Types
+- Fill type dropdowns use `{name = "WHEAT", title = "Wheat"}` pairs
+- `name` is the internal FS25 fill type ID used in step XML; `title` is the localized display name
+- Sourced via `ADIntegration:getAvailableFillTypes()`
 
 ### GUI Input
 - Works both when walking and in a vehicle
@@ -260,4 +317,4 @@ FS25_WorkflowManager/
 ---
 
 **Status**: Phase 1 COMPLETE - Working on GUI refinement
-**Last updated**: 2026-02-07
+**Last updated**: 2026-02-28
