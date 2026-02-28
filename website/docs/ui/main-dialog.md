@@ -114,9 +114,9 @@ This resets the workflow to step 1 and sets status to "ready".
 
 ## Resume After Save
 
-If you save the game while a workflow is running, it will be paused automatically. When you reload, select the workflow and click **Start** to continue from where it left off.
+If you save the game while a workflow is running, the vehicle's state is preserved automatically. When you reload, the workflow is restored as paused on the vehicle — use the **HUD** to resume from where it left off.
 
-To restart a workflow from the beginning instead, click **Stop** first to reset it, then click **Start**.
+Clicking **Start** in the main dialog always starts the workflow fresh from step 1.
 
 ## Persistence
 

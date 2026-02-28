@@ -28,7 +28,7 @@ When a workflow is running, an overlay appears on screen:
 ## HUD Position
 
 The HUD appears in a fixed position on screen:
-- Default: Top-right corner
+- Default: Lower-left area
 - Does not obstruct critical game UI
 
 ## Status Display

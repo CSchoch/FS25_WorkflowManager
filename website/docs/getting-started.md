@@ -79,7 +79,9 @@ The **in-vehicle HUD** shows the current workflow status. Use the HUD buttons to
 
 ### Resume After Save
 
-If you save the game while a workflow is running, it will be paused on reload. Select the workflow and click **Start** to continue from where you left off.
+If you save the game while a workflow is running, the vehicle's state is preserved automatically. When you reload, the workflow is restored as paused — use the **HUD Resume button** to continue from where you left off.
+
+Clicking **Start** in the main dialog always starts fresh from step 1.
 
 ### Workflow Completion
 

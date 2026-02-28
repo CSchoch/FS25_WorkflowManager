@@ -154,7 +154,9 @@ In multiplayer:
 
 ## Resume After Save
 
-If you save the game while a workflow is running, the workflow is paused automatically. When you reload, open the Workflow Manager, select the workflow, and click **Start** to continue from where it left off.
+If you save the game while a workflow is running, the vehicle's state is preserved automatically. When you reload, the workflow is restored as paused — use the **HUD Resume button** (`>`) to continue from where it left off.
+
+Clicking **Start** in the main dialog always starts the workflow fresh from step 1.
 
 ## Performance
 
