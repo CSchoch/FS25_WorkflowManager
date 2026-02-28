@@ -135,7 +135,7 @@ function WorkflowManagerSpec:onRegisterActionEvents(isActiveForInput, isActiveFo
     end
 
     -- Register WM_TOGGLE_HUD action for in-vehicle HUD toggle
-    local _, actionEventId = self:addActionEvent(
+    local _, hudEventId = self:addActionEvent(
         spec.actionEvents,
         InputAction.WM_TOGGLE_HUD,
         self,
@@ -147,9 +147,27 @@ function WorkflowManagerSpec:onRegisterActionEvents(isActiveForInput, isActiveFo
         nil     -- callbackState
     )
 
-    if actionEventId ~= nil then
-        g_inputBinding:setActionEventTextPriority(actionEventId, GS_PRIO_HIGH)
-        g_inputBinding:setActionEventTextVisibility(actionEventId, true)
+    if hudEventId ~= nil then
+        g_inputBinding:setActionEventTextPriority(hudEventId, GS_PRIO_HIGH)
+        g_inputBinding:setActionEventTextVisibility(hudEventId, true)
+    end
+
+    -- Register WM_TOGGLE_GUI action so the main dialog is also accessible from vehicles
+    local _, guiEventId = self:addActionEvent(
+        spec.actionEvents,
+        InputAction.WM_TOGGLE_GUI,
+        self,
+        WorkflowManagerSpec.actionEventToggleGUI,
+        false,  -- triggerUp
+        true,   -- triggerDown
+        false,  -- triggerAlways
+        true,   -- startActive
+        nil     -- callbackState
+    )
+
+    if guiEventId ~= nil then
+        g_inputBinding:setActionEventTextPriority(guiEventId, GS_PRIO_HIGH)
+        g_inputBinding:setActionEventTextVisibility(guiEventId, true)
     end
 end
 
@@ -161,6 +179,17 @@ end
 function WorkflowManagerSpec:actionEventToggleHUD(actionName, inputValue, callbackState, isAnalog)
     if WorkflowManager and WorkflowManager.onToggleHUD then
         WorkflowManager:onToggleHUD()
+    end
+end
+
+---Called when the toggle GUI action is triggered (in-vehicle)
+---@param actionName string The action name
+---@param inputValue number The input value
+---@param callbackState any The callback state
+---@param isAnalog boolean Whether this is an analog input
+function WorkflowManagerSpec:actionEventToggleGUI(actionName, inputValue, callbackState, isAnalog)
+    if WorkflowManager and WorkflowManager.onToggleGUI then
+        WorkflowManager:onToggleGUI()
     end
 end
 
