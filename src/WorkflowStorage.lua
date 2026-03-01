@@ -75,6 +75,12 @@ function WMStorage:saveWorkflows(workflows)
         end
     end
 
+    -- Save HUD position
+    if WMHud.x ~= nil and WMHud.y ~= nil then
+        xmlFile:setFloat("WorkflowManager.settings.hud#posX", WMHud.x)
+        xmlFile:setFloat("WorkflowManager.settings.hud#posY", WMHud.y)
+    end
+
     xmlFile:save()
     xmlFile:delete()
 
@@ -146,6 +152,15 @@ function WMStorage:loadWorkflows()
 
         table.insert(workflows, workflow)
         workflowIndex = workflowIndex + 1
+    end
+
+    -- Load HUD position
+    local hudX = xmlFile:getFloat("WorkflowManager.settings.hud#posX")
+    local hudY = xmlFile:getFloat("WorkflowManager.settings.hud#posY")
+    if hudX ~= nil and hudY ~= nil then
+        WMHud.x = hudX
+        WMHud.y = hudY
+        WMLogger:info("Restored HUD position: x=%.4f y=%.4f", hudX, hudY)
     end
 
     xmlFile:delete()

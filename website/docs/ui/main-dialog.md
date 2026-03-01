@@ -99,9 +99,7 @@ This resets the workflow to step 1 and sets status to "ready".
 
 | Shortcut | Action |
 |----------|--------|
-| **Left Alt + W** | Open/close the Workflow Manager |
-| **Left Ctrl + Left Alt + W** | Quick-start a workflow with current vehicle |
-| **Left Shift + Left Alt + W** | Stop the active workflow |
+| **Left Alt + W** | Open the Workflow Manager |
 
 ### In the Dialog
 

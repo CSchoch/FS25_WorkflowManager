@@ -18,6 +18,12 @@ WMHud.headerOverlay = nil
 WMHud.iconOverlays = nil
 WMHud.hoveredButton = nil
 
+-- Drag state
+WMHud.isDragging = false
+WMHud.dragOffsetX = 0
+WMHud.dragOffsetY = 0
+WMHud.isHoveringHeader = false
+
 -- Icon colors
 WMHud.ICON_NORMAL = { 1, 1, 1, 0.9 }
 WMHud.ICON_HOVER = { 0.165, 0.757, 0.929, 1 } -- Cyan/blue
@@ -36,14 +42,17 @@ function WMHud:ensureOverlays()
         return
     end
 
-    -- Calculate position from pixel values
-    local px, py = getNormalizedScreenValues(10, 300)
+    -- Calculate size from pixel values
     local pw, ph = getNormalizedScreenValues(280, 150)
-
-    self.x = px
-    self.y = py
     self.w = pw
     self.h = ph
+
+    -- Only set default position if not already loaded from save
+    if self.x == nil or self.y == nil then
+        local px, py = getNormalizedScreenValues(10, 300)
+        self.x = px
+        self.y = py
+    end
 
     -- Main background
     self.bgOverlay = Overlay.new(g_baseUIFilename, self.x, self.y, self.w, self.h)
@@ -138,6 +147,33 @@ function WMHud:createIconOverlays()
     self.btnSpacing = btnSpacing
 
     WMLogger:info("WMHud icon overlays created")
+end
+
+function WMHud:updateOverlayPositions()
+    if self.bgOverlay == nil then return end
+
+    self.bgOverlay:setPosition(self.x, self.y)
+    self.headerOverlay:setPosition(self.x, self.y + self.h - self.headerH)
+
+    local btnY = self.y + self.marginY
+    local startX = self.x + self.marginX
+    local btnTotalW = self.iconW + self.btnSpacing
+
+    self.iconOverlays.prev:setPosition(startX, btnY)
+    self.buttonBounds.prev = { x = startX, y = btnY, w = self.iconW, h = self.iconH }
+
+    local pauseX = startX + btnTotalW
+    self.iconOverlays.pause:setPosition(pauseX, btnY)
+    self.iconOverlays.play:setPosition(pauseX, btnY)
+    self.buttonBounds.pauseResume = { x = pauseX, y = btnY, w = self.iconW, h = self.iconH }
+
+    local stopX = startX + btnTotalW * 2
+    self.iconOverlays.stop:setPosition(stopX, btnY)
+    self.buttonBounds.stop = { x = stopX, y = btnY, w = self.iconW, h = self.iconH }
+
+    local nextX = startX + btnTotalW * 3
+    self.iconOverlays.next:setPosition(nextX, btnY)
+    self.buttonBounds.next = { x = nextX, y = btnY, w = self.iconW, h = self.iconH }
 end
 
 function WMHud:init()
@@ -239,6 +275,15 @@ function WMHud:draw()
 
     -- Draw backgrounds
     self.bgOverlay:render()
+
+    -- Header color changes on hover/drag to signal it's draggable
+    if self.isDragging then
+        self.headerOverlay:setColor(0.3, 0.55, 0.8, 0.95)   -- brighter while dragging
+    elseif self.isHoveringHeader then
+        self.headerOverlay:setColor(0.25, 0.48, 0.7, 0.95)  -- slightly lighter on hover
+    else
+        self.headerOverlay:setColor(0.2, 0.4, 0.6, 0.9)     -- normal
+    end
     self.headerOverlay:render()
 
     local x = self.x
@@ -387,18 +432,53 @@ function WMHud:mouseEvent(posX, posY, isDown, isUp, button)
         return false
     end
 
-    -- Update hover state
-    self:updateHoverState(posX, posY)
+    -- Stop drag on left mouse up
+    if isUp and button == Input.MOUSE_BUTTON_LEFT and self.isDragging then
+        self.isDragging = false
+        WorkflowManager:saveWorkflows()  -- persist new position
+        return true
+    end
 
+    -- Handle mouse down
     if isDown and button == Input.MOUSE_BUTTON_LEFT then
+        local isInHeader = posY >= self.y + self.h - self.headerH and
+                           posX >= self.x and posX <= self.x + self.w and
+                           posY <= self.y + self.h
+        local isCloseBtn = isInHeader and posX > self.x + self.w - (self.marginX or 0.008) * 4
+
+        -- Start drag when clicking header (but not close button)
+        if isInHeader and not isCloseBtn then
+            self.isDragging = true
+            self.dragOffsetX = posX - self.x
+            self.dragOffsetY = posY - self.y
+            return true
+        end
+
+        -- Regular click (handles close button, icon buttons)
         return self:handleClick(posX, posY)
     end
 
+    -- Mouse move: update drag position
+    if self.isDragging then
+        self.x = math.max(0, math.min(1 - self.w, posX - self.dragOffsetX))
+        self.y = math.max(0, math.min(1 - self.h, posY - self.dragOffsetY))
+        self:updateOverlayPositions()
+        return true
+    end
+
+    -- Update hover state (header + buttons)
+    self:updateHoverState(posX, posY)
     return false
 end
 
 function WMHud:updateHoverState(posX, posY)
     self.hoveredButton = nil
+
+    -- Track header hover for visual drag indicator
+    local isInHeader = posY >= self.y + self.h - self.headerH and
+                       posX >= self.x and posX <= self.x + self.w
+    local isCloseBtn = isInHeader and posX > self.x + self.w - (self.marginX or 0.008) * 4
+    self.isHoveringHeader = isInHeader and not isCloseBtn
 
     if not self.buttonBounds then
         return

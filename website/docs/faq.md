@@ -62,8 +62,6 @@ Press **Left Alt + W** from anywhere (on foot or in a vehicle). You can also fin
 | Shortcut | Action |
 |----------|--------|
 | **Left Alt + W** | Open/close the Workflow Manager |
-| **Left Ctrl + Left Alt + W** | Quick-start a workflow |
-| **Left Shift + Left Alt + W** | Stop the active workflow |
 | **Left Alt + H** | Toggle the HUD overlay |
 
 ### Why won't my workflow start?

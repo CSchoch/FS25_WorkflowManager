@@ -2,7 +2,7 @@
 <l10n>
     <texts>
         <!-- Action texts (both formats needed) -->
-        <text name="action_WM_TOGGLE_GUI" text="Workflow Manager umschalten"/>
+        <text name="action_WM_TOGGLE_GUI" text="Workflow Manager öffnen"/>
         <text name="action_WM_START_WORKFLOW" text="Workflow starten"/>
         <text name="action_WM_STOP_WORKFLOW" text="Workflow stoppen"/>
         <text name="action_WM_GUI_DELETE" text="Loeschen"/>
@@ -10,7 +10,7 @@
         <text name="action_WM_GUI_STOP" text="Stoppen"/>
         <text name="action_WM_GUI_MOVE_UP" text="Nach oben"/>
         <text name="action_WM_GUI_MOVE_DOWN" text="Nach unten"/>
-        <text name="input_WM_TOGGLE_GUI" text="Workflow Manager umschalten"/>
+        <text name="input_WM_TOGGLE_GUI" text="Workflow Manager öffnen"/>
         <text name="input_WM_START_WORKFLOW" text="Workflow starten"/>
         <text name="input_WM_STOP_WORKFLOW" text="Workflow stoppen"/>
         <text name="input_WM_GUI_DELETE" text="Loeschen"/>

@@ -23,8 +23,6 @@ These shortcuts work both on foot and in a vehicle:
 | Shortcut | Action |
 |----------|--------|
 | **Left Alt + W** | Open/close the Workflow Manager |
-| **Left Ctrl + Left Alt + W** | Quick-start a workflow with current vehicle |
-| **Left Shift + Left Alt + W** | Stop the active workflow |
 | **Left Alt + H** | Toggle the HUD overlay on/off |
 
 ## Creating Your First Workflow

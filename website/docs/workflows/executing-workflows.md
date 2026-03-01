@@ -25,14 +25,6 @@ Before starting a workflow:
 
 The workflow begins with the first step and the dialog closes automatically.
 
-### Quick Start
-
-Press **Left Ctrl + Left Alt + W** while in a vehicle to quickly start the first available workflow.
-
-### Quick Stop
-
-Press **Left Shift + Left Alt + W** to stop the currently running workflow.
-
 ## Workflow Status
 
 Workflows have four possible states:
