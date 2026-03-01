@@ -584,7 +584,8 @@ end
 ---Show the step add/edit dialog
 ---@param step table|nil Step to edit, or nil for new step
 ---@param callback function Callback when done: callback(step) or callback(nil) if cancelled
-function WorkflowManager:showStepDialog(step, callback)
+---@param isWorkflowLinked boolean|nil Whether the parent workflow is linked (controls sync group visibility)
+function WorkflowManager:showStepDialog(step, callback, isWorkflowLinked)
     if self.stepDialog == nil then
         WMLogger:warning("Step dialog not available")
         if callback then
@@ -593,7 +594,7 @@ function WorkflowManager:showStepDialog(step, callback)
         return
     end
 
-    self.stepDialog:setStep(step, callback)
+    self.stepDialog:setStep(step, callback, isWorkflowLinked)
     g_gui:showDialog("WMStepDialog")
 end
 
@@ -607,7 +608,10 @@ function WorkflowManager:createWorkflow(name)
         -- Vehicle is detected at runtime when starting the workflow
         -- currentStep and status are per-vehicle runtime state (in vehicle.spec_workflowManagerSpec.wmExecution)
         steps = {},
-        createdAt = getDate("%Y-%m-%d %H:%M:%S")
+        createdAt = getDate("%Y-%m-%d %H:%M:%S"),
+        -- Linked workflow pair fields (nil when unlinked)
+        linkedWorkflowId = nil,   -- ID of the linked partner workflow
+        linkRole = nil            -- "main" or "support" (nil when unlinked)
     }
 
     table.insert(self.workflows, workflow)
@@ -634,6 +638,130 @@ function WorkflowManager:getWorkflowById(id)
     return nil
 end
 
+---Link two workflows as a main/support pair
+---The first workflow becomes "main", the second becomes "support"
+---Auto-assigns sync groups on both workflows after linking
+---@param mainWorkflowId string ID of the main workflow
+---@param supportWorkflowId string ID of the support workflow
+---@return boolean success True if linked successfully
+function WorkflowManager:linkWorkflows(mainWorkflowId, supportWorkflowId)
+    local mainWf = self:getWorkflowById(mainWorkflowId)
+    local supportWf = self:getWorkflowById(supportWorkflowId)
+
+    if mainWf == nil or supportWf == nil then
+        WMLogger:error("Cannot link: one or both workflows not found")
+        return false
+    end
+
+    if mainWf.id == supportWf.id then
+        WMLogger:error("Cannot link a workflow to itself")
+        return false
+    end
+
+    -- Unlink existing partners first
+    if mainWf.linkedWorkflowId then
+        self:unlinkWorkflow(mainWf.id)
+    end
+    if supportWf.linkedWorkflowId then
+        self:unlinkWorkflow(supportWf.id)
+    end
+
+    -- Set bidirectional link
+    mainWf.linkedWorkflowId = supportWf.id
+    mainWf.linkRole = "main"
+    supportWf.linkedWorkflowId = mainWf.id
+    supportWf.linkRole = "support"
+
+    -- Auto-assign sync groups
+    self:autoAssignSyncGroups(mainWf.id)
+    self:autoAssignSyncGroups(supportWf.id)
+
+    WMLogger:info("Linked workflows: '%s' (main) <-> '%s' (support)", mainWf.name, supportWf.name)
+    return true
+end
+
+---Unlink a workflow from its partner
+---Clears linked fields and sync groups on both workflows
+---@param workflowId string ID of the workflow to unlink
+function WorkflowManager:unlinkWorkflow(workflowId)
+    local workflow = self:getWorkflowById(workflowId)
+    if workflow == nil then
+        return
+    end
+
+    -- Find and unlink partner
+    if workflow.linkedWorkflowId then
+        local partner = self:getWorkflowById(workflow.linkedWorkflowId)
+        if partner then
+            -- Clear partner's sync groups
+            for _, step in ipairs(partner.steps) do
+                step.syncGroup = nil
+            end
+            partner.linkedWorkflowId = nil
+            partner.linkRole = nil
+            WMLogger:debug("Unlinked partner workflow: %s", partner.name)
+        end
+    end
+
+    -- Clear this workflow's sync groups
+    for _, step in ipairs(workflow.steps) do
+        step.syncGroup = nil
+    end
+    workflow.linkedWorkflowId = nil
+    workflow.linkRole = nil
+    WMLogger:debug("Unlinked workflow: %s", workflow.name)
+end
+
+---Get the linked partner workflow for a given workflow
+---@param workflowId string ID of the workflow
+---@return table|nil linkedWorkflow The linked partner workflow definition, or nil
+function WorkflowManager:getLinkedWorkflow(workflowId)
+    local workflow = self:getWorkflowById(workflowId)
+    if workflow == nil or workflow.linkedWorkflowId == nil then
+        return nil
+    end
+    return self:getWorkflowById(workflow.linkedWorkflowId)
+end
+
+---Auto-assign sync groups to a workflow's steps based on its role
+---For "main": Group number increments after each Courseplay step (AD steps leading to a CP step share the same group)
+---For "support": Each step gets sequential group numbers (1, 2, 3...)
+---@param workflowId string ID of the workflow to assign groups to
+function WorkflowManager:autoAssignSyncGroups(workflowId)
+    local workflow = self:getWorkflowById(workflowId)
+    if workflow == nil then
+        return
+    end
+
+    if workflow.linkRole == nil then
+        -- Not linked, clear all groups
+        for _, step in ipairs(workflow.steps) do
+            step.syncGroup = nil
+        end
+        return
+    end
+
+    if workflow.linkRole == "main" then
+        -- For main: Steps that lead into a CP step share a group.
+        -- Group number increments after each CP step completes.
+        local group = 1
+        for i, step in ipairs(workflow.steps) do
+            step.syncGroup = group
+            -- Increment group after each CP step (the "work" boundary)
+            if step.type == WorkflowManager.STEP_COURSEPLAY then
+                group = group + 1
+            end
+        end
+    elseif workflow.linkRole == "support" then
+        -- For support: Each step gets sequential group number
+        for i, step in ipairs(workflow.steps) do
+            step.syncGroup = i
+        end
+    end
+
+    WMLogger:debug("Auto-assigned sync groups for workflow '%s' (role: %s)", workflow.name, workflow.linkRole)
+end
+
 ---Delete a workflow
 ---@param id string Workflow ID to delete
 ---@return boolean success True if deleted successfully
@@ -643,6 +771,10 @@ function WorkflowManager:deleteWorkflow(id)
             -- Stop if running on any vehicle
             if WMExecutor:isWorkflowActive(id) then
                 self:stopWorkflow(id)
+            end
+            -- Auto-unlink partner before deleting
+            if workflow.linkedWorkflowId then
+                self:unlinkWorkflow(id)
             end
             table.remove(self.workflows, i)
             WMLogger:debug("Deleted workflow: %s", id)
@@ -737,7 +869,20 @@ function WorkflowManager:startWorkflow(workflowId)
         currentVehicle.getName and currentVehicle:getName() or "unknown")
 
     -- Pass the current vehicle to the executor
-    return WMExecutor:startWorkflow(workflow, currentVehicle)
+    local success = WMExecutor:startWorkflow(workflow, currentVehicle)
+
+    -- Show linked workflow notification if this is a main workflow
+    if success and workflow.linkRole == "main" and workflow.linkedWorkflowId then
+        local linkedWf = self:getLinkedWorkflow(workflow.id)
+        if linkedWf then
+            local msg = string.format(
+                g_i18n:getText("wm_linked_start_prompt") or "Also start linked workflow '%s' on its vehicle",
+                linkedWf.name)
+            g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_INFO, msg)
+        end
+    end
+
+    return success
 end
 
 ---Check if a vehicle supports running workflows

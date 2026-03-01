@@ -195,6 +195,16 @@ function WMEditorDialog:populateCellForItemInSection(list, section, index, cell)
     if actionElement then
         actionElement:setText(self:getActionDisplayName(step.action) or step.action or "")
     end
+
+    -- Sync group (only show when workflow is linked)
+    local groupElement = cell:getDescendantByName("stepGroup")
+    if groupElement then
+        if self.workflow and self.workflow.linkedWorkflowId and step.syncGroup then
+            groupElement:setText(tostring(step.syncGroup))
+        else
+            groupElement:setText("")
+        end
+    end
 end
 
 ---Get display name for an action
@@ -217,6 +227,7 @@ end
 function WMEditorDialog:updateButtons()
     local hasSteps = self.workflow and self.workflow.steps and #self.workflow.steps > 0
     local hasSelection = self.selectedStepIndex > 0
+    local isLinked = self.workflow and self.workflow.linkedWorkflowId ~= nil
 
     if self.editStepButton then
         self.editStepButton:setDisabled(not hasSelection)
@@ -230,6 +241,17 @@ function WMEditorDialog:updateButtons()
     if self.moveDownButton then
         local maxIndex = self.workflow and self.workflow.steps and #self.workflow.steps or 0
         self.moveDownButton:setDisabled(not hasSelection or self.selectedStepIndex >= maxIndex)
+    end
+
+    -- Auto Groups: only visible and enabled when workflow is linked
+    if self.autoGroupsButton then
+        self.autoGroupsButton:setVisible(isLinked)
+        self.autoGroupsButton:setDisabled(not isLinked or not hasSteps)
+    end
+
+    -- Sync group column header: only visible when linked
+    if self.groupColumnHeader then
+        self.groupColumnHeader:setVisible(isLinked)
     end
 end
 
@@ -257,13 +279,14 @@ end
 ---Called when Add Step button is clicked
 function WMEditorDialog:onClickAddStep()
     WMLogger:debug("WMEditorDialog:onClickAddStep")
+    local isLinked = self.workflow and self.workflow.linkedWorkflowId ~= nil
     WorkflowManager:showStepDialog(nil, function(step)
         if step and self.workflow then
             table.insert(self.workflow.steps, step)
             self.selectedStepIndex = #self.workflow.steps
             self:refreshStepList()
         end
-    end)
+    end, isLinked)
 end
 
 ---Called when Edit Step button is clicked
@@ -273,12 +296,13 @@ function WMEditorDialog:onClickEditStep()
     if self.selectedStepIndex > 0 and self.workflow and self.workflow.steps then
         local step = self.workflow.steps[self.selectedStepIndex]
         if step then
+            local isLinked = self.workflow and self.workflow.linkedWorkflowId ~= nil
             WorkflowManager:showStepDialog(step, function(editedStep)
                 if editedStep then
                     self.workflow.steps[self.selectedStepIndex] = editedStep
                     self:refreshStepList()
                 end
-            end)
+            end, isLinked)
         end
     end
 end
@@ -306,6 +330,17 @@ function WMEditorDialog:onClickMoveUp()
         steps[self.selectedStepIndex] = steps[self.selectedStepIndex - 1]
         steps[self.selectedStepIndex - 1] = temp
         self.selectedStepIndex = self.selectedStepIndex - 1
+        self:refreshStepList()
+    end
+end
+
+---Called when Auto Groups button is clicked
+---Auto-assigns sync groups based on the workflow's link role
+function WMEditorDialog:onClickAutoGroups()
+    WMLogger:debug("WMEditorDialog:onClickAutoGroups")
+
+    if self.workflow then
+        WorkflowManager:autoAssignSyncGroups(self.workflow.id)
         self:refreshStepList()
     end
 end

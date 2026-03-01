@@ -89,10 +89,16 @@ function WMMainDialog:populateCellForItemInSection(list, section, index, cell)
         return
     end
 
-    -- Set workflow name
+    -- Set workflow name (with linked role indicator)
     local nameElement = cell:getDescendantByName("workflowName")
     if nameElement then
-        nameElement:setText(workflow.name or "Unnamed")
+        local displayName = workflow.name or "Unnamed"
+        if workflow.linkRole == "main" then
+            displayName = displayName .. (g_i18n:getText("wm_link_role_indicator_main") or " [Main]")
+        elseif workflow.linkRole == "support" then
+            displayName = displayName .. (g_i18n:getText("wm_link_role_indicator_support") or " [Support]")
+        end
+        nameElement:setText(displayName)
     end
 
     -- Get runtime state for the current vehicle
@@ -144,6 +150,26 @@ function WMMainDialog:updateButtons()
     if self.stopButton then
         -- Stop only available when this workflow is actively running on current vehicle
         self.stopButton:setDisabled(not hasSelection or not isThisWorkflow)
+    end
+
+    -- Link: only when selected workflow is NOT already linked and there are other unlinked workflows
+    local isLinked = selectedWorkflow and selectedWorkflow.linkedWorkflowId ~= nil
+    local hasUnlinkedTargets = false
+    if hasSelection and not isLinked then
+        for _, wf in ipairs(self.workflows) do
+            if wf.id ~= selectedWorkflow.id and wf.linkedWorkflowId == nil then
+                hasUnlinkedTargets = true
+                break
+            end
+        end
+    end
+    if self.linkButton then
+        self.linkButton:setDisabled(not hasSelection or isLinked or not hasUnlinkedTargets)
+    end
+
+    -- Unlink: only when selected workflow IS linked
+    if self.unlinkButton then
+        self.unlinkButton:setDisabled(not hasSelection or not isLinked)
     end
 end
 
@@ -238,6 +264,101 @@ function WMMainDialog:onClickStop()
             string.format(g_i18n:getText("wm_workflow_stopped") or "Workflow stopped: %s", workflow.name))
         self:refreshWorkflowList()
     end
+end
+
+---Called when Link button is clicked
+---Shows a list of unlinked workflows to link with (selected = main, target = support)
+function WMMainDialog:onClickLink()
+    WMLogger:debug("WMMainDialog:onClickLink")
+
+    if self.selectedWorkflowIndex <= 0 or self.selectedWorkflowIndex > #self.workflows then
+        return
+    end
+
+    local selectedWorkflow = self.workflows[self.selectedWorkflowIndex]
+    if selectedWorkflow.linkedWorkflowId then
+        return  -- Already linked
+    end
+
+    -- Build list of unlinked workflows (excluding selected)
+    local candidates = {}
+    for _, wf in ipairs(self.workflows) do
+        if wf.id ~= selectedWorkflow.id and wf.linkedWorkflowId == nil then
+            table.insert(candidates, wf)
+        end
+    end
+
+    if #candidates == 0 then
+        return
+    end
+
+    -- Build option texts for the list dialog
+    local optionTexts = {}
+    for _, wf in ipairs(candidates) do
+        table.insert(optionTexts, wf.name)
+    end
+
+    -- Use FS25's built-in list dialog (OptionDialog) to pick target workflow
+    -- Fall back to linking with the first candidate if dialog is not available
+    if g_gui.showOptionDialog then
+        g_gui:showOptionDialog({
+            title = g_i18n:getText("wm_link_select") or "Link to workflow:",
+            options = optionTexts,
+            callback = function(selectedIndex)
+                if selectedIndex and selectedIndex > 0 and selectedIndex <= #candidates then
+                    local targetWf = candidates[selectedIndex]
+                    -- Selected = main, target = support (auto-assign roles)
+                    WorkflowManager:linkWorkflows(selectedWorkflow.id, targetWf.id)
+                    WorkflowManager:saveWorkflows()
+                    self:refreshWorkflowList()
+                    g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_OK,
+                        string.format(g_i18n:getText("wm_linked_to") or "Linked: %s", targetWf.name))
+                end
+            end
+        })
+    else
+        -- Fallback: use YesNoDialog to confirm linking with first candidate
+        local targetWf = candidates[1]
+        YesNoDialog.show(
+            function(dialog, clickOk)
+                if clickOk then
+                    WorkflowManager:linkWorkflows(selectedWorkflow.id, targetWf.id)
+                    WorkflowManager:saveWorkflows()
+                    self:refreshWorkflowList()
+                    g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_OK,
+                        string.format(g_i18n:getText("wm_linked_to") or "Linked: %s", targetWf.name))
+                end
+            end,
+            self,
+            string.format((g_i18n:getText("wm_link_select") or "Link to workflow:") .. " %s?", targetWf.name)
+        )
+    end
+end
+
+---Called when Unlink button is clicked
+function WMMainDialog:onClickUnlink()
+    WMLogger:debug("WMMainDialog:onClickUnlink")
+
+    if self.selectedWorkflowIndex <= 0 or self.selectedWorkflowIndex > #self.workflows then
+        return
+    end
+
+    local workflow = self.workflows[self.selectedWorkflowIndex]
+    if not workflow.linkedWorkflowId then
+        return  -- Not linked
+    end
+
+    YesNoDialog.show(
+        function(dialog, clickOk)
+            if clickOk then
+                WorkflowManager:unlinkWorkflow(workflow.id)
+                WorkflowManager:saveWorkflows()
+                self:refreshWorkflowList()
+            end
+        end,
+        self,
+        string.format(g_i18n:getText("wm_confirm_unlink") or "Unlink workflow '%s'?", workflow.name)
+    )
 end
 
 ---Called when Close button is clicked

@@ -127,6 +127,24 @@ function WMExecutor:startWorkflow(workflow, vehicle)
 
     local activeData = vehicle.spec_workflowManagerSpec.wmExecution
 
+    -- Late-start sync: If this is a support workflow and the main is already running,
+    -- jump to the support step matching the main's current sync group
+    if workflow.linkRole == "support" and workflow.linkedWorkflowId then
+        local mainActiveData = self:getActiveDataForWorkflow(workflow.linkedWorkflowId)
+        if mainActiveData and mainActiveData.status == WorkflowManager.STATUS_RUNNING then
+            local mainStep = mainActiveData.workflow.steps[mainActiveData.currentStep]
+            local mainGroup = mainStep and mainStep.syncGroup
+            if mainGroup then
+                local targetStep = self:findStepByGroup(workflow, mainGroup)
+                if targetStep then
+                    WMLogger:info("Late-start sync: Support '%s' jumping to step %d (group %d) to match main",
+                        workflow.name, targetStep, mainGroup)
+                    activeData.currentStep = targetStep
+                end
+            end
+        end
+    end
+
     WMLogger:info("Starting workflow: %s with vehicle: %s (Step %d/%d)",
         workflow.name, vehicleName, activeData.currentStep, #workflow.steps)
 
@@ -173,6 +191,15 @@ function WMExecutor:stopWorkflow(vehicle)
     WMEventHandler:fireEvent(WMEventHandler.EVENT_WORKFLOW_STOPPED, {
         workflowId = workflow.id
     })
+
+    -- If this is a main workflow, also stop the linked support workflow
+    if workflow.linkRole == "main" and workflow.linkedWorkflowId then
+        local supportActiveData = self:getActiveDataForWorkflow(workflow.linkedWorkflowId)
+        if supportActiveData then
+            WMLogger:info("Main workflow stopped - also stopping linked support workflow")
+            self:stopWorkflow(supportActiveData.vehicle)
+        end
+    end
 
     return true
 end
@@ -225,6 +252,16 @@ function WMExecutor:pauseWorkflow(vehicle)
         currentStep = activeData.currentStep
     })
 
+    -- If this is a main workflow, also pause the linked support workflow
+    local workflow = activeData.workflow
+    if workflow.linkRole == "main" and workflow.linkedWorkflowId then
+        local supportActiveData = self:getActiveDataForWorkflow(workflow.linkedWorkflowId)
+        if supportActiveData and supportActiveData.status == WorkflowManager.STATUS_RUNNING then
+            WMLogger:info("Main workflow paused - also pausing linked support workflow")
+            self:pauseWorkflow(supportActiveData.vehicle)
+        end
+    end
+
     return true
 end
 
@@ -274,6 +311,16 @@ function WMExecutor:resumeWorkflow(vehicle)
         vehicle = vehicle,
         currentStep = activeData.currentStep
     })
+
+    -- If this is a main workflow, also resume the linked support workflow
+    local workflow = activeData.workflow
+    if workflow.linkRole == "main" and workflow.linkedWorkflowId then
+        local supportActiveData = self:getActiveDataForWorkflow(workflow.linkedWorkflowId)
+        if supportActiveData and supportActiveData.status == WorkflowManager.STATUS_PAUSED then
+            WMLogger:info("Main workflow resumed - also resuming linked support workflow")
+            self:resumeWorkflow(supportActiveData.vehicle)
+        end
+    end
 
     return true
 end
@@ -557,11 +604,55 @@ function WMExecutor:onStepCompleted(activeData)
         stepNumber = completedStepNum
     })
 
+    -- === Linked workflow: Support looping ===
+    -- If this is a support workflow and the user hasn't manually overridden step navigation,
+    -- check if we should loop the current step (stay in same sync group as main)
+    if workflow.linkRole == "support" and not activeData.syncOverridden then
+        local mainWorkflow = WorkflowManager:getLinkedWorkflow(workflow.id)
+        if mainWorkflow then
+            local mainActiveData = self:getActiveDataForWorkflow(mainWorkflow.id)
+            if mainActiveData and mainActiveData.status == WorkflowManager.STATUS_RUNNING then
+                local mainStep = mainWorkflow.steps[mainActiveData.currentStep]
+                local supportStep = workflow.steps[completedStepNum]
+                local mainGroup = mainStep and mainStep.syncGroup
+                local supportGroup = supportStep and supportStep.syncGroup
+
+                if mainGroup and supportGroup and mainGroup == supportGroup then
+                    -- Main is still in the same sync group - loop this step
+                    WMLogger:info("Support workflow '%s' looping step %d (sync group %d matches main)",
+                        workflow.name, completedStepNum, supportGroup)
+                    self:executeCurrentStep(activeData)
+                    return
+                end
+                -- If groups differ, fall through to normal step advance
+            elseif mainActiveData == nil or mainActiveData.status ~= WorkflowManager.STATUS_RUNNING then
+                -- Main is not running - stop support
+                WMLogger:info("Support workflow '%s': main workflow not running, stopping support", workflow.name)
+                self:stopWorkflow(activeData.vehicle)
+                return
+            end
+        end
+    end
+
+    -- Capture previous step info for sync group transition detection
+    local prevStepNum = completedStepNum
+    local prevGroup = workflow.steps[prevStepNum] and workflow.steps[prevStepNum].syncGroup
+
     -- Check if AD handed off to CP (AD already started CP for us)
     local adHandedOffToCP = activeData.willHandoffToCP
 
     -- Move to next step
     activeData.currentStep = activeData.currentStep + 1
+
+    -- === Linked workflow: Main sync group transition ===
+    if workflow.linkRole == "main" and prevGroup then
+        local nextStep = workflow.steps[activeData.currentStep]
+        local nextGroup = nextStep and nextStep.syncGroup
+        if nextGroup and prevGroup ~= nextGroup then
+            WMLogger:info("Main workflow '%s' sync group transition: %d -> %d", workflow.name, prevGroup, nextGroup)
+            self:onSyncGroupTransition(activeData, prevGroup, nextGroup)
+        end
+    end
 
     -- Check if workflow is complete
     if activeData.currentStep > #workflow.steps then
@@ -608,6 +699,15 @@ function WMExecutor:onWorkflowCompleted(activeData)
         workflowId = workflow.id,
         workflowName = workflow.name
     })
+
+    -- If this is a main workflow, stop the linked support workflow
+    if workflow.linkRole == "main" and workflow.linkedWorkflowId then
+        local supportActiveData = self:getActiveDataForWorkflow(workflow.linkedWorkflowId)
+        if supportActiveData then
+            WMLogger:info("Main workflow completed - stopping linked support workflow")
+            self:stopWorkflow(supportActiveData.vehicle)
+        end
+    end
 end
 
 ---Handle step error
@@ -840,6 +940,95 @@ function WMExecutor:update(dt)
     end
 end
 
+---Get the active execution data for a workflow by its ID
+---Scans activeVehicles to find which vehicle is running this workflow
+---@param workflowId string Workflow ID to look up
+---@return table|nil activeData The execution state, or nil if workflow is not running
+function WMExecutor:getActiveDataForWorkflow(workflowId)
+    for vehicle, _ in pairs(self.activeVehicles) do
+        local activeData = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
+        if activeData and activeData.workflow.id == workflowId then
+            return activeData
+        end
+    end
+    return nil
+end
+
+---Find the first step index in a workflow that has the given sync group number
+---@param workflow table Workflow definition
+---@param groupNum number Sync group number to find
+---@return number|nil stepIndex 1-based step index, or nil if not found
+function WMExecutor:findStepByGroup(workflow, groupNum)
+    if workflow == nil or workflow.steps == nil or groupNum == nil then
+        return nil
+    end
+    for i, step in ipairs(workflow.steps) do
+        if step.syncGroup == groupNum then
+            return i
+        end
+    end
+    return nil
+end
+
+---Handle a sync group transition on the main workflow
+---Moves the linked support workflow to the step matching the new group
+---@param mainActiveData table Main workflow's per-vehicle execution state
+---@param fromGroup number Previous sync group number
+---@param toGroup number New sync group number
+function WMExecutor:onSyncGroupTransition(mainActiveData, fromGroup, toGroup)
+    local mainWorkflow = mainActiveData.workflow
+    local supportWorkflow = WorkflowManager:getLinkedWorkflow(mainWorkflow.id)
+    if supportWorkflow == nil then
+        return
+    end
+
+    local supportActiveData = self:getActiveDataForWorkflow(supportWorkflow.id)
+    if supportActiveData == nil then
+        WMLogger:debug("Sync group transition %d -> %d: support workflow '%s' not running",
+            fromGroup, toGroup, supportWorkflow.name)
+        return
+    end
+
+    if supportActiveData.status ~= WorkflowManager.STATUS_RUNNING then
+        WMLogger:debug("Sync group transition: support workflow '%s' not in running state", supportWorkflow.name)
+        return
+    end
+
+    -- Find the support step that matches the new group
+    local targetStep = self:findStepByGroup(supportWorkflow, toGroup)
+    if targetStep == nil then
+        WMLogger:warning("Sync group transition: support workflow '%s' has no step for group %d - stopping support",
+            supportWorkflow.name, toGroup)
+        self:stopWorkflow(supportActiveData.vehicle)
+        return
+    end
+
+    WMLogger:info("Sync group transition %d -> %d: moving support '%s' to step %d",
+        fromGroup, toGroup, supportWorkflow.name, targetStep)
+
+    -- Stop the current support step
+    self:stopCurrentStep(supportActiveData)
+
+    -- Move to the new step
+    supportActiveData.currentStep = targetStep
+    supportActiveData.syncOverridden = false  -- Clear manual override
+
+    -- Reset tracking state
+    supportActiveData.waitingForCompletion = false
+    supportActiveData.willHandoffToCP = false
+    supportActiveData.cpHandedOffToAD = false
+    supportActiveData.cpWasRunning = false
+    supportActiveData.cpStartedByAD = false
+    supportActiveData.cpStartWaitCount = nil
+    supportActiveData.pendingCPStart = nil
+    supportActiveData.pendingCPStartRetries = nil
+    supportActiveData.pendingADStart = nil
+    supportActiveData.pendingADStartRetries = nil
+
+    -- Execute the new step
+    self:executeCurrentStep(supportActiveData)
+end
+
 ---Get the count of active workflows
 ---@return number count Number of active workflows
 function WMExecutor:getActiveWorkflowCount()
@@ -941,6 +1130,12 @@ function WMExecutor:goToPreviousStep(vehicle)
         return false
     end
 
+    local workflow = activeData.workflow
+
+    -- Capture previous sync group for transition detection
+    local prevStepNum = activeData.currentStep
+    local prevGroup = workflow.steps[prevStepNum] and workflow.steps[prevStepNum].syncGroup
+
     -- Remember if workflow was paused so we can resume after step change
     local wasPaused = activeData.status == WorkflowManager.STATUS_PAUSED
 
@@ -951,7 +1146,7 @@ function WMExecutor:goToPreviousStep(vehicle)
     activeData.currentStep = activeData.currentStep - 1
 
     WMLogger:info("Moving to previous step %d/%d for workflow %s",
-        activeData.currentStep, #activeData.workflow.steps, activeData.workflow.name)
+        activeData.currentStep, #workflow.steps, workflow.name)
 
     -- Reset waiting state
     activeData.waitingForCompletion = false
@@ -976,9 +1171,19 @@ function WMExecutor:goToPreviousStep(vehicle)
         self:executeCurrentStep(activeData)
     end
 
+    -- Linked workflow: handle manual step switch
+    if workflow.linkRole == "main" and prevGroup then
+        local newGroup = workflow.steps[activeData.currentStep] and workflow.steps[activeData.currentStep].syncGroup
+        if newGroup and prevGroup ~= newGroup then
+            self:onSyncGroupTransition(activeData, prevGroup, newGroup)
+        end
+    elseif workflow.linkRole == "support" then
+        activeData.syncOverridden = true
+    end
+
     -- Fire event
     WMEventHandler:fireEvent(WMEventHandler.EVENT_STEP_CHANGED, {
-        workflowId = activeData.workflow.id,
+        workflowId = workflow.id,
         stepNumber = activeData.currentStep,
         direction = "previous"
     })
@@ -1001,10 +1206,16 @@ function WMExecutor:goToNextStep(vehicle)
         return false
     end
 
-    if activeData.currentStep >= #activeData.workflow.steps then
-        WMLogger:warning("Already at last step of workflow %s", activeData.workflow.id)
+    local workflow = activeData.workflow
+
+    if activeData.currentStep >= #workflow.steps then
+        WMLogger:warning("Already at last step of workflow %s", workflow.id)
         return false
     end
+
+    -- Capture previous sync group for transition detection
+    local prevStepNum = activeData.currentStep
+    local prevGroup = workflow.steps[prevStepNum] and workflow.steps[prevStepNum].syncGroup
 
     -- Remember if workflow was paused so we can resume after step change
     local wasPaused = activeData.status == WorkflowManager.STATUS_PAUSED
@@ -1016,7 +1227,7 @@ function WMExecutor:goToNextStep(vehicle)
     activeData.currentStep = activeData.currentStep + 1
 
     WMLogger:info("Moving to next step %d/%d for workflow %s",
-        activeData.currentStep, #activeData.workflow.steps, activeData.workflow.name)
+        activeData.currentStep, #workflow.steps, workflow.name)
 
     -- Reset waiting state
     activeData.waitingForCompletion = false
@@ -1041,9 +1252,19 @@ function WMExecutor:goToNextStep(vehicle)
         self:executeCurrentStep(activeData)
     end
 
+    -- Linked workflow: handle manual step switch
+    if workflow.linkRole == "main" and prevGroup then
+        local newGroup = workflow.steps[activeData.currentStep] and workflow.steps[activeData.currentStep].syncGroup
+        if newGroup and prevGroup ~= newGroup then
+            self:onSyncGroupTransition(activeData, prevGroup, newGroup)
+        end
+    elseif workflow.linkRole == "support" then
+        activeData.syncOverridden = true
+    end
+
     -- Fire event
     WMEventHandler:fireEvent(WMEventHandler.EVENT_STEP_CHANGED, {
-        workflowId = activeData.workflow.id,
+        workflowId = workflow.id,
         stepNumber = activeData.currentStep,
         direction = "next"
     })

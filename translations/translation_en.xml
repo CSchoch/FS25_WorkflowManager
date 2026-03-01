@@ -131,5 +131,21 @@
         <text name="wm_hud_paused" text="Paused"/>
         <text name="wm_hud_idle" text="Idle"/>
         <text name="wm_hud_no_vehicle" text="No vehicle"/>
+
+        <!-- Linked Workflow Pairs -->
+        <text name="wm_button_link" text="Link"/>
+        <text name="wm_button_unlink" text="Unlink"/>
+        <text name="wm_linked_to" text="Linked: %s"/>
+        <text name="wm_linked_start_prompt" text="Also start linked workflow '%s' on its vehicle"/>
+        <text name="wm_link_role_main" text="Main"/>
+        <text name="wm_link_role_support" text="Support"/>
+        <text name="wm_sync_group" text="Sync Group"/>
+        <text name="wm_sync_group_short" text="Grp"/>
+        <text name="wm_auto_groups" text="Auto Groups"/>
+        <text name="wm_link_select" text="Link to workflow:"/>
+        <text name="wm_hud_linked" text="Linked: %s - %s"/>
+        <text name="wm_confirm_unlink" text="Unlink workflow '%s'?"/>
+        <text name="wm_link_role_indicator_main" text=" [Main]"/>
+        <text name="wm_link_role_indicator_support" text=" [Support]"/>
     </texts>
 </l10n>

@@ -58,6 +58,14 @@ function WMStorage:saveWorkflows(workflows)
         -- Milestone 4: Vehicle is no longer saved with workflow
         -- Vehicle is detected at runtime when starting the workflow
 
+        -- Linked workflow pair fields
+        if workflow.linkedWorkflowId ~= nil and workflow.linkedWorkflowId ~= "" then
+            xmlFile:setString(workflowKey .. "#linkedWorkflowId", workflow.linkedWorkflowId)
+        end
+        if workflow.linkRole ~= nil and workflow.linkRole ~= "" then
+            xmlFile:setString(workflowKey .. "#linkRole", workflow.linkRole)
+        end
+
         -- Save steps
         for j, step in ipairs(workflow.steps) do
             local stepKey = string.format("%s.step(%d)", workflowKey, j - 1)
@@ -71,6 +79,11 @@ function WMStorage:saveWorkflows(workflows)
             end
             if step.fillType ~= nil and step.fillType ~= "" then
                 xmlFile:setString(stepKey .. "#fillType", step.fillType)
+            end
+
+            -- Sync group for linked workflow pairs
+            if step.syncGroup ~= nil then
+                xmlFile:setInt(stepKey .. "#syncGroup", step.syncGroup)
             end
         end
     end
@@ -124,7 +137,10 @@ function WMStorage:loadWorkflows()
             name = xmlFile:getString(workflowKey .. "#name", "Unnamed Workflow"),
             -- currentStep and status are per-vehicle runtime state, not persisted
             -- Vehicle is detected at runtime when starting the workflow
-            steps = {}
+            steps = {},
+            -- Linked workflow pair fields
+            linkedWorkflowId = xmlFile:getString(workflowKey .. "#linkedWorkflowId"),
+            linkRole = xmlFile:getString(workflowKey .. "#linkRole")
         }
 
         -- Load steps
@@ -143,7 +159,9 @@ function WMStorage:loadWorkflows()
                 action = xmlFile:getString(stepKey .. "#action", "default"),
                 -- AutoDrive advanced mode parameters
                 unloadTarget = xmlFile:getString(stepKey .. "#unloadTarget"),
-                fillType = xmlFile:getString(stepKey .. "#fillType")
+                fillType = xmlFile:getString(stepKey .. "#fillType"),
+                -- Sync group for linked workflow pairs
+                syncGroup = xmlFile:getInt(stepKey .. "#syncGroup")
             }
 
             table.insert(workflow.steps, step)
@@ -152,6 +170,23 @@ function WMStorage:loadWorkflows()
 
         table.insert(workflows, workflow)
         workflowIndex = workflowIndex + 1
+    end
+
+    -- Validate linked workflow IDs (clear invalid links)
+    local workflowIds = {}
+    for _, wf in ipairs(workflows) do
+        workflowIds[wf.id] = true
+    end
+    for _, wf in ipairs(workflows) do
+        if wf.linkedWorkflowId and not workflowIds[wf.linkedWorkflowId] then
+            WMLogger:warning("Clearing invalid linked workflow ID '%s' from workflow '%s'",
+                wf.linkedWorkflowId, wf.name)
+            wf.linkedWorkflowId = nil
+            wf.linkRole = nil
+            for _, step in ipairs(wf.steps) do
+                step.syncGroup = nil
+            end
+        end
     end
 
     -- Load HUD position

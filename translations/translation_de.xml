@@ -129,5 +129,21 @@
         <text name="wm_hud_paused" text="Pausiert"/>
         <text name="wm_hud_idle" text="Leerlauf"/>
         <text name="wm_hud_no_vehicle" text="Kein Fahrzeug"/>
+
+        <!-- Verknuepfte Workflow-Paare -->
+        <text name="wm_button_link" text="Verknuepfen"/>
+        <text name="wm_button_unlink" text="Trennen"/>
+        <text name="wm_linked_to" text="Verknuepft: %s"/>
+        <text name="wm_linked_start_prompt" text="Auch verknuepften Workflow '%s' auf seinem Fahrzeug starten"/>
+        <text name="wm_link_role_main" text="Haupt"/>
+        <text name="wm_link_role_support" text="Helfer"/>
+        <text name="wm_sync_group" text="Sync-Gruppe"/>
+        <text name="wm_sync_group_short" text="Grp"/>
+        <text name="wm_auto_groups" text="Auto Gruppen"/>
+        <text name="wm_link_select" text="Verknuepfen mit Workflow:"/>
+        <text name="wm_hud_linked" text="Verknuepft: %s - %s"/>
+        <text name="wm_confirm_unlink" text="Workflow '%s' trennen?"/>
+        <text name="wm_link_role_indicator_main" text=" [Haupt]"/>
+        <text name="wm_link_role_indicator_support" text=" [Helfer]"/>
     </texts>
 </l10n>

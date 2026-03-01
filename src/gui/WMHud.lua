@@ -42,8 +42,8 @@ function WMHud:ensureOverlays()
         return
     end
 
-    -- Calculate size from pixel values
-    local pw, ph = getNormalizedScreenValues(280, 150)
+    -- Calculate size from pixel values (175px height to accommodate linked workflow line)
+    local pw, ph = getNormalizedScreenValues(280, 175)
     self.w = pw
     self.h = ph
 
@@ -365,6 +365,33 @@ function WMHud:draw()
     elseif not workflow then
         setTextColor(0.6, 0.6, 0.6, 1)
         renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_no_vehicle"))
+    end
+
+    -- === Linked workflow status ===
+    if workflow and workflow.linkedWorkflowId then
+        lineY = lineY - self.smallSize - my
+        local linkedWf = WorkflowManager:getLinkedWorkflow(workflow.id)
+        if linkedWf then
+            local linkedActiveData = WMExecutor:getActiveDataForWorkflow(linkedWf.id)
+            local linkedStatus
+            if linkedActiveData then
+                if linkedActiveData.status == WorkflowManager.STATUS_RUNNING then
+                    setTextColor(0.3, 0.9, 0.3, 1) -- green
+                    linkedStatus = g_i18n:getText("wm_status_running") or "Running"
+                elseif linkedActiveData.status == WorkflowManager.STATUS_PAUSED then
+                    setTextColor(1, 0.6, 0, 1) -- orange
+                    linkedStatus = g_i18n:getText("wm_status_paused") or "Paused"
+                else
+                    setTextColor(0.6, 0.6, 0.6, 1) -- gray
+                    linkedStatus = g_i18n:getText("wm_hud_idle") or "Idle"
+                end
+            else
+                setTextColor(0.6, 0.6, 0.6, 1)
+                linkedStatus = g_i18n:getText("wm_hud_idle") or "Idle"
+            end
+            renderText(x + mx, lineY, self.smallSize,
+                string.format(g_i18n:getText("wm_hud_linked") or "Linked: %s - %s", linkedWf.name, linkedStatus))
+        end
     end
 
     -- === Button row (icons) ===
