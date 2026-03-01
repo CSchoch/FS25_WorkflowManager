@@ -31,10 +31,10 @@ Workflows have four possible states:
 
 | Status | Description |
 |--------|-------------|
-| `ready` | Workflow is configured and ready to start |
-| `running` | Workflow is actively executing |
-| `paused` | Workflow is paused, waiting for resume |
-| `completed` | All steps have finished |
+| **Ready** | Workflow is configured and ready to start |
+| **Running** | Workflow is actively executing |
+| **Paused** | Workflow is paused, waiting for resume |
+| **Completed** | All steps have finished |
 
 ## In-Vehicle HUD
 
@@ -97,7 +97,7 @@ Skipping steps may leave the vehicle in an unexpected position. Use carefully.
 
 Stop a workflow completely:
 - Resets the workflow to step 1
-- Sets status back to "ready"
+- Sets status back to Ready
 - Stops any running AutoDrive or Courseplay jobs
 
 ## Step Completion
@@ -134,7 +134,7 @@ Common causes:
 
 If the vehicle is sold or reset during execution:
 - The workflow stops automatically
-- Status is set to "ready"
+- Status is set to Ready
 - Start again with a new vehicle
 
 ## Multiplayer Considerations

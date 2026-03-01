@@ -14,7 +14,6 @@ A workflow consists of:
 
 - **Name**: A descriptive identifier (e.g., "Harvest Wheat Fields 1-3")
 - **Steps**: Ordered list of AutoDrive routes and Courseplay courses
-- **Status**: Current state (ready, running, paused, completed)
 
 ## Creating a New Workflow
 
@@ -24,6 +23,8 @@ A workflow consists of:
 2. Click **New**
 3. Enter a workflow name
 4. The workflow editor opens
+
+![Workflow Editor](/img/screenshots/editor-dialog.png)
 
 ### Naming Best Practices
 
@@ -49,11 +50,11 @@ Steps are added in the workflow editor.
 2. Select **AutoDrive** as the type
 3. Choose a **Target** destination from the dropdown
 4. Select an **Action**:
-   - `drive` - Simple navigation to target
-   - `unload` - Unload mode (for combines)
-   - `pickup_deliver` - Load at target, deliver to second location
-   - `deliver` - Deliver current load to target
-   - `load` - Load at target, return to second location
+   - **Drive To** — Simple navigation to target
+   - **Unload Combine** — Unload mode (for combines)
+   - **Pickup and Deliver** — Load at target, deliver to second location
+   - **Deliver** — Deliver current load to target
+   - **Load** — Load at target, return to second location
 5. For modes requiring two destinations, select **Unload Target**
 6. Optionally set **Fill Type** to filter cargo
 7. Click **OK**
@@ -64,8 +65,8 @@ Steps are added in the workflow editor.
 2. Select **Courseplay** as the type
 3. Choose a **Course** from the dropdown
 4. Select an **Action**:
-   - `fieldwork` - Standard field operations
-   - `bale_collect` - Collect and wrap bales
+   - **Field Work** — Standard field operations
+   - **Bale Collect** — Collect and wrap bales
 5. Click **OK**
 
 ## Editing Steps
@@ -93,12 +94,12 @@ Here's a complete workflow for harvesting multiple fields:
 ```
 Workflow: "Wheat Harvest - Fields 1 & 2"
 
-Step 1: AutoDrive → Field1_Entrance (drive)
-Step 2: Courseplay → Field1_Wheat_Harvest (fieldwork)
-Step 3: AutoDrive → Farm/Silo → Sell/Mill (pickup_deliver, WHEAT)
-Step 4: AutoDrive → Field2_Entrance (drive)
-Step 5: Courseplay → Field2_Wheat_Harvest (fieldwork)
-Step 6: AutoDrive → Farm/Silo (drive)
+Step 1: AutoDrive → Field1_Entrance          Drive To
+Step 2: Courseplay → Field1_Wheat_Harvest     Field Work
+Step 3: AutoDrive → Farm/Silo → Sell/Mill     Pickup and Deliver · Filter: Wheat
+Step 4: AutoDrive → Field2_Entrance          Drive To
+Step 5: Courseplay → Field2_Wheat_Harvest     Field Work
+Step 6: AutoDrive → Farm/Silo                Drive To
 ```
 
 ## Saving Workflows

@@ -316,5 +316,15 @@ FS25_WorkflowManager/
 
 ---
 
+## Screenshots Needed
+
+Screenshots for the Docusaurus documentation site (`website/static/img/screenshots/`). Take these in-game and save them at the listed paths:
+
+| File | Where to take it | Used in |
+|------|-----------------|---------|
+| `esc-menu.png` | In-game ESC pause menu showing **Workflow Manager** as a clickable menu entry | `website/docs/installation.md` — Verifying Installation step |
+
+---
+
 **Status**: Phase 1 COMPLETE - Working on GUI refinement (Milestone 8)
 **Last updated**: 2026-02-28

@@ -21,9 +21,9 @@ The Editor Dialog is where you build and modify workflow steps.
 ├─────────────────────────────────────────────┤
 │  #  Type        Target              Action  │
 │  ─────────────────────────────────────────  │
-│  1  AutoDrive   Field1_Entrance     drive   │
-│  2  Courseplay  Field1_Harvest      fieldwork│
-│  3  AutoDrive   Farm/Silo           drive   │
+│  1  AutoDrive   Field1_Entrance     Drive To   │
+│  2  Courseplay  Field1_Harvest      Field Work │
+│  3  AutoDrive   Farm/Silo           Drive To   │
 │                                             │
 ├─────────────────────────────────────────────┤
 │  [Add Step]  [Edit]  [Delete]  [↑]  [↓]     │
@@ -108,10 +108,10 @@ When adding or editing a step, the Step Dialog appears:
 │                                             │
 │  Target:       [Field1_Entrance  ▼] 🔍      │
 │                                             │
-│  Action:       [drive          ▼]           │
+│  Action:       [Drive To       ▼]           │
 │                                             │
 │  Unload Target: [               ▼] 🔍       │
-│  (Only for pickup_deliver, load, unload)    │
+│  (Only for Pickup and Deliver, Load, Unload Combine) │
 │                                             │
 │  Fill Type:    [WHEAT          ▼]           │
 │  (Optional cargo filter)                    │
@@ -136,11 +136,11 @@ This is especially useful when you have many AD destinations or CP courses.
 
 Fields shown depend on step type and action:
 
-**AutoDrive with single destination** (drive, deliver):
+**AutoDrive with single destination** (**Drive To**, **Deliver**):
 - Target
 - Action
 
-**AutoDrive with two destinations** (pickup_deliver, load, unload):
+**AutoDrive with two destinations** (**Pickup and Deliver**, **Load**, **Unload Combine**):
 - Target
 - Action
 - Unload Target

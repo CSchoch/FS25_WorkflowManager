@@ -15,13 +15,16 @@ When a workflow is running, an overlay appears on screen:
 ```
 ┌──────────────────────────────────────┐
 │  Harvest Fields 1-2                  │
-│  Step 2/5: Courseplay - fieldwork    │
+│  Step 2/5: Courseplay - Field Work   │
 │  Target: Field1_Harvest              │
 ├──────────────────────────────────────┤
-│   [<<]   [||]   [□]   [>>]           │
-│   Prev   Pause  Stop  Next           │
+│  [<<]  [||/▶]   [□]   [>>]          │
+│  Prev  Pause/  Stop   Next           │
+│        Resume                        │
 └──────────────────────────────────────┘
 ```
+
+The **Pause** and **Resume** buttons share the same slot. The button shows `||` (Pause) while the workflow is running, and switches to `▶` (Resume) when the workflow is paused.
 
 ![HUD while workflow is running](/img/screenshots/hud-running.png)
 
@@ -62,18 +65,17 @@ Displays:
 
 **Disabled when**: On step 1 (no previous step)
 
-### Pause / Resume (`||` / `>`)
+### Pause / Resume (`||` / `▶`)
 
-**Function**: Toggle workflow pause state
+**Function**: Toggle workflow pause state. The button shows **Pause** (`||`) while running and switches to **Resume** (`▶`) when paused — only one is visible at a time.
 
-**Pause (||)**:
+**Pause (`||`)** — shown while the workflow is running:
 - Suspends the current step
 - AutoDrive pauses navigation
 - Courseplay pauses field work
 
-**Resume (>)**:
+**Resume (`▶`)** — shown while the workflow is paused:
 - Continues from where it stopped
-- Shown when workflow is paused
 
 **When to use**:
 - Need to make manual adjustments
@@ -86,7 +88,7 @@ Displays:
 **Behavior**:
 - Stops current step
 - Resets workflow to step 1
-- Sets status to "ready"
+- Sets status to Ready
 - Stops any running AD/CP jobs
 
 **When to use**:

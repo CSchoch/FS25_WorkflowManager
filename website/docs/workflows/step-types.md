@@ -16,11 +16,11 @@ AutoDrive handles all navigation and transport operations.
 
 | Action | Targets needed | Description |
 |--------|---------------|-------------|
-| `drive` | 1 | Simple point-to-point navigation |
-| `unload` | 2 | Unload combine (follows combine, delivers grain) |
-| `pickup_deliver` | 2 | Load at target, deliver to unload target |
-| `deliver` | 1 | Deliver current load to target |
-| `load` | 2 | Load at target, return to unload target |
+| **Drive To** | 1 | Simple point-to-point navigation |
+| **Unload Combine** | 2 | Unload combine (follows combine, delivers grain) |
+| **Pickup and Deliver** | 2 | Load at target, deliver to unload target |
+| **Deliver** | 1 | Deliver current load to target |
+| **Load** | 2 | Load at target, return to unload target |
 
 ### Target Selection
 
@@ -30,33 +30,35 @@ AutoDrive handles all navigation and transport operations.
 
 ### Fill Type Filtering
 
-For cargo operations (`pickup_deliver`, `load`), you can specify a fill type:
+For cargo operations (Pickup and Deliver, Load), you can specify a fill type:
 - Limits what the vehicle will pick up
 - Useful when multiple fill types are available at a location
 
 ### Examples
 
+![Step Dialog – AutoDrive](/img/screenshots/step-dialog-autodrive.png)
+
 **Simple Navigation**
 ```
-Type: AutoDrive
-Target: Field1_Entrance
-Action: drive
+Type:    AutoDrive
+Target:  Field1_Entrance
+Action:  Drive To
 ```
 
 **Grain Delivery**
 ```
-Type: AutoDrive
-Target: Farm/Silo
-Action: pickup_deliver
+Type:          AutoDrive
+Target:        Farm/Silo
+Action:        Pickup and Deliver
 Unload Target: Sell/Mill
-Fill Type: WHEAT
+Fill Type:     Wheat
 ```
 
 **Combine Unloader**
 ```
-Type: AutoDrive
-Target: Field1_Harvest
-Action: unload
+Type:          AutoDrive
+Target:        Field1_Harvest
+Action:        Unload Combine
 Unload Target: Farm/Silo
 ```
 
@@ -68,8 +70,8 @@ Courseplay handles all field work operations.
 
 | Action | Description |
 |--------|-------------|
-| `fieldwork` | Standard field operations (harvest, cultivate, seed, spray, etc.) |
-| `bale_collect` | Collect, load, and wrap bales |
+| **Field Work** | Standard field operations (harvest, cultivate, seed, spray, etc.) |
+| **Bale Collect** | Collect, load, and wrap bales |
 
 ### Course Selection
 
@@ -86,18 +88,20 @@ Before starting a workflow, ensure:
 
 ### Examples
 
+![Step Dialog – Courseplay](/img/screenshots/step-dialog-courseplay.png)
+
 **Wheat Harvest**
 ```
-Type: Courseplay
-Target: Field1_Wheat_Harvest
-Action: fieldwork
+Type:    Courseplay
+Target:  Field1_Wheat_Harvest
+Action:  Field Work
 ```
 
 **Bale Collection**
 ```
-Type: Courseplay
-Target: Meadow_Baling_Route
-Action: bale_collect
+Type:    Courseplay
+Target:  Meadow_Baling_Route
+Action:  Bale Collect
 ```
 
 ## Step Transitions
@@ -123,11 +127,11 @@ During Courseplay field work, AutoDrive may be triggered internally (e.g., a har
 
 ### Start Position
 - The first step should account for where the vehicle currently is
-- Use an AutoDrive `drive` step to position the vehicle if needed
+- Use an AutoDrive **Drive To** step to position the vehicle if needed
 
 ### End Position
 - Consider where the vehicle will be after the last step
-- You may want to add a final AutoDrive step to return home
+- You may want to add a final AutoDrive **Drive To** step to return home
 
 ### Course Prerequisites
 - Ensure implements are attached before starting
