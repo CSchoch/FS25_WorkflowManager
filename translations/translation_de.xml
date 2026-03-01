@@ -145,5 +145,9 @@
         <text name="wm_confirm_unlink" text="Workflow '%s' trennen?"/>
         <text name="wm_link_role_indicator_main" text=" [Haupt]"/>
         <text name="wm_link_role_indicator_support" text=" [Helfer]"/>
+        <text name="wm_editor_linked" text="Verknuepft:"/>
+        <text name="wm_editor_linked_none" text="(keine)"/>
+        <text name="wm_button_change" text="Aendern"/>
+        <text name="wm_link_no_candidates" text="Keine anderen Workflows zum Verknuepfen verfuegbar"/>
     </texts>
 </l10n>

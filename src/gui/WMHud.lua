@@ -455,7 +455,7 @@ function WMHud:drawIconButtons(activeData)
 end
 
 function WMHud:mouseEvent(posX, posY, isDown, isUp, button)
-    if not self.isVisible or self.x == nil then
+    if not self.isVisible or self.x == nil or self.h == nil then
         return false
     end
 
@@ -500,6 +500,10 @@ end
 
 function WMHud:updateHoverState(posX, posY)
     self.hoveredButton = nil
+
+    if self.h == nil or self.headerH == nil then
+        return
+    end
 
     -- Track header hover for visual drag indicator
     local isInHeader = posY >= self.y + self.h - self.headerH and

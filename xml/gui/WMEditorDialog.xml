@@ -24,6 +24,14 @@
                 </TextInput>
             </BoxLayout>
 
+            <!-- Linked Workflow Row -->
+            <BoxLayout profile="wm_hBox" size="860px 40px">
+                <Text profile="wm_dialogText" text="$l10n_wm_editor_linked" size="80px 40px"/>
+                <Text profile="wm_dialogText" id="linkedWorkflowLabel" text="" size="450px 40px"/>
+                <Button profile="buttonOK"       id="linkChangeButton"     text="$l10n_wm_button_link"    onClick="onClickLinkWorkflow"   size="110px 36px" focusId="linkChangeBtn"/>
+                <Button profile="buttonActivate" id="unlinkWorkflowButton" text="$l10n_wm_button_unlink"  onClick="onClickUnlinkWorkflow" size="80px 36px" focusId="unlinkWfBtn"/>
+            </BoxLayout>
+
             <!-- Steps Section Header with Buttons -->
             <BoxLayout profile="wm_hBox" size="860px 50px">
                 <Text profile="wm_sectionLabel" text="$l10n_wm_editor_steps" size="80px 40px"/>

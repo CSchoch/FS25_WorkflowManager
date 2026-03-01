@@ -146,7 +146,14 @@ On `onPostLoad`, this state is restored as `status = "paused"` so the player can
 ### Milestone 11: Phase 2 Features
 * [ ] Queue system for multiple vehicles
 * [ ] Advanced conditions
-* [ ] Linked workflow pairs for coordinated operations
+* [ ] Add further CP settings for multiple vehicle courses
+* [x] Linked workflow pairs for coordinated operations
+
+### Milestone 12: Fix linked workflow
+- the linking mechanism does not work the way it is now.                                                                                
+- [ ] There should be a field "linked to" in the workflow editor which allows to select the master workflow. 
+- [ ] We need an option (checkbox) for each step where we can select if the supporting workflow step is switched as well
+- [ ] Alternative solution add the support workflow configuration to the main configuration which solution do you think is better  
 
 ## API Integration
 

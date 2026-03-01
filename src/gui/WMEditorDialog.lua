@@ -124,7 +124,86 @@ function WMEditorDialog:refreshDisplay()
         self.nameInput:setText(self.workflow.name or "")
     end
 
+    -- Refresh linked workflow row
+    self:refreshLinkedWorkflow()
+
     -- Refresh step list
+    self:refreshStepList()
+end
+
+---Refresh the linked workflow label and button states
+function WMEditorDialog:refreshLinkedWorkflow()
+    local isLinked = self.workflow and self.workflow.linkedWorkflowId ~= nil
+    local linkedWf = isLinked and WorkflowManager:getLinkedWorkflow(self.workflow.id)
+    local label = (linkedWf and linkedWf.name) or g_i18n:getText("wm_editor_linked_none") or "(none)"
+
+    if self.linkedWorkflowLabel then
+        self.linkedWorkflowLabel:setText(label)
+    end
+    if self.linkChangeButton then
+        local btnText = isLinked
+            and (g_i18n:getText("wm_button_change") or "Change")
+            or  (g_i18n:getText("wm_button_link")   or "Link")
+        self.linkChangeButton:setText(btnText)
+    end
+    if self.unlinkWorkflowButton then
+        self.unlinkWorkflowButton:setDisabled(not isLinked)
+    end
+end
+
+---Called when the Link / Change button is clicked
+function WMEditorDialog:onClickLinkWorkflow()
+    if not self.workflow then return end
+
+    -- Collect free workflows (exclude self and any already-linked workflow)
+    local candidates = {}
+    for _, wf in ipairs(WorkflowManager:getWorkflows()) do
+        if wf.id ~= self.workflow.id and wf.linkedWorkflowId == nil then
+            table.insert(candidates, wf)
+        end
+    end
+
+    if #candidates == 0 then
+        g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_INFO,
+            g_i18n:getText("wm_link_no_candidates") or "No other workflows available to link")
+        return
+    end
+
+    local optionTexts = {}
+    for _, wf in ipairs(candidates) do
+        table.insert(optionTexts, wf.name)
+    end
+
+    if g_gui.showOptionDialog then
+        g_gui:showOptionDialog({
+            title = g_i18n:getText("wm_link_select") or "Link to workflow:",
+            options = optionTexts,
+            callback = function(selectedIndex)
+                if selectedIndex and selectedIndex > 0 and selectedIndex <= #candidates then
+                    local targetWf = candidates[selectedIndex]
+                    WorkflowManager:linkWorkflows(self.workflow.id, targetWf.id)
+                    WorkflowManager:saveWorkflows()
+                    self:refreshLinkedWorkflow()
+                    self:refreshStepList()
+                end
+            end
+        })
+    else
+        -- Fallback: link with the first candidate
+        local targetWf = candidates[1]
+        WorkflowManager:linkWorkflows(self.workflow.id, targetWf.id)
+        WorkflowManager:saveWorkflows()
+        self:refreshLinkedWorkflow()
+        self:refreshStepList()
+    end
+end
+
+---Called when Unlink button is clicked
+function WMEditorDialog:onClickUnlinkWorkflow()
+    if not self.workflow then return end
+    WorkflowManager:unlinkWorkflow(self.workflow.id)
+    WorkflowManager:saveWorkflows()
+    self:refreshLinkedWorkflow()
     self:refreshStepList()
 end
 
@@ -253,6 +332,9 @@ function WMEditorDialog:updateButtons()
     if self.groupColumnHeader then
         self.groupColumnHeader:setVisible(isLinked)
     end
+
+    -- Keep linked workflow row in sync
+    self:refreshLinkedWorkflow()
 end
 
 ---Called when step list selection changes
