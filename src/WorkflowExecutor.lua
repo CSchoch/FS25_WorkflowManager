@@ -301,17 +301,22 @@ function WMExecutor:resumeWorkflow(vehicle)
 
         WMLogger:info("Resumed workflow: %s at step %d (tracking restored)", activeData.workflow.name, activeData.currentStep)
     else
-        -- No pausedTrackingState: this workflow was restored from a saved game and was never
-        -- paused programmatically in this session. AD/CP is not in a paused state, so calling
-        -- resumeRoute/resumeCourse would be a no-op. Start the step fresh instead so that
-        -- AD/CP actually begins running and currentStepType / waitingForCompletion are set.
+        -- No pausedTrackingState: workflow was restored from a saved game and was never
+        -- paused programmatically in this session. AD/CP has auto-started on its own, so
+        -- we must NOT restart it – just attach tracking state so the completion loop can
+        -- detect when the current step finishes and advance to the next one.
+        local step = activeData.workflow.steps[activeData.currentStep]
+
         activeData.status = WorkflowManager.STATUS_RUNNING
         activeData.autoResumeUntil = nil  -- cancel auto-resume window; we are resuming now
+        activeData.waitingForCompletion = true
+        activeData.currentStepType = step and step.type
+        if step and step.type == WorkflowManager.STEP_COURSEPLAY and CPIntegration:isRunning(vehicle) then
+            activeData.cpWasRunning = true
+        end
 
-        WMLogger:info("Resumed workflow: %s at step %d (fresh start after game restore)", activeData.workflow.name, activeData.currentStep)
-
-        -- executeCurrentStep sets waitingForCompletion, currentStepType and starts AD/CP
-        self:executeCurrentStep(activeData)
+        WMLogger:info("Resumed workflow: %s at step %d (monitoring existing AD/CP, type=%s)",
+            activeData.workflow.name, activeData.currentStep, tostring(activeData.currentStepType))
     end
 
     -- Fire event
