@@ -396,14 +396,22 @@ function WMExecutor:executeCurrentStep(activeData)
             step.target or "nil",
             step.action or "nil")
 
-        -- If AutoDrive was just stopped (e.g., manual PREV/NEXT), it may still be
-        -- "active" for a frame. Defer CP start to the update loop so AD can fully release.
-        if ADIntegration:isRunning(vehicle) then
-            WMLogger:info("AutoDrive still active after stop - deferring CP start")
+        -- Defer CP start if AD is still active, or if we just came from a CP step (CP->CP).
+        -- The CP->CP deferral gives CP's previous job time to fully clean up (reset tasks,
+        -- unregister listeners). Without it, CpAITask:reset() can nil out self.vehicle
+        -- while the new task's update loop is still running, causing getCpSettings errors.
+        local comingFromCP = (activeData.currentStepType == WorkflowManager.STEP_COURSEPLAY)
+        if ADIntegration:isRunning(vehicle) or comingFromCP then
+            if comingFromCP then
+                WMLogger:info("CP->CP transition: deferring start to allow Courseplay cleanup")
+            else
+                WMLogger:info("AutoDrive still active after stop - deferring CP start")
+            end
             activeData.waitingForCompletion = true
             activeData.currentStepType = WorkflowManager.STEP_COURSEPLAY
             activeData.pendingCPStart = true
             activeData.pendingCPStartRetries = 0
+            activeData.cpToCpTransition = comingFromCP
             return
         end
 
@@ -517,6 +525,20 @@ end
 ---@param vehicle table Vehicle
 ---@param step table Step data
 function WMExecutor:startCourseplayStep(activeData, vehicle, step)
+    -- If CP is already running (e.g. AD handed off to CP automatically via setStartHelper),
+    -- do NOT reset the course or restart CP — just attach monitoring to the running job.
+    -- Resetting the course while CP is running causes a broken state and a 13-second crash.
+    if CPIntegration:isRunning(vehicle) then
+        WMLogger:info("Courseplay already running (AD handoff) - attaching monitoring, skipping restart")
+        activeData.waitingForCompletion = true
+        activeData.currentStepType = WorkflowManager.STEP_COURSEPLAY
+        activeData.cpWasRunning = true
+        activeData.pendingCPStart = nil
+        activeData.pendingCPStartRetries = nil
+        activeData.cpToCpTransition = nil
+        return
+    end
+
     -- Check if vehicle has the correct course loaded
     local currentCourse = CPIntegration:getCurrentCourseName(vehicle)
     local hasCourse = CPIntegration:hasCourse(vehicle)
@@ -551,6 +573,7 @@ function WMExecutor:startCourseplayStep(activeData, vehicle, step)
         activeData.cpWasRunning = true  -- Track that we started CP
         activeData.pendingCPStart = nil
         activeData.pendingCPStartRetries = nil
+        activeData.cpToCpTransition = nil
         WMLogger:info("Courseplay step started successfully, polling for completion")
     else
         self:handleStepError(activeData, "Failed to start Courseplay field work")
@@ -797,33 +820,45 @@ function WMExecutor:update(dt)
             end
 
             if activeData.status == WorkflowManager.STATUS_RUNNING and activeData.waitingForCompletion then
-            -- Handle deferred CP start: AD was just stopped and CP needs to start
+            -- Handle deferred CP start: either AD was stopped (AD->CP) or previous step
+            -- was also CP (CP->CP transition needs cleanup time).
             if activeData.pendingCPStart then
+                activeData.pendingCPStartRetries = (activeData.pendingCPStartRetries or 0) + 1
                 local adRunning = ADIntegration:isRunning(vehicle)
-                if not adRunning then
-                    -- AD has fully stopped, now start CP
-                    WMLogger:info("AutoDrive fully stopped - starting deferred Courseplay step")
+                -- CP->CP: wait at least 2 cycles (1 second) for previous CP job to clean up.
+                -- AD->CP: start as soon as AD stops (no minimum wait needed).
+                local minWaitCycles = activeData.cpToCpTransition and 2 or 0
+                local readyToStart = not adRunning and activeData.pendingCPStartRetries >= minWaitCycles
+                if readyToStart then
+                    local msg = activeData.cpToCpTransition and
+                        "CP cleanup complete - starting deferred Courseplay step" or
+                        "AutoDrive fully stopped - starting deferred Courseplay step"
+                    WMLogger:info(msg)
                     activeData.pendingCPStart = nil
                     activeData.pendingCPStartRetries = nil
+                    activeData.cpToCpTransition = nil
                     activeData.waitingForCompletion = false
                     local step = workflow.steps[activeData.currentStep]
                     if step then
                         self:startCourseplayStep(activeData, vehicle, step)
                     end
                 else
-                    activeData.pendingCPStartRetries = (activeData.pendingCPStartRetries or 0) + 1
                     -- Give up after 20 checks (10 seconds) to avoid hanging
                     if activeData.pendingCPStartRetries > 20 then
-                        WMLogger:warning("AutoDrive did not stop after 10s - forcing CP start")
+                        WMLogger:warning("CP start deferred too long (20 cycles) - forcing start")
                         activeData.pendingCPStart = nil
                         activeData.pendingCPStartRetries = nil
+                        activeData.cpToCpTransition = nil
                         activeData.waitingForCompletion = false
                         local step = workflow.steps[activeData.currentStep]
                         if step then
                             self:startCourseplayStep(activeData, vehicle, step)
                         end
-                    else
+                    elseif adRunning then
                         WMLogger:debug("Waiting for AD to stop before starting CP (%d/20)", activeData.pendingCPStartRetries)
+                    else
+                        WMLogger:debug("Waiting for CP cleanup before starting next step (%d/%d)",
+                            activeData.pendingCPStartRetries, minWaitCycles)
                     end
                 end
             -- Handle deferred AD start: AD was just stopped (from another AD step) and needs to restart
@@ -1036,6 +1071,7 @@ function WMExecutor:onSyncGroupTransition(mainActiveData, fromGroup, toGroup)
     supportActiveData.cpStartWaitCount = nil
     supportActiveData.pendingCPStart = nil
     supportActiveData.pendingCPStartRetries = nil
+    supportActiveData.cpToCpTransition = nil
     supportActiveData.pendingADStart = nil
     supportActiveData.pendingADStartRetries = nil
 
@@ -1172,6 +1208,7 @@ function WMExecutor:goToPreviousStep(vehicle)
     activeData.pausedTrackingState = nil
     activeData.pendingCPStart = nil
     activeData.pendingCPStartRetries = nil
+    activeData.cpToCpTransition = nil
     activeData.pendingADStart = nil
     activeData.pendingADStartRetries = nil
 
@@ -1253,6 +1290,7 @@ function WMExecutor:goToNextStep(vehicle)
     activeData.pausedTrackingState = nil
     activeData.pendingCPStart = nil
     activeData.pendingCPStartRetries = nil
+    activeData.cpToCpTransition = nil
     activeData.pendingADStart = nil
     activeData.pendingADStartRetries = nil
 

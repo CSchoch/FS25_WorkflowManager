@@ -1060,7 +1060,9 @@ function WorkflowManager:deleteMap()
     -- IMMEDIATELY set isInitialized to false to stop update/draw processing
     self.isInitialized = false
 
-    -- Stop all active workflows before cleanup to prevent CP/AD errors during shutdown
+    -- Clear AD handoffs and stop AD routes only. Do NOT stop CP here: calling stopCurrentAIJob
+    -- during shutdown causes CP's deferred task cleanup to run after game objects are torn down,
+    -- producing nil-index errors. CP shuts itself down cleanly via its own handlers.
     pcall(function()
         for vehicle, _ in pairs(WMExecutor.activeVehicles) do
             local activeData = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
@@ -1068,14 +1070,7 @@ function WorkflowManager:deleteMap()
             if activeData and activeData.vehicle then
                 pcall(function() ADIntegration:clearCPHandoff(activeData.vehicle) end)
             end
-
-            local workflow = activeData and activeData.workflow
-            if workflow then
-                WMLogger:info("Stopping active workflow during shutdown: %s", workflow.name)
-                pcall(function()
-                    WMExecutor:stopWorkflow(vehicle)
-                end)
-            end
+            pcall(function() ADIntegration:stopRoute(vehicle) end)
         end
         -- Clear any remaining active vehicles
         WMExecutor.activeVehicles = {}
@@ -1251,9 +1246,11 @@ if FSBaseMission.saveSavegame ~= nil then
     WMLogger:info("Hooked FSBaseMission.saveSavegame for auto-save")
 end
 
--- Hook into FSBaseMission.delete BEFORE the original runs to stop active workflows
--- and clear AD->CP handoff flags before the game destroys vehicles/tasks.
--- This prevents the CpAITaskDriveTo nil vehicle error during quit.
+-- Hook into FSBaseMission.delete BEFORE the original runs to clear AD->CP handoff flags
+-- and stop AD routes. We intentionally do NOT stop CP here because calling stopCurrentAIJob
+-- during FSBaseMission.delete causes CP's deferred task cleanup to run after game objects
+-- are already torn down, producing nil-index errors in CpAITaskFieldWork. CP handles its
+-- own shutdown cleanly via its own hooks.
 if FSBaseMission.delete ~= nil then
     FSBaseMission.delete = Utils.prependedFunction(FSBaseMission.delete, function()
         pcall(function()
@@ -1261,16 +1258,15 @@ if FSBaseMission.delete ~= nil then
                 return
             end
             WorkflowManager.isShuttingDown = true
-            WMLogger:info("FSBaseMission.delete - stopping active workflows before shutdown")
+            WMLogger:info("FSBaseMission.delete - clearing AD handoffs and stopping AD routes before shutdown")
             for vehicle, _ in pairs(WMExecutor.activeVehicles) do
                 local activeData = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
                 -- Clear AD->CP handoff flag FIRST to prevent AD from restarting CP
                 if activeData and activeData.vehicle then
                     pcall(function() ADIntegration:clearCPHandoff(activeData.vehicle) end)
                 end
-                -- Stop AD and CP on this vehicle
+                -- Stop AD only; CP shuts down cleanly via its own handlers
                 pcall(function() ADIntegration:stopRoute(vehicle) end)
-                pcall(function() CPIntegration:stopCourse(vehicle) end)
             end
             WMExecutor.activeVehicles = {}
         end)
