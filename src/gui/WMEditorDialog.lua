@@ -152,13 +152,14 @@ function WMEditorDialog:refreshLinkedWorkflow()
 end
 
 ---Called when the Link / Change button is clicked
+---Cycles through ALL other workflows (including already-linked ones) on each click
 function WMEditorDialog:onClickLinkWorkflow()
     if not self.workflow then return end
 
-    -- Collect free workflows (exclude self and any already-linked workflow)
+    -- Collect ALL workflows except self as candidates
     local candidates = {}
     for _, wf in ipairs(WorkflowManager:getWorkflows()) do
-        if wf.id ~= self.workflow.id and wf.linkedWorkflowId == nil then
+        if wf.id ~= self.workflow.id then
             table.insert(candidates, wf)
         end
     end
@@ -169,33 +170,25 @@ function WMEditorDialog:onClickLinkWorkflow()
         return
     end
 
-    local optionTexts = {}
-    for _, wf in ipairs(candidates) do
-        table.insert(optionTexts, wf.name)
+    -- Find where the current linked partner sits in the candidate list
+    local currentIndex = 0
+    if self.workflow.linkedWorkflowId then
+        for i, wf in ipairs(candidates) do
+            if wf.id == self.workflow.linkedWorkflowId then
+                currentIndex = i
+                break
+            end
+        end
     end
 
-    if g_gui.showOptionDialog then
-        g_gui:showOptionDialog({
-            title = g_i18n:getText("wm_link_select") or "Link to workflow:",
-            options = optionTexts,
-            callback = function(selectedIndex)
-                if selectedIndex and selectedIndex > 0 and selectedIndex <= #candidates then
-                    local targetWf = candidates[selectedIndex]
-                    WorkflowManager:linkWorkflows(self.workflow.id, targetWf.id)
-                    WorkflowManager:saveWorkflows()
-                    self:refreshLinkedWorkflow()
-                    self:refreshStepList()
-                end
-            end
-        })
-    else
-        -- Fallback: link with the first candidate
-        local targetWf = candidates[1]
-        WorkflowManager:linkWorkflows(self.workflow.id, targetWf.id)
-        WorkflowManager:saveWorkflows()
-        self:refreshLinkedWorkflow()
-        self:refreshStepList()
-    end
+    -- Advance to the next candidate (wraps around through all workflows)
+    local nextIndex = (currentIndex % #candidates) + 1
+    local targetWf = candidates[nextIndex]
+
+    WorkflowManager:linkWorkflows(self.workflow.id, targetWf.id)
+    WorkflowManager:saveWorkflows()
+    self:refreshLinkedWorkflow()
+    self:refreshStepList()
 end
 
 ---Called when Unlink button is clicked
