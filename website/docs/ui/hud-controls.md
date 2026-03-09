@@ -14,7 +14,7 @@ When a workflow is running, an overlay appears on screen:
 
 ```
 ┌──────────────────────────────────────┐
-│  Harvest Fields 1-2                  │
+│  Harvest Fields 1-2            ════  │  ← drag handle
 │  Step 2/5: Courseplay - Field Work   │
 │  Target: Field1_Harvest              │
 ├──────────────────────────────────────┤
@@ -26,13 +26,28 @@ When a workflow is running, an overlay appears on screen:
 
 The **Pause** and **Resume** buttons share the same slot. The button shows `||` (Pause) while the workflow is running, and switches to `▶` (Resume) when the workflow is paused.
 
+If the vehicle is part of a **linked workflow** pair, a second status line shows the partner's progress:
+
+```
+┌──────────────────────────────────────┐
+│  Wheat Harvest (Combine)       ════  │
+│  Step 2/4: Courseplay - Field Work   │
+│  Target: Field1_Harvest              │
+│  Partner: Unloader Support · Step 1/2│
+├──────────────────────────────────────┤
+│  [<<]  [||/▶]   [□]   [>>]          │
+└──────────────────────────────────────┘
+```
+
 ![HUD while workflow is running](/img/screenshots/hud-running.png)
 
 ## HUD Position
 
-The HUD appears in a fixed position on screen:
-- Default: Lower-left area
-- Does not obstruct critical game UI
+The HUD can be freely repositioned by dragging:
+- **Click and drag the header** to move the HUD anywhere on screen
+- Position is clamped to screen bounds so it won't go off-screen
+- The header changes color while dragging for visual feedback
+- Default position: lower-left area
 
 ## Status Display
 
@@ -153,7 +168,8 @@ The HUD updates in real-time:
 
 ## Customization
 
-You can toggle the HUD with **Left Alt + H**. The HUD appearance is otherwise fixed.
+- Toggle the HUD with **Left Alt + H**
+- Reposition the HUD by dragging the header to any location on screen
 
 ## Troubleshooting
 
@@ -168,5 +184,5 @@ You can toggle the HUD with **Left Alt + H**. The HUD appearance is otherwise fi
 - Game may need focus
 
 ### HUD Overlapping Other UI
-- Known issue with F1 help menu
-- Close other overlays if needed
+- Drag the HUD to a different position by clicking and holding the header
+- The F1 help menu is a known overlap — close it when using workflows

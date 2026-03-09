@@ -16,18 +16,18 @@ The Editor Dialog is where you build and modify workflow steps.
 ## Interface Overview
 
 ```
-┌─────────────────────────────────────────────┐
-│  Edit Workflow: Harvest Fields          [X] │
-├─────────────────────────────────────────────┤
-│  #  Type        Target              Action  │
-│  ─────────────────────────────────────────  │
-│  1  AutoDrive   Field1_Entrance     Drive To   │
-│  2  Courseplay  Field1_Harvest      Field Work │
-│  3  AutoDrive   Farm/Silo           Drive To   │
-│                                             │
-├─────────────────────────────────────────────┤
-│  [Add Step]  [Edit]  [Delete]  [↑]  [↓]     │
-└─────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────┐
+│  Edit Workflow: Harvest Fields                    [X]  │
+├────────────────────────────────────────────────────────┤
+│  #  Type        Target              Action     Group  │
+│  ────────────────────────────────────────────────────  │
+│  1  AutoDrive   Field1_Entrance     Drive To      1   │
+│  2  Courseplay  Field1_Harvest      Field Work    1   │
+│  3  AutoDrive   Farm/Silo           Drive To      2   │
+│                                                        │
+├────────────────────────────────────────────────────────┤
+│  [Add Step]  [Edit]  [Delete]  [↑]  [↓]  [Auto Groups]│
+└────────────────────────────────────────────────────────┘
 
         Double-click a step to edit
 ```
@@ -44,6 +44,7 @@ The main area shows all steps in the workflow:
 | Type | AutoDrive or Courseplay |
 | Target | Destination name or course name |
 | Action | The action to perform |
+| Group | Sync group number (only shown when workflow is linked) |
 
 ### For AutoDrive steps with two destinations:
 - Shows `Target → Unload Target` format
@@ -96,6 +97,19 @@ Move the selected step later in the sequence:
 
 Disabled if the step is already last.
 
+### Auto Groups
+
+Automatically assigns sync group numbers to all steps (only available when the workflow is linked as **main**):
+- Group increments after each Courseplay step
+- All steps in the same harvest phase share the same group number
+- The partner (support) workflow can then use **Auto Groups** too to receive matching sequential groups
+
+:::tip
+For most combine + unloader setups, clicking **Auto Groups** on both workflows is all you need.
+:::
+
+See [Linked Workflows](../workflows/linked-workflows) for more detail on sync groups.
+
 ## Step Dialog
 
 When adding or editing a step, the Step Dialog appears:
@@ -115,6 +129,9 @@ When adding or editing a step, the Step Dialog appears:
 │                                             │
 │  Fill Type:    [WHEAT          ▼]           │
 │  (Optional cargo filter)                    │
+│                                             │
+│  Sync Group:   [1            ]              │
+│  (Only shown when workflow is linked)       │
 ├─────────────────────────────────────────────┤
 │              [Cancel]   [OK]                │
 └─────────────────────────────────────────────┘
@@ -149,6 +166,12 @@ Fields shown depend on step type and action:
 **Courseplay**:
 - Target (course)
 - Action
+
+**Sync Group** (linked workflows only):
+- Visible only when the workflow is part of a linked pair
+- Enter an integer to assign this step to a sync group
+- Steps with the same number across linked workflows are coordinated
+- Use **Auto Groups** in the editor for automatic assignment
 
 ## Keyboard Shortcuts
 

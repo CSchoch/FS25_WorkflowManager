@@ -49,6 +49,8 @@ The file is created automatically when you save your first workflow.
 |-----------|------|-------------|
 | `id` | string | Unique identifier (auto-generated, do not change) |
 | `name` | string | Display name shown in the Workflow Manager |
+| `linkedWorkflowId` | string | ID of the linked partner workflow (omit if not linked) |
+| `linkRole` | string | `main` or `support` (omit if not linked) |
 
 ### Step Element
 
@@ -68,8 +70,11 @@ The file is created automatically when you save your first workflow.
 | `action` | string | Yes | Action to perform |
 | `unloadTarget` | string | No | Secondary destination (AutoDrive only) |
 | `fillType` | string | No | Cargo filter (AutoDrive only) |
+| `syncGroup` | integer | No | Sync group number for linked workflow coordination |
 
 ## Complete Example
+
+### Single workflow
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -86,6 +91,26 @@ The file is created automatically when you save your first workflow.
         <workflow id="workflow_002" name="Fertilize Fields">
             <step type="autodrive" target="Field3_Entrance" action="drive"/>
             <step type="courseplay" target="Field3_Fertilize" action="fieldwork"/>
+        </workflow>
+    </workflows>
+</WorkflowManager>
+```
+
+### Linked workflow pair (combine + unloader)
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<WorkflowManager>
+    <workflows>
+        <workflow id="wf_001" name="Combine Harvest" linkedWorkflowId="wf_002" linkRole="main">
+            <step type="autodrive" target="Route_Field1" action="drive" syncGroup="1"/>
+            <step type="courseplay" target="Field1_Harvest" action="fieldwork" syncGroup="1"/>
+            <step type="autodrive" target="Route_Field2" action="drive" syncGroup="2"/>
+            <step type="courseplay" target="Field2_Harvest" action="fieldwork" syncGroup="2"/>
+        </workflow>
+        <workflow id="wf_002" name="Unloader Support" linkedWorkflowId="wf_001" linkRole="support">
+            <step type="autodrive" target="Field1" action="unload" unloadTarget="Silo" syncGroup="1"/>
+            <step type="autodrive" target="Field2" action="unload" unloadTarget="Silo" syncGroup="2"/>
         </workflow>
     </workflows>
 </WorkflowManager>

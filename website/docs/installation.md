@@ -40,9 +40,7 @@ Workflow Manager requires both of these mods to be installed:
    - FS25_AutoDrive
    - FS25_Courseplay
 3. Load a savegame
-4. Press ESC — you should see **Workflow Manager** in the menu
-
-![ESC menu showing Workflow Manager](/img/screenshots/esc-menu.png)
+4. Press **Left Alt + W** — the Workflow Manager should open
 
 ## File Structure
 

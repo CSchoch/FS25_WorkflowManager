@@ -358,11 +358,10 @@ FS25_WorkflowManager/
 
 Screenshots for the Docusaurus documentation site (`website/static/img/screenshots/`). Take these in-game and save them at the listed paths:
 
-| File | Where to take it | Used in |
-|------|-----------------|---------|
-| `esc-menu.png` | In-game ESC pause menu showing **Workflow Manager** as a clickable menu entry | `website/docs/installation.md` — Verifying Installation step |
-
----
-
-**Status**: Phase 1 COMPLETE - Working on GUI refinement (Milestone 8)
-**Last updated**: 2026-02-28
+| File | What to show | Used in |
+|------|-------------|---------|
+| `main-dialog.png` | Main Workflow Manager dialog open, showing a list of at least 2–3 workflows with their step counts | `ui/main-dialog.md`, `workflows/creating-workflows.md` |
+| `editor-dialog.png` | Editor dialog open for a workflow with 3–5 steps visible, including a mix of AutoDrive and Courseplay rows | `ui/editor-dialog.md` |
+| `step-dialog-autodrive.png` | Step dialog open with **AutoDrive** selected, showing Target, Action, Unload Target, and Fill Type fields | `ui/editor-dialog.md`, `workflows/step-types.md` |
+| `step-dialog-courseplay.png` | Step dialog open with **Courseplay** selected, showing the course dropdown and Action field | `ui/editor-dialog.md`, `workflows/step-types.md` |
+| `hud-running.png` | In-vehicle HUD overlay while a workflow is actively running, showing workflow name, step counter, and the 4 control buttons | `ui/hud-controls.md`, `workflows/executing-workflows.md`, `getting-started.md` |

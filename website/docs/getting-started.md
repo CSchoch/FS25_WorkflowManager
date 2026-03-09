@@ -29,7 +29,7 @@ These shortcuts work both on foot and in a vehicle:
 
 ### Step 1: Open the Workflow Manager
 
-Press **Left Alt + W** to open the Workflow Manager. You can also find it in the ESC menu.
+Press **Left Alt + W** to open the Workflow Manager.
 
 The main dialog shows your list of workflows (empty at first).
 

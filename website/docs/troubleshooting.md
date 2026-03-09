@@ -10,9 +10,9 @@ Common issues and solutions for Workflow Manager.
 
 ## Installation Issues
 
-### Workflow Manager not showing in menu
+### Workflow Manager won't open
 
-**Symptoms**: ESC menu doesn't show Workflow Manager option
+**Symptoms**: Pressing **Left Alt + W** does nothing
 
 **Solutions**:
 1. Verify the mod is enabled in the mod selection screen
@@ -151,9 +151,8 @@ Common issues and solutions for Workflow Manager.
 **Symptoms**: HUD covers important game elements
 
 **Solutions**:
-1. Known issue with F1 help menu
-2. Close the help menu when using workflows
-3. HUD position adjustment planned for future
+1. **Drag the HUD** to a better position — click and hold the HUD header and drag it anywhere on screen
+2. Known overlap with the F1 help menu — close the help menu when using workflows
 
 ---
 

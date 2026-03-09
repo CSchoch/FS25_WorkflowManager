@@ -19,7 +19,7 @@ A workflow consists of:
 
 ### From the Workflow Manager
 
-1. Press **Left Alt + W** to open the Workflow Manager (or use the ESC menu)
+1. Press **Left Alt + W** to open the Workflow Manager
 2. Click **New**
 3. Enter a workflow name
 4. The workflow editor opens

@@ -12,6 +12,7 @@ const sidebars: SidebarsConfig = {
         'workflows/creating-workflows',
         'workflows/step-types',
         'workflows/executing-workflows',
+        'workflows/linked-workflows',
       ],
     },
     {

@@ -55,7 +55,7 @@ Courses must be saved in Courseplay before they appear. Check:
 
 ### How do I open the Workflow Manager?
 
-Press **Left Alt + W** from anywhere (on foot or in a vehicle). You can also find it in the ESC menu.
+Press **Left Alt + W** from anywhere (on foot or in a vehicle).
 
 ### What are the keyboard shortcuts?
 
@@ -81,7 +81,7 @@ The workflow continues running. You can re-enter the vehicle to see the HUD.
 
 ### Can I run multiple workflows simultaneously?
 
-Currently, only one workflow per vehicle. Multiple vehicles can run different workflows.
+One workflow per vehicle. Multiple vehicles can each run their own workflow. To coordinate two vehicles together, use [Linked Workflows](workflows/linked-workflows).
 
 ### What happens after I reload a savegame?
 
@@ -90,6 +90,34 @@ Workflows that were running are set to paused. Open the Workflow Manager and res
 ### What if a step fails?
 
 The workflow stops and shows an error. Fix the issue, then restart or use the HUD to skip the step.
+
+---
+
+## Linked Workflows
+
+### What is a linked workflow?
+
+A linked workflow pairs two workflows as **main** and **support** for coordinated multi-vehicle automation — for example, a combine harvester (main) and an unloader (support) working together across multiple fields.
+
+### How does sync work between linked workflows?
+
+Steps are assigned **sync group** numbers. Steps with the same group across the two workflows run in parallel — the support loops its step while the main is in that phase. When the main advances to a new sync group, the support automatically jumps to the matching step.
+
+### Do both workflows start automatically?
+
+No. You start each workflow separately on its own vehicle. The support syncs to the main's current group if it starts late.
+
+### Does pausing the main also pause the support?
+
+Yes. Pause, resume, and stop actions on the main are automatically propagated to the support workflow.
+
+### Can I still manually control the support vehicle's steps?
+
+Yes. You can use the HUD's Previous/Next buttons on the support vehicle at any time. The sync will realign on the next main group transition.
+
+### What is "Auto Groups"?
+
+A button in the editor dialog that automatically assigns sync group numbers to all steps. It increments the group after each Courseplay step, which is the correct pattern for most harvest workflows. It saves you from assigning numbers manually.
 
 ---
 

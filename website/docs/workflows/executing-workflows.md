@@ -19,7 +19,7 @@ Before starting a workflow:
 
 ### Starting from the GUI
 
-1. Press **Left Alt + W** to open the Workflow Manager (or use the ESC menu)
+1. Press **Left Alt + W** to open the Workflow Manager
 2. Select a workflow from the list
 3. Click **Start** (or press **S**)
 
