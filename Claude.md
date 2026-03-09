@@ -30,18 +30,22 @@ Workflow = {
     id = "workflow_001",
     name = "Harvest wheat - fields 1-2",
     -- currentStep and status are NOT stored here; they are per-vehicle runtime state
+    linkedWorkflowId = nil,   -- ID of the linked partner workflow (nil if unlinked)
+    linkRole = nil,           -- "main" or "support" (nil if unlinked)
     steps = {
         {
             type = "autodrive",  -- "autodrive" or "courseplay"
             target = "Route_Field1",  -- AutoDrive destination or Courseplay course
             action = "drive",  -- AutoDrive: drive, pickup_deliver, deliver, load, unload
             unloadTarget = "Silo",  -- Second destination for pickup_deliver mode (optional)
-            fillType = "WHEAT"  -- Fill type for cargo filtering (optional)
+            fillType = "WHEAT",  -- Fill type for cargo filtering (optional)
+            syncGroup = 1        -- Integer for sync coordination (nil if not linked)
         },
         {
             type = "courseplay",
             target = "Field1_Harvest",
-            action = "fieldwork"  -- Courseplay: fieldwork, bale_collect
+            action = "fieldwork",  -- Courseplay: fieldwork, bale_collect
+            syncGroup = 1
         }
     },
     createdAt = "2026-02-28 10:00:00"
@@ -56,7 +60,10 @@ activeData = {
     status = "ready",  -- "ready", "running", "paused", "completed"
     currentStep = 1,
     waitingForCompletion = false,
-    -- plus internal tracking flags (justStoppedAD, pendingADStart, etc.)
+    autoResumeUntil = nil,       -- timestamp: auto-resume window after game load
+    syncOverridden = false,      -- true when user manually switched steps on support workflow
+    pausedTrackingState = nil,   -- saved AD/CP state flags when pausing mid-step
+    -- plus internal tracking flags (justStoppedAD, pendingADStart, pendingCPStart, etc.)
 }
 ```
 
@@ -81,15 +88,20 @@ activeData = {
 
 ### XML Structure (Savegame)
 
-Workflow **definitions** (no runtime state):
+Workflow **definitions** (with linked workflow support):
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <WorkflowManager>
     <workflows>
-        <workflow id="workflow_001" name="Harvest wheat - fields 1-2">
-            <step type="autodrive" target="Route_Field1" action="drive"/>
-            <step type="courseplay" target="Field1_Harvest" action="fieldwork"/>
-            <step type="autodrive" target="Farm/Silo" action="pickup_deliver" unloadTarget="Sell/BGA" fillType="WHEAT"/>
+        <workflow id="wf_001" name="Combine Harvest" linkedWorkflowId="wf_002" linkRole="main">
+            <step type="autodrive" target="Route_Field1" action="drive" syncGroup="1"/>
+            <step type="courseplay" target="Field1_Harvest" action="fieldwork" syncGroup="1"/>
+            <step type="autodrive" target="Route_Field2" action="drive" syncGroup="2"/>
+            <step type="courseplay" target="Field2_Harvest" action="fieldwork" syncGroup="2"/>
+        </workflow>
+        <workflow id="wf_002" name="Unloader Support" linkedWorkflowId="wf_001" linkRole="support">
+            <step type="autodrive" target="Field1" action="unload" unloadTarget="Silo" syncGroup="1"/>
+            <step type="autodrive" target="Field2" action="unload" unloadTarget="Silo" syncGroup="2"/>
         </workflow>
     </workflows>
 </WorkflowManager>
@@ -105,7 +117,7 @@ Vehicle workflow **runtime state** (stored in vehicle savegame XML via `Workflow
     </vehicle>
 </vehicles>
 ```
-On `onPostLoad`, this state is restored as `status = "paused"` so the player can resume.
+On `onPostLoad`, this state is restored as `status = "paused"` with a 10-second auto-resume window.
 
 ## Development Roadmap
 
@@ -124,9 +136,13 @@ On `onPostLoad`, this state is restored as `status = "paused"` so the player can
 * Fill type dropdown shows localized names (title) instead of internal IDs
 * **Per-vehicle runtime state** - Workflow definitions are immutable; `currentStep`/`status` live on the vehicle spec (`wmExecution`). `WMExecutor.activeVehicles` replaces `activeWorkflows`
 * **Vehicle savegame persistence** - Active workflow and current step are saved/restored via `WorkflowManagerSpec.saveToXMLFile` / `onPostLoad`; restored as paused so player can resume
+* **Auto-resume after load** - 10-second window (`autoResumeUntil`) for AD/CP to re-initialize before WM resumes the workflow automatically
 * **Courseplay resume at nearest waypoint** - `CPIntegration:startFieldWork()` accepts `startAtNearest` flag; uses `cpStartStopDriver` to resume at the closest waypoint
 * **Main dialog simplification** - Removed Status column; list shows only Name + Steps; removed Resume/reset flow (Start always starts fresh on current vehicle)
 * **HUD icon scaling fix** - `getNormalizedScreenValues(24, 24)` now correctly captures both X and Y return values so icons render as squares on all aspect ratios
+* **Draggable HUD** - HUD panel can be repositioned by dragging the header; position clamped to screen bounds
+* **Linked workflow pairs** - Link two workflows as main/support for coordinated multi-vehicle operations (e.g., Combine + Unloader). Full sync group system, auto-group assignment, pause/resume/stop propagation, late-start sync, support auto-looping, and HUD status line for linked partner
+* **Linked workflow GUI** - Link/Unlink buttons in main dialog; sync group column + Auto Groups button in editor; sync group field in step dialog (visible only when linked)
 
 ### Milestone 8: GUI Refinement
 * [ ] F1 ingame help menu overlays the GUI
@@ -146,7 +162,7 @@ On `onPostLoad`, this state is restored as `status = "paused"` so the player can
 ### Milestone 11: Phase 2 Features
 * [ ] Queue system for multiple vehicles
 * [ ] Advanced conditions
-* [ ] Linked workflow pairs for coordinated operations
+* [ ] Add further CP settings for multiple vehicle courses
 
 ## API Integration
 
@@ -204,7 +220,7 @@ FS25_WorkflowManager/
 │   │   ├── WMEditorDialog.lua         # Workflow editor dialog
 │   │   ├── WMStepDialog.lua           # Step add/edit dialog with searchable lists
 │   │   ├── WMTextInputDialog.lua      # Text input overlay dialog
-│   │   ├── WMHud.lua                  # In-vehicle HUD with icon buttons
+│   │   ├── WMHud.lua                  # In-vehicle HUD with icon buttons (draggable)
 │   │   ├── WMHudElements.lua          # HUD element classes
 │   │   ├── WorkflowManagerGUI.lua     # GUI manager / controller
 │   │   ├── WorkflowEditorGUI.lua      # Editor GUI controller
@@ -263,11 +279,12 @@ FS25_WorkflowManager/
 - All mutable execution state lives on `vehicle.spec_workflowManagerSpec.wmExecution` (`activeData`)
 - `WMExecutor.activeVehicles` is `{[vehicle]=true}` — a lightweight set for update-loop iteration
 - GUI components query `WorkflowManager:getVehicleWorkflowState(vehicle)` for current vehicle's state
-- Workflow definitions only contain `id`, `name`, `steps`, `createdAt` — never `status` or `currentStep`
+- Workflow definitions only contain `id`, `name`, `steps`, `createdAt`, `linkedWorkflowId`, `linkRole` — never `status` or `currentStep`
 
 ### Vehicle Savegame Persistence
 - `WorkflowManagerSpec.saveToXMLFile` saves `workflowId` + `currentStep` into the vehicle's XML
-- `WorkflowManagerSpec.onPostLoad` restores state as `status = "paused"` after game load
+- `WorkflowManagerSpec.onPostLoad` restores state as `status = "paused"` with `autoResumeUntil = g_currentMission.time + 10000`
+- The 10-second window lets AD/CP re-initialize; the update loop auto-resumes once they are active
 - XML schema keys registered in `WorkflowManagerSpec.initSpecialization()`
 - On vehicle delete, `onDelete` stops the workflow to prevent dangling state
 
@@ -287,6 +304,25 @@ FS25_WorkflowManager/
 - Normal start: `vehicle:startCpAtLastWp()` or `vehicle:startCpAtFirstWp()`
 - Resume from save: `vehicle:cpStartStopDriver(false)` to start at nearest waypoint
 - Controlled via `startAtNearest` parameter in `CPIntegration:startFieldWork()`
+
+### Linked Workflow Pairs
+- Two workflows can be linked as `main` (drives sync) and `support` (follows main)
+- Methods: `WorkflowManager:linkWorkflows(mainId, supportId)`, `unlinkWorkflow(id)`, `getLinkedWorkflow(workflow)`, `autoAssignSyncGroups(workflowId)`
+- When the main workflow is paused/resumed/stopped, the linked support workflow is automatically propagated
+- When the main workflow completes, the support is stopped
+- Late start: if support starts after main is already running, it syncs to main's current sync group
+
+### Sync Groups (Linked Workflows)
+- Each step has an optional `syncGroup` integer; steps with the same group across linked workflows are coordinated
+- The support workflow loops its current step while the main remains in the same sync group
+- When the main advances to a new sync group, `WMExecutor:onSyncGroupTransition()` stops the support's current step and jumps it to the matching group
+- **Auto Groups**: `autoAssignSyncGroups()` increments group after each CP step for main; assigns sequential groups for support
+- `syncOverridden = true` on `activeData` when user manually switches steps on a support workflow; cleared on next main group transition
+
+### Draggable HUD
+- HUD header acts as a drag handle: clicking and dragging repositions the entire panel
+- State tracked via `WMHud.isDragging`, `dragOffsetX`, `dragOffsetY`
+- Position clamped to screen bounds; header color changes while dragging for visual feedback
 
 ### Fill Types
 - Fill type dropdowns use `{name = "WHEAT", title = "Wheat"}` pairs
@@ -316,6 +352,8 @@ FS25_WorkflowManager/
 
 ---
 
+**Status**: Phase 1 COMPLETE - Linked workflows implemented; working on GUI refinement (Milestone 8)
+**Last updated**: 2026-03-07
 ## Screenshots Needed
 
 Screenshots for the Docusaurus documentation site (`website/static/img/screenshots/`). Take these in-game and save them at the listed paths:

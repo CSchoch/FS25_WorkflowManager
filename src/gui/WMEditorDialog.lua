@@ -124,7 +124,79 @@ function WMEditorDialog:refreshDisplay()
         self.nameInput:setText(self.workflow.name or "")
     end
 
+    -- Refresh linked workflow row
+    self:refreshLinkedWorkflow()
+
     -- Refresh step list
+    self:refreshStepList()
+end
+
+---Refresh the linked workflow label and button states
+function WMEditorDialog:refreshLinkedWorkflow()
+    local isLinked = self.workflow and self.workflow.linkedWorkflowId ~= nil
+    local linkedWf = isLinked and WorkflowManager:getLinkedWorkflow(self.workflow.id)
+    local label = (linkedWf and linkedWf.name) or g_i18n:getText("wm_editor_linked_none") or "(none)"
+
+    if self.linkedWorkflowLabel then
+        self.linkedWorkflowLabel:setText(label)
+    end
+    if self.linkChangeButton then
+        local btnText = isLinked
+            and (g_i18n:getText("wm_button_change") or "Change")
+            or  (g_i18n:getText("wm_button_link")   or "Link")
+        self.linkChangeButton:setText(btnText)
+    end
+    if self.unlinkWorkflowButton then
+        self.unlinkWorkflowButton:setDisabled(not isLinked)
+    end
+end
+
+---Called when the Link / Change button is clicked
+---Cycles through ALL other workflows (including already-linked ones) on each click
+function WMEditorDialog:onClickLinkWorkflow()
+    if not self.workflow then return end
+
+    -- Collect ALL workflows except self as candidates
+    local candidates = {}
+    for _, wf in ipairs(WorkflowManager:getWorkflows()) do
+        if wf.id ~= self.workflow.id then
+            table.insert(candidates, wf)
+        end
+    end
+
+    if #candidates == 0 then
+        g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_INFO,
+            g_i18n:getText("wm_link_no_candidates") or "No other workflows available to link")
+        return
+    end
+
+    -- Find where the current linked partner sits in the candidate list
+    local currentIndex = 0
+    if self.workflow.linkedWorkflowId then
+        for i, wf in ipairs(candidates) do
+            if wf.id == self.workflow.linkedWorkflowId then
+                currentIndex = i
+                break
+            end
+        end
+    end
+
+    -- Advance to the next candidate (wraps around through all workflows)
+    local nextIndex = (currentIndex % #candidates) + 1
+    local targetWf = candidates[nextIndex]
+
+    WorkflowManager:linkWorkflows(self.workflow.id, targetWf.id)
+    WorkflowManager:saveWorkflows()
+    self:refreshLinkedWorkflow()
+    self:refreshStepList()
+end
+
+---Called when Unlink button is clicked
+function WMEditorDialog:onClickUnlinkWorkflow()
+    if not self.workflow then return end
+    WorkflowManager:unlinkWorkflow(self.workflow.id)
+    WorkflowManager:saveWorkflows()
+    self:refreshLinkedWorkflow()
     self:refreshStepList()
 end
 
@@ -253,6 +325,9 @@ function WMEditorDialog:updateButtons()
     if self.groupColumnHeader then
         self.groupColumnHeader:setVisible(isLinked)
     end
+
+    -- Keep linked workflow row in sync
+    self:refreshLinkedWorkflow()
 end
 
 ---Called when step list selection changes

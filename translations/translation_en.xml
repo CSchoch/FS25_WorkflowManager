@@ -147,5 +147,9 @@
         <text name="wm_confirm_unlink" text="Unlink workflow '%s'?"/>
         <text name="wm_link_role_indicator_main" text=" [Main]"/>
         <text name="wm_link_role_indicator_support" text=" [Support]"/>
+        <text name="wm_editor_linked" text="Linked:"/>
+        <text name="wm_editor_linked_none" text="(none)"/>
+        <text name="wm_button_change" text="Change"/>
+        <text name="wm_link_no_candidates" text="No other workflows available to link"/>
     </texts>
 </l10n>

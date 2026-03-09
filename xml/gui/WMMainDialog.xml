@@ -20,8 +20,6 @@
                 <Button profile="buttonActivate" id="deleteButton" text="$l10n_wm_button_delete" onClick="onClickDelete" size="100px 40px" focusId="deleteBtn"/>
                 <Button profile="buttonActivate" id="startButton" text="$l10n_wm_button_start" onClick="onClickStart" size="100px 40px" focusId="startBtn"/>
                 <Button profile="buttonActivate" id="stopButton" text="$l10n_wm_button_stop" onClick="onClickStop" size="100px 40px" focusId="stopBtn"/>
-                <Button profile="buttonActivate" id="linkButton" text="$l10n_wm_button_link" onClick="onClickLink" size="90px 40px" focusId="linkBtn"/>
-                <Button profile="buttonActivate" id="unlinkButton" text="$l10n_wm_button_unlink" onClick="onClickUnlink" size="100px 40px" focusId="unlinkBtn"/>
             </BoxLayout>
 
             <!-- Column Headers -->
