@@ -187,6 +187,9 @@ function WMExecutor:stopWorkflow(vehicle)
 
     WMLogger:info("Stopped workflow: %s (reset to step 1)", workflow.name)
 
+    -- Broadcast cleared state (isActive=false) to all clients
+    WorkflowManager:broadcastState(vehicle)
+
     -- Fire event
     WMEventHandler:fireEvent(WMEventHandler.EVENT_WORKFLOW_STOPPED, {
         workflowId = workflow.id
@@ -718,6 +721,8 @@ function WMExecutor:onStepCompleted(activeData)
         -- Normal case: Execute next step
         self:executeCurrentStep(activeData)
     end
+    -- Broadcast the new step / status to all multiplayer clients (no-op in singleplayer)
+    WorkflowManager:broadcastState(activeData.vehicle)
 end
 
 ---Handle workflow completion
@@ -730,6 +735,9 @@ function WMExecutor:onWorkflowCompleted(activeData)
     -- Remove from active workflows
     vehicle.spec_workflowManagerSpec.wmExecution = nil
     self.activeVehicles[vehicle] = nil
+
+    -- Broadcast cleared state (isActive=false) to all clients
+    WorkflowManager:broadcastState(vehicle)
 
     -- Fire completion event
     WMEventHandler:fireEvent(WMEventHandler.EVENT_WORKFLOW_COMPLETED, {
@@ -774,6 +782,12 @@ function WMExecutor:update(dt)
         return
     end
 
+    -- Execution logic (AD/CP API calls) must only run on the server.
+    -- Clients keep their wmExecution mirrors up to date via WMStateSyncEvent.
+    if g_server == nil then
+        return
+    end
+
     -- Throttle update checks
     self.updateTimer = self.updateTimer + dt
     if self.updateTimer < self.UPDATE_INTERVAL then
@@ -813,6 +827,8 @@ function WMExecutor:update(dt)
                         vehicle = vehicle,
                         currentStep = activeData.currentStep
                     })
+                    -- Broadcast the new running state to all clients
+                    WorkflowManager:broadcastState(vehicle)
                 elseif g_currentMission.time >= activeData.autoResumeUntil then
                     activeData.autoResumeUntil = nil  -- window expired - stay paused
                     WMLogger:info("Auto-resume window expired for '%s', staying paused", workflow.name)

@@ -630,7 +630,7 @@ function WMHud:onClickPrevious()
     if activeData == nil or activeData.currentStep <= 1 then return end
 
     WMLogger:info("Previous step via HUD: %s", activeData.workflow.name)
-    WMExecutor:goToPreviousStep(activeData.vehicle)
+    WorkflowManager:goToPreviousStep(activeData.vehicle)
 end
 
 function WMHud:onClickNext()
@@ -638,7 +638,7 @@ function WMHud:onClickNext()
     if activeData == nil or activeData.currentStep >= #activeData.workflow.steps then return end
 
     WMLogger:info("Next step via HUD: %s", activeData.workflow.name)
-    WMExecutor:goToNextStep(activeData.vehicle)
+    WorkflowManager:goToNextStep(activeData.vehicle)
 end
 
 function WMHud:delete()

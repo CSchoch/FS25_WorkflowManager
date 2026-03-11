@@ -18,6 +18,7 @@ source(Utils.getFilename("src/utils/DebugUtil.lua", g_currentModDirectory))
 -- 3. Core modules
 source(Utils.getFilename("src/WorkflowStorage.lua", g_currentModDirectory))
 source(Utils.getFilename("src/WorkflowExecutor.lua", g_currentModDirectory))
+source(Utils.getFilename("src/network/WMNetworkEvents.lua", g_currentModDirectory))
 
 -- 4. Integration modules
 source(Utils.getFilename("src/integration/AutoDriveIntegration.lua", g_currentModDirectory))
@@ -868,11 +869,11 @@ function WorkflowManager:startWorkflow(workflowId)
         workflow.name,
         currentVehicle.getName and currentVehicle:getName() or "unknown")
 
-    -- Pass the current vehicle to the executor
-    local success = WMExecutor:startWorkflow(workflow, currentVehicle)
+    -- Route through network layer (direct on server, event on client)
+    self:sendCommand(currentVehicle, "start", workflow.id)
 
-    -- Show linked workflow notification if this is a main workflow
-    if success and workflow.linkRole == "main" and workflow.linkedWorkflowId then
+    -- Show linked workflow notification if this is a main workflow (client-side UI only)
+    if workflow.linkRole == "main" and workflow.linkedWorkflowId then
         local linkedWf = self:getLinkedWorkflow(workflow.id)
         if linkedWf then
             local msg = string.format(
@@ -882,7 +883,99 @@ function WorkflowManager:startWorkflow(workflowId)
         end
     end
 
-    return success
+    return true
+end
+
+-- ============================================================
+-- Multiplayer network helpers
+-- ============================================================
+
+---Find a workflow definition by ID.
+---@param id string Workflow ID
+---@return table|nil workflow
+function WorkflowManager:findWorkflowById(id)
+    for _, wf in ipairs(self.workflows) do
+        if wf.id == id then return wf end
+    end
+    return nil
+end
+
+---Route a workflow command through the network layer.
+---  • On the server (singleplayer or multiplayer host):
+---      executes immediately and broadcasts state to clients.
+---  • On a pure client:
+---      sends a WMCommandEvent to the server.
+---@param vehicle     table       Target vehicle
+---@param commandType string      "start"|"stop"|"pause"|"resume"|"next_step"|"prev_step"
+---@param workflowId  string|nil  Only required for "start"
+function WorkflowManager:sendCommand(vehicle, commandType, workflowId)
+    if vehicle == nil then
+        WMLogger:warning("sendCommand: vehicle is nil (cmd=%s)", commandType)
+        return
+    end
+    if g_server ~= nil then
+        -- Singleplayer or multiplayer host – execute directly
+        self:executeNetworkCommand(commandType, vehicle, workflowId)
+    else
+        -- Pure multiplayer client – send to server
+        if g_client ~= nil then
+            g_client:sendEvent(WMCommandEvent.new(commandType, vehicle, workflowId))
+        else
+            WMLogger:error("sendCommand: neither g_server nor g_client available")
+        end
+    end
+end
+
+---Execute a workflow command and broadcast state.  Called on the server only.
+---@param commandType string
+---@param vehicle     table
+---@param workflowId  string|nil
+function WorkflowManager:executeNetworkCommand(commandType, vehicle, workflowId)
+    if commandType == "start" then
+        local wf = self:findWorkflowById(workflowId)
+        if wf == nil then
+            WMLogger:error("executeNetworkCommand: workflowId '%s' not found", tostring(workflowId))
+            return
+        end
+        WMExecutor:startWorkflow(wf, vehicle)
+    elseif commandType == "stop" then
+        WMExecutor:stopWorkflow(vehicle)
+    elseif commandType == "pause" then
+        WMExecutor:pauseWorkflow(vehicle)
+    elseif commandType == "resume" then
+        WMExecutor:resumeWorkflow(vehicle)
+    elseif commandType == "next_step" then
+        WMExecutor:goToNextStep(vehicle)
+    elseif commandType == "prev_step" then
+        WMExecutor:goToPreviousStep(vehicle)
+    else
+        WMLogger:warning("executeNetworkCommand: unknown commandType '%s'", tostring(commandType))
+        return
+    end
+    self:broadcastState(vehicle)
+end
+
+---Broadcast a vehicle's current workflow state to all connected clients.
+---No-op in singleplayer (no clients to send to).
+---@param vehicle table Target vehicle
+function WorkflowManager:broadcastState(vehicle)
+    if g_server == nil then return end
+    if self.isShuttingDown then return end
+    if vehicle == nil then return end
+    -- In singleplayer g_client is nil so broadcastEvent has nobody to send to – that's fine.
+    g_server:broadcastEvent(WMStateSyncEvent.new(vehicle), false, nil, vehicle)
+    WMLogger:debug("broadcastState: sent WMStateSyncEvent for vehicle")
+end
+
+---Add wrappers for goToNextStep / goToPreviousStep so they route via sendCommand.
+---@param vehicle table
+function WorkflowManager:goToNextStep(vehicle)
+    self:sendCommand(vehicle, "next_step")
+end
+
+---@param vehicle table
+function WorkflowManager:goToPreviousStep(vehicle)
+    self:sendCommand(vehicle, "prev_step")
 end
 
 ---Check if a vehicle supports running workflows
@@ -905,109 +998,64 @@ function WorkflowManager:isVehicleValid(vehicle)
     return hasAutoDrive and hasCP
 end
 
----Stop the workflow running on the current vehicle (matched by workflowId)
+---Find the vehicle that has the given workflowId active (scan all active vehicles).
+---@param workflowId string
+---@return table|nil vehicle
+local function findVehicleForWorkflow(workflowId)
+    for v, _ in pairs(WMExecutor.activeVehicles) do
+        local ad = v.spec_workflowManagerSpec and v.spec_workflowManagerSpec.wmExecution
+        if ad and ad.workflow and ad.workflow.id == workflowId then
+            return v
+        end
+    end
+    return nil
+end
+
+---Stop the workflow running on the given workflowId.
+---Routes through the network layer so it works in multiplayer.
 ---@param workflowId string Workflow ID to stop
----@return boolean success True if stopped successfully
+---@return boolean success True if the command was dispatched successfully
 function WorkflowManager:stopWorkflow(workflowId)
-    local vehicle = g_currentMission.controlledVehicle
-    if vehicle == nil and g_localPlayer and g_localPlayer.getCurrentVehicle then
-        vehicle = g_localPlayer:getCurrentVehicle()
-    end
-    if vehicle == nil then
-        WMLogger:warning("Cannot stop: no controlled vehicle")
+    local v = findVehicleForWorkflow(workflowId)
+    if v == nil then
+        WMLogger:warning("Cannot stop: Workflow %s not active on any vehicle", workflowId)
         return false
     end
-    local activeData = WMExecutor:getActiveDataForVehicle(vehicle)
-    if activeData == nil or activeData.workflow.id ~= workflowId then
-        -- Also try stopping by scanning all active vehicles (for non-controlled vehicle case)
-        for v, _ in pairs(WMExecutor.activeVehicles) do
-            local ad = v.spec_workflowManagerSpec and v.spec_workflowManagerSpec.wmExecution
-            if ad and ad.workflow.id == workflowId then
-                return WMExecutor:stopWorkflow(v)
-            end
-        end
-        WMLogger:warning("Cannot stop: Workflow %s not active on current vehicle", workflowId)
-        return false
-    end
-    return WMExecutor:stopWorkflow(vehicle)
+    self:sendCommand(v, "stop")
+    return true
 end
 
----Pause the workflow running on the current vehicle (matched by workflowId)
+---Pause the workflow running on the given workflowId.
 ---@param workflowId string Workflow ID to pause
----@return boolean success True if paused successfully
+---@return boolean success
 function WorkflowManager:pauseWorkflow(workflowId)
-    local vehicle = g_currentMission.controlledVehicle
-    if vehicle == nil and g_localPlayer and g_localPlayer.getCurrentVehicle then
-        vehicle = g_localPlayer:getCurrentVehicle()
-    end
-    if vehicle == nil then
-        WMLogger:warning("Cannot pause: no controlled vehicle")
+    local v = findVehicleForWorkflow(workflowId)
+    if v == nil then
+        WMLogger:warning("Cannot pause: Workflow %s not active on any vehicle", workflowId)
         return false
     end
-    local activeData = WMExecutor:getActiveDataForVehicle(vehicle)
-    if activeData == nil or activeData.workflow.id ~= workflowId then
-        for v, _ in pairs(WMExecutor.activeVehicles) do
-            local ad = v.spec_workflowManagerSpec and v.spec_workflowManagerSpec.wmExecution
-            if ad and ad.workflow.id == workflowId then
-                return WMExecutor:pauseWorkflow(v)
-            end
-        end
-        WMLogger:warning("Cannot pause: Workflow %s not active on current vehicle", workflowId)
-        return false
-    end
-    return WMExecutor:pauseWorkflow(vehicle)
+    self:sendCommand(v, "pause")
+    return true
 end
 
----Resume the paused workflow on the current vehicle (matched by workflowId)
+---Resume the paused workflow on the given workflowId.
 ---@param workflowId string Workflow ID to resume
----@return boolean success True if resumed successfully
+---@return boolean success
 function WorkflowManager:resumeWorkflow(workflowId)
-    local vehicle = g_currentMission.controlledVehicle
-    if vehicle == nil and g_localPlayer and g_localPlayer.getCurrentVehicle then
-        vehicle = g_localPlayer:getCurrentVehicle()
-    end
-    if vehicle == nil then
-        WMLogger:warning("Cannot resume: no controlled vehicle")
+    local v = findVehicleForWorkflow(workflowId)
+    if v == nil then
+        WMLogger:warning("Cannot resume: Workflow %s not active on any vehicle", workflowId)
         return false
     end
-    local activeData = WMExecutor:getActiveDataForVehicle(vehicle)
-    if activeData == nil or activeData.workflow.id ~= workflowId then
-        for v, _ in pairs(WMExecutor.activeVehicles) do
-            local ad = v.spec_workflowManagerSpec and v.spec_workflowManagerSpec.wmExecution
-            if ad and ad.workflow.id == workflowId then
-                return WMExecutor:resumeWorkflow(v)
-            end
-        end
-        WMLogger:warning("Cannot resume: Workflow %s not active on current vehicle", workflowId)
-        return false
-    end
-    return WMExecutor:resumeWorkflow(vehicle)
+    self:sendCommand(v, "resume")
+    return true
 end
 
----Reset (stop) the workflow on the current vehicle
+---Reset (stop) the workflow on the given workflowId.
 ---@param workflowId string Workflow ID to reset
----@return boolean success True if reset successfully
+---@return boolean success
 function WorkflowManager:resetWorkflow(workflowId)
-    local vehicle = g_currentMission.controlledVehicle
-    if vehicle == nil and g_localPlayer and g_localPlayer.getCurrentVehicle then
-        vehicle = g_localPlayer:getCurrentVehicle()
-    end
-    if vehicle == nil then
-        WMLogger:warning("Cannot reset: no controlled vehicle")
-        return false
-    end
-    local activeData = WMExecutor:getActiveDataForVehicle(vehicle)
-    if activeData == nil or activeData.workflow.id ~= workflowId then
-        for v, _ in pairs(WMExecutor.activeVehicles) do
-            local ad = v.spec_workflowManagerSpec and v.spec_workflowManagerSpec.wmExecution
-            if ad and ad.workflow.id == workflowId then
-                return WMExecutor:resetWorkflow(v)
-            end
-        end
-        WMLogger:warning("Cannot reset: Workflow %s not active on any vehicle", workflowId)
-        return false
-    end
-    return WMExecutor:resetWorkflow(vehicle)
+    return self:stopWorkflow(workflowId)
 end
 
 ---Get the active execution state for a vehicle (for GUI state display)

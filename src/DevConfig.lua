@@ -24,7 +24,7 @@ WMDevConfig.DEV_MODE = true
 WMDevConfig.DEBUG_LOGGING = true
 
 -- Show debug overlay on screen
-WMDevConfig.SHOW_DEBUG_OVERLAY = true
+WMDevConfig.SHOW_DEBUG_OVERLAY = false
 
 -- Log all API calls to AutoDrive/Courseplay
 WMDevConfig.LOG_API_CALLS = true

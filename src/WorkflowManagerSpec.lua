@@ -30,6 +30,9 @@ function WorkflowManagerSpec.registerEventListeners(vehicleType)
     SpecializationUtil.registerEventListener(vehicleType, "onDelete", WorkflowManagerSpec)
     SpecializationUtil.registerEventListener(vehicleType, "onRegisterActionEvents", WorkflowManagerSpec)
     SpecializationUtil.registerEventListener(vehicleType, "saveToXMLFile", WorkflowManagerSpec)
+    -- Initial state sync when a client connects mid-session
+    SpecializationUtil.registerEventListener(vehicleType, "onReadStream", WorkflowManagerSpec)
+    SpecializationUtil.registerEventListener(vehicleType, "onWriteStream", WorkflowManagerSpec)
 end
 
 ---Called when the vehicle is loaded (early init only)
@@ -95,6 +98,70 @@ function WorkflowManagerSpec:saveToXMLFile(xmlFile, key, usedModNames)
     xmlFile:setValue(key .. "#currentStep", activeData.currentStep)
 
     WMLogger:info("Saved workflow state: id=%s step=%d", activeData.workflow.id, activeData.currentStep)
+end
+
+---Called on the SERVER when sending this vehicle to a newly-connected client.
+---Writes the current wmExecution state so the client can mirror it.
+---@param streamId number Network stream
+---@param connection table The client connection
+function WorkflowManagerSpec:onWriteStream(streamId, connection)
+    local activeData = self.spec_workflowManagerSpec and self.spec_workflowManagerSpec.wmExecution
+    if activeData ~= nil then
+        streamWriteBool(streamId, true)
+        streamWriteString(streamId, activeData.workflow.id)
+        streamWriteInt32(streamId, activeData.currentStep)
+        streamWriteString(streamId, activeData.status)
+        WMLogger:debug("onWriteStream: sent wmExecution wf=%s step=%d status=%s",
+            activeData.workflow.id, activeData.currentStep, activeData.status)
+    else
+        streamWriteBool(streamId, false)
+    end
+end
+
+---Called on the CLIENT when receiving vehicle data from the server (initial / mid-session join).
+---Rebuilds the wmExecution mirror so the HUD and GUI reflect the current server state.
+---@param streamId number Network stream
+---@param connection table The server connection
+function WorkflowManagerSpec:onReadStream(streamId, connection)
+    local isActive = streamReadBool(streamId)
+    if not isActive then return end
+
+    local workflowId  = streamReadString(streamId)
+    local currentStep = streamReadInt32(streamId)
+    local status      = streamReadString(streamId)
+
+    -- Resolve workflow definition (loadMap has run by the time vehicles are streamed)
+    local workflow = nil
+    for _, wf in ipairs(WorkflowManager.workflows) do
+        if wf.id == workflowId then
+            workflow = wf
+            break
+        end
+    end
+
+    if workflow == nil then
+        WMLogger:warning("onReadStream: unknown workflowId '%s' – cannot restore state", workflowId)
+        return
+    end
+
+    self.spec_workflowManagerSpec.wmExecution = {
+        workflow             = workflow,
+        vehicle              = self,
+        status               = status,
+        currentStep          = currentStep,
+        waitingForCompletion = false,
+    }
+    WMExecutor.activeVehicles[self] = true
+
+    -- Show HUD if this is the vehicle the local player is sitting in
+    local controlled = g_currentMission and g_currentMission.controlledVehicle
+    if controlled == self and WMHud then
+        WMHud:show(self)
+    end
+
+    WMLogger:info("onReadStream: restored workflow '%s' step=%d status=%s on '%s'",
+        workflow.name, currentStep, status,
+        self.getName and self:getName() or "unknown")
 end
 
 ---Called when the vehicle is deleted
