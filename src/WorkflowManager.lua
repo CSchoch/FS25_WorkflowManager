@@ -7,8 +7,38 @@
 ]]
 
 -- Source all required files (order matters for dependencies)
--- 1. Development config (loaded first to configure debug settings)
-source(Utils.getFilename("src/DevConfig.lua", g_currentModDirectory))
+-- 1. Development config (optional - omitted in release builds)
+pcall(function()
+    source(Utils.getFilename("src/DevConfig.lua", g_currentModDirectory))
+end)
+
+-- Fallback: if DevConfig was not loaded, use release defaults (all debug off)
+if WMDevConfig == nil then
+    WMDevConfig = {
+        DEV_MODE = false,
+        DEBUG_LOGGING = false,
+        SHOW_DEBUG_OVERLAY = false,
+        LOG_API_CALLS = false,
+        LOG_STATE_CHANGES = false,
+        LOG_EVENTS = false,
+        AUTO_CREATE_TEST_WORKFLOW = false,
+        SKIP_VEHICLE_CHECKS = false,
+        SIMULATE_AD_COMPLETION_MS = 0,
+        SIMULATE_CP_COMPLETION_MS = 0,
+        EXECUTOR_UPDATE_INTERVAL = 1000,
+        GUI_REFRESH_INTERVAL = 500,
+        SHOW_FPS = false,
+        DEBUG_OVERLAY_X = 0.01,
+        DEBUG_OVERLAY_Y = 0.95,
+        DEBUG_TEXT_SIZE = 0.012,
+        isDevMode = function() return false end,
+        isDebugLogging = function() return false end,
+        shouldLogAPICalls = function() return false end,
+        shouldLogStateChanges = function() return false end,
+        shouldLogEvents = function() return false end,
+        printConfig = function() end,
+    }
+end
 
 -- 2. Utilities
 source(Utils.getFilename("src/utils/Logger.lua", g_currentModDirectory))
