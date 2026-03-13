@@ -1,10 +1,24 @@
 --[[
     XMLFile Mock
-    Provides an in-memory mock of FS25's XMLFile class for testing XML storage
+    Provides an in-memory mock of FS25's XMLFile class for testing XML storage.
+
+    FS25 uses XMLFile handles that support OOP-style method calls:
+        local xmlFile = XMLFile.create(...)
+        xmlFile:setString(path, value)   -- OOP syntax
+
+    This mock returns a proxy table for each open file so that both the static
+    form (XMLFile.getString(xmlId, path)) and the OOP form (xmlFile:getString(path))
+    work transparently.
+
+    Data is stored by file *path* so that close + re-open preserves content,
+    matching real savegame behaviour.
 ]]
 
--- Store XML data in memory
-local xmlStorage = {}
+-- Persistent file data keyed by path
+local xmlDataStore = {}   -- { [path] = data_table }
+
+-- Active handle registry: xmlId -> path
+local xmlHandles = {}
 local xmlIdCounter = 0
 
 ---@class XMLFile
@@ -12,254 +26,217 @@ _G.XMLFile = {}
 
 -- XML value type constants
 XMLFile.XML_TYPE_STRING = 1
-XMLFile.XML_TYPE_INT = 2
-XMLFile.XML_TYPE_FLOAT = 3
-XMLFile.XML_TYPE_BOOL = 4
+XMLFile.XML_TYPE_INT    = 2
+XMLFile.XML_TYPE_FLOAT  = 3
+XMLFile.XML_TYPE_BOOL   = 4
 
----Create a new XML file (in memory)
----@param name string Internal name for the file
----@param path string File path (used as key)
----@param schema table|nil XML schema (ignored in mock)
----@return number xmlId Handle to the XML file
-function XMLFile.create(name, path, schema)
-    xmlIdCounter = xmlIdCounter + 1
-    local xmlId = xmlIdCounter
+-- ---------------------------------------------------------------------------
+-- Internal helpers
+-- ---------------------------------------------------------------------------
 
-    xmlStorage[xmlId] = {
-        name = name,
-        path = path,
-        data = {},
-        isNew = true
-    }
-
-    return xmlId
-end
-
----Load an existing XML file (in memory)
----@param name string Internal name for the file
----@param path string File path (used as key)
----@param schema table|nil XML schema (ignored in mock)
----@return number|nil xmlId Handle to the XML file, or nil if not found
-function XMLFile.load(name, path, schema)
-    -- Check if we have data stored for this path
-    for id, xmlData in pairs(xmlStorage) do
-        if xmlData.path == path and not xmlData.deleted then
-            return id
+-- Build a proxy table for the given handle id.
+-- Every method call on the proxy is forwarded to the corresponding static
+-- XMLFile function with xmlId prepended automatically.
+local function createProxy(xmlId)
+    return setmetatable({}, {
+        __index = function(_, key)
+            local fn = XMLFile[key]
+            if type(fn) == "function" then
+                -- Return a closure that injects xmlId as the first argument
+                return function(self, ...)
+                    return fn(xmlId, ...)
+                end
+            end
         end
-    end
-
-    -- Simulate file not found
-    return nil
+    })
 end
 
----Load or create an XML file
----@param name string Internal name for the file
----@param path string File path
----@param schema table|nil XML schema (ignored in mock)
----@return number xmlId Handle to the XML file
-function XMLFile.loadIfExists(name, path, schema)
-    local xmlId = XMLFile.load(name, path, schema)
-    if xmlId == nil then
-        xmlId = XMLFile.create(name, path, schema)
-    end
-    return xmlId
-end
-
----Close/delete an XML file handle
----@param xmlId number XML file handle
-function XMLFile.delete(xmlId)
-    if xmlStorage[xmlId] then
-        xmlStorage[xmlId].deleted = true
-    end
-end
-
----Save XML file to disk (no-op in mock, data already in memory)
----@param xmlId number XML file handle
-function XMLFile.save(xmlId)
-    -- Mark as saved (for testing purposes)
-    if xmlStorage[xmlId] then
-        xmlStorage[xmlId].saved = true
-    end
-end
-
--- Helper to get/set nested values using dot-separated paths
-local function getNestedPath(data, path)
+-- Navigate (and optionally create) a nested table from a dot-separated path.
+-- Supports array notation like "workflows.workflow(0).step(1)".
+local function parsePath(path)
     local parts = {}
-    for part in path:gmatch("[^.]+") do
-        table.insert(parts, part)
-    end
-
-    local current = data
-    for i, part in ipairs(parts) do
-        -- Handle array indexing like "workflows.workflow(0)"
-        local name, index = part:match("([^%(]+)%((%d+)%)")
-        if name and index then
-            index = tonumber(index)
-            if current[name] == nil then
-                return nil
-            end
-            current = current[name][index + 1]  -- Lua is 1-indexed
+    for part in path:gmatch("[^%.]+") do
+        local name, idx = part:match("^([^%(]+)%((%d+)%)$")
+        if name then
+            table.insert(parts, { name = name, idx = tonumber(idx) + 1 })  -- 1-based
+        elseif part:sub(1, 1) == "#" then
+            table.insert(parts, { attr = part:sub(2) })
         else
-            if current[part] == nil then
-                return nil
-            end
-            current = current[part]
+            table.insert(parts, { name = part })
         end
-        if current == nil then
-            return nil
+    end
+    return parts
+end
+
+local function getNestedPath(data, path)
+    local parts = parsePath(path)
+    local current = data
+    for _, p in ipairs(parts) do
+        if current == nil then return nil end
+        if p.attr then
+            current = current[p.attr]
+        elseif p.idx then
+            local tbl = current[p.name]
+            if type(tbl) ~= "table" then return nil end
+            current = tbl[p.idx]
+        else
+            current = current[p.name]
         end
     end
     return current
 end
 
 local function setNestedPath(data, path, value)
-    local parts = {}
-    for part in path:gmatch("[^.]+") do
-        table.insert(parts, part)
-    end
-
+    local parts = parsePath(path)
     local current = data
     for i = 1, #parts - 1 do
-        local part = parts[i]
-        -- Handle array indexing
-        local name, index = part:match("([^%(]+)%((%d+)%)")
-        if name and index then
-            index = tonumber(index)
-            if current[name] == nil then
-                current[name] = {}
-            end
-            if current[name][index + 1] == nil then
-                current[name][index + 1] = {}
-            end
-            current = current[name][index + 1]
+        local p = parts[i]
+        if p.attr then
+            -- attributes can only be the last element; skip as intermediate
+        elseif p.idx then
+            if type(current[p.name]) ~= "table" then current[p.name] = {} end
+            if current[p.name][p.idx] == nil then current[p.name][p.idx] = {} end
+            current = current[p.name][p.idx]
         else
-            if current[part] == nil then
-                current[part] = {}
-            end
-            current = current[part]
+            if type(current[p.name]) ~= "table" then current[p.name] = {} end
+            current = current[p.name]
         end
     end
-
-    local lastPart = parts[#parts]
-    -- Handle array indexing for last part
-    local name, index = lastPart:match("([^%(]+)%((%d+)%)")
-    if name and index then
-        index = tonumber(index)
-        if current[name] == nil then
-            current[name] = {}
-        end
-        current[name][index + 1] = value
+    local last = parts[#parts]
+    if last.attr then
+        current[last.attr] = value
+    elseif last.idx then
+        if type(current[last.name]) ~= "table" then current[last.name] = {} end
+        current[last.name][last.idx] = value
     else
-        current[lastPart] = value
+        current[last.name] = value
     end
 end
 
----Get string value from XML
----@param xmlId number XML file handle
----@param path string XML path (e.g., "workflow.name")
----@param default string|nil Default value
----@return string|nil value
+local function getOrCreateData(xmlId)
+    local path = xmlHandles[xmlId]
+    if path == nil then return nil end
+    if xmlDataStore[path] == nil then xmlDataStore[path] = {} end
+    return xmlDataStore[path]
+end
+
+-- ---------------------------------------------------------------------------
+-- Handle lifecycle
+-- ---------------------------------------------------------------------------
+
+---Create a new XML file (in memory, persists by path)
+---@return table proxy Proxy object supporting OOP-style method calls
+function XMLFile.create(name, path, schema)
+    xmlIdCounter = xmlIdCounter + 1
+    local xmlId = xmlIdCounter
+    xmlHandles[xmlId] = path
+    -- Reset data for this path (fresh create overwrites existing)
+    xmlDataStore[path] = {}
+    return createProxy(xmlId)
+end
+
+---Load an existing XML file
+---@return table|nil proxy Proxy object, or nil if path has no stored data
+function XMLFile.load(name, path, schema)
+    if xmlDataStore[path] == nil then
+        return nil
+    end
+    xmlIdCounter = xmlIdCounter + 1
+    local xmlId = xmlIdCounter
+    xmlHandles[xmlId] = path
+    return createProxy(xmlId)
+end
+
+---Load if exists, otherwise create
+---@return table proxy Proxy object
+function XMLFile.loadIfExists(name, path, schema)
+    return XMLFile.load(name, path, schema) or XMLFile.create(name, path, schema)
+end
+
+---Close a file handle (data persists in xmlDataStore for reload)
+function XMLFile.delete(xmlId)
+    xmlHandles[xmlId] = nil
+end
+
+---Save file to disk (no-op in mock; data already in xmlDataStore)
+function XMLFile.save(xmlId)
+    -- Mark as saved for test assertions
+    local path = xmlHandles[xmlId]
+    if path and xmlDataStore[path] then
+        xmlDataStore[path]._saved = true
+    end
+end
+
+-- ---------------------------------------------------------------------------
+-- Get / Set
+-- ---------------------------------------------------------------------------
+
 function XMLFile.getString(xmlId, path, default)
-    if not xmlStorage[xmlId] then return default end
-    local value = getNestedPath(xmlStorage[xmlId].data, path)
-    if value == nil then return default end
-    return tostring(value)
+    local data = getOrCreateData(xmlId)
+    if data == nil then return default end
+    local v = getNestedPath(data, path)
+    if v == nil then return default end
+    return tostring(v)
 end
 
----Set string value in XML
----@param xmlId number XML file handle
----@param path string XML path
----@param value string Value to set
 function XMLFile.setString(xmlId, path, value)
-    if not xmlStorage[xmlId] then return end
-    setNestedPath(xmlStorage[xmlId].data, path, value)
+    local data = getOrCreateData(xmlId)
+    if data then setNestedPath(data, path, value) end
 end
 
----Get integer value from XML
----@param xmlId number XML file handle
----@param path string XML path
----@param default number|nil Default value
----@return number|nil value
 function XMLFile.getInt(xmlId, path, default)
-    if not xmlStorage[xmlId] then return default end
-    local value = getNestedPath(xmlStorage[xmlId].data, path)
-    if value == nil then return default end
-    return math.floor(tonumber(value) or default or 0)
+    local data = getOrCreateData(xmlId)
+    if data == nil then return default end
+    local v = getNestedPath(data, path)
+    if v == nil then return default end
+    return math.floor(tonumber(v) or (default or 0))
 end
 
----Set integer value in XML
----@param xmlId number XML file handle
----@param path string XML path
----@param value number Value to set
 function XMLFile.setInt(xmlId, path, value)
-    if not xmlStorage[xmlId] then return end
-    setNestedPath(xmlStorage[xmlId].data, path, math.floor(value))
+    local data = getOrCreateData(xmlId)
+    if data then setNestedPath(data, path, math.floor(value)) end
 end
 
----Get float value from XML
----@param xmlId number XML file handle
----@param path string XML path
----@param default number|nil Default value
----@return number|nil value
 function XMLFile.getFloat(xmlId, path, default)
-    if not xmlStorage[xmlId] then return default end
-    local value = getNestedPath(xmlStorage[xmlId].data, path)
-    if value == nil then return default end
-    return tonumber(value) or default
+    local data = getOrCreateData(xmlId)
+    if data == nil then return default end
+    local v = getNestedPath(data, path)
+    if v == nil then return default end
+    return tonumber(v) or default
 end
 
----Set float value in XML
----@param xmlId number XML file handle
----@param path string XML path
----@param value number Value to set
 function XMLFile.setFloat(xmlId, path, value)
-    if not xmlStorage[xmlId] then return end
-    setNestedPath(xmlStorage[xmlId].data, path, value)
+    local data = getOrCreateData(xmlId)
+    if data then setNestedPath(data, path, value) end
 end
 
----Get boolean value from XML
----@param xmlId number XML file handle
----@param path string XML path
----@param default boolean|nil Default value
----@return boolean|nil value
 function XMLFile.getBool(xmlId, path, default)
-    if not xmlStorage[xmlId] then return default end
-    local value = getNestedPath(xmlStorage[xmlId].data, path)
-    if value == nil then return default end
-    if type(value) == "boolean" then return value end
-    return value == "true" or value == true
+    local data = getOrCreateData(xmlId)
+    if data == nil then return default end
+    local v = getNestedPath(data, path)
+    if v == nil then return default end
+    if type(v) == "boolean" then return v end
+    return v == "true" or v == true
 end
 
----Set boolean value in XML
----@param xmlId number XML file handle
----@param path string XML path
----@param value boolean Value to set
 function XMLFile.setBool(xmlId, path, value)
-    if not xmlStorage[xmlId] then return end
-    setNestedPath(xmlStorage[xmlId].data, path, value)
+    local data = getOrCreateData(xmlId)
+    if data then setNestedPath(data, path, value) end
 end
 
----Check if a path exists in XML
----@param xmlId number XML file handle
----@param path string XML path
----@return boolean exists
 function XMLFile.hasProperty(xmlId, path)
-    if not xmlStorage[xmlId] then return false end
-    return getNestedPath(xmlStorage[xmlId].data, path) ~= nil
+    local data = getOrCreateData(xmlId)
+    if data == nil then return false end
+    return getNestedPath(data, path) ~= nil
 end
 
----Get number of child elements at path
----@param xmlId number XML file handle
----@param path string XML path to parent
----@return number count
 function XMLFile.getNumOfChildren(xmlId, path)
-    if not xmlStorage[xmlId] then return 0 end
-    local parent = getNestedPath(xmlStorage[xmlId].data, path)
+    local data = getOrCreateData(xmlId)
+    if data == nil then return 0 end
+    local parent = getNestedPath(data, path)
     if type(parent) ~= "table" then return 0 end
-
-    -- Count array elements
     local count = 0
-    for k, v in pairs(parent) do
+    for k in pairs(parent) do
         if type(k) == "number" then
             count = math.max(count, k)
         end
@@ -267,58 +244,42 @@ function XMLFile.getNumOfChildren(xmlId, path)
     return count
 end
 
----Get value with automatic type detection
----@param xmlId number XML file handle
----@param path string XML path
----@param valueType number Value type constant
----@param default any Default value
----@return any value
 function XMLFile.getValue(xmlId, path, valueType, default)
-    if valueType == XMLFile.XML_TYPE_STRING then
-        return XMLFile.getString(xmlId, path, default)
-    elseif valueType == XMLFile.XML_TYPE_INT then
-        return XMLFile.getInt(xmlId, path, default)
-    elseif valueType == XMLFile.XML_TYPE_FLOAT then
-        return XMLFile.getFloat(xmlId, path, default)
-    elseif valueType == XMLFile.XML_TYPE_BOOL then
-        return XMLFile.getBool(xmlId, path, default)
+    if valueType == XMLFile.XML_TYPE_STRING then return XMLFile.getString(xmlId, path, default)
+    elseif valueType == XMLFile.XML_TYPE_INT   then return XMLFile.getInt(xmlId, path, default)
+    elseif valueType == XMLFile.XML_TYPE_FLOAT then return XMLFile.getFloat(xmlId, path, default)
+    elseif valueType == XMLFile.XML_TYPE_BOOL  then return XMLFile.getBool(xmlId, path, default)
     end
     return default
 end
 
----Set value with automatic type detection
----@param xmlId number XML file handle
----@param path string XML path
----@param value any Value to set
----@param valueType number Value type constant
 function XMLFile.setValue(xmlId, path, value, valueType)
-    if valueType == XMLFile.XML_TYPE_STRING then
-        XMLFile.setString(xmlId, path, value)
-    elseif valueType == XMLFile.XML_TYPE_INT then
-        XMLFile.setInt(xmlId, path, value)
-    elseif valueType == XMLFile.XML_TYPE_FLOAT then
-        XMLFile.setFloat(xmlId, path, value)
-    elseif valueType == XMLFile.XML_TYPE_BOOL then
-        XMLFile.setBool(xmlId, path, value)
+    if valueType == XMLFile.XML_TYPE_STRING then XMLFile.setString(xmlId, path, value)
+    elseif valueType == XMLFile.XML_TYPE_INT   then XMLFile.setInt(xmlId, path, value)
+    elseif valueType == XMLFile.XML_TYPE_FLOAT then XMLFile.setFloat(xmlId, path, value)
+    elseif valueType == XMLFile.XML_TYPE_BOOL  then XMLFile.setBool(xmlId, path, value)
     end
 end
 
--- Test helper: Clear all stored XML data
+-- ---------------------------------------------------------------------------
+-- Test helpers
+-- ---------------------------------------------------------------------------
+
+---Clear all stored XML data and handles
 function XMLFile._clearAll()
-    xmlStorage = {}
-    xmlIdCounter = 0
+    xmlDataStore  = {}
+    xmlHandles    = {}
+    xmlIdCounter  = 0
 end
 
--- Test helper: Get raw storage for inspection
+---Get the raw data store (for inspection in tests)
 function XMLFile._getStorage()
-    return xmlStorage
+    return xmlDataStore
 end
 
--- Test helper: Set data directly for a path
-function XMLFile._setTestData(xmlId, data)
-    if xmlStorage[xmlId] then
-        xmlStorage[xmlId].data = data
-    end
+---Get data for a specific path directly (bypasses handle lifecycle)
+function XMLFile._getDataForPath(path)
+    return xmlDataStore[path]
 end
 
 print("[Mock] XMLFile loaded")

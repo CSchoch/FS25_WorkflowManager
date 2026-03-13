@@ -83,6 +83,19 @@ function resetMocks()
         _G.WMExecutor.isInitialized = true
     end
 
+    -- Reset CPIntegration per-vehicle state
+    if _G.CPIntegration and _G.CPIntegration._reset then
+        _G.CPIntegration:_reset()
+    end
+
+    -- Clear XMLFile in-memory storage
+    if _G.XMLFile and _G.XMLFile._clearAll then
+        _G.XMLFile._clearAll()
+    end
+
+    -- Reset fileExists to default (no files exist)
+    _G.fileExists = function(path) return false end
+
     -- Reset math.random seed for deterministic tests
     math.randomseed(12345)
 end

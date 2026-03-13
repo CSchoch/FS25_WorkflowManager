@@ -496,6 +496,227 @@ describe("WMExecutor (real)", function()
     end)
 
     -- =========================================================================
+    -- resetWorkflow
+    -- =========================================================================
+    describe("resetWorkflow", function()
+        local v
+
+        before_each(function()
+            v = makeVehicle()
+            WMExecutor:startWorkflow(makeWorkflow(), v)
+        end)
+
+        it("returns false for nil vehicle", function()
+            assert.is_false(WMExecutor:resetWorkflow(NIL_TABLE))
+        end)
+
+        it("returns false when vehicle has no active workflow", function()
+            assert.is_false(WMExecutor:resetWorkflow(makeVehicle("Other")))
+        end)
+
+        it("clears wmExecution from the vehicle spec", function()
+            WMExecutor:resetWorkflow(v)
+            assert.is_nil(activeData(v))
+        end)
+
+        it("removes vehicle from activeVehicles", function()
+            WMExecutor:resetWorkflow(v)
+            assert.are.equal(0, WMExecutor:getActiveWorkflowCount())
+        end)
+
+        it("fires WORKFLOW_STOPPED event with reset=true", function()
+            local eventData = nil
+            WMEventHandler:addEventListener(WMEventHandler.EVENT_WORKFLOW_STOPPED, function(_, data)
+                eventData = data
+            end)
+            WMExecutor:resetWorkflow(v)
+            assert.is_not_nil(eventData)
+            assert.is_true((eventData or {}).reset == true)
+        end)
+    end)
+
+    -- =========================================================================
+    -- handleStepError
+    -- =========================================================================
+    describe("handleStepError", function()
+        local v
+
+        before_each(function()
+            v = makeVehicle()
+            WMExecutor:startWorkflow(makeWorkflow(), v)
+        end)
+
+        it("fires STEP_ERROR event", function()
+            local fired = false
+            WMEventHandler:addEventListener(WMEventHandler.EVENT_STEP_ERROR, function()
+                fired = true
+            end)
+            WMExecutor:handleStepError(activeData(v), "test error")
+            assert.is_true(fired)
+        end)
+
+        it("STEP_ERROR event contains error message", function()
+            local errMsg = nil
+            WMEventHandler:addEventListener(WMEventHandler.EVENT_STEP_ERROR, function(_, data)
+                errMsg = data and data.error
+            end)
+            WMExecutor:handleStepError(activeData(v), "something went wrong")
+            assert.are.equal("something went wrong", errMsg)
+        end)
+
+        it("stops the workflow (clears wmExecution)", function()
+            WMExecutor:handleStepError(activeData(v), "test error")
+            assert.is_nil(activeData(v))
+        end)
+
+        it("removes vehicle from activeVehicles", function()
+            WMExecutor:handleStepError(activeData(v), "test error")
+            assert.are.equal(0, WMExecutor:getActiveWorkflowCount())
+        end)
+    end)
+
+    -- =========================================================================
+    -- getActiveDataForWorkflow / getActiveDataForVehicle / getWorkflowForVehicle
+    -- =========================================================================
+    describe("data accessor helpers", function()
+        local v, wf
+
+        before_each(function()
+            v  = makeVehicle()
+            wf = makeWorkflow("wf_accessor")
+            WMExecutor:startWorkflow(wf, v)
+        end)
+
+        it("getActiveDataForWorkflow returns activeData when workflow is running", function()
+            local d = WMExecutor:getActiveDataForWorkflow("wf_accessor")
+            assert.is_not_nil(d)
+            assert.are.equal(wf, d.workflow)
+        end)
+
+        it("getActiveDataForWorkflow returns nil for unknown workflow id", function()
+            assert.is_nil(WMExecutor:getActiveDataForWorkflow("no_such_workflow"))
+        end)
+
+        it("getActiveDataForWorkflow returns nil after workflow is stopped", function()
+            WMExecutor:stopWorkflow(v)
+            assert.is_nil(WMExecutor:getActiveDataForWorkflow("wf_accessor"))
+        end)
+
+        it("getActiveDataForVehicle returns activeData for the vehicle", function()
+            local d = WMExecutor:getActiveDataForVehicle(v)
+            assert.is_not_nil(d)
+            assert.are.equal("running", d.status)
+        end)
+
+        it("getActiveDataForVehicle returns nil for vehicle without active workflow", function()
+            assert.is_nil(WMExecutor:getActiveDataForVehicle(makeVehicle("Idle")))
+        end)
+
+        it("getActiveDataForVehicle returns nil for nil vehicle", function()
+            assert.is_nil(WMExecutor:getActiveDataForVehicle(nil))
+        end)
+
+        it("getWorkflowForVehicle returns the workflow definition", function()
+            local w = WMExecutor:getWorkflowForVehicle(v)
+            assert.are.equal(wf, w)
+        end)
+
+        it("getWorkflowForVehicle returns nil for idle vehicle", function()
+            assert.is_nil(WMExecutor:getWorkflowForVehicle(makeVehicle("Idle")))
+        end)
+    end)
+
+    -- =========================================================================
+    -- findStepByGroup
+    -- =========================================================================
+    describe("findStepByGroup", function()
+        local wfWithGroups
+
+        before_each(function()
+            wfWithGroups = {
+                id    = "wf_sync",
+                name  = "Sync Workflow",
+                steps = {
+                    { type = "autodrive",  target = "A", action = "drive",     syncGroup = 1 },
+                    { type = "courseplay", target = "B", action = "fieldwork", syncGroup = 1 },
+                    { type = "autodrive",  target = "C", action = "drive",     syncGroup = 2 },
+                },
+            }
+        end)
+
+        it("returns first step index matching the group", function()
+            assert.are.equal(1, WMExecutor:findStepByGroup(wfWithGroups, 1))
+        end)
+
+        it("returns step index for a later group", function()
+            assert.are.equal(3, WMExecutor:findStepByGroup(wfWithGroups, 2))
+        end)
+
+        it("returns nil for non-existent group", function()
+            assert.is_nil(WMExecutor:findStepByGroup(wfWithGroups, 99))
+        end)
+
+        it("returns nil for nil workflow", function()
+            assert.is_nil(WMExecutor:findStepByGroup(nil, 1))
+        end)
+
+        it("returns nil for nil groupNum", function()
+            assert.is_nil(WMExecutor:findStepByGroup(wfWithGroups, nil))
+        end)
+    end)
+
+    -- =========================================================================
+    -- goToNextStep — additional edge cases
+    -- =========================================================================
+    describe("goToNextStep (edge cases)", function()
+        it("completes workflow when advancing past the last step via onStepCompleted", function()
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(makeWorkflow(), v)
+            -- Place at last step and simulate completion
+            local d = activeData(v)
+            d.currentStep = 3
+            d.currentStepType = WorkflowManager.STEP_AUTODRIVE
+            WMExecutor:onStepCompleted(d)
+            -- Workflow should be complete and wmExecution cleared
+            assert.is_nil(activeData(v))
+        end)
+
+        it("step count remains consistent before and after step navigation", function()
+            local v = makeVehicle()
+            local wf = makeWorkflow()
+            WMExecutor:startWorkflow(wf, v)
+            assert.are.equal(1, activeData(v).currentStep)
+            WMExecutor:goToNextStep(v)
+            assert.are.equal(2, activeData(v).currentStep)
+            WMExecutor:goToNextStep(v)
+            assert.are.equal(3, activeData(v).currentStep)
+            -- At last step, goToNextStep should return false
+            assert.is_false(WMExecutor:goToNextStep(v))
+        end)
+    end)
+
+    -- =========================================================================
+    -- goToPreviousStep — additional edge cases
+    -- =========================================================================
+    describe("goToPreviousStep (edge cases)", function()
+        it("stays at step 1 when already at first step", function()
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(makeWorkflow(), v)
+            assert.are.equal(1, activeData(v).currentStep)
+            assert.is_false(WMExecutor:goToPreviousStep(v))
+            assert.are.equal(1, activeData(v).currentStep)
+        end)
+
+        it("can navigate back from last step", function()
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(makeWorkflow(), v)
+            activeData(v).currentStep = 3
+            WMExecutor:goToPreviousStep(v)
+            assert.are.equal(2, activeData(v).currentStep)
+        end)
+    end)
+
+    -- =========================================================================
     -- getActiveWorkflowCount / isWorkflowActive / isWorkflowActiveOnVehicle
     -- =========================================================================
     describe("query helpers", function()

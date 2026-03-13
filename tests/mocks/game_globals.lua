@@ -111,6 +111,11 @@ _G.GuiUtils = {
     end
 }
 
+-- File existence check (FS25 global)
+_G.fileExists = function(path)
+    return false  -- Default: file not found; override per-test as needed
+end
+
 -- Source function (loads Lua files in FS25)
 _G.source = function(filepath)
     -- In tests, we don't actually load files via source()
@@ -251,18 +256,40 @@ _G.ADIntegration = {
 }
 
 _G.CPIntegration = {
-    init = function() end,
+    _vehicleCourses  = {},  -- [vehicle] = courseName
+    _vehicleRunning  = {},  -- [vehicle] = bool
+
+    init = function(self) end,
     update = function(self, dt) end,
-    isAvailable = function() return true end,
-    isRunning = function(self, vehicle) return false end,
-    hasCourse = function(self, vehicle) return false end,
-    loadCourse = function(self, vehicle, courseName) return true end,
-    getCurrentCourseName = function(self, vehicle) return nil end,
-    startFieldWork = function(self, vehicle, startAtFirst) return true end,
-    stopCourse = function(self, vehicle) end,
-    holdCourse = function(self, vehicle, duration) end,
-    resumeCourse = function(self, vehicle) end,
-    getCourses = function() return {} end
+    isAvailable = function(self) return true end,
+    isRunning = function(self, vehicle) return self._vehicleRunning[vehicle] == true end,
+    hasCourse = function(self, vehicle) return self._vehicleCourses[vehicle] ~= nil end,
+    loadCourse = function(self, vehicle, courseName)
+        self._vehicleCourses[vehicle] = courseName
+        return true
+    end,
+    getCurrentCourseName = function(self, vehicle) return self._vehicleCourses[vehicle] end,
+    startFieldWork = function(self, vehicle, startAtFirst, startAtNearest)
+        self._vehicleRunning[vehicle] = true
+        return true
+    end,
+    stopCourse = function(self, vehicle)
+        self._vehicleRunning[vehicle] = false
+    end,
+    holdCourse = function(self, vehicle, duration)
+        -- freeze in place (still "has course", not running)
+        self._vehicleRunning[vehicle] = false
+    end,
+    resumeCourse = function(self, vehicle)
+        self._vehicleRunning[vehicle] = true
+    end,
+    getCourses = function(self) return {} end,
+
+    -- Test helper: reset all per-vehicle state
+    _reset = function(self)
+        self._vehicleCourses = {}
+        self._vehicleRunning = {}
+    end
 }
 
 _G.CPCoursesLoader = {
