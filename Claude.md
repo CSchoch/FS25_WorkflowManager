@@ -143,12 +143,13 @@ On `onPostLoad`, this state is restored as `status = "paused"` with a 10-second 
 * **Draggable HUD** - HUD panel can be repositioned by dragging the header; position clamped to screen bounds
 * **Linked workflow pairs** - Link two workflows as main/support for coordinated multi-vehicle operations (e.g., Combine + Unloader). Full sync group system, auto-group assignment, pause/resume/stop propagation, late-start sync, support auto-looping, and HUD status line for linked partner
 * **Linked workflow GUI** - Link/Unlink buttons in main dialog; sync group column + Auto Groups button in editor; sync group field in step dialog (visible only when linked)
+* **Release build support** - `DevConfig.lua` omitted from release zip; `WorkflowManager.lua` installs a release-mode stub if the file is absent (all debug flags off)
+* **white.png format** - Texture is a proper 1×1 RGBA PNG; no raw-format warning
 
 ### Milestone 8: GUI Refinement
 * [ ] F1 ingame help menu overlays the GUI
 * [ ] Relocate double-click-to-edit hint to the bottom
 * [ ] Editor dialog X button to close in top right corner
-* [ ] Fix Warning (performance): Texture .../textures/white.png raw format
 
 ### Milestone 9: Folder View
 * [ ] Show folders in dropdowns (collapsed by default)
@@ -353,7 +354,7 @@ FS25_WorkflowManager/
 ---
 
 **Status**: Phase 1 COMPLETE - Linked workflows implemented; working on GUI refinement (Milestone 8)
-**Last updated**: 2026-03-07
+**Last updated**: 2026-03-13
 ## Screenshots Needed
 
 Screenshots for the Docusaurus documentation site (`website/static/img/screenshots/`). Take these in-game and save them at the listed paths:
@@ -365,3 +366,29 @@ Screenshots for the Docusaurus documentation site (`website/static/img/screensho
 | `step-dialog-autodrive.png` | Step dialog open with **AutoDrive** selected, showing Target, Action, Unload Target, and Fill Type fields | `ui/editor-dialog.md`, `workflows/step-types.md` |
 | `step-dialog-courseplay.png` | Step dialog open with **Courseplay** selected, showing the course dropdown and Action field | `ui/editor-dialog.md`, `workflows/step-types.md` |
 | `hud-running.png` | In-vehicle HUD overlay while a workflow is actively running, showing workflow name, step counter, and the 4 control buttons | `ui/hud-controls.md`, `workflows/executing-workflows.md`, `getting-started.md` |
+
+
+## Todo
+
+### Critical (Ship Blockers)
+
+- [x] **Set `DEV_MODE = false`** before release — `DevConfig.lua` is now excluded from the release zip; `WorkflowManager.lua` installs a release-mode stub with all debug flags off when the file is absent
+- [ ] **Fix duplicate `KEY_d` binding** in `modDesc.xml:67-81` — both `WM_GUI_DELETE` and `WM_GUI_MOVE_DOWN` are bound to `KEY_d`, causing both actions to fire simultaneously
+
+### High Priority
+
+- [x] **Fix multiplayer claim** — multiplayer synchronisation implemented (WMCommandEvent, WMStateSyncEvent, server-authoritative executor, mid-session join via onReadStream/onWriteStream); `modDesc.xml` `supported="true"` is correct
+- [ ] **Milestone 12: Fix linked workflow** — feature is in shipped code but broken (see Milestone 12 above); either fix or hide/disable before release
+
+### Medium Priority
+
+- [ ] **Remove legacy GUI double-update** in `WorkflowManager.lua` — `WMManagerGUI` and `WMEditorGUI` (labeled "legacy draw-based - kept for reference") run update/draw every frame alongside the new dialog GUI; remove or disable them
+- [x] **Remove F9 key polling** — removed `lastF9State` field and F9 block from `WorkflowManager:update()`
+- [x] **Fix tests to cover real production code** — `WorkflowExecutor_spec.lua` now loads the real `WorkflowExecutor.lua` via `dofile()`; all tests use the vehicle-based API (`stopWorkflow(vehicle)`, etc.) and assert against `vehicle.spec_workflowManagerSpec.wmExecution`
+
+### Low Priority
+
+- [ ] **Remove `or true` dead code** in `WorkflowExecutor.lua:483` — `if not CPIntegration:hasCourse(vehicle) or true then` makes the CP check permanently dead
+- [ ] **Remove unused action declarations** in `modDesc.xml` — `WM_START_WORKFLOW` and `WM_STOP_WORKFLOW` are declared but have no bindings and no references in source code
+- [ ] **Fix `DevConfig.EXECUTOR_UPDATE_INTERVAL`** in `src/DevConfig.lua` — defined but never read by the executor (hardcoded `WMExecutor.UPDATE_INTERVAL = 500` is used instead); either wire it up or remove it
+- [ ] **Fix `WMStorage:getXmlPath` path separator** — when `savegameDirectory` is nil the fallback concatenates `modDirectory .. xmlFilename` without a `/`, producing a malformed path

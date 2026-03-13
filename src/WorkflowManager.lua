@@ -1216,9 +1216,6 @@ function WorkflowManager:deleteMap()
     WMLogger:info("WorkflowManager cleanup completed")
 end
 
--- Track key state for manual detection
-WorkflowManager.lastF9State = false
-
 ---Called every frame
 ---@param dt number Delta time in milliseconds
 function WorkflowManager:update(dt)
@@ -1237,18 +1234,6 @@ function WorkflowManager:update(dt)
     CPIntegration:update(dt)
     CPCoursesLoader:update(dt)
     CPVehiclesLoader:update(dt)
-
-    -- Manual F9 key detection as fallback (for debugging)
-    local f9Pressed = false
-    if Input ~= nil and Input.isKeyPressed ~= nil then
-        f9Pressed = Input.isKeyPressed(Input.KEY_F9)
-    end
-
-    if f9Pressed and not self.lastF9State then
-        WMLogger:info("F9 key detected via manual check!")
-        self:onToggleGUI()
-    end
-    self.lastF9State = f9Pressed
 
     WMExecutor:update(dt)
     WMDebugUtil:update(dt)
