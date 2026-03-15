@@ -382,7 +382,7 @@ Screenshots for the Docusaurus documentation site (`website/static/img/screensho
 
 ### Medium Priority
 
-- [ ] **Remove legacy GUI double-update** in `WorkflowManager.lua` — `WMManagerGUI` and `WMEditorGUI` (labeled "legacy draw-based - kept for reference") run update/draw every frame alongside the new dialog GUI; remove or disable them
+- [x] **Remove legacy GUI double-update** in `WorkflowManager.lua` — `WMManagerGUI` and `WMEditorGUI` (labeled "legacy draw-based - kept for reference") run update/draw every frame alongside the new dialog GUI; remove or disable them
 - [x] **Remove F9 key polling** — removed `lastF9State` field and F9 block from `WorkflowManager:update()`
 - [x] **Fix tests to cover real production code** — `WorkflowExecutor_spec.lua` now loads the real `WorkflowExecutor.lua` via `dofile()`; all tests use the vehicle-based API (`stopWorkflow(vehicle)`, etc.) and assert against `vehicle.spec_workflowManagerSpec.wmExecution`
 
@@ -390,5 +390,5 @@ Screenshots for the Docusaurus documentation site (`website/static/img/screensho
 
 - [ ] **Remove `or true` dead code** in `WorkflowExecutor.lua:483` — `if not CPIntegration:hasCourse(vehicle) or true then` makes the CP check permanently dead
 - [ ] **Remove unused action declarations** in `modDesc.xml` — `WM_START_WORKFLOW` and `WM_STOP_WORKFLOW` are declared but have no bindings and no references in source code
-- [ ] **Fix `DevConfig.EXECUTOR_UPDATE_INTERVAL`** in `src/DevConfig.lua` — defined but never read by the executor (hardcoded `WMExecutor.UPDATE_INTERVAL = 500` is used instead); either wire it up or remove it
-- [ ] **Fix `WMStorage:getXmlPath` path separator** — when `savegameDirectory` is nil the fallback concatenates `modDirectory .. xmlFilename` without a `/`, producing a malformed path
+- [x] **Fix `DevConfig.EXECUTOR_UPDATE_INTERVAL`** in `src/DevConfig.lua` — defined but never read by the executor (hardcoded `WMExecutor.UPDATE_INTERVAL = 500` is used instead); either wire it up or remove it
+- [x] **Fix `WMStorage:getXmlPath` path separator** — when `savegameDirectory` is nil the fallback concatenates `modDirectory .. xmlFilename` without a `/`, producing a malformed path

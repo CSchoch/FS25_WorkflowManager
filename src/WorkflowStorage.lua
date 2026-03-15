@@ -27,7 +27,7 @@ function WMStorage:getXmlPath()
         end
     end
     -- Fallback to mod directory for testing
-    return WorkflowManager.modDirectory .. self.xmlFilename
+    return WorkflowManager.modDirectory .. "/" .. self.xmlFilename
 end
 
 ---Save all workflows to XML

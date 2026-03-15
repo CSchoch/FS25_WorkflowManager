@@ -92,11 +92,11 @@ function WMHud:createIconOverlays()
     local modDir = WorkflowManager.modDirectory or g_currentModDirectory or ""
 
     -- Icon file paths
-    local iconPrev = Utils.getFilename("textures/icon_prev.png", modDir)
-    local iconPause = Utils.getFilename("textures/icon_pause.png", modDir)
-    local iconPlay = Utils.getFilename("textures/icon_play.png", modDir)
-    local iconStop = Utils.getFilename("textures/icon_stop.png", modDir)
-    local iconNext = Utils.getFilename("textures/icon_next.png", modDir)
+    local iconPrev = Utils.getFilename("textures/icon_prev.dds", modDir)
+    local iconPause = Utils.getFilename("textures/icon_pause.dds", modDir)
+    local iconPlay = Utils.getFilename("textures/icon_play.dds", modDir)
+    local iconStop = Utils.getFilename("textures/icon_stop.dds", modDir)
+    local iconNext = Utils.getFilename("textures/icon_next.dds", modDir)
 
     -- Button positioning
     local btnSpacing = getNormalizedScreenValues(8, 0)

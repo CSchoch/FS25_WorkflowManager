@@ -35,7 +35,7 @@ Voraussetzungen: AutoDrive, Courseplay
     </description>
     <version>1.0.0.0</version>
     <multiplayer supported="true" />
-    <iconFilename>modIcon.png</iconFilename>
+    <iconFilename>modIcon.dds</iconFilename>
 
     <extraSourceFiles>
         <!-- Load spec first so it registers to vehicle types before vehicles are created -->
@@ -61,7 +61,7 @@ Voraussetzungen: AutoDrive, Courseplay
         <actionBinding action="WM_TOGGLE_GUI">
             <binding device="KB_MOUSE_DEFAULT" input="KEY_lalt KEY_w" />
         </actionBinding>
-<actionBinding action="WM_TOGGLE_HUD">
+        <actionBinding action="WM_TOGGLE_HUD">
             <binding device="KB_MOUSE_DEFAULT" input="KEY_lalt KEY_h" />
         </actionBinding>
         <actionBinding action="WM_GUI_DELETE">

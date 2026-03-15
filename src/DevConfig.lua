@@ -55,9 +55,6 @@ WMDevConfig.SIMULATE_CP_COMPLETION_MS = 0
 -- PERFORMANCE SETTINGS
 -- ============================================================================
 
--- Update interval for executor checks (ms)
-WMDevConfig.EXECUTOR_UPDATE_INTERVAL = 1000
-
 -- GUI refresh interval (ms)
 WMDevConfig.GUI_REFRESH_INTERVAL = 500
 

@@ -55,7 +55,7 @@ function WMManagerGUI:init()
     self.overlayId = nil
 
     if WorkflowManager.modDirectory ~= nil then
-        local whiteTexture = WorkflowManager.modDirectory .. "textures/white.png"
+        local whiteTexture = WorkflowManager.modDirectory .. "textures/white.dds"
         self.overlayId = createImageOverlay(whiteTexture)
         if self.overlayId ~= nil and self.overlayId ~= 0 then
             WMLogger:debug("Created overlay from mod texture: %s (ID: %s)", whiteTexture, tostring(self.overlayId))
