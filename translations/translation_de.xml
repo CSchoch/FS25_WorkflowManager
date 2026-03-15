@@ -118,6 +118,7 @@
         <!-- Warnings -->
         <text name="wm_warning_no_vehicle" text="Steigen Sie in ein Fahrzeug, um den Workflow zu starten"/>
         <text name="wm_warning_incompatible_vehicle" text="Fahrzeug '%s' benoetigt AutoDrive + Courseplay"/>
+        <text name="wm_warning_vehicle_busy" text="Fahrzeug fuehrt bereits einen Workflow aus"/>
 
         <!-- HUD texts -->
         <text name="wm_hud_title" text="Workflow Manager"/>
