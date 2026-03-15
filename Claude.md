@@ -128,7 +128,7 @@ On `onPostLoad`, this state is restored as `status = "paused"` with a 10-second 
 * **Milestone 3**: Basic GUI - Main window, workflow editor, step management
 * **Milestone 4**: Vehicle Selection - Runtime vehicle detection (uses current vehicle when starting)
 * **Milestone 5**: Player UI - In-vehicle HUD with workflow controls (pause/resume, stop, prev/next steps)
-* **Milestone 6**: Logo & Icons - Mod icon (modIcon.png) and HUD button icons with hover effects
+* **Milestone 6**: Logo & Icons - Mod icon and HUD button icons with hover effects
 * **Milestone 7**: Search - Searchable dropdowns in step dialog for AD targets and CP courses
 * Multi-field workflows (more than 2 fields per workflow)
 * Vehicle hint removed from GUI
@@ -144,7 +144,9 @@ On `onPostLoad`, this state is restored as `status = "paused"` with a 10-second 
 * **Linked workflow pairs** - Link two workflows as main/support for coordinated multi-vehicle operations (e.g., Combine + Unloader). Full sync group system, auto-group assignment, pause/resume/stop propagation, late-start sync, support auto-looping, and HUD status line for linked partner
 * **Linked workflow GUI** - Link/Unlink buttons in main dialog; sync group column + Auto Groups button in editor; sync group field in step dialog (visible only when linked)
 * **Release build support** - `DevConfig.lua` omitted from release zip; `WorkflowManager.lua` installs a release-mode stub if the file is absent (all debug flags off)
-* **white.png format** - Texture is a proper 1×1 RGBA PNG; no raw-format warning
+* **DDS textures** - All textures (`modIcon`, HUD icons, `white`) converted to DDS; `tools/png_to_dds.py` handles conversion (texconv DXT5/DXT1 if available, Pillow uncompressed fallback)
+* **Legacy GUI removed** - `WMManagerGUI` and `WMEditorGUI` update/draw calls removed from `WorkflowManager.lua`
+* **WMStorage path fix** - Fallback path in `WMStorage:getXmlPath()` now correctly joins `modDirectory .. "/" .. xmlFilename`
 
 ### Milestone 8: GUI Refinement
 * [ ] F1 ingame help menu overlays the GUI
@@ -207,7 +209,7 @@ Full API documentation: `docs/API_Analysis.md`
 ```
 FS25_WorkflowManager/
 ├── modDesc.xml
-├── modIcon.png                        # Mod icon (256x256)
+├── modIcon.dds                        # Mod icon (256x256)
 ├── CLAUDE.md
 ├── .vscode/                           # VS Code workspace config
 ├── src/
@@ -239,12 +241,14 @@ FS25_WorkflowManager/
 │   ├── translation_en.xml
 │   └── translation_de.xml
 ├── textures/
-│   ├── white.png                      # 1x1 white pixel for GUI backgrounds
-│   ├── icon_prev.png                  # HUD button: Previous step (<<)
-│   ├── icon_pause.png                 # HUD button: Pause (||)
-│   ├── icon_play.png                  # HUD button: Resume (>)
-│   ├── icon_stop.png                  # HUD button: Stop ([])
-│   └── icon_next.png                  # HUD button: Next step (>>)
+│   ├── white.dds                      # 1x1 white pixel for GUI backgrounds
+│   ├── icon_prev.dds                  # HUD button: Previous step (<<)
+│   ├── icon_pause.dds                 # HUD button: Pause (||)
+│   ├── icon_play.dds                  # HUD button: Resume (>)
+│   ├── icon_stop.dds                  # HUD button: Stop ([])
+│   └── icon_next.dds                  # HUD button: Next step (>>)
+├── tools/
+│   └── png_to_dds.py                  # Converts textures/*.png + modIcon.png to DDS
 ├── testdata/
 │   └── sample_workflows.xml           # Test workflow data
 ├── docs/
@@ -340,7 +344,8 @@ FS25_WorkflowManager/
 - Cache cleared on GUI close to avoid conflicts with CP internal state
 
 ### HUD Icons
-- 32x32 PNG icons with white shapes on transparent background
+- 32x32 DDS icons (uncompressed RGBA) with white shapes on transparent background
+- Source PNGs kept in `textures/` alongside DDS; regenerate with `tools/png_to_dds.py`
 - Color-tinted at runtime: normal (white), hover (cyan), disabled (gray), active (green)
 - Hover tracking for visual feedback on mouse-over
 
@@ -354,7 +359,8 @@ FS25_WorkflowManager/
 ---
 
 **Status**: Phase 1 COMPLETE - Linked workflows implemented; working on GUI refinement (Milestone 8)
-**Last updated**: 2026-03-13
+**Last updated**: 2026-03-15
+
 ## Screenshots Needed
 
 Screenshots for the Docusaurus documentation site (`website/static/img/screenshots/`). Take these in-game and save them at the listed paths:
@@ -372,23 +378,13 @@ Screenshots for the Docusaurus documentation site (`website/static/img/screensho
 
 ### Critical (Ship Blockers)
 
-- [x] **Set `DEV_MODE = false`** before release — `DevConfig.lua` is now excluded from the release zip; `WorkflowManager.lua` installs a release-mode stub with all debug flags off when the file is absent
 - [ ] **Fix duplicate `KEY_d` binding** in `modDesc.xml:67-81` — both `WM_GUI_DELETE` and `WM_GUI_MOVE_DOWN` are bound to `KEY_d`, causing both actions to fire simultaneously
 
 ### High Priority
 
-- [x] **Fix multiplayer claim** — multiplayer synchronisation implemented (WMCommandEvent, WMStateSyncEvent, server-authoritative executor, mid-session join via onReadStream/onWriteStream); `modDesc.xml` `supported="true"` is correct
-- [ ] **Milestone 12: Fix linked workflow** — feature is in shipped code but broken (see Milestone 12 above); either fix or hide/disable before release
-
-### Medium Priority
-
-- [x] **Remove legacy GUI double-update** in `WorkflowManager.lua` — `WMManagerGUI` and `WMEditorGUI` (labeled "legacy draw-based - kept for reference") run update/draw every frame alongside the new dialog GUI; remove or disable them
-- [x] **Remove F9 key polling** — removed `lastF9State` field and F9 block from `WorkflowManager:update()`
-- [x] **Fix tests to cover real production code** — `WorkflowExecutor_spec.lua` now loads the real `WorkflowExecutor.lua` via `dofile()`; all tests use the vehicle-based API (`stopWorkflow(vehicle)`, etc.) and assert against `vehicle.spec_workflowManagerSpec.wmExecution`
+- [ ] **Milestone 12: Fix linked workflow** — feature is in shipped code but broken; either fix or hide/disable before release
 
 ### Low Priority
 
 - [ ] **Remove `or true` dead code** in `WorkflowExecutor.lua:483` — `if not CPIntegration:hasCourse(vehicle) or true then` makes the CP check permanently dead
 - [ ] **Remove unused action declarations** in `modDesc.xml` — `WM_START_WORKFLOW` and `WM_STOP_WORKFLOW` are declared but have no bindings and no references in source code
-- [x] **Fix `DevConfig.EXECUTOR_UPDATE_INTERVAL`** in `src/DevConfig.lua` — defined but never read by the executor (hardcoded `WMExecutor.UPDATE_INTERVAL = 500` is used instead); either wire it up or remove it
-- [x] **Fix `WMStorage:getXmlPath` path separator** — when `savegameDirectory` is nil the fallback concatenates `modDirectory .. xmlFilename` without a `/`, producing a malformed path
