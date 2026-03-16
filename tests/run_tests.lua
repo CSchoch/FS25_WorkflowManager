@@ -200,7 +200,8 @@ local testFiles = {
     "tests/specs/EventHandler_spec.lua",
     "tests/specs/Logger_spec.lua",
     "tests/specs/WorkflowManager_spec.lua",
-    "tests/specs/WorkflowExecutor_spec.lua"
+    "tests/specs/WorkflowExecutor_spec.lua",
+    "tests/specs/WMHud_spec.lua"
 }
 
 for _, testFile in ipairs(testFiles) do
