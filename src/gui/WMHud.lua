@@ -606,10 +606,10 @@ function WMHud:onClickPauseResume()
     if activeData == nil then return end
 
     if activeData.status == WorkflowManager.STATUS_RUNNING then
-        WorkflowManager:pauseWorkflow(workflow.id)
+        WorkflowManager:sendCommand(activeData.vehicle, "pause")
         WMLogger:info("Workflow paused via HUD: %s", workflow.name)
     elseif activeData.status == WorkflowManager.STATUS_PAUSED then
-        WorkflowManager:resumeWorkflow(workflow.id)
+        WorkflowManager:sendCommand(activeData.vehicle, "resume")
         WMLogger:info("Workflow resumed via HUD: %s", workflow.name)
     end
 end
@@ -618,7 +618,7 @@ function WMHud:onClickStop()
     local workflow, activeData = self:getActiveWorkflow()
     if activeData == nil then return end
 
-    WorkflowManager:stopWorkflow(workflow.id)
+    WorkflowManager:sendCommand(activeData.vehicle, "stop")
     WMLogger:info("Workflow stopped via HUD: %s", workflow.name)
     g_currentMission:addIngameNotification(
         FSBaseMission.INGAME_NOTIFICATION_OK,
