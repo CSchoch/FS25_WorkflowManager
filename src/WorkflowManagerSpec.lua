@@ -131,14 +131,7 @@ function WorkflowManagerSpec:onReadStream(streamId, connection)
     local status      = streamReadString(streamId)
 
     -- Resolve workflow definition (loadMap has run by the time vehicles are streamed)
-    local workflow = nil
-    for _, wf in ipairs(WorkflowManager.workflows) do
-        if wf.id == workflowId then
-            workflow = wf
-            break
-        end
-    end
-
+    local workflow = WorkflowManager:getWorkflowById(workflowId)
     if workflow == nil then
         WMLogger:warning("onReadStream: unknown workflowId '%s' – cannot restore state", workflowId)
         return

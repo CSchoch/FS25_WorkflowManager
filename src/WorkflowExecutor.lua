@@ -262,6 +262,7 @@ function WMExecutor:pauseWorkflow(vehicle)
         if supportActiveData and supportActiveData.status == WorkflowManager.STATUS_RUNNING then
             WMLogger:info("Main workflow paused - also pausing linked support workflow")
             self:pauseWorkflow(supportActiveData.vehicle)
+            WorkflowManager:broadcastState(supportActiveData.vehicle)
         end
     end
 
@@ -336,6 +337,7 @@ function WMExecutor:resumeWorkflow(vehicle)
         if supportActiveData and supportActiveData.status == WorkflowManager.STATUS_PAUSED then
             WMLogger:info("Main workflow resumed - also resuming linked support workflow")
             self:resumeWorkflow(supportActiveData.vehicle)
+            WorkflowManager:broadcastState(supportActiveData.vehicle)
         end
     end
 
@@ -1074,22 +1076,10 @@ function WMExecutor:onSyncGroupTransition(mainActiveData, fromGroup, toGroup)
     -- Stop the current support step
     self:stopCurrentStep(supportActiveData)
 
-    -- Move to the new step
+    -- Move to the new step and reset all tracking flags
     supportActiveData.currentStep = targetStep
     supportActiveData.syncOverridden = false  -- Clear manual override
-
-    -- Reset tracking state
-    supportActiveData.waitingForCompletion = false
-    supportActiveData.willHandoffToCP = false
-    supportActiveData.cpHandedOffToAD = false
-    supportActiveData.cpWasRunning = false
-    supportActiveData.cpStartedByAD = false
-    supportActiveData.cpStartWaitCount = nil
-    supportActiveData.pendingCPStart = nil
-    supportActiveData.pendingCPStartRetries = nil
-    supportActiveData.cpToCpTransition = nil
-    supportActiveData.pendingADStart = nil
-    supportActiveData.pendingADStartRetries = nil
+    self:resetStepTrackingState(supportActiveData)
 
     -- Execute the new step
     self:executeCurrentStep(supportActiveData)
@@ -1176,6 +1166,41 @@ function WMExecutor:resetWorkflow(vehicle)
     return true
 end
 
+---Reset all per-step tracking flags on activeData.
+---Call this whenever a step is abandoned mid-execution (manual prev/next, sync transition).
+---@param activeData table Per-vehicle execution state
+function WMExecutor:resetStepTrackingState(activeData)
+    activeData.waitingForCompletion = false
+    activeData.willHandoffToCP = false
+    activeData.cpHandedOffToAD = false
+    activeData.cpWasRunning = false
+    activeData.cpStartedByAD = false
+    activeData.cpStartWaitCount = nil
+    activeData.pausedTrackingState = nil
+    activeData.pendingCPStart = nil
+    activeData.pendingCPStartRetries = nil
+    activeData.cpToCpTransition = nil
+    activeData.pendingADStart = nil
+    activeData.pendingADStartRetries = nil
+end
+
+---Handle linked-workflow sync after a manual step change (prev/next).
+---For "main" workflows: triggers a sync group transition on the support if the group changed.
+---For "support" workflows: marks the step as manually overridden.
+---@param activeData table Per-vehicle execution state
+---@param prevGroup number|nil Sync group of the step we just left
+function WMExecutor:handleLinkedWorkflowStepChange(activeData, prevGroup)
+    local workflow = activeData.workflow
+    if workflow.linkRole == "main" and prevGroup then
+        local newGroup = workflow.steps[activeData.currentStep] and workflow.steps[activeData.currentStep].syncGroup
+        if newGroup and prevGroup ~= newGroup then
+            self:onSyncGroupTransition(activeData, prevGroup, newGroup)
+        end
+    elseif workflow.linkRole == "support" then
+        activeData.syncOverridden = true
+    end
+end
+
 ---Go to the previous step in a workflow
 ---Stops current step and moves to the previous one
 ---@param vehicle table Vehicle whose workflow to navigate
@@ -1214,19 +1239,7 @@ function WMExecutor:goToPreviousStep(vehicle)
     WMLogger:info("Moving to previous step %d/%d for workflow %s",
         activeData.currentStep, #workflow.steps, workflow.name)
 
-    -- Reset waiting state
-    activeData.waitingForCompletion = false
-    activeData.willHandoffToCP = false
-    activeData.cpHandedOffToAD = false
-    activeData.cpWasRunning = false
-    activeData.cpStartedByAD = false
-    activeData.cpStartWaitCount = nil
-    activeData.pausedTrackingState = nil
-    activeData.pendingCPStart = nil
-    activeData.pendingCPStartRetries = nil
-    activeData.cpToCpTransition = nil
-    activeData.pendingADStart = nil
-    activeData.pendingADStartRetries = nil
+    self:resetStepTrackingState(activeData)
 
     -- Resume workflow to running state if it was paused, then execute new step
     if wasPaused then
@@ -1238,15 +1251,7 @@ function WMExecutor:goToPreviousStep(vehicle)
         self:executeCurrentStep(activeData)
     end
 
-    -- Linked workflow: handle manual step switch
-    if workflow.linkRole == "main" and prevGroup then
-        local newGroup = workflow.steps[activeData.currentStep] and workflow.steps[activeData.currentStep].syncGroup
-        if newGroup and prevGroup ~= newGroup then
-            self:onSyncGroupTransition(activeData, prevGroup, newGroup)
-        end
-    elseif workflow.linkRole == "support" then
-        activeData.syncOverridden = true
-    end
+    self:handleLinkedWorkflowStepChange(activeData, prevGroup)
 
     -- Fire event
     WMEventHandler:fireEvent(WMEventHandler.EVENT_STEP_CHANGED, {
@@ -1296,19 +1301,7 @@ function WMExecutor:goToNextStep(vehicle)
     WMLogger:info("Moving to next step %d/%d for workflow %s",
         activeData.currentStep, #workflow.steps, workflow.name)
 
-    -- Reset waiting state
-    activeData.waitingForCompletion = false
-    activeData.willHandoffToCP = false
-    activeData.cpHandedOffToAD = false
-    activeData.cpWasRunning = false
-    activeData.cpStartedByAD = false
-    activeData.cpStartWaitCount = nil
-    activeData.pausedTrackingState = nil
-    activeData.pendingCPStart = nil
-    activeData.pendingCPStartRetries = nil
-    activeData.cpToCpTransition = nil
-    activeData.pendingADStart = nil
-    activeData.pendingADStartRetries = nil
+    self:resetStepTrackingState(activeData)
 
     -- Resume workflow to running state if it was paused, then execute new step
     if wasPaused then
@@ -1320,15 +1313,7 @@ function WMExecutor:goToNextStep(vehicle)
         self:executeCurrentStep(activeData)
     end
 
-    -- Linked workflow: handle manual step switch
-    if workflow.linkRole == "main" and prevGroup then
-        local newGroup = workflow.steps[activeData.currentStep] and workflow.steps[activeData.currentStep].syncGroup
-        if newGroup and prevGroup ~= newGroup then
-            self:onSyncGroupTransition(activeData, prevGroup, newGroup)
-        end
-    elseif workflow.linkRole == "support" then
-        activeData.syncOverridden = true
-    end
+    self:handleLinkedWorkflowStepChange(activeData, prevGroup)
 
     -- Fire event
     WMEventHandler:fireEvent(WMEventHandler.EVENT_STEP_CHANGED, {

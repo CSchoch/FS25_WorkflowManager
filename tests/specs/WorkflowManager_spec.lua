@@ -138,6 +138,113 @@ describe("WorkflowManager", function()
             end
             return true
         end
+
+        -- saveWorkflows (no-op stub)
+        WorkflowManager.saveWorkflows = function(self) end
+
+        -- getLinkedWorkflow
+        WorkflowManager.getLinkedWorkflow = function(self, workflowId)
+            local workflow = self:getWorkflowById(workflowId)
+            if workflow == nil or workflow.linkedWorkflowId == nil then
+                return nil
+            end
+            return self:getWorkflowById(workflow.linkedWorkflowId)
+        end
+
+        -- unlinkWorkflow
+        WorkflowManager.unlinkWorkflow = function(self, workflowId)
+            local workflow = self:getWorkflowById(workflowId)
+            if workflow == nil then return end
+            if workflow.linkedWorkflowId then
+                local partner = self:getWorkflowById(workflow.linkedWorkflowId)
+                if partner then
+                    for _, step in ipairs(partner.steps) do step.syncGroup = nil end
+                    partner.linkedWorkflowId = nil
+                    partner.linkRole = nil
+                end
+            end
+            for _, step in ipairs(workflow.steps) do step.syncGroup = nil end
+            workflow.linkedWorkflowId = nil
+            workflow.linkRole = nil
+        end
+
+        -- autoAssignSyncGroups
+        WorkflowManager.autoAssignSyncGroups = function(self, workflowId)
+            local workflow = self:getWorkflowById(workflowId)
+            if workflow == nil then return end
+            if workflow.linkRole == nil then
+                for _, step in ipairs(workflow.steps) do step.syncGroup = nil end
+                return
+            end
+            if workflow.linkRole == "main" then
+                local group = 1
+                for _, step in ipairs(workflow.steps) do
+                    step.syncGroup = group
+                    if step.type == self.STEP_COURSEPLAY then group = group + 1 end
+                end
+            elseif workflow.linkRole == "support" then
+                for i, step in ipairs(workflow.steps) do
+                    step.syncGroup = i
+                end
+            end
+        end
+
+        -- linkWorkflows
+        WorkflowManager.linkWorkflows = function(self, mainWorkflowId, supportWorkflowId)
+            local mainWf   = self:getWorkflowById(mainWorkflowId)
+            local supportWf = self:getWorkflowById(supportWorkflowId)
+            if mainWf == nil or supportWf == nil then return false end
+            if mainWf.id == supportWf.id then return false end
+            if mainWf.linkedWorkflowId   then self:unlinkWorkflow(mainWf.id) end
+            if supportWf.linkedWorkflowId then self:unlinkWorkflow(supportWf.id) end
+            mainWf.linkedWorkflowId   = supportWf.id
+            mainWf.linkRole           = "main"
+            supportWf.linkedWorkflowId = mainWf.id
+            supportWf.linkRole         = "support"
+            self:autoAssignSyncGroups(mainWf.id)
+            self:autoAssignSyncGroups(supportWf.id)
+            return true
+        end
+
+        -- broadcastState (requires g_server; no-op stub replaced per test)
+        WorkflowManager.broadcastState = function(self, vehicle)
+            if _G.g_server == nil then return end
+            if self.isShuttingDown then return end
+            if vehicle == nil then return end
+            if _G.g_server.broadcastEvent then
+                _G.g_server.broadcastEvent(_G.g_server, nil, false, nil, vehicle)
+            end
+        end
+
+        -- executeNetworkCommand (dispatches to WMExecutor stubs)
+        WorkflowManager.executeNetworkCommand = function(self, commandType, vehicle, workflowId)
+            if commandType == "start" then
+                local wf = self:getWorkflowById(workflowId)
+                if wf == nil then return end
+                if _G.WMExecutor then _G.WMExecutor:startWorkflow(wf, vehicle) end
+            elseif commandType == "stop" then
+                if _G.WMExecutor then _G.WMExecutor:stopWorkflow(vehicle) end
+            elseif commandType == "pause" then
+                if _G.WMExecutor then _G.WMExecutor:pauseWorkflow(vehicle) end
+            elseif commandType == "resume" then
+                if _G.WMExecutor then _G.WMExecutor:resumeWorkflow(vehicle) end
+            elseif commandType == "next_step" then
+                if _G.WMExecutor then _G.WMExecutor:goToNextStep(vehicle) end
+            elseif commandType == "prev_step" then
+                if _G.WMExecutor then _G.WMExecutor:goToPreviousStep(vehicle) end
+            end
+            self:broadcastState(vehicle)
+        end
+
+        -- sendCommand (routes to server or client)
+        WorkflowManager.sendCommand = function(self, vehicle, commandType, workflowId)
+            if vehicle == nil then return end
+            if _G.g_server ~= nil then
+                self:executeNetworkCommand(commandType, vehicle, workflowId)
+            elseif _G.g_client ~= nil then
+                _G.g_client.sendEvent(_G.g_client, commandType, vehicle, workflowId)
+            end
+        end
     end)
 
     -- Reset state before each test
@@ -433,6 +540,312 @@ describe("WorkflowManager", function()
             local alias = WorkflowManager:getWorkflows()
 
             assert.are.equal(all, alias)
+        end)
+    end)
+
+    -- =========================================================================
+    -- linkWorkflows
+    -- =========================================================================
+    describe("linkWorkflows", function()
+        it("links two workflows as main/support", function()
+            local main    = WorkflowManager:createWorkflow("Main")
+            local support = WorkflowManager:createWorkflow("Support")
+            local ok = WorkflowManager:linkWorkflows(main.id, support.id)
+            assert.is_true(ok)
+            assert.are.equal("main",    main.linkRole)
+            assert.are.equal("support", support.linkRole)
+            assert.are.equal(support.id, main.linkedWorkflowId)
+            assert.are.equal(main.id,   support.linkedWorkflowId)
+        end)
+
+        it("returns false when either workflow does not exist", function()
+            local main = WorkflowManager:createWorkflow("Main")
+            assert.is_false(WorkflowManager:linkWorkflows(main.id, "nonexistent"))
+            assert.is_false(WorkflowManager:linkWorkflows("nonexistent", main.id))
+        end)
+
+        it("returns false when linking a workflow to itself", function()
+            local wf = WorkflowManager:createWorkflow("Solo")
+            assert.is_false(WorkflowManager:linkWorkflows(wf.id, wf.id))
+        end)
+
+        it("unlinks previous partner before creating new link", function()
+            local a = WorkflowManager:createWorkflow("A")
+            local b = WorkflowManager:createWorkflow("B")
+            local c = WorkflowManager:createWorkflow("C")
+            WorkflowManager:linkWorkflows(a.id, b.id)
+            WorkflowManager:linkWorkflows(a.id, c.id)  -- re-link a to c
+            assert.are.equal(c.id, a.linkedWorkflowId)
+            assert.is_nil(b.linkedWorkflowId)  -- b was unlinked
+        end)
+
+        it("auto-assigns sync groups on both workflows after linking", function()
+            local main    = WorkflowManager:createWorkflow("Main")
+            local support = WorkflowManager:createWorkflow("Support")
+            table.insert(main.steps,    { type = "autodrive",  target = "A", action = "drive"     })
+            table.insert(main.steps,    { type = "courseplay", target = "B", action = "fieldwork" })
+            table.insert(support.steps, { type = "autodrive",  target = "C", action = "unload"    })
+            WorkflowManager:linkWorkflows(main.id, support.id)
+            -- main: both steps in group 1 (CP step ends group 1)
+            assert.are.equal(1, main.steps[1].syncGroup)
+            assert.are.equal(1, main.steps[2].syncGroup)
+            -- support: sequential groups
+            assert.are.equal(1, support.steps[1].syncGroup)
+        end)
+    end)
+
+    -- =========================================================================
+    -- unlinkWorkflow
+    -- =========================================================================
+    describe("unlinkWorkflow", function()
+        it("clears linkRole and linkedWorkflowId on both workflows", function()
+            local main    = WorkflowManager:createWorkflow("Main")
+            local support = WorkflowManager:createWorkflow("Support")
+            WorkflowManager:linkWorkflows(main.id, support.id)
+            WorkflowManager:unlinkWorkflow(main.id)
+            assert.is_nil(main.linkRole)
+            assert.is_nil(main.linkedWorkflowId)
+            assert.is_nil(support.linkRole)
+            assert.is_nil(support.linkedWorkflowId)
+        end)
+
+        it("clears sync groups from both workflows", function()
+            local main    = WorkflowManager:createWorkflow("Main")
+            local support = WorkflowManager:createWorkflow("Support")
+            table.insert(main.steps,    { type = "courseplay", target = "F", action = "fieldwork", syncGroup = 1 })
+            table.insert(support.steps, { type = "autodrive",  target = "S", action = "unload",    syncGroup = 1 })
+            WorkflowManager:linkWorkflows(main.id, support.id)
+            WorkflowManager:unlinkWorkflow(main.id)
+            assert.is_nil(main.steps[1].syncGroup)
+            assert.is_nil(support.steps[1].syncGroup)
+        end)
+
+        it("is safe to call on an already-unlinked workflow", function()
+            local wf = WorkflowManager:createWorkflow("Solo")
+            assert.has_no.errors(function()
+                WorkflowManager:unlinkWorkflow(wf.id)
+            end)
+        end)
+
+        it("is safe to call on a non-existent id", function()
+            assert.has_no.errors(function()
+                WorkflowManager:unlinkWorkflow("no_such_id")
+            end)
+        end)
+    end)
+
+    -- =========================================================================
+    -- getLinkedWorkflow
+    -- =========================================================================
+    describe("getLinkedWorkflow", function()
+        it("returns the linked partner workflow", function()
+            local main    = WorkflowManager:createWorkflow("Main")
+            local support = WorkflowManager:createWorkflow("Support")
+            WorkflowManager:linkWorkflows(main.id, support.id)
+            assert.are.equal(support, WorkflowManager:getLinkedWorkflow(main.id))
+            assert.are.equal(main,    WorkflowManager:getLinkedWorkflow(support.id))
+        end)
+
+        it("returns nil for an unlinked workflow", function()
+            local wf = WorkflowManager:createWorkflow("Solo")
+            assert.is_nil(WorkflowManager:getLinkedWorkflow(wf.id))
+        end)
+
+        it("returns nil for unknown workflow id", function()
+            assert.is_nil(WorkflowManager:getLinkedWorkflow("nonexistent"))
+        end)
+    end)
+
+    -- =========================================================================
+    -- autoAssignSyncGroups
+    -- =========================================================================
+    describe("autoAssignSyncGroups", function()
+        it("main role: all steps before and including a CP step share a group", function()
+            local wf = WorkflowManager:createWorkflow("Main")
+            wf.linkRole = "main"
+            table.insert(wf.steps, { type = "autodrive",  target = "A", action = "drive"     })
+            table.insert(wf.steps, { type = "courseplay", target = "B", action = "fieldwork" })
+            table.insert(wf.steps, { type = "autodrive",  target = "C", action = "drive"     })
+            table.insert(wf.steps, { type = "courseplay", target = "D", action = "fieldwork" })
+            WorkflowManager:autoAssignSyncGroups(wf.id)
+            assert.are.equal(1, wf.steps[1].syncGroup)  -- AD before first CP
+            assert.are.equal(1, wf.steps[2].syncGroup)  -- first CP
+            assert.are.equal(2, wf.steps[3].syncGroup)  -- AD before second CP
+            assert.are.equal(2, wf.steps[4].syncGroup)  -- second CP
+        end)
+
+        it("support role: each step gets a sequential group number", function()
+            local wf = WorkflowManager:createWorkflow("Support")
+            wf.linkRole = "support"
+            table.insert(wf.steps, { type = "autodrive", target = "X", action = "unload" })
+            table.insert(wf.steps, { type = "autodrive", target = "Y", action = "unload" })
+            table.insert(wf.steps, { type = "autodrive", target = "Z", action = "unload" })
+            WorkflowManager:autoAssignSyncGroups(wf.id)
+            assert.are.equal(1, wf.steps[1].syncGroup)
+            assert.are.equal(2, wf.steps[2].syncGroup)
+            assert.are.equal(3, wf.steps[3].syncGroup)
+        end)
+
+        it("nil linkRole: clears all sync groups", function()
+            local wf = WorkflowManager:createWorkflow("Solo")
+            wf.linkRole = nil
+            table.insert(wf.steps, { type = "autodrive", target = "A", action = "drive", syncGroup = 1 })
+            WorkflowManager:autoAssignSyncGroups(wf.id)
+            assert.is_nil(wf.steps[1].syncGroup)
+        end)
+
+        it("is a no-op for an unknown workflow id", function()
+            assert.has_no.errors(function()
+                WorkflowManager:autoAssignSyncGroups("nonexistent")
+            end)
+        end)
+    end)
+
+    -- =========================================================================
+    -- sendCommand / executeNetworkCommand / broadcastState
+    -- =========================================================================
+    describe("sendCommand", function()
+        local execCalls
+
+        before_each(function()
+            execCalls = {}
+            _G.WMExecutor = {
+                startWorkflow    = function(_, wf, v) table.insert(execCalls, {cmd="start",   wf=wf, v=v}) end,
+                stopWorkflow     = function(_, v)     table.insert(execCalls, {cmd="stop",    v=v})       end,
+                pauseWorkflow    = function(_, v)     table.insert(execCalls, {cmd="pause",   v=v})       end,
+                resumeWorkflow   = function(_, v)     table.insert(execCalls, {cmd="resume",  v=v})       end,
+                goToNextStep     = function(_, v)     table.insert(execCalls, {cmd="next",    v=v})       end,
+                goToPreviousStep = function(_, v)     table.insert(execCalls, {cmd="prev",    v=v})       end,
+            }
+            _G.g_server = { broadcastEvent = function() end }
+            _G.g_client = nil
+        end)
+
+        it("on server: executes command directly without sending event", function()
+            local v  = VehicleMock.createValid("T")
+            local wf = WorkflowManager:createWorkflow("W")
+            WorkflowManager:sendCommand(v, "stop")
+            assert.are.equal(1, #execCalls)
+            assert.are.equal("stop", execCalls[1].cmd)
+        end)
+
+        it("on client: sends event instead of executing directly", function()
+            local sentEvents = {}
+            _G.g_server = nil
+            _G.g_client = {
+                sendEvent = function(_, cmd, v, wfId)
+                    table.insert(sentEvents, {cmd=cmd, v=v, wfId=wfId})
+                end
+            }
+            local v = VehicleMock.createValid("T")
+            WorkflowManager:sendCommand(v, "pause")
+            assert.are.equal(0, #execCalls)
+            assert.are.equal(1, #sentEvents)
+            assert.are.equal("pause", sentEvents[1].cmd)
+        end)
+
+        it("does nothing for nil vehicle", function()
+            WorkflowManager:sendCommand(nil, "stop")
+            assert.are.equal(0, #execCalls)
+        end)
+    end)
+
+    describe("executeNetworkCommand", function()
+        local execCalls
+
+        before_each(function()
+            execCalls = {}
+            _G.WMExecutor = {
+                startWorkflow    = function(_, wf, v) table.insert(execCalls, {cmd="start",  wf=wf, v=v}) end,
+                stopWorkflow     = function(_, v)     table.insert(execCalls, {cmd="stop",   v=v})       end,
+                pauseWorkflow    = function(_, v)     table.insert(execCalls, {cmd="pause",  v=v})       end,
+                resumeWorkflow   = function(_, v)     table.insert(execCalls, {cmd="resume", v=v})       end,
+                goToNextStep     = function(_, v)     table.insert(execCalls, {cmd="next",   v=v})       end,
+                goToPreviousStep = function(_, v)     table.insert(execCalls, {cmd="prev",   v=v})       end,
+            }
+            _G.g_server = { broadcastEvent = function() end }
+        end)
+
+        it("dispatches 'stop' to WMExecutor:stopWorkflow", function()
+            local v = VehicleMock.createValid("T")
+            WorkflowManager:executeNetworkCommand("stop", v)
+            assert.are.equal("stop", execCalls[1].cmd)
+        end)
+
+        it("dispatches 'pause' to WMExecutor:pauseWorkflow", function()
+            local v = VehicleMock.createValid("T")
+            WorkflowManager:executeNetworkCommand("pause", v)
+            assert.are.equal("pause", execCalls[1].cmd)
+        end)
+
+        it("dispatches 'resume' to WMExecutor:resumeWorkflow", function()
+            local v = VehicleMock.createValid("T")
+            WorkflowManager:executeNetworkCommand("resume", v)
+            assert.are.equal("resume", execCalls[1].cmd)
+        end)
+
+        it("dispatches 'next_step' to WMExecutor:goToNextStep", function()
+            local v = VehicleMock.createValid("T")
+            WorkflowManager:executeNetworkCommand("next_step", v)
+            assert.are.equal("next", execCalls[1].cmd)
+        end)
+
+        it("dispatches 'prev_step' to WMExecutor:goToPreviousStep", function()
+            local v = VehicleMock.createValid("T")
+            WorkflowManager:executeNetworkCommand("prev_step", v)
+            assert.are.equal("prev", execCalls[1].cmd)
+        end)
+
+        it("dispatches 'start' with workflow resolved by id", function()
+            local wf = WorkflowManager:createWorkflow("Run")
+            local v  = VehicleMock.createValid("T")
+            WorkflowManager:executeNetworkCommand("start", v, wf.id)
+            assert.are.equal("start", execCalls[1].cmd)
+            assert.are.equal(wf, execCalls[1].wf)
+        end)
+
+        it("does not call executor for unknown workflow on 'start'", function()
+            local v = VehicleMock.createValid("T")
+            WorkflowManager:executeNetworkCommand("start", v, "no_such_wf")
+            assert.are.equal(0, #execCalls)
+        end)
+    end)
+
+    describe("broadcastState", function()
+        before_each(function()
+            _G.g_server = nil
+        end)
+
+        it("does nothing when g_server is nil (singleplayer client path)", function()
+            local broadcastCalled = false
+            -- g_server is nil, so no broadcast should happen
+            assert.has_no.errors(function()
+                WorkflowManager:broadcastState(VehicleMock.createValid("T"))
+            end)
+            assert.is_false(broadcastCalled)
+        end)
+
+        it("does nothing when vehicle is nil", function()
+            _G.g_server = { broadcastEvent = function() error("should not be called") end }
+            assert.has_no.errors(function()
+                WorkflowManager:broadcastState(nil)
+            end)
+        end)
+
+        it("does nothing when isShuttingDown is true", function()
+            _G.g_server = { broadcastEvent = function() error("should not be called") end }
+            WorkflowManager.isShuttingDown = true
+            assert.has_no.errors(function()
+                WorkflowManager:broadcastState(VehicleMock.createValid("T"))
+            end)
+            WorkflowManager.isShuttingDown = false
+        end)
+
+        it("calls g_server:broadcastEvent when server is set and vehicle valid", function()
+            local called = false
+            _G.g_server = { broadcastEvent = function() called = true end }
+            WorkflowManager:broadcastState(VehicleMock.createValid("T"))
+            assert.is_true(called)
         end)
     end)
 

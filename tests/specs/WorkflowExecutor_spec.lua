@@ -761,4 +761,334 @@ describe("WMExecutor (real)", function()
         end)
     end)
 
+    -- =========================================================================
+    -- resetStepTrackingState
+    -- =========================================================================
+    describe("resetStepTrackingState", function()
+        it("clears all tracking flags on activeData", function()
+            local d = {
+                waitingForCompletion = true,
+                willHandoffToCP      = true,
+                cpHandedOffToAD      = true,
+                cpWasRunning         = true,
+                cpStartedByAD        = true,
+                cpStartWaitCount     = 5,
+                pausedTrackingState  = { something = true },
+                pendingCPStart       = true,
+                pendingCPStartRetries = 3,
+                cpToCpTransition     = true,
+                pendingADStart       = true,
+                pendingADStartRetries = 2,
+            }
+            WMExecutor:resetStepTrackingState(d)
+            assert.is_false(d.waitingForCompletion)
+            assert.is_false(d.willHandoffToCP)
+            assert.is_false(d.cpHandedOffToAD)
+            assert.is_false(d.cpWasRunning)
+            assert.is_false(d.cpStartedByAD)
+            assert.is_nil(d.cpStartWaitCount)
+            assert.is_nil(d.pausedTrackingState)
+            assert.is_nil(d.pendingCPStart)
+            assert.is_nil(d.pendingCPStartRetries)
+            assert.is_nil(d.cpToCpTransition)
+            assert.is_nil(d.pendingADStart)
+            assert.is_nil(d.pendingADStartRetries)
+        end)
+
+        it("is safe to call on an already-clean activeData", function()
+            assert.has_no.errors(function()
+                WMExecutor:resetStepTrackingState({})
+            end)
+        end)
+    end)
+
+    -- =========================================================================
+    -- handleLinkedWorkflowStepChange
+    -- =========================================================================
+    describe("handleLinkedWorkflowStepChange", function()
+        -- Helpers: a linked pair with sync groups
+        local function makeLinkedPair()
+            local main = {
+                id = "wf_main", name = "Main", linkRole = "main", linkedWorkflowId = "wf_sup",
+                steps = {
+                    { type = "autodrive",  target = "A", action = "drive",     syncGroup = 1 },
+                    { type = "courseplay", target = "B", action = "fieldwork", syncGroup = 1 },
+                    { type = "autodrive",  target = "C", action = "drive",     syncGroup = 2 },
+                    { type = "courseplay", target = "D", action = "fieldwork", syncGroup = 2 },
+                },
+            }
+            local sup = {
+                id = "wf_sup", name = "Support", linkRole = "support", linkedWorkflowId = "wf_main",
+                steps = {
+                    { type = "autodrive", target = "X", action = "unload", syncGroup = 1 },
+                    { type = "autodrive", target = "Y", action = "unload", syncGroup = 2 },
+                },
+            }
+            return main, sup
+        end
+
+        it("sets syncOverridden=true when a support workflow step is manually changed", function()
+            local main, sup = makeLinkedPair()
+            local v = makeVehicle("Support")
+            WMExecutor:startWorkflow(sup, v)
+            local d = activeData(v)
+            WMExecutor:handleLinkedWorkflowStepChange(d, 1)
+            assert.is_true(d.syncOverridden)
+        end)
+
+        it("does not trigger sync transition when main stays in same group", function()
+            local main, sup = makeLinkedPair()
+            local transitionCalled = false
+            local origFn = WMExecutor.onSyncGroupTransition
+            WMExecutor.onSyncGroupTransition = function() transitionCalled = true end
+
+            local v = makeVehicle("Main")
+            WMExecutor:startWorkflow(main, v)
+            local d = activeData(v)
+            d.currentStep = 2  -- still group 1
+            -- prevGroup = 1, newGroup for step 2 = 1 → no transition
+            WMExecutor:handleLinkedWorkflowStepChange(d, 1)
+            assert.is_false(transitionCalled)
+
+            WMExecutor.onSyncGroupTransition = origFn
+        end)
+
+        it("triggers onSyncGroupTransition when main moves to a new group", function()
+            local main, sup = makeLinkedPair()
+            local transitions = {}
+            local origFn = WMExecutor.onSyncGroupTransition
+            WMExecutor.onSyncGroupTransition = function(_, mainData, from, to)
+                table.insert(transitions, {from=from, to=to})
+            end
+
+            local v = makeVehicle("Main")
+            WMExecutor:startWorkflow(main, v)
+            local d = activeData(v)
+            d.currentStep = 3  -- group 2
+            -- prevGroup = 1, newGroup for step 3 = 2 → transition 1→2
+            WMExecutor:handleLinkedWorkflowStepChange(d, 1)
+            assert.are.equal(1, #transitions)
+            assert.are.equal(1, transitions[1].from)
+            assert.are.equal(2, transitions[1].to)
+
+            WMExecutor.onSyncGroupTransition = origFn
+        end)
+
+        it("does nothing for unlinked workflow", function()
+            local wf = makeWorkflow("wf_solo")
+            local v = makeVehicle("Solo")
+            WMExecutor:startWorkflow(wf, v)
+            local d = activeData(v)
+            -- linkRole is nil → should not error or set syncOverridden
+            assert.has_no.errors(function()
+                WMExecutor:handleLinkedWorkflowStepChange(d, 1)
+            end)
+            assert.is_nil(d.syncOverridden)
+        end)
+    end)
+
+    -- =========================================================================
+    -- onSyncGroupTransition
+    -- =========================================================================
+    describe("onSyncGroupTransition", function()
+        local function makeLinkedVehicles()
+            local main = {
+                id = "wf_m", name = "Main", linkRole = "main", linkedWorkflowId = "wf_s",
+                steps = {
+                    { type = "autodrive",  target = "A", action = "drive",     syncGroup = 1 },
+                    { type = "courseplay", target = "B", action = "fieldwork", syncGroup = 1 },
+                    { type = "autodrive",  target = "C", action = "drive",     syncGroup = 2 },
+                    { type = "courseplay", target = "D", action = "fieldwork", syncGroup = 2 },
+                },
+            }
+            local sup = {
+                id = "wf_s", name = "Support", linkRole = "support", linkedWorkflowId = "wf_m",
+                steps = {
+                    { type = "autodrive", target = "X", action = "unload", syncGroup = 1 },
+                    { type = "autodrive", target = "Y", action = "unload", syncGroup = 2 },
+                },
+            }
+            local vm = makeVehicle("Main")
+            local vs = makeVehicle("Support")
+            WMExecutor:startWorkflow(main, vm)
+            WMExecutor:startWorkflow(sup,  vs)
+            -- Make WorkflowManager stub return the linked partner
+            _G.WorkflowManager.getLinkedWorkflow = function(_, id)
+                if id == "wf_m" then return sup end
+                if id == "wf_s" then return main end
+                return nil
+            end
+            return vm, vs, main, sup
+        end
+
+        before_each(function()
+            -- Reset getLinkedWorkflow to default no-op after each test
+        end)
+
+        it("moves support to the step matching the new sync group", function()
+            local vm, vs = makeLinkedVehicles()
+            local mainData = activeData(vm)
+            WMExecutor:onSyncGroupTransition(mainData, 1, 2)
+            assert.are.equal(2, activeData(vs).currentStep)  -- step 2 has syncGroup=2
+        end)
+
+        it("clears syncOverridden on support after transition", function()
+            local vm, vs = makeLinkedVehicles()
+            activeData(vs).syncOverridden = true
+            WMExecutor:onSyncGroupTransition(activeData(vm), 1, 2)
+            assert.is_false(activeData(vs).syncOverridden)
+        end)
+
+        it("resets all tracking flags on support via resetStepTrackingState", function()
+            local vm, vs = makeLinkedVehicles()
+            local d = activeData(vs)
+            d.pendingCPStart = true
+            d.cpWasRunning   = true
+            WMExecutor:onSyncGroupTransition(activeData(vm), 1, 2)
+            assert.is_nil(activeData(vs).pendingCPStart)
+            assert.is_false(activeData(vs).cpWasRunning)
+        end)
+
+        it("stops support workflow when no step matches the new group", function()
+            local vm, vs = makeLinkedVehicles()
+            WMExecutor:onSyncGroupTransition(activeData(vm), 1, 99)  -- group 99 doesn't exist
+            assert.is_nil(activeData(vs))  -- support was stopped
+        end)
+
+        it("does nothing when support workflow is not running", function()
+            local vm, vs = makeLinkedVehicles()
+            WMExecutor:stopWorkflow(vs)
+            assert.has_no.errors(function()
+                WMExecutor:onSyncGroupTransition(activeData(vm), 1, 2)
+            end)
+        end)
+
+        it("does nothing when support workflow has no active execution", function()
+            local vm = makeVehicle("MainOnly")
+            local main = {
+                id = "wf_m2", name = "Main", linkRole = "main", linkedWorkflowId = "wf_s2",
+                steps = {
+                    { type = "autodrive", target = "A", action = "drive", syncGroup = 1 },
+                    { type = "autodrive", target = "B", action = "drive", syncGroup = 2 },
+                },
+            }
+            WMExecutor:startWorkflow(main, vm)
+            _G.WorkflowManager.getLinkedWorkflow = function(_, id)
+                if id == "wf_m2" then
+                    return { id = "wf_s2", name = "Support", steps = {
+                        { type = "autodrive", target = "X", action = "unload", syncGroup = 2 },
+                    }}
+                end
+                return nil
+            end
+            -- Support is NOT running (no vehicle started it)
+            assert.has_no.errors(function()
+                WMExecutor:onSyncGroupTransition(activeData(vm), 1, 2)
+            end)
+            _G.WorkflowManager.getLinkedWorkflow = function() return nil end
+        end)
+    end)
+
+    -- =========================================================================
+    -- Linked workflow propagation: stop / pause / resume
+    -- =========================================================================
+    describe("linked workflow propagation", function()
+        local function makeLinkedRunningPair(mainId, supId)
+            local main = {
+                id = mainId or "wf_main", name = "Main",
+                linkRole = "main", linkedWorkflowId = supId or "wf_sup",
+                steps = {
+                    { type = "autodrive", target = "A", action = "drive", syncGroup = 1 },
+                },
+            }
+            local sup = {
+                id = supId or "wf_sup", name = "Support",
+                linkRole = "support", linkedWorkflowId = mainId or "wf_main",
+                steps = {
+                    { type = "autodrive", target = "X", action = "unload", syncGroup = 1 },
+                },
+            }
+            local vm = makeVehicle("MainV")
+            local vs = makeVehicle("SupportV")
+            WMExecutor:startWorkflow(main, vm)
+            WMExecutor:startWorkflow(sup,  vs)
+            return vm, vs, main, sup
+        end
+
+        describe("stopWorkflow propagation", function()
+            it("stopping main also stops support", function()
+                local vm, vs = makeLinkedRunningPair()
+                WMExecutor:stopWorkflow(vm)
+                assert.is_nil(activeData(vm))
+                assert.is_nil(activeData(vs))
+            end)
+
+            it("stopping support alone does NOT stop main", function()
+                local vm, vs = makeLinkedRunningPair()
+                WMExecutor:stopWorkflow(vs)
+                assert.is_nil(activeData(vs))
+                assert.is_not_nil(activeData(vm))  -- main still running
+            end)
+
+            it("stopping already-stopped support is safe", function()
+                local vm, vs = makeLinkedRunningPair()
+                WMExecutor:stopWorkflow(vs)  -- stop support first
+                assert.has_no.errors(function()
+                    WMExecutor:stopWorkflow(vm)  -- stop main – support already gone
+                end)
+            end)
+        end)
+
+        describe("pauseWorkflow propagation", function()
+            it("pausing main also pauses running support", function()
+                local vm, vs = makeLinkedRunningPair()
+                WMExecutor:pauseWorkflow(vm)
+                assert.are.equal("paused", activeData(vm).status)
+                assert.are.equal("paused", activeData(vs).status)
+            end)
+
+            it("pausing support alone does NOT pause main", function()
+                local vm, vs = makeLinkedRunningPair()
+                WMExecutor:pauseWorkflow(vs)
+                assert.are.equal("paused", activeData(vs).status)
+                assert.are.equal("running", activeData(vm).status)
+            end)
+
+            it("pausing main does not crash when support is already paused", function()
+                local vm, vs = makeLinkedRunningPair()
+                WMExecutor:pauseWorkflow(vs)  -- pre-pause support
+                assert.has_no.errors(function()
+                    WMExecutor:pauseWorkflow(vm)
+                end)
+            end)
+        end)
+
+        describe("resumeWorkflow propagation", function()
+            it("resuming main also resumes paused support", function()
+                local vm, vs = makeLinkedRunningPair()
+                WMExecutor:pauseWorkflow(vm)  -- propagates pause to support
+                WMExecutor:resumeWorkflow(vm)
+                assert.are.equal("running", activeData(vm).status)
+                assert.are.equal("running", activeData(vs).status)
+            end)
+
+            it("resuming support alone does NOT resume main", function()
+                local vm, vs = makeLinkedRunningPair()
+                WMExecutor:pauseWorkflow(vm)  -- pauses both
+                WMExecutor:resumeWorkflow(vs)
+                assert.are.equal("running", activeData(vs).status)
+                assert.are.equal("paused",  activeData(vm).status)
+            end)
+
+            it("resuming main does not crash when support is already running", function()
+                local vm, vs = makeLinkedRunningPair()
+                WMExecutor:pauseWorkflow(vm)
+                WMExecutor:resumeWorkflow(vs)   -- resume support independently
+                assert.has_no.errors(function()
+                    WMExecutor:resumeWorkflow(vm)
+                end)
+            end)
+        end)
+    end)
+
 end)

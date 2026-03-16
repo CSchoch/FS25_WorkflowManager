@@ -349,6 +349,27 @@ FS25_WorkflowManager/
 - Color-tinted at runtime: normal (white), hover (cyan), disabled (gray), active (green)
 - Hover tracking for visual feedback on mouse-over
 
+## Running Tests
+
+```bash
+"C:\Program Files (x86)\Lua\5.1\lua.exe" tests/run_tests.lua
+```
+
+The test runner loads all specs in `tests/specs/`. Individual spec files can be run with the inline mini-runner pattern used in CI:
+
+```bash
+"C:\Program Files (x86)\Lua\5.1\lua.exe" - << 'EOF'
+-- paste mini-runner + dofile("tests/specs/WorkflowExecutor_spec.lua") etc.
+EOF
+```
+
+**Test structure:**
+- `tests/mocks/` — game globals, XMLFile, vehicle factory, event handler stubs
+- `tests/specs/` — one spec file per module
+- `tests/fixtures/` — shared workflow test data
+
+**Note:** The full `run_tests.lua` runner stops early on Windows due to a Logger spec I/O issue (pre-existing, unrelated to test correctness). Use the mini-runner pattern above to run `WorkflowManager_spec.lua` and `WorkflowExecutor_spec.lua` directly when verifying changes.
+
 ## Resources
 
 * FS25 Modding Documentation: https://gdn.giants-software.com/

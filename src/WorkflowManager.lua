@@ -920,16 +920,6 @@ end
 -- Multiplayer network helpers
 -- ============================================================
 
----Find a workflow definition by ID.
----@param id string Workflow ID
----@return table|nil workflow
-function WorkflowManager:findWorkflowById(id)
-    for _, wf in ipairs(self.workflows) do
-        if wf.id == id then return wf end
-    end
-    return nil
-end
-
 ---Route a workflow command through the network layer.
 ---  • On the server (singleplayer or multiplayer host):
 ---      executes immediately and broadcasts state to clients.
@@ -962,7 +952,7 @@ end
 ---@param workflowId  string|nil
 function WorkflowManager:executeNetworkCommand(commandType, vehicle, workflowId)
     if commandType == "start" then
-        local wf = self:findWorkflowById(workflowId)
+        local wf = self:getWorkflowById(workflowId)
         if wf == nil then
             WMLogger:error("executeNetworkCommand: workflowId '%s' not found", tostring(workflowId))
             return
@@ -1033,8 +1023,8 @@ end
 ---@return table|nil vehicle
 local function findVehicleForWorkflow(workflowId)
     for v, _ in pairs(WMExecutor.activeVehicles) do
-        local ad = v.spec_workflowManagerSpec and v.spec_workflowManagerSpec.wmExecution
-        if ad and ad.workflow and ad.workflow.id == workflowId then
+        local activeData = v.spec_workflowManagerSpec and v.spec_workflowManagerSpec.wmExecution
+        if activeData and activeData.workflow and activeData.workflow.id == workflowId then
             return v
         end
     end

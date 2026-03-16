@@ -138,13 +138,7 @@ function WMStateSyncEvent:run(connection)
     end
 
     -- Find the workflow definition (loaded from XML, same on all peers)
-    local workflow = nil
-    for _, wf in ipairs(WorkflowManager.workflows) do
-        if wf.id == self.workflowId then
-            workflow = wf
-            break
-        end
-    end
+    local workflow = WorkflowManager:getWorkflowById(self.workflowId)
     if workflow == nil then
         WMLogger:warning("WMStateSyncEvent: unknown workflowId '%s' – ignoring", tostring(self.workflowId))
         return
