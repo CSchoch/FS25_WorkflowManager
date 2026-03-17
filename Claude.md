@@ -403,7 +403,7 @@ Screenshots for the Docusaurus documentation site (`website/static/img/screensho
 
 ### High Priority
 
-- [ ] **Milestone 12: Fix linked workflow** — feature is in shipped code but broken; either fix or hide/disable before release
+- [x] **Milestone 12: Linked workflow** — tested and working for one main + one supporter workflow pair
 
 ### Low Priority
 
