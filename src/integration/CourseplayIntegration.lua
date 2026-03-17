@@ -602,6 +602,14 @@ function CPIntegration:stopCourse(vehicle)
     return false
 end
 
+---Check if the CP AI worker driver is initialized (required before freeze/unfreeze)
+---@param vehicle table Vehicle to check
+---@return boolean hasDriver True if driver object exists
+function CPIntegration:hasActiveDriver(vehicle)
+    local spec = vehicle.spec_cpAIWorker
+    return spec ~= nil and spec.driver ~= nil
+end
+
 ---Hold/Pause Courseplay temporarily
 ---@param vehicle table Vehicle to pause
 ---@param ms number|nil Milliseconds to hold (default: indefinite via freeze)
@@ -612,6 +620,12 @@ function CPIntegration:holdCourse(vehicle, ms)
     end
 
     if vehicle == nil or not self:hasSpec(vehicle) then
+        return false
+    end
+
+    -- CP's freeze/cpHold requires an active driver; skip if not present
+    if not self:hasActiveDriver(vehicle) then
+        WMLogger:debug("holdCourse: CP driver not initialized, skipping freeze")
         return false
     end
 
@@ -643,6 +657,12 @@ function CPIntegration:resumeCourse(vehicle)
     end
 
     if vehicle == nil or not self:hasSpec(vehicle) then
+        return false
+    end
+
+    -- CP's unfreeze requires an active driver; skip if not present
+    if not self:hasActiveDriver(vehicle) then
+        WMLogger:debug("resumeCourse: CP driver not initialized, skipping unfreeze")
         return false
     end
 
