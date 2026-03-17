@@ -1091,4 +1091,212 @@ describe("WMExecutor (real)", function()
         end)
     end)
 
+    -- =========================================================================
+    -- getActiveVehiclesForWorkflow
+    -- =========================================================================
+    describe("getActiveVehiclesForWorkflow", function()
+        it("returns empty array when no vehicle runs that workflow", function()
+            local result = WMExecutor:getActiveVehiclesForWorkflow("wf_ghost")
+            assert.are.equal(0, #result)
+        end)
+
+        it("returns one entry when one vehicle runs that workflow", function()
+            local wf = makeWorkflow("wf_x")
+            local v  = makeVehicle("V1")
+            WMExecutor:startWorkflow(wf, v)
+            local result = WMExecutor:getActiveVehiclesForWorkflow("wf_x")
+            assert.are.equal(1, #result)
+            assert.are.equal(activeData(v), result[1])
+        end)
+
+        it("returns two entries when two vehicles share the same workflow", function()
+            local wf = makeWorkflow("wf_shared")
+            local v1 = makeVehicle("V1")
+            local v2 = makeVehicle("V2")
+            WMExecutor:startWorkflow(wf, v1)
+            WMExecutor:startWorkflow(wf, v2)
+            local result = WMExecutor:getActiveVehiclesForWorkflow("wf_shared")
+            assert.are.equal(2, #result)
+        end)
+
+        it("does not return vehicles running a different workflow", function()
+            local wfA = makeWorkflow("wf_a")
+            local wfB = makeWorkflow("wf_b")
+            local vA  = makeVehicle("VA")
+            local vB  = makeVehicle("VB")
+            WMExecutor:startWorkflow(wfA, vA)
+            WMExecutor:startWorkflow(wfB, vB)
+            local result = WMExecutor:getActiveVehiclesForWorkflow("wf_a")
+            assert.are.equal(1, #result)
+            assert.are.equal(activeData(vA), result[1])
+        end)
+    end)
+
+    -- =========================================================================
+    -- Multi-vehicle support: two vehicles on the same support workflow
+    -- =========================================================================
+    describe("multi-vehicle support workflow", function()
+        local function makeLinkedPairWithTwoSupports()
+            local main = {
+                id = "wf_main2", name = "Main",
+                linkRole = "main", linkedWorkflowId = "wf_sup2",
+                steps = {
+                    { type = "autodrive", target = "A", action = "drive", syncGroup = 1 },
+                },
+            }
+            local sup = {
+                id = "wf_sup2", name = "Support",
+                linkRole = "support", linkedWorkflowId = "wf_main2",
+                steps = {
+                    { type = "autodrive", target = "X", action = "unload", syncGroup = 1 },
+                },
+            }
+            local vm  = makeVehicle("MainV")
+            local vs1 = makeVehicle("SupportV1")
+            local vs2 = makeVehicle("SupportV2")
+            WMExecutor:startWorkflow(main, vm)
+            WMExecutor:startWorkflow(sup,  vs1)
+            WMExecutor:startWorkflow(sup,  vs2)
+            _G.WorkflowManager.getLinkedWorkflow = function(_, id)
+                if id == "wf_main2" then return sup end
+                if id == "wf_sup2"  then return main end
+                return nil
+            end
+            return vm, vs1, vs2, main, sup
+        end
+
+        after_each(function()
+            _G.WorkflowManager.getLinkedWorkflow = function() return nil end
+        end)
+
+        describe("stopWorkflow with two support vehicles", function()
+            it("stopping main stops BOTH support vehicles", function()
+                local vm, vs1, vs2 = makeLinkedPairWithTwoSupports()
+                WMExecutor:stopWorkflow(vm)
+                assert.is_nil(activeData(vm))
+                assert.is_nil(activeData(vs1))
+                assert.is_nil(activeData(vs2))
+            end)
+
+            it("stopping one support vehicle does NOT stop the other or main", function()
+                local vm, vs1, vs2 = makeLinkedPairWithTwoSupports()
+                WMExecutor:stopWorkflow(vs1)
+                assert.is_nil(activeData(vs1))
+                assert.is_not_nil(activeData(vm))
+                assert.is_not_nil(activeData(vs2))
+            end)
+        end)
+
+        describe("pauseWorkflow with two support vehicles", function()
+            it("pausing main pauses BOTH support vehicles", function()
+                local vm, vs1, vs2 = makeLinkedPairWithTwoSupports()
+                WMExecutor:pauseWorkflow(vm)
+                assert.are.equal("paused", activeData(vm).status)
+                assert.are.equal("paused", activeData(vs1).status)
+                assert.are.equal("paused", activeData(vs2).status)
+            end)
+        end)
+
+        describe("resumeWorkflow with two support vehicles", function()
+            it("resuming main resumes BOTH paused support vehicles", function()
+                local vm, vs1, vs2 = makeLinkedPairWithTwoSupports()
+                WMExecutor:pauseWorkflow(vm)  -- propagates pause to both supports
+                WMExecutor:resumeWorkflow(vm)
+                assert.are.equal("running", activeData(vm).status)
+                assert.are.equal("running", activeData(vs1).status)
+                assert.are.equal("running", activeData(vs2).status)
+            end)
+        end)
+
+        describe("onSyncGroupTransition with two support vehicles", function()
+            it("transition advances ALL running support vehicles to matching step", function()
+                local main = {
+                    id = "wf_mt", name = "Main",
+                    linkRole = "main", linkedWorkflowId = "wf_st",
+                    steps = {
+                        { type = "autodrive",  target = "A", action = "drive",     syncGroup = 1 },
+                        { type = "courseplay", target = "B", action = "fieldwork", syncGroup = 1 },
+                        { type = "autodrive",  target = "C", action = "drive",     syncGroup = 2 },
+                    },
+                }
+                local sup = {
+                    id = "wf_st", name = "Support",
+                    linkRole = "support", linkedWorkflowId = "wf_mt",
+                    steps = {
+                        { type = "autodrive", target = "X", action = "unload", syncGroup = 1 },
+                        { type = "autodrive", target = "Y", action = "unload", syncGroup = 2 },
+                    },
+                }
+                local vm  = makeVehicle("MainT")
+                local vs1 = makeVehicle("SupportT1")
+                local vs2 = makeVehicle("SupportT2")
+                WMExecutor:startWorkflow(main, vm)
+                WMExecutor:startWorkflow(sup,  vs1)
+                WMExecutor:startWorkflow(sup,  vs2)
+                _G.WorkflowManager.getLinkedWorkflow = function(_, id)
+                    if id == "wf_mt" then return sup end
+                    if id == "wf_st" then return main end
+                    return nil
+                end
+
+                WMExecutor:onSyncGroupTransition(activeData(vm), 1, 2)
+
+                assert.are.equal(2, activeData(vs1).currentStep)
+                assert.are.equal(2, activeData(vs2).currentStep)
+            end)
+
+            it("stops only the support vehicle with no matching group, leaves other running", function()
+                local main = {
+                    id = "wf_mu", name = "Main",
+                    linkRole = "main", linkedWorkflowId = "wf_su",
+                    steps = {
+                        { type = "autodrive", target = "A", action = "drive", syncGroup = 1 },
+                        { type = "autodrive", target = "C", action = "drive", syncGroup = 2 },
+                    },
+                }
+                -- sup1 has step for group 2; sup2 does NOT
+                local sup = {
+                    id = "wf_su", name = "Support",
+                    linkRole = "support", linkedWorkflowId = "wf_mu",
+                    steps = {
+                        { type = "autodrive", target = "X", action = "unload", syncGroup = 1 },
+                        { type = "autodrive", target = "Y", action = "unload", syncGroup = 2 },
+                    },
+                }
+                local supNoGroup2 = {
+                    id = "wf_su", name = "Support",  -- same id, different steps
+                    linkRole = "support", linkedWorkflowId = "wf_mu",
+                    steps = {
+                        { type = "autodrive", target = "X", action = "unload", syncGroup = 1 },
+                        -- no step for group 2
+                    },
+                }
+                local vm  = makeVehicle("MainU")
+                local vs1 = makeVehicle("SupportU1")
+                local vs2 = makeVehicle("SupportU2")
+                WMExecutor:startWorkflow(main, vm)
+                WMExecutor:startWorkflow(sup, vs1)
+                -- vs2 gets the variant with only group 1
+                vs2.spec_workflowManagerSpec.wmExecution = {
+                    workflow = supNoGroup2,
+                    vehicle = vs2,
+                    status = "running",
+                    currentStep = 1,
+                    waitingForCompletion = false,
+                }
+                WMExecutor.activeVehicles[vs2] = true
+                _G.WorkflowManager.getLinkedWorkflow = function(_, id)
+                    if id == "wf_mu" then return sup end
+                    return nil
+                end
+
+                WMExecutor:onSyncGroupTransition(activeData(vm), 1, 2)
+
+                -- vs1 should advance to step 2; vs2 should be stopped (no group 2)
+                assert.are.equal(2, activeData(vs1).currentStep)
+                assert.is_nil(activeData(vs2))
+            end)
+        end)
+    end)
+
 end)

@@ -195,10 +195,10 @@ function WMExecutor:stopWorkflow(vehicle)
         workflowId = workflow.id
     })
 
-    -- If this is a main workflow, also stop the linked support workflow
+    -- If this is a main workflow, stop all vehicles running the linked support workflow
     if workflow.linkRole == "main" and workflow.linkedWorkflowId then
-        local supportActiveData = self:getActiveDataForWorkflow(workflow.linkedWorkflowId)
-        if supportActiveData then
+        local supportDataList = self:getActiveVehiclesForWorkflow(workflow.linkedWorkflowId)
+        for _, supportActiveData in ipairs(supportDataList) do
             WMLogger:info("Main workflow stopped - also stopping linked support workflow")
             self:stopWorkflow(supportActiveData.vehicle)
         end
@@ -255,14 +255,16 @@ function WMExecutor:pauseWorkflow(vehicle)
         currentStep = activeData.currentStep
     })
 
-    -- If this is a main workflow, also pause the linked support workflow
+    -- If this is a main workflow, pause all vehicles running the linked support workflow
     local workflow = activeData.workflow
     if workflow.linkRole == "main" and workflow.linkedWorkflowId then
-        local supportActiveData = self:getActiveDataForWorkflow(workflow.linkedWorkflowId)
-        if supportActiveData and supportActiveData.status == WorkflowManager.STATUS_RUNNING then
-            WMLogger:info("Main workflow paused - also pausing linked support workflow")
-            self:pauseWorkflow(supportActiveData.vehicle)
-            WorkflowManager:broadcastState(supportActiveData.vehicle)
+        local supportDataList = self:getActiveVehiclesForWorkflow(workflow.linkedWorkflowId)
+        for _, supportActiveData in ipairs(supportDataList) do
+            if supportActiveData.status == WorkflowManager.STATUS_RUNNING then
+                WMLogger:info("Main workflow paused - also pausing linked support workflow")
+                self:pauseWorkflow(supportActiveData.vehicle)
+                WorkflowManager:broadcastState(supportActiveData.vehicle)
+            end
         end
     end
 
@@ -330,14 +332,16 @@ function WMExecutor:resumeWorkflow(vehicle)
         currentStep = activeData.currentStep
     })
 
-    -- If this is a main workflow, also resume the linked support workflow
+    -- If this is a main workflow, resume all vehicles running the linked support workflow
     local workflow = activeData.workflow
     if workflow.linkRole == "main" and workflow.linkedWorkflowId then
-        local supportActiveData = self:getActiveDataForWorkflow(workflow.linkedWorkflowId)
-        if supportActiveData and supportActiveData.status == WorkflowManager.STATUS_PAUSED then
-            WMLogger:info("Main workflow resumed - also resuming linked support workflow")
-            self:resumeWorkflow(supportActiveData.vehicle)
-            WorkflowManager:broadcastState(supportActiveData.vehicle)
+        local supportDataList = self:getActiveVehiclesForWorkflow(workflow.linkedWorkflowId)
+        for _, supportActiveData in ipairs(supportDataList) do
+            if supportActiveData.status == WorkflowManager.STATUS_PAUSED then
+                WMLogger:info("Main workflow resumed - also resuming linked support workflow")
+                self:resumeWorkflow(supportActiveData.vehicle)
+                WorkflowManager:broadcastState(supportActiveData.vehicle)
+            end
         end
     end
 
@@ -747,10 +751,10 @@ function WMExecutor:onWorkflowCompleted(activeData)
         workflowName = workflow.name
     })
 
-    -- If this is a main workflow, stop the linked support workflow
+    -- If this is a main workflow, stop all vehicles running the linked support workflow
     if workflow.linkRole == "main" and workflow.linkedWorkflowId then
-        local supportActiveData = self:getActiveDataForWorkflow(workflow.linkedWorkflowId)
-        if supportActiveData then
+        local supportDataList = self:getActiveVehiclesForWorkflow(workflow.linkedWorkflowId)
+        for _, supportActiveData in ipairs(supportDataList) do
             WMLogger:info("Main workflow completed - stopping linked support workflow")
             self:stopWorkflow(supportActiveData.vehicle)
         end
@@ -1021,6 +1025,21 @@ function WMExecutor:getActiveDataForWorkflow(workflowId)
     return nil
 end
 
+---Get all active execution data entries for a given workflow ID.
+---A support workflow may be running on multiple vehicles simultaneously.
+---@param workflowId string Workflow ID to look up
+---@return table activeDataList Array of activeData tables (empty if none running)
+function WMExecutor:getActiveVehiclesForWorkflow(workflowId)
+    local result = {}
+    for vehicle, _ in pairs(self.activeVehicles) do
+        local activeData = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
+        if activeData and activeData.workflow.id == workflowId then
+            table.insert(result, activeData)
+        end
+    end
+    return result
+end
+
 ---Find the first step index in a workflow that has the given sync group number
 ---@param workflow table Workflow definition
 ---@param groupNum number Sync group number to find
@@ -1049,40 +1068,34 @@ function WMExecutor:onSyncGroupTransition(mainActiveData, fromGroup, toGroup)
         return
     end
 
-    local supportActiveData = self:getActiveDataForWorkflow(supportWorkflow.id)
-    if supportActiveData == nil then
+    local supportDataList = self:getActiveVehiclesForWorkflow(supportWorkflow.id)
+    if #supportDataList == 0 then
         WMLogger:debug("Sync group transition %d -> %d: support workflow '%s' not running",
             fromGroup, toGroup, supportWorkflow.name)
         return
     end
 
-    if supportActiveData.status ~= WorkflowManager.STATUS_RUNNING then
-        WMLogger:debug("Sync group transition: support workflow '%s' not in running state", supportWorkflow.name)
-        return
+    for _, supportActiveData in ipairs(supportDataList) do
+        if supportActiveData.status ~= WorkflowManager.STATUS_RUNNING then
+            WMLogger:debug("Sync group transition: support vehicle not in running state, skipping")
+        else
+            -- Each support vehicle may have its own workflow reference (same steps, independent state)
+            local targetStep = self:findStepByGroup(supportActiveData.workflow, toGroup)
+            if targetStep == nil then
+                WMLogger:warning("Sync group transition: support workflow '%s' has no step for group %d - stopping support vehicle",
+                    supportWorkflow.name, toGroup)
+                self:stopWorkflow(supportActiveData.vehicle)
+            else
+                WMLogger:info("Sync group transition %d -> %d: moving support '%s' to step %d",
+                    fromGroup, toGroup, supportWorkflow.name, targetStep)
+                self:stopCurrentStep(supportActiveData)
+                supportActiveData.currentStep = targetStep
+                supportActiveData.syncOverridden = false
+                self:resetStepTrackingState(supportActiveData)
+                self:executeCurrentStep(supportActiveData)
+            end
+        end
     end
-
-    -- Find the support step that matches the new group
-    local targetStep = self:findStepByGroup(supportWorkflow, toGroup)
-    if targetStep == nil then
-        WMLogger:warning("Sync group transition: support workflow '%s' has no step for group %d - stopping support",
-            supportWorkflow.name, toGroup)
-        self:stopWorkflow(supportActiveData.vehicle)
-        return
-    end
-
-    WMLogger:info("Sync group transition %d -> %d: moving support '%s' to step %d",
-        fromGroup, toGroup, supportWorkflow.name, targetStep)
-
-    -- Stop the current support step
-    self:stopCurrentStep(supportActiveData)
-
-    -- Move to the new step and reset all tracking flags
-    supportActiveData.currentStep = targetStep
-    supportActiveData.syncOverridden = false  -- Clear manual override
-    self:resetStepTrackingState(supportActiveData)
-
-    -- Execute the new step
-    self:executeCurrentStep(supportActiveData)
 end
 
 ---Get the count of active workflows

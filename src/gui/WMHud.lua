@@ -372,22 +372,41 @@ function WMHud:draw()
         lineY = lineY - self.smallSize - my
         local linkedWf = WorkflowManager:getLinkedWorkflow(workflow.id)
         if linkedWf then
-            local linkedActiveData = WMExecutor:getActiveDataForWorkflow(linkedWf.id)
+            local supportList = WMExecutor:getActiveVehiclesForWorkflow(linkedWf.id)
             local linkedStatus
-            if linkedActiveData then
-                if linkedActiveData.status == WorkflowManager.STATUS_RUNNING then
-                    setTextColor(0.3, 0.9, 0.3, 1) -- green
+            if #supportList == 0 then
+                setTextColor(0.6, 0.6, 0.6, 1)
+                linkedStatus = g_i18n:getText("wm_hud_idle") or "Idle"
+            elseif #supportList == 1 then
+                local ad = supportList[1]
+                if ad.status == WorkflowManager.STATUS_RUNNING then
+                    setTextColor(0.3, 0.9, 0.3, 1)
                     linkedStatus = g_i18n:getText("wm_status_running") or "Running"
-                elseif linkedActiveData.status == WorkflowManager.STATUS_PAUSED then
-                    setTextColor(1, 0.6, 0, 1) -- orange
+                elseif ad.status == WorkflowManager.STATUS_PAUSED then
+                    setTextColor(1, 0.6, 0, 1)
                     linkedStatus = g_i18n:getText("wm_status_paused") or "Paused"
                 else
-                    setTextColor(0.6, 0.6, 0.6, 1) -- gray
+                    setTextColor(0.6, 0.6, 0.6, 1)
                     linkedStatus = g_i18n:getText("wm_hud_idle") or "Idle"
                 end
             else
-                setTextColor(0.6, 0.6, 0.6, 1)
-                linkedStatus = g_i18n:getText("wm_hud_idle") or "Idle"
+                -- Multiple support vehicles: count running/paused
+                local running, paused = 0, 0
+                for _, ad in ipairs(supportList) do
+                    if ad.status == WorkflowManager.STATUS_RUNNING then running = running + 1
+                    elseif ad.status == WorkflowManager.STATUS_PAUSED then paused = paused + 1
+                    end
+                end
+                if running > 0 then
+                    setTextColor(0.3, 0.9, 0.3, 1)
+                    linkedStatus = string.format("%dx %s", #supportList, g_i18n:getText("wm_status_running") or "Running")
+                elseif paused > 0 then
+                    setTextColor(1, 0.6, 0, 1)
+                    linkedStatus = string.format("%dx %s", #supportList, g_i18n:getText("wm_status_paused") or "Paused")
+                else
+                    setTextColor(0.6, 0.6, 0.6, 1)
+                    linkedStatus = string.format("%dx %s", #supportList, g_i18n:getText("wm_hud_idle") or "Idle")
+                end
             end
             renderText(x + mx, lineY, self.smallSize,
                 string.format(g_i18n:getText("wm_hud_linked") or "Linked: %s - %s", linkedWf.name, linkedStatus))

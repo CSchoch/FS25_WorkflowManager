@@ -143,6 +143,7 @@ On `onPostLoad`, this state is restored as `status = "paused"` with a 10-second 
 * **Draggable HUD** - HUD panel can be repositioned by dragging the header; position clamped to screen bounds
 * **Linked workflow pairs** - Link two workflows as main/support for coordinated multi-vehicle operations (e.g., Combine + Unloader). Full sync group system, auto-group assignment, pause/resume/stop propagation, late-start sync, support auto-looping, and HUD status line for linked partner
 * **Linked workflow GUI** - Link/Unlink buttons in main dialog; sync group column + Auto Groups button in editor; sync group field in step dialog (visible only when linked)
+* **Multiple support vehicles** - Multiple vehicles can run the same support workflow simultaneously; all receive sync group transitions and pause/resume/stop from main. HUD shows vehicle count (e.g., "2x Running") when more than one support vehicle is active.
 * **Release build support** - `DevConfig.lua` omitted from release zip; `WorkflowManager.lua` installs a release-mode stub if the file is absent (all debug flags off)
 * **DDS textures** - All textures (`modIcon`, HUD icons, `white`) converted to DDS; `tools/png_to_dds.py` handles conversion (texconv DXT5/DXT1 if available, Pillow uncompressed fallback)
 * **Legacy GUI removed** - `WMManagerGUI` and `WMEditorGUI` update/draw calls removed from `WorkflowManager.lua`
@@ -316,13 +317,15 @@ FS25_WorkflowManager/
 - When the main workflow is paused/resumed/stopped, the linked support workflow is automatically propagated
 - When the main workflow completes, the support is stopped
 - Late start: if support starts after main is already running, it syncs to main's current sync group
+- **Multiple support vehicles**: Multiple vehicles can run the same support workflow simultaneously, each with independent per-vehicle state. All support vehicles receive pause/resume/stop/sync-group transitions from main.
 
 ### Sync Groups (Linked Workflows)
 - Each step has an optional `syncGroup` integer; steps with the same group across linked workflows are coordinated
-- The support workflow loops its current step while the main remains in the same sync group
-- When the main advances to a new sync group, `WMExecutor:onSyncGroupTransition()` stops the support's current step and jumps it to the matching group
+- Each support vehicle loops its current step independently while the main remains in the same sync group
+- When the main advances to a new sync group, `WMExecutor:onSyncGroupTransition()` advances ALL running support vehicles; a vehicle with no matching step for the new group is stopped
 - **Auto Groups**: `autoAssignSyncGroups()` increments group after each CP step for main; assigns sequential groups for support
 - `syncOverridden = true` on `activeData` when user manually switches steps on a support workflow; cleared on next main group transition
+- `WMExecutor:getActiveVehiclesForWorkflow(workflowId)` returns a snapshot array of all `activeData` entries for vehicles running a given workflow — used by all propagation callsites
 
 ### Draggable HUD
 - HUD header acts as a drag handle: clicking and dragging repositions the entire panel
@@ -352,23 +355,21 @@ FS25_WorkflowManager/
 ## Running Tests
 
 ```bash
-"C:\Program Files (x86)\Lua\5.1\lua.exe" tests/run_tests.lua
+"C:\Program Files (x86)\Lua\5.1\lua.exe" tests/run_executor_spec.lua
 ```
 
-The test runner loads all specs in `tests/specs/`. Individual spec files can be run with the inline mini-runner pattern used in CI:
+**Preferred runner for WorkflowExecutor changes.** `tests/run_executor_spec.lua` is a self-contained runner that loads mocks, fixtures, and only `WorkflowExecutor_spec.lua`. It properly handles `before_each` and `after_each` and avoids the Windows Logger I/O issue.
 
+To run all specs (may stop early on Windows due to Logger I/O issue, pre-existing):
 ```bash
-"C:\Program Files (x86)\Lua\5.1\lua.exe" - << 'EOF'
--- paste mini-runner + dofile("tests/specs/WorkflowExecutor_spec.lua") etc.
-EOF
+"C:\Program Files (x86)\Lua\5.1\lua.exe" tests/run_tests.lua
 ```
 
 **Test structure:**
 - `tests/mocks/` — game globals, XMLFile, vehicle factory, event handler stubs
 - `tests/specs/` — one spec file per module
 - `tests/fixtures/` — shared workflow test data
-
-**Note:** The full `run_tests.lua` runner stops early on Windows due to a Logger spec I/O issue (pre-existing, unrelated to test correctness). Use the mini-runner pattern above to run `WorkflowManager_spec.lua` and `WorkflowExecutor_spec.lua` directly when verifying changes.
+- `tests/run_executor_spec.lua` — standalone runner for WorkflowExecutor spec (use this for TDD)
 
 ## Resources
 
@@ -379,8 +380,8 @@ EOF
 
 ---
 
-**Status**: Phase 1 COMPLETE - Linked workflows implemented; working on GUI refinement (Milestone 8)
-**Last updated**: 2026-03-15
+**Status**: Phase 1 COMPLETE - Linked workflows with multi-vehicle support implemented; working on GUI refinement (Milestone 8)
+**Last updated**: 2026-03-17
 
 ## Screenshots Needed
 
@@ -403,7 +404,7 @@ Screenshots for the Docusaurus documentation site (`website/static/img/screensho
 
 ### High Priority
 
-- [x] **Milestone 12: Linked workflow** — tested and working for one main + one supporter workflow pair
+- [x] **Milestone 12: Linked workflow** — tested and working; supports one main + N supporter vehicles on the same support workflow
 
 ### Low Priority
 
