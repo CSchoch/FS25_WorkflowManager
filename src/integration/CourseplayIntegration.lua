@@ -623,9 +623,9 @@ function CPIntegration:holdCourse(vehicle, ms)
         return false
     end
 
-    -- CP's freeze/cpHold requires an active driver; skip if not present
-    if not self:hasActiveDriver(vehicle) then
-        WMLogger:debug("holdCourse: CP driver not initialized, skipping freeze")
+    -- Only freeze if CP is actually running
+    if not self:isRunning(vehicle) then
+        WMLogger:debug("holdCourse: CP not running, skipping freeze")
         return false
     end
 
@@ -660,22 +660,17 @@ function CPIntegration:resumeCourse(vehicle)
         return false
     end
 
-    -- CP's unfreeze requires an active driver; skip if not present
-    if not self:hasActiveDriver(vehicle) then
-        WMLogger:debug("resumeCourse: CP driver not initialized, skipping unfreeze")
+    -- Only unfreeze if CP has the unfreeze method (it may not be frozen if CP was just started)
+    if not vehicle.unfreezeCp then
+        WMLogger:debug("resumeCourse: unfreezeCp not available, skipping")
         return false
     end
 
     WMLogger:info("Resuming Courseplay")
     WMLogger:apiCall("Courseplay", "unfreezeCp", vehicle)
-
-    if vehicle.unfreezeCp then
-        vehicle:unfreezeCp()
-        WMLogger:stateChange("Courseplay", "frozen", "running")
-        return true
-    end
-
-    return false
+    vehicle:unfreezeCp()
+    WMLogger:stateChange("Courseplay", "frozen", "running")
+    return true
 end
 
 ---Check if Courseplay is currently active for a vehicle
