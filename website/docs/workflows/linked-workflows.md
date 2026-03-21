@@ -144,6 +144,37 @@ Both workflows are unlinked simultaneously. Their steps and sync group values ar
 Unlinking does not remove sync group values from steps. If you later re-link with a different partner, review the sync groups in the editor.
 :::
 
+## Pre-positioning the Unloader
+
+When AutoDrive starts an **Unload** step and the unloader is already on or near the field, it immediately enters passive waiting mode at its current position. It stays there until the combine signals it needs emptying — it will not move to a designated waiting spot on its own. This can cause the unloader to sit in the middle of the field and block the combine's path.
+
+**Solution**: add a **Drive** step with the same sync group before the **Unload** step. This moves the unloader to a marker near the field first. Once it arrives, the Unload step loops it between the field and the silo as normal.
+
+**Example support workflow:**
+
+| Step | Action | Target | Unload Target | Sync Group |
+|------|--------|--------|---------------|------------|
+| 1 | Drive | Field1\_Entrance | — | 1 |
+| 2 | Unload | Field1\_Area | Silo | 1 |
+| 3 | Drive | Field2\_Entrance | — | 2 |
+| 4 | Unload | Field2\_Area | Silo | 2 |
+
+Steps 1 and 2 share sync group 1, so the support loops 1 → 2 → 1 → 2 while the main harvests field 1. On the first pass the unloader drives to the field entrance; on subsequent loops it goes straight to the field area. When the main transitions to sync group 2, the support jumps to step 3 and repeats the pattern for field 2.
+
+:::tip
+Place the **Drive** marker at the field entrance or a nearby headland position. This keeps the unloader close enough to respond quickly when the combine calls, without blocking the combine's path.
+:::
+
+:::tip
+The Drive step also acts as a natural delay that prevents the unloader from arriving at the field before the combine and blocking it. Both vehicles start their sync group at the same time, but the unloader spends the drive leg in transit. By the time it reaches the entrance marker and the Unload step begins, the combine has usually already started field work and is ready to call for unloading. If the unloader still arrives too early, use a farther Drive marker to extend the delay.
+:::
+
+:::note
+Because both steps share the same sync group, using **Auto Groups** on the main workflow won't create a new group between them. Assign them the same sync group number manually in the Step Dialog.
+:::
+
+---
+
 ## Tips and Best Practices
 
 - **Name clearly**: Use names like "Harvest - Main" and "Harvest - Unloader" so the pair is obvious
@@ -151,3 +182,4 @@ Unlinking does not remove sync group values from steps. If you later re-link wit
 - **Test each workflow first**: Verify both work independently before linking
 - **Support should loop safely**: The support's step at each sync group should be one that makes sense to repeat (e.g., unload, not a one-time drive)
 - **Match step counts thoughtfully**: The support doesn't need the same number of steps as the main — one support step per sync group is typical
+- **Pre-position the unloader**: Add a Drive step (same sync group) before each Unload step so the unloader is already near the field when it starts — see [Pre-positioning the Unloader](#pre-positioning-the-unloader) above
