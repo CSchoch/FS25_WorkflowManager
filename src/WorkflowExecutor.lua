@@ -195,15 +195,6 @@ function WMExecutor:stopWorkflow(vehicle)
         workflowId = workflow.id
     })
 
-    -- If this is a main workflow, stop all vehicles running the linked support workflow
-    if workflow.linkRole == "main" and workflow.linkedWorkflowId then
-        local supportDataList = self:getActiveVehiclesForWorkflow(workflow.linkedWorkflowId)
-        for _, supportActiveData in ipairs(supportDataList) do
-            WMLogger:info("Main workflow stopped - also stopping linked support workflow")
-            self:stopWorkflow(supportActiveData.vehicle)
-        end
-    end
-
     return true
 end
 
@@ -254,19 +245,6 @@ function WMExecutor:pauseWorkflow(vehicle)
         workflowId = activeData.workflow.id,
         currentStep = activeData.currentStep
     })
-
-    -- If this is a main workflow, pause all vehicles running the linked support workflow
-    local workflow = activeData.workflow
-    if workflow.linkRole == "main" and workflow.linkedWorkflowId then
-        local supportDataList = self:getActiveVehiclesForWorkflow(workflow.linkedWorkflowId)
-        for _, supportActiveData in ipairs(supportDataList) do
-            if supportActiveData.status == WorkflowManager.STATUS_RUNNING then
-                WMLogger:info("Main workflow paused - also pausing linked support workflow")
-                self:pauseWorkflow(supportActiveData.vehicle)
-                WorkflowManager:broadcastState(supportActiveData.vehicle)
-            end
-        end
-    end
 
     return true
 end
