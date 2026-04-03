@@ -65,7 +65,7 @@ Voraussetzungen: AutoDrive, Courseplay
             <binding device="KB_MOUSE_DEFAULT" input="KEY_lalt KEY_h" />
         </actionBinding>
         <actionBinding action="WM_GUI_DELETE">
-            <binding device="KB_MOUSE_DEFAULT" input="KEY_d" />
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_r" />
         </actionBinding>
         <actionBinding action="WM_GUI_START">
             <binding device="KB_MOUSE_DEFAULT" input="KEY_s" />
