@@ -315,12 +315,6 @@ function WMEditorDialog:updateButtons()
         self.moveDownButton:setDisabled(not hasSelection or self.selectedStepIndex >= maxIndex)
     end
 
-    -- Auto Groups: only visible and enabled when workflow is linked
-    if self.autoGroupsButton then
-        self.autoGroupsButton:setVisible(isLinked)
-        self.autoGroupsButton:setDisabled(not isLinked or not hasSteps)
-    end
-
     -- Sync group column header: only visible when linked
     if self.groupColumnHeader then
         self.groupColumnHeader:setVisible(isLinked)
@@ -405,17 +399,6 @@ function WMEditorDialog:onClickMoveUp()
         steps[self.selectedStepIndex] = steps[self.selectedStepIndex - 1]
         steps[self.selectedStepIndex - 1] = temp
         self.selectedStepIndex = self.selectedStepIndex - 1
-        self:refreshStepList()
-    end
-end
-
----Called when Auto Groups button is clicked
----Auto-assigns sync groups based on the workflow's link role
-function WMEditorDialog:onClickAutoGroups()
-    WMLogger:debug("WMEditorDialog:onClickAutoGroups")
-
-    if self.workflow then
-        WorkflowManager:autoAssignSyncGroups(self.workflow.id)
         self:refreshStepList()
     end
 end

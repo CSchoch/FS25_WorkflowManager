@@ -59,24 +59,7 @@ The main workflow now shows a link indicator, and the support shows its partner.
 
 ### Step 3: Assign Sync Groups
 
-Sync groups can be assigned manually or automatically.
-
-#### Auto Groups (Recommended)
-
-In the **Editor Dialog**:
-1. Open the main workflow in the editor
-2. Click **Auto Groups**
-3. Sync groups are assigned automatically:
-   - Groups increment after each Courseplay step on the main
-   - The support receives matching sequential groups
-
-#### Manual Assignment
-
-In the **Step Dialog**, set the **Sync Group** field (only visible when the workflow is linked). Use the same integer for steps that belong to the same phase.
-
-:::tip
-For most harvest + unloader setups, Auto Groups gives the correct result with one click.
-:::
+In the **Step Dialog**, set the **Sync Group** field (only visible when the workflow is linked). Use the same integer for all steps that belong to the same phase of work.
 
 ## Starting Linked Workflows
 
@@ -103,7 +86,9 @@ Workflows are started independently. The main does not auto-start the support.
 
 ### Support Looping
 
-The support loops its current step (repeats it continuously) while the main remains in the same sync group. This is the intended behavior for unloader vehicles — they should keep shuttling until the harvester moves to the next field.
+While the main remains in the same sync group, the support loops **all steps in that sync group** from the beginning. If the support has only one step in a group it repeats that step; if it has two or more steps (e.g. `drive` then `unload`) it runs through all of them and then restarts from the first step of the group.
+
+This is the intended behavior for unloader vehicles — they keep shuttling until the harvester moves to the next field.
 
 ### Late Start
 
@@ -170,7 +155,7 @@ The Drive step also acts as a natural delay that prevents the unloader from arri
 :::
 
 :::note
-Because both steps share the same sync group, using **Auto Groups** on the main workflow won't create a new group between them. Assign them the same sync group number manually in the Step Dialog.
+Because both steps share the same sync group, assign them the same sync group number in the Step Dialog.
 :::
 
 ---
@@ -178,8 +163,7 @@ Because both steps share the same sync group, using **Auto Groups** on the main 
 ## Tips and Best Practices
 
 - **Name clearly**: Use names like "Harvest - Main" and "Harvest - Unloader" so the pair is obvious
-- **Use Auto Groups**: Saves time and avoids numbering mistakes
 - **Test each workflow first**: Verify both work independently before linking
 - **Support should loop safely**: The support's step at each sync group should be one that makes sense to repeat (e.g., unload, not a one-time drive)
-- **Match step counts thoughtfully**: The support doesn't need the same number of steps as the main — one support step per sync group is typical
+- **Multiple steps per sync group are supported**: You can add a `Drive` step and an `Unload` step in the same group — the support loops through all steps in the group, not just the last one
 - **Pre-position the unloader**: Add a Drive step (same sync group) before each Unload step so the unloader is already near the field when it starts — see [Pre-positioning the Unloader](#pre-positioning-the-unloader) above

@@ -40,7 +40,6 @@
                 <Button profile="buttonActivate" id="removeStepButton" text="$l10n_wm_button_delete" onClick="onClickRemoveStep" size="110px 40px" focusId="removeBtn"/>
                 <Button profile="buttonActivate" id="moveUpButton" text="$l10n_wm_button_up" onClick="onClickMoveUp" size="100px 40px" focusId="upBtn"/>
                 <Button profile="buttonActivate" id="moveDownButton" text="$l10n_wm_button_down" onClick="onClickMoveDown" size="100px 40px" focusId="downBtn"/>
-                <Button profile="buttonActivate" id="autoGroupsButton" text="$l10n_wm_auto_groups" onClick="onClickAutoGroups" size="130px 40px" focusId="autoGrpBtn"/>
             </BoxLayout>
 
             <!-- Column Headers for Steps -->

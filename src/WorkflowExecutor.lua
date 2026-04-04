@@ -642,13 +642,26 @@ function WMExecutor:onStepCompleted(activeData)
                 local supportGroup = supportStep and supportStep.syncGroup
 
                 if mainGroup and supportGroup and mainGroup == supportGroup then
-                    -- Main is still in the same sync group - loop this step
-                    WMLogger:info("Support workflow '%s' looping step %d (sync group %d matches main)",
-                        workflow.name, completedStepNum, supportGroup)
-                    self:executeCurrentStep(activeData)
-                    return
+                    -- Main is still in the same sync group.
+                    -- If the next support step is in the same group, advance to it normally.
+                    -- Only loop back to the first step of the group after the last step in the group finishes.
+                    local nextSupportStep = workflow.steps[completedStepNum + 1]
+                    local nextSupportGroup = nextSupportStep and nextSupportStep.syncGroup
+                    if nextSupportGroup == supportGroup then
+                        -- More steps remain in this group - fall through to normal advance
+                    else
+                        -- Last step of the group finished - loop back to the first step
+                        local firstStepOfGroup = self:findStepByGroup(workflow, supportGroup)
+                        if firstStepOfGroup then
+                            activeData.currentStep = firstStepOfGroup
+                        end
+                        WMLogger:info("Support workflow '%s' looping from step %d (sync group %d matches main)",
+                            workflow.name, activeData.currentStep, supportGroup)
+                        self:executeCurrentStep(activeData)
+                        return
+                    end
                 end
-                -- If groups differ, fall through to normal step advance
+                -- If groups differ, or more steps remain in the group, fall through to normal step advance
             elseif mainActiveData == nil or mainActiveData.status ~= WorkflowManager.STATUS_RUNNING then
                 -- Main is not running - stop support
                 WMLogger:info("Support workflow '%s': main workflow not running, stopping support", workflow.name)

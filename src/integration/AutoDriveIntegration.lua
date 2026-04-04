@@ -285,16 +285,21 @@ end
 function ADIntegration.onRouteCompleteCallback(vehicle)
     WMLogger:debug("AutoDrive route complete callback for vehicle")
 
-    -- Remove from pending
+    -- Only fire the completion event if this route was not already cancelled by stopRoute.
+    -- stopRoute clears pendingCallbacks[vehicle] before calling stopAutoDrive, so if the
+    -- callback fires synchronously (or late) after a manual stop, we silently discard it.
+    -- Without this guard, the callback fires unconditionally and triggers onStepCompleted
+    -- while goToNextStep is mid-execution, causing the sync-group loop to reset the step.
     if vehicle and ADIntegration.pendingCallbacks[vehicle] then
         ADIntegration.pendingCallbacks[vehicle] = nil
-    end
 
-    -- Fire completion event
-    WMEventHandler:fireEvent(WMEventHandler.EVENT_AUTODRIVE_FINISHED, {
-        vehicle = vehicle,
-        success = true
-    })
+        WMEventHandler:fireEvent(WMEventHandler.EVENT_AUTODRIVE_FINISHED, {
+            vehicle = vehicle,
+            success = true
+        })
+    else
+        WMLogger:debug("AutoDrive route complete callback ignored - route was cancelled")
+    end
 end
 
 ---Map action string to AutoDrive mode constant

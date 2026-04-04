@@ -703,10 +703,6 @@ function WorkflowManager:linkWorkflows(mainWorkflowId, supportWorkflowId)
     supportWf.linkedWorkflowId = mainWf.id
     supportWf.linkRole = "support"
 
-    -- Auto-assign sync groups
-    self:autoAssignSyncGroups(mainWf.id)
-    self:autoAssignSyncGroups(supportWf.id)
-
     WMLogger:info("Linked workflows: '%s' (main) <-> '%s' (support)", mainWf.name, supportWf.name)
     return true
 end
@@ -752,45 +748,6 @@ function WorkflowManager:getLinkedWorkflow(workflowId)
         return nil
     end
     return self:getWorkflowById(workflow.linkedWorkflowId)
-end
-
----Auto-assign sync groups to a workflow's steps based on its role
----For "main": Group number increments after each Courseplay step (AD steps leading to a CP step share the same group)
----For "support": Each step gets sequential group numbers (1, 2, 3...)
----@param workflowId string ID of the workflow to assign groups to
-function WorkflowManager:autoAssignSyncGroups(workflowId)
-    local workflow = self:getWorkflowById(workflowId)
-    if workflow == nil then
-        return
-    end
-
-    if workflow.linkRole == nil then
-        -- Not linked, clear all groups
-        for _, step in ipairs(workflow.steps) do
-            step.syncGroup = nil
-        end
-        return
-    end
-
-    if workflow.linkRole == "main" then
-        -- For main: Steps that lead into a CP step share a group.
-        -- Group number increments after each CP step completes.
-        local group = 1
-        for i, step in ipairs(workflow.steps) do
-            step.syncGroup = group
-            -- Increment group after each CP step (the "work" boundary)
-            if step.type == WorkflowManager.STEP_COURSEPLAY then
-                group = group + 1
-            end
-        end
-    elseif workflow.linkRole == "support" then
-        -- For support: Each step gets sequential group number
-        for i, step in ipairs(workflow.steps) do
-            step.syncGroup = i
-        end
-    end
-
-    WMLogger:debug("Auto-assigned sync groups for workflow '%s' (role: %s)", workflow.name, workflow.linkRole)
 end
 
 ---Delete a workflow

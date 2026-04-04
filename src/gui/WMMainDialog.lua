@@ -60,15 +60,17 @@ end
 
 ---Refresh the workflow list from WorkflowManager
 function WMMainDialog:refreshWorkflowList()
+    local previousIndex = self.selectedWorkflowIndex
     self.workflows = WorkflowManager:getWorkflows() or {}
 
     if self.workflowList then
         self.workflowList:reloadData()
 
-        -- Select first item if available
         if #self.workflows > 0 then
-            self.workflowList:setSelectedIndex(1)
-            self.selectedWorkflowIndex = 1
+            -- Restore previous selection, clamped to valid range
+            local newIndex = math.max(1, math.min(previousIndex > 0 and previousIndex or 1, #self.workflows))
+            self.workflowList:setSelectedIndex(newIndex)
+            self.selectedWorkflowIndex = newIndex
         else
             self.selectedWorkflowIndex = 0
         end

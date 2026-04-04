@@ -142,7 +142,6 @@
         <text name="wm_link_role_support" text="Support"/>
         <text name="wm_sync_group" text="Sync Group"/>
         <text name="wm_sync_group_short" text="Grp"/>
-        <text name="wm_auto_groups" text="Auto Groups"/>
         <text name="wm_link_select" text="Link to workflow:"/>
         <text name="wm_hud_linked" text="Linked: %s - %s"/>
         <text name="wm_confirm_unlink" text="Unlink workflow '%s'?"/>
