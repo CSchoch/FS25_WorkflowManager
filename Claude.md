@@ -12,6 +12,27 @@ A mod for Farming Simulator 25 that combines AutoDrive and Courseplay to create 
 * **Data Storage**: XML (workflow definitions in savegame folder; runtime state in vehicle XML)
 * **Mod Structure**: Standard FS25 ModDesc.xml
 
+## Standing Requirements
+
+After every code change, always do all three of the following:
+
+### 1. Update CLAUDE.md
+Keep this file current. If new patterns, tools, constraints, or project facts are introduced, add them here so future sessions stay accurate.
+
+### 2. User-Centric Documentation
+When writing or updating documentation, focus on the user's perspective:
+- What does the user do to trigger this feature?
+- What do they see / what happens as a result?
+- Avoid internal implementation details unless the user needs them.
+
+### 3. Update Tests
+Any new or changed functionality must be covered by tests. Run tests with:
+```
+"/c/Program Files (x86)/Lua/5.1/lua.exe" tests/run_tests.lua
+```
+Add or update test cases in `tests/` to match the new behaviour before considering a task done.
+
+
 ## Architecture
 
 ### Main Components
