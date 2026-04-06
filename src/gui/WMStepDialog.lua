@@ -23,10 +23,6 @@ function WMStepDialog.new(target)
     self.stepTarget = ""
     self.stepUnloadTarget = ""
     self.stepFillType = ""
-    self.stepSyncGroup = nil
-
-    -- Whether the parent workflow is linked (controls sync group visibility)
-    self.isWorkflowLinked = false
 
     -- List data
     self.targetItems = {}
@@ -120,11 +116,9 @@ end
 ---Set the step to edit (nil for new step)
 ---@param step table|nil Step to edit, or nil for new
 ---@param callback function Callback when done: callback(step) or callback(nil) if cancelled
----@param isWorkflowLinked boolean|nil Whether the parent workflow is linked (controls sync group visibility)
-function WMStepDialog:setStep(step, callback, isWorkflowLinked)
+function WMStepDialog:setStep(step, callback)
     self.callback = callback
     self.isEditMode = step ~= nil
-    self.isWorkflowLinked = isWorkflowLinked or false
 
     if step then
         self.step = step
@@ -133,7 +127,6 @@ function WMStepDialog:setStep(step, callback, isWorkflowLinked)
         self.stepTarget = step.target or ""
         self.stepUnloadTarget = step.unloadTarget or ""
         self.stepFillType = step.fillType or ""
-        self.stepSyncGroup = step.syncGroup
     else
         self.step = nil
         self.stepType = "autodrive"
@@ -141,7 +134,6 @@ function WMStepDialog:setStep(step, callback, isWorkflowLinked)
         self.stepTarget = ""
         self.stepUnloadTarget = ""
         self.stepFillType = ""
-        self.stepSyncGroup = nil
     end
 end
 
@@ -219,16 +211,7 @@ function WMStepDialog:refreshDisplay()
     -- Update target list
     self:refreshTargetDisplay()
 
-    -- Update sync group input
-    if self.syncGroupInput then
-        if self.stepSyncGroup then
-            self.syncGroupInput:setText(tostring(self.stepSyncGroup))
-        else
-            self.syncGroupInput:setText("")
-        end
-    end
-
-    -- Update visibility of unload target, fill type, and sync group
+    -- Update visibility of unload target and fill type
     self:updateFieldVisibility()
 end
 
@@ -459,11 +442,6 @@ function WMStepDialog:updateFieldVisibility()
     end
     if self.fillTypeDropdownContainer then
         self.fillTypeDropdownContainer:setVisible(needsFillType)
-    end
-
-    -- Sync group section: only visible when workflow is linked
-    if self.syncGroupSection then
-        self.syncGroupSection:setVisible(self.isWorkflowLinked)
     end
 end
 
@@ -696,15 +674,6 @@ function WMStepDialog:onClickConfirm()
         end
         if self:actionNeedsFillType() and self.stepFillType ~= "" then
             step.fillType = self.stepFillType
-        end
-    end
-
-    -- Add sync group if workflow is linked and a value was entered
-    if self.isWorkflowLinked and self.syncGroupInput then
-        local groupText = self.syncGroupInput.text or ""
-        local groupNum = tonumber(groupText)
-        if groupNum and groupNum > 0 then
-            step.syncGroup = math.floor(groupNum)
         end
     end
 

@@ -24,14 +24,6 @@
                 </TextInput>
             </BoxLayout>
 
-            <!-- Linked Workflow Row -->
-            <BoxLayout profile="wm_hBox" size="1060px 40px">
-                <Text profile="wm_dialogText" text="$l10n_wm_editor_linked" size="80px 40px"/>
-                <Text profile="wm_dialogText" id="linkedWorkflowLabel" text="" size="560px 40px"/>
-                <Button profile="buttonOK"       id="linkChangeButton"     text="$l10n_wm_button_link"    onClick="onClickLinkWorkflow"   size="90px 36px" focusId="linkChangeBtn"/>
-                <Button profile="buttonActivate" id="unlinkWorkflowButton" text="$l10n_wm_button_unlink"  onClick="onClickUnlinkWorkflow" size="100px 36px" focusId="unlinkWfBtn"/>
-            </BoxLayout>
-
             <!-- Steps Section Header with Buttons -->
             <BoxLayout profile="wm_hBox" size="1060px 50px">
                 <Text profile="wm_sectionLabel" text="$l10n_wm_editor_steps" size="80px 40px"/>
@@ -46,23 +38,23 @@
             <BoxLayout profile="wm_hBox" size="1060px 30px">
                 <Text profile="wm_columnHeader" text="#" size="50px 30px"/>
                 <Text profile="wm_columnHeader" text="$l10n_wm_editor_type" size="150px 30px"/>
-                <Text profile="wm_columnHeader" text="$l10n_wm_editor_target" size="430px 30px"/>
+                <Text profile="wm_columnHeader" text="$l10n_wm_editor_target" size="480px 30px"/>
                 <Text profile="wm_columnHeader" text="$l10n_wm_editor_action" size="280px 30px"/>
-                <Text profile="wm_columnHeader" id="groupColumnHeader" text="$l10n_wm_sync_group_short" size="60px 30px"/>
+                <Text profile="wm_columnHeader" text="$l10n_wm_editor_sup_short" size="60px 30px"/>
             </BoxLayout>
 
             <!-- Step List -->
-            <BoxLayout flowDirection="horizontal" size="1060px 380px" margin="0 0 0 10px">
+            <BoxLayout flowDirection="horizontal" size="1060px 420px" margin="0 0 0 10px">
                 <SmoothList profile="wm_list" id="stepList"
                             onSelectionChanged="onStepListSelectionChanged"
                             onDoubleClick="onStepListDoubleClick"
-                            size="1020px 380px"
+                            size="1020px 420px"
                             focusId="stepList">
                     <ListItem profile="wm_listItem" size="1020px 38px">
                         <BoxLayout flowDirection="horizontal" alignmentY="middle" size="100% 100%">
                             <Text name="stepNum" profile="wm_listItemText" size="50px 100%"/>
                             <Text name="stepType" profile="wm_listItemText" size="150px 100%"/>
-                            <Text name="stepTarget" profile="wm_listItemText" size="430px 100%"/>
+                            <Text name="stepTarget" profile="wm_listItemText" size="480px 100%"/>
                             <Text name="stepAction" profile="wm_listItemText" size="280px 100%"/>
                             <Text name="stepGroup" profile="wm_listItemText" size="60px 100%"/>
                         </BoxLayout>
@@ -72,6 +64,13 @@
                 <ThreePartBitmap profile="fs25_listSliderBox">
                     <Slider profile="fs25_listSlider" dataElementId="stepList"/>
                 </ThreePartBitmap>
+            </BoxLayout>
+
+            <!-- Support Steps Row -->
+            <BoxLayout profile="wm_hBox" size="1060px 40px">
+                <Text profile="wm_dialogText" id="supportStepInfo" text="$l10n_wm_editor_support_select" size="580px 40px"/>
+                <Button profile="buttonOK" id="addSupportStepButton" text="$l10n_wm_button_add_support" onClick="onClickAddSupportStep" size="210px 36px" focusId="addSupBtn"/>
+                <Button profile="buttonActivate" id="removeSupportStepButton" text="$l10n_wm_button_del_support" onClick="onClickRemoveSupportStep" size="210px 36px" focusId="delSupBtn"/>
             </BoxLayout>
         </BoxLayout>
 

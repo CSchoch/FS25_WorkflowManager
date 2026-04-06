@@ -133,23 +133,17 @@
         <text name="wm_hud_idle" text="Idle"/>
         <text name="wm_hud_no_vehicle" text="No vehicle"/>
 
-        <!-- Linked Workflow Pairs -->
-        <text name="wm_button_link" text="Link"/>
-        <text name="wm_button_unlink" text="Unlink"/>
-        <text name="wm_linked_to" text="Linked: %s"/>
-        <text name="wm_linked_start_prompt" text="Also start linked workflow '%s' on its vehicle"/>
-        <text name="wm_link_role_main" text="Main"/>
-        <text name="wm_link_role_support" text="Support"/>
-        <text name="wm_sync_group" text="Sync Group"/>
-        <text name="wm_sync_group_short" text="Grp"/>
-        <text name="wm_link_select" text="Link to workflow:"/>
-        <text name="wm_hud_linked" text="Linked: %s - %s"/>
-        <text name="wm_confirm_unlink" text="Unlink workflow '%s'?"/>
-        <text name="wm_link_role_indicator_main" text=" [Main]"/>
-        <text name="wm_link_role_indicator_support" text=" [Support]"/>
-        <text name="wm_editor_linked" text="Linked:"/>
-        <text name="wm_editor_linked_none" text="(none)"/>
-        <text name="wm_button_change" text="Change"/>
-        <text name="wm_link_no_candidates" text="No other workflows available to link"/>
+        <!-- Mode Select Dialog -->
+        <text name="wm_mode_select_title" text="Select Role"/>
+        <text name="wm_mode_select_description" text="This workflow has support steps. Choose your role:"/>
+        <text name="wm_button_run_as_main" text="Run as Main Vehicle"/>
+        <text name="wm_button_run_as_support" text="Run as Support Vehicle"/>
+
+        <!-- Support Steps Editor -->
+        <text name="wm_editor_sup_short" text="Sup"/>
+        <text name="wm_button_add_support" text="Add Support Step"/>
+        <text name="wm_button_del_support" text="Del Support Step"/>
+        <text name="wm_editor_support_select" text="Select a step to manage support sub-steps"/>
+        <text name="wm_editor_support_info" text="Support steps for step %d: %d"/>
     </texts>
 </l10n>

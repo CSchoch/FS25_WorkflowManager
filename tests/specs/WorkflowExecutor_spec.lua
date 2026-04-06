@@ -31,7 +31,6 @@ describe("WMExecutor (real)", function()
             STEP_AUTODRIVE   = "autodrive",
             STEP_COURSEPLAY  = "courseplay",
             broadcastState   = function() end,
-            getLinkedWorkflow = function() return nil end,
         }
 
         -- Executor runs server-side only; make tests act as the server
@@ -61,17 +60,31 @@ describe("WMExecutor (real)", function()
         return vehicle.spec_workflowManagerSpec.wmExecution
     end
 
-    -- Create a simple 3-step test workflow (AD -> CP -> AD)
+    -- Create a simple 3-step test workflow (AD -> CP -> AD), each step with empty support array
     local function makeWorkflow(id)
         return {
-            id       = id or "wf_001",
-            name     = "Test Workflow",
-            linkRole = nil,
-            linkedWorkflowId = nil,
+            id    = id or "wf_001",
+            name  = "Test Workflow",
             steps = {
-                { type = "autodrive",  target = "Farm",   action = "drive"      },
-                { type = "courseplay", target = "Field1", action = "fieldwork"  },
-                { type = "autodrive",  target = "Silo",   action = "unload", unloadTarget = "Silo" },
+                { type = "autodrive",  target = "Farm",   action = "drive",     support = {} },
+                { type = "courseplay", target = "Field1", action = "fieldwork", support = {} },
+                { type = "autodrive",  target = "Silo",   action = "unload", unloadTarget = "Silo", support = {} },
+            },
+        }
+    end
+
+    -- Workflow where step 2 (fieldwork) has 2 support sub-steps; others have none
+    local function makeWorkflowWithSupport(id)
+        return {
+            id   = id or "wf_wsup",
+            name = "Workflow With Support",
+            steps = {
+                { type = "autodrive",  target = "Farm",   action = "drive",     support = {} },
+                { type = "courseplay", target = "Field1", action = "fieldwork", support = {
+                    { type = "autodrive", target = "Field1", action = "unload", unloadTarget = "Silo" },
+                    { type = "autodrive", target = "Silo",   action = "deliver" },
+                }},
+                { type = "autodrive",  target = "Farm2",  action = "drive",     support = {} },
             },
         }
     end
@@ -627,43 +640,309 @@ describe("WMExecutor (real)", function()
     end)
 
     -- =========================================================================
-    -- findStepByGroup
+    -- startWorkflow: isMain parameter
     -- =========================================================================
-    describe("findStepByGroup", function()
-        local wfWithGroups
-
-        before_each(function()
-            wfWithGroups = {
-                id    = "wf_sync",
-                name  = "Sync Workflow",
-                steps = {
-                    { type = "autodrive",  target = "A", action = "drive",     syncGroup = 1 },
-                    { type = "courseplay", target = "B", action = "fieldwork", syncGroup = 1 },
-                    { type = "autodrive",  target = "C", action = "drive",     syncGroup = 2 },
-                },
-            }
+    describe("startWorkflow isMain parameter", function()
+        it("defaults isMainVehicle=true when isMain not provided", function()
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(makeWorkflow(), v)
+            assert.is_true(activeData(v).isMainVehicle ~= false)
         end)
 
-        it("returns first step index matching the group", function()
-            assert.are.equal(1, WMExecutor:findStepByGroup(wfWithGroups, 1))
+        it("sets isMainVehicle=true when isMain=true", function()
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(makeWorkflow(), v, true)
+            assert.is_true(activeData(v).isMainVehicle ~= false)
         end)
 
-        it("returns step index for a later group", function()
-            assert.are.equal(3, WMExecutor:findStepByGroup(wfWithGroups, 2))
+        it("sets isMainVehicle=false when isMain=false", function()
+            local wf = makeWorkflowWithSupport()
+            local vm = makeVehicle("Main")
+            local vs = makeVehicle("Support")
+            WMExecutor:startWorkflow(wf, vm, true)   -- main must be running first
+            WMExecutor:startWorkflow(wf, vs, false)
+            assert.are.equal(false, activeData(vs).isMainVehicle)
         end)
 
-        it("returns nil for non-existent group", function()
-            assert.is_nil(WMExecutor:findStepByGroup(wfWithGroups, 99))
+        it("sets currentSupportStep=nil for main vehicle", function()
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(makeWorkflow(), v, true)
+            assert.is_nil(activeData(v).currentSupportStep)
         end)
 
-        it("returns nil for nil workflow", function()
-            assert.is_nil(WMExecutor:findStepByGroup(nil, 1))
-        end)
-
-        it("returns nil for nil groupNum", function()
-            assert.is_nil(WMExecutor:findStepByGroup(wfWithGroups, nil))
+        it("sets currentSupportStep=1 for support vehicle", function()
+            local wf = makeWorkflowWithSupport()
+            local vm = makeVehicle("Main")
+            local vs = makeVehicle("Support")
+            WMExecutor:startWorkflow(wf, vm, true)
+            WMExecutor:startWorkflow(wf, vs, false)
+            assert.are.equal(1, activeData(vs).currentSupportStep)
         end)
     end)
+
+    -- =========================================================================
+    -- getMainActiveDataForWorkflow / getSupportActiveDataListForWorkflow
+    -- =========================================================================
+    describe("role-typed helpers", function()
+        it("getMainActiveDataForWorkflow returns main vehicle's activeData", function()
+            local wf = makeWorkflowWithSupport("wf_r")
+            local vm = makeVehicle("Main")
+            local vs = makeVehicle("Support")
+            WMExecutor:startWorkflow(wf, vm, true)
+            WMExecutor:startWorkflow(wf, vs, false)
+            local d = WMExecutor:getMainActiveDataForWorkflow("wf_r")
+            assert.is_not_nil(d)
+            assert.are.equal(vm, d.vehicle)
+        end)
+
+        it("getMainActiveDataForWorkflow returns nil when no main is running", function()
+            local wf = makeWorkflowWithSupport("wf_r2")
+            local vs = makeVehicle("Support")
+            WMExecutor:startWorkflow(wf, vs, false)
+            assert.is_nil(WMExecutor:getMainActiveDataForWorkflow("wf_r2"))
+        end)
+
+        it("getSupportActiveDataListForWorkflow returns support vehicles only", function()
+            local wf = makeWorkflowWithSupport("wf_r3")
+            local vm  = makeVehicle("Main")
+            local vs1 = makeVehicle("S1")
+            local vs2 = makeVehicle("S2")
+            WMExecutor:startWorkflow(wf, vm,  true)
+            WMExecutor:startWorkflow(wf, vs1, false)
+            WMExecutor:startWorkflow(wf, vs2, false)
+            local list = WMExecutor:getSupportActiveDataListForWorkflow("wf_r3")
+            assert.are.equal(2, #list)
+        end)
+
+        it("getSupportActiveDataListForWorkflow does not include main vehicle", function()
+            local wf = makeWorkflowWithSupport("wf_r4")
+            local vm = makeVehicle("Main")
+            local vs = makeVehicle("Support")
+            WMExecutor:startWorkflow(wf, vm, true)
+            WMExecutor:startWorkflow(wf, vs, false)
+            local list = WMExecutor:getSupportActiveDataListForWorkflow("wf_r4")
+            assert.are.equal(1, #list)
+            assert.are.equal(vs, list[1].vehicle)
+        end)
+    end)
+
+    -- =========================================================================
+    -- getCurrentStep
+    -- =========================================================================
+    describe("getCurrentStep", function()
+        it("returns main step for main vehicle", function()
+            local wf = makeWorkflowWithSupport("wf_cs")
+            local vm = makeVehicle()
+            WMExecutor:startWorkflow(wf, vm, true)
+            local d = activeData(vm)
+            d.currentStep = 1
+            local step = WMExecutor:getCurrentStep(d)
+            assert.is_not_nil(step)
+            assert.are.equal("autodrive", step.type)
+        end)
+
+        it("returns support sub-step for support vehicle", function()
+            local wf = makeWorkflowWithSupport("wf_cs2")
+            local vm = makeVehicle("Main")
+            local vs = makeVehicle("Support")
+            WMExecutor:startWorkflow(wf, vm, true)
+            WMExecutor:startWorkflow(wf, vs, false)
+            -- Main is on step 2 (fieldwork with 2 support sub-steps)
+            activeData(vm).currentStep = 2
+            local d = activeData(vs)
+            d.currentSupportStep = 1
+            local step = WMExecutor:getCurrentStep(d)
+            assert.is_not_nil(step)
+            assert.are.equal("autodrive", step.type)
+            assert.are.equal("Field1", step.target)
+        end)
+
+        it("returns nil for support vehicle when main not running", function()
+            local wf = makeWorkflowWithSupport("wf_cs3")
+            local vs = makeVehicle("Support")
+            -- Manually create activeData without running startWorkflow
+            -- (to avoid auto-stop when no main is present)
+            vs.spec_workflowManagerSpec.wmExecution = {
+                workflow = wf,
+                vehicle = vs,
+                status = "running",
+                currentStep = 1,
+                currentSupportStep = 1,
+                isMainVehicle = false,
+                waitingForCompletion = false,
+            }
+            WMExecutor.activeVehicles[vs] = true
+            -- No main vehicle running
+            local step = WMExecutor:getCurrentStep(vs.spec_workflowManagerSpec.wmExecution)
+            assert.is_nil(step)
+        end)
+    end)
+
+    -- =========================================================================
+    -- onMainStepChanged
+    -- =========================================================================
+    describe("onMainStepChanged", function()
+        it("resets currentSupportStep to 1", function()
+            local wf = makeWorkflowWithSupport("wf_msc")
+            local vm = makeVehicle("Main")
+            local vs = makeVehicle("Support")
+            WMExecutor:startWorkflow(wf, vm, true)
+            WMExecutor:startWorkflow(wf, vs, false)
+            activeData(vm).currentStep = 2  -- step with support sub-steps
+            local d = activeData(vs)
+            d.currentSupportStep = 2
+            WMExecutor:onMainStepChanged(d, 2)
+            assert.are.equal(1, activeData(vs).currentSupportStep)
+        end)
+
+        it("clears waitingForMainStep", function()
+            local wf = makeWorkflowWithSupport("wf_msc2")
+            local vm = makeVehicle("Main")
+            local vs = makeVehicle("Support")
+            WMExecutor:startWorkflow(wf, vm, true)
+            WMExecutor:startWorkflow(wf, vs, false)
+            activeData(vm).currentStep = 2
+            local d = activeData(vs)
+            d.waitingForMainStep = true
+            WMExecutor:onMainStepChanged(d, 2)
+            assert.is_nil(activeData(vs).waitingForMainStep)
+        end)
+    end)
+
+    -- =========================================================================
+    -- Support vehicle: execution and looping
+    -- =========================================================================
+    describe("support vehicle execution", function()
+        it("support vehicle idles (waitingForMainStep) when main step has no sub-steps", function()
+            local wf = makeWorkflowWithSupport("wf_sv1")
+            local vm = makeVehicle("Main")
+            local vs = makeVehicle("Support")
+            WMExecutor:startWorkflow(wf, vm, true)
+            WMExecutor:startWorkflow(wf, vs, false)
+            -- Main is on step 1 which has no support sub-steps
+            -- Support vehicle should be idle
+            local d = activeData(vs)
+            assert.is_true(d.waitingForMainStep == true)
+        end)
+
+        it("support vehicle executes sub-step when main step has sub-steps", function()
+            local wf = makeWorkflowWithSupport("wf_sv2")
+            local vm = makeVehicle("Main")
+            local vs = makeVehicle("Support")
+            WMExecutor:startWorkflow(wf, vm, true)
+            WMExecutor:startWorkflow(wf, vs, false)
+            -- Move main to step 2 (has support sub-steps) then trigger support
+            activeData(vm).currentStep = 2
+            WMExecutor:onMainStepChanged(activeData(vs), 2)
+            -- Support should be waiting for completion (executing sub-step 1)
+            local d = activeData(vs)
+            assert.is_true(d.waitingForCompletion)
+            assert.are.equal(1, d.currentSupportStep)
+        end)
+
+        it("support sub-step loops back to 1 after completing last sub-step", function()
+            local wf = makeWorkflowWithSupport("wf_sv3")
+            local vm = makeVehicle("Main")
+            local vs = makeVehicle("Support")
+            WMExecutor:startWorkflow(wf, vm, true)
+            WMExecutor:startWorkflow(wf, vs, false)
+            -- Move main to step 2 and support to sub-step 2 (last)
+            activeData(vm).currentStep = 2
+            local d = activeData(vs)
+            d.currentSupportStep = 2
+            d.waitingForMainStep = nil
+            d.isMainVehicle = false
+            d.waitingForCompletion = true
+            d.currentStepType = "autodrive"
+            -- Simulate completing sub-step 2
+            WMExecutor:onStepCompleted(d)
+            -- Should loop back to sub-step 1 (or re-execute)
+            -- activeData may have been reset to step 1
+            local da = activeData(vs)
+            if da ~= nil then
+                assert.are.equal(1, da.currentSupportStep)
+            end
+        end)
+    end)
+
+    -- =========================================================================
+    -- Main completion stops support vehicles
+    -- =========================================================================
+    describe("main workflow completion stops support", function()
+        it("onWorkflowCompleted stops all support vehicles", function()
+            local wf = makeWorkflowWithSupport("wf_comp")
+            local vm  = makeVehicle("Main")
+            local vs1 = makeVehicle("S1")
+            local vs2 = makeVehicle("S2")
+            WMExecutor:startWorkflow(wf, vm,  true)
+            WMExecutor:startWorkflow(wf, vs1, false)
+            WMExecutor:startWorkflow(wf, vs2, false)
+            WMExecutor:onWorkflowCompleted(activeData(vm))
+            assert.is_nil(activeData(vm))
+            assert.is_nil(activeData(vs1))
+            assert.is_nil(activeData(vs2))
+        end)
+
+        it("stopping support alone does NOT stop main", function()
+            local wf = makeWorkflowWithSupport("wf_comp2")
+            local vm = makeVehicle("Main")
+            local vs = makeVehicle("Support")
+            WMExecutor:startWorkflow(wf, vm,  true)
+            WMExecutor:startWorkflow(wf, vs, false)
+            WMExecutor:stopWorkflow(vs)
+            assert.is_nil(activeData(vs))
+            assert.is_not_nil(activeData(vm))
+        end)
+    end)
+
+    -- =========================================================================
+    -- Pause/resume propagation with isMainVehicle
+    -- =========================================================================
+    describe("pause/resume propagation (isMainVehicle)", function()
+        local function makeMainSupportPair(wfId)
+            local wf = makeWorkflowWithSupport(wfId or "wf_pr")
+            local vm = makeVehicle("Main")
+            local vs = makeVehicle("Support")
+            WMExecutor:startWorkflow(wf, vm,  true)
+            WMExecutor:startWorkflow(wf, vs, false)
+            -- Ensure support is actually running (move main to step 2)
+            activeData(vm).currentStep = 2
+            WMExecutor:onMainStepChanged(activeData(vs), 2)
+            return vm, vs
+        end
+
+        it("pausing main also pauses support vehicle", function()
+            local vm, vs = makeMainSupportPair("wf_pr1")
+            WMExecutor:pauseWorkflow(vm)
+            assert.are.equal("paused", activeData(vm).status)
+            assert.are.equal("paused", activeData(vs).status)
+        end)
+
+        it("pausing support alone does NOT pause main", function()
+            local vm, vs = makeMainSupportPair("wf_pr2")
+            WMExecutor:pauseWorkflow(vs)
+            assert.are.equal("paused",  activeData(vs).status)
+            assert.are.equal("running", activeData(vm).status)
+        end)
+
+        it("resuming main also resumes paused support", function()
+            local vm, vs = makeMainSupportPair("wf_pr3")
+            WMExecutor:pauseWorkflow(vm)  -- pauses both
+            WMExecutor:resumeWorkflow(vm)
+            assert.are.equal("running", activeData(vm).status)
+            assert.are.equal("running", activeData(vs).status)
+        end)
+
+        it("resuming support alone does NOT resume main", function()
+            local vm, vs = makeMainSupportPair("wf_pr4")
+            WMExecutor:pauseWorkflow(vm)  -- pauses both
+            WMExecutor:resumeWorkflow(vs)
+            assert.are.equal("running", activeData(vs).status)
+            assert.are.equal("paused",  activeData(vm).status)
+        end)
+    end)
+
+    -- (findStepByGroup section removed — function no longer exists)
 
     -- =========================================================================
     -- goToNextStep — additional edge cases
@@ -802,294 +1081,6 @@ describe("WMExecutor (real)", function()
         end)
     end)
 
-    -- =========================================================================
-    -- handleLinkedWorkflowStepChange
-    -- =========================================================================
-    describe("handleLinkedWorkflowStepChange", function()
-        -- Helpers: a linked pair with sync groups
-        local function makeLinkedPair()
-            local main = {
-                id = "wf_main", name = "Main", linkRole = "main", linkedWorkflowId = "wf_sup",
-                steps = {
-                    { type = "autodrive",  target = "A", action = "drive",     syncGroup = 1 },
-                    { type = "courseplay", target = "B", action = "fieldwork", syncGroup = 1 },
-                    { type = "autodrive",  target = "C", action = "drive",     syncGroup = 2 },
-                    { type = "courseplay", target = "D", action = "fieldwork", syncGroup = 2 },
-                },
-            }
-            local sup = {
-                id = "wf_sup", name = "Support", linkRole = "support", linkedWorkflowId = "wf_main",
-                steps = {
-                    { type = "autodrive", target = "X", action = "unload", syncGroup = 1 },
-                    { type = "autodrive", target = "Y", action = "unload", syncGroup = 2 },
-                },
-            }
-            return main, sup
-        end
-
-        it("sets syncOverridden=true when a support workflow step is manually changed", function()
-            local main, sup = makeLinkedPair()
-            local v = makeVehicle("Support")
-            WMExecutor:startWorkflow(sup, v)
-            local d = activeData(v)
-            WMExecutor:handleLinkedWorkflowStepChange(d, 1)
-            assert.is_true(d.syncOverridden)
-        end)
-
-        it("does not trigger sync transition when main stays in same group", function()
-            local main, sup = makeLinkedPair()
-            local transitionCalled = false
-            local origFn = WMExecutor.onSyncGroupTransition
-            WMExecutor.onSyncGroupTransition = function() transitionCalled = true end
-
-            local v = makeVehicle("Main")
-            WMExecutor:startWorkflow(main, v)
-            local d = activeData(v)
-            d.currentStep = 2  -- still group 1
-            -- prevGroup = 1, newGroup for step 2 = 1 → no transition
-            WMExecutor:handleLinkedWorkflowStepChange(d, 1)
-            assert.is_false(transitionCalled)
-
-            WMExecutor.onSyncGroupTransition = origFn
-        end)
-
-        it("triggers onSyncGroupTransition when main moves to a new group", function()
-            local main, sup = makeLinkedPair()
-            local transitions = {}
-            local origFn = WMExecutor.onSyncGroupTransition
-            WMExecutor.onSyncGroupTransition = function(_, mainData, from, to)
-                table.insert(transitions, {from=from, to=to})
-            end
-
-            local v = makeVehicle("Main")
-            WMExecutor:startWorkflow(main, v)
-            local d = activeData(v)
-            d.currentStep = 3  -- group 2
-            -- prevGroup = 1, newGroup for step 3 = 2 → transition 1→2
-            WMExecutor:handleLinkedWorkflowStepChange(d, 1)
-            assert.are.equal(1, #transitions)
-            assert.are.equal(1, transitions[1].from)
-            assert.are.equal(2, transitions[1].to)
-
-            WMExecutor.onSyncGroupTransition = origFn
-        end)
-
-        it("does nothing for unlinked workflow", function()
-            local wf = makeWorkflow("wf_solo")
-            local v = makeVehicle("Solo")
-            WMExecutor:startWorkflow(wf, v)
-            local d = activeData(v)
-            -- linkRole is nil → should not error or set syncOverridden
-            assert.has_no.errors(function()
-                WMExecutor:handleLinkedWorkflowStepChange(d, 1)
-            end)
-            assert.is_nil(d.syncOverridden)
-        end)
-    end)
-
-    -- =========================================================================
-    -- onSyncGroupTransition
-    -- =========================================================================
-    describe("onSyncGroupTransition", function()
-        local function makeLinkedVehicles()
-            local main = {
-                id = "wf_m", name = "Main", linkRole = "main", linkedWorkflowId = "wf_s",
-                steps = {
-                    { type = "autodrive",  target = "A", action = "drive",     syncGroup = 1 },
-                    { type = "courseplay", target = "B", action = "fieldwork", syncGroup = 1 },
-                    { type = "autodrive",  target = "C", action = "drive",     syncGroup = 2 },
-                    { type = "courseplay", target = "D", action = "fieldwork", syncGroup = 2 },
-                },
-            }
-            local sup = {
-                id = "wf_s", name = "Support", linkRole = "support", linkedWorkflowId = "wf_m",
-                steps = {
-                    { type = "autodrive", target = "X", action = "unload", syncGroup = 1 },
-                    { type = "autodrive", target = "Y", action = "unload", syncGroup = 2 },
-                },
-            }
-            local vm = makeVehicle("Main")
-            local vs = makeVehicle("Support")
-            WMExecutor:startWorkflow(main, vm)
-            WMExecutor:startWorkflow(sup,  vs)
-            -- Make WorkflowManager stub return the linked partner
-            _G.WorkflowManager.getLinkedWorkflow = function(_, id)
-                if id == "wf_m" then return sup end
-                if id == "wf_s" then return main end
-                return nil
-            end
-            return vm, vs, main, sup
-        end
-
-        before_each(function()
-            -- Reset getLinkedWorkflow to default no-op after each test
-        end)
-
-        it("moves support to the step matching the new sync group", function()
-            local vm, vs = makeLinkedVehicles()
-            local mainData = activeData(vm)
-            WMExecutor:onSyncGroupTransition(mainData, 1, 2)
-            assert.are.equal(2, activeData(vs).currentStep)  -- step 2 has syncGroup=2
-        end)
-
-        it("clears syncOverridden on support after transition", function()
-            local vm, vs = makeLinkedVehicles()
-            activeData(vs).syncOverridden = true
-            WMExecutor:onSyncGroupTransition(activeData(vm), 1, 2)
-            assert.is_false(activeData(vs).syncOverridden)
-        end)
-
-        it("resets all tracking flags on support via resetStepTrackingState", function()
-            local vm, vs = makeLinkedVehicles()
-            local d = activeData(vs)
-            d.pendingCPStart = true
-            d.cpWasRunning   = true
-            WMExecutor:onSyncGroupTransition(activeData(vm), 1, 2)
-            assert.is_nil(activeData(vs).pendingCPStart)
-            assert.is_false(activeData(vs).cpWasRunning)
-        end)
-
-        it("stops support workflow when no step matches the new group", function()
-            local vm, vs = makeLinkedVehicles()
-            WMExecutor:onSyncGroupTransition(activeData(vm), 1, 99)  -- group 99 doesn't exist
-            assert.is_nil(activeData(vs))  -- support was stopped
-        end)
-
-        it("does nothing when support workflow is not running", function()
-            local vm, vs = makeLinkedVehicles()
-            WMExecutor:stopWorkflow(vs)
-            assert.has_no.errors(function()
-                WMExecutor:onSyncGroupTransition(activeData(vm), 1, 2)
-            end)
-        end)
-
-        it("does nothing when support workflow has no active execution", function()
-            local vm = makeVehicle("MainOnly")
-            local main = {
-                id = "wf_m2", name = "Main", linkRole = "main", linkedWorkflowId = "wf_s2",
-                steps = {
-                    { type = "autodrive", target = "A", action = "drive", syncGroup = 1 },
-                    { type = "autodrive", target = "B", action = "drive", syncGroup = 2 },
-                },
-            }
-            WMExecutor:startWorkflow(main, vm)
-            _G.WorkflowManager.getLinkedWorkflow = function(_, id)
-                if id == "wf_m2" then
-                    return { id = "wf_s2", name = "Support", steps = {
-                        { type = "autodrive", target = "X", action = "unload", syncGroup = 2 },
-                    }}
-                end
-                return nil
-            end
-            -- Support is NOT running (no vehicle started it)
-            assert.has_no.errors(function()
-                WMExecutor:onSyncGroupTransition(activeData(vm), 1, 2)
-            end)
-            _G.WorkflowManager.getLinkedWorkflow = function() return nil end
-        end)
-    end)
-
-    -- =========================================================================
-    -- Linked workflow propagation: stop / pause / resume
-    -- =========================================================================
-    describe("linked workflow propagation", function()
-        local function makeLinkedRunningPair(mainId, supId)
-            local main = {
-                id = mainId or "wf_main", name = "Main",
-                linkRole = "main", linkedWorkflowId = supId or "wf_sup",
-                steps = {
-                    { type = "autodrive", target = "A", action = "drive", syncGroup = 1 },
-                },
-            }
-            local sup = {
-                id = supId or "wf_sup", name = "Support",
-                linkRole = "support", linkedWorkflowId = mainId or "wf_main",
-                steps = {
-                    { type = "autodrive", target = "X", action = "unload", syncGroup = 1 },
-                },
-            }
-            local vm = makeVehicle("MainV")
-            local vs = makeVehicle("SupportV")
-            WMExecutor:startWorkflow(main, vm)
-            WMExecutor:startWorkflow(sup,  vs)
-            return vm, vs, main, sup
-        end
-
-        describe("stopWorkflow propagation", function()
-            it("stopping main also stops support", function()
-                local vm, vs = makeLinkedRunningPair()
-                WMExecutor:stopWorkflow(vm)
-                assert.is_nil(activeData(vm))
-                assert.is_nil(activeData(vs))
-            end)
-
-            it("stopping support alone does NOT stop main", function()
-                local vm, vs = makeLinkedRunningPair()
-                WMExecutor:stopWorkflow(vs)
-                assert.is_nil(activeData(vs))
-                assert.is_not_nil(activeData(vm))  -- main still running
-            end)
-
-            it("stopping already-stopped support is safe", function()
-                local vm, vs = makeLinkedRunningPair()
-                WMExecutor:stopWorkflow(vs)  -- stop support first
-                assert.has_no.errors(function()
-                    WMExecutor:stopWorkflow(vm)  -- stop main – support already gone
-                end)
-            end)
-        end)
-
-        describe("pauseWorkflow propagation", function()
-            it("pausing main also pauses running support", function()
-                local vm, vs = makeLinkedRunningPair()
-                WMExecutor:pauseWorkflow(vm)
-                assert.are.equal("paused", activeData(vm).status)
-                assert.are.equal("paused", activeData(vs).status)
-            end)
-
-            it("pausing support alone does NOT pause main", function()
-                local vm, vs = makeLinkedRunningPair()
-                WMExecutor:pauseWorkflow(vs)
-                assert.are.equal("paused", activeData(vs).status)
-                assert.are.equal("running", activeData(vm).status)
-            end)
-
-            it("pausing main does not crash when support is already paused", function()
-                local vm, vs = makeLinkedRunningPair()
-                WMExecutor:pauseWorkflow(vs)  -- pre-pause support
-                assert.has_no.errors(function()
-                    WMExecutor:pauseWorkflow(vm)
-                end)
-            end)
-        end)
-
-        describe("resumeWorkflow propagation", function()
-            it("resuming main also resumes paused support", function()
-                local vm, vs = makeLinkedRunningPair()
-                WMExecutor:pauseWorkflow(vm)  -- propagates pause to support
-                WMExecutor:resumeWorkflow(vm)
-                assert.are.equal("running", activeData(vm).status)
-                assert.are.equal("running", activeData(vs).status)
-            end)
-
-            it("resuming support alone does NOT resume main", function()
-                local vm, vs = makeLinkedRunningPair()
-                WMExecutor:pauseWorkflow(vm)  -- pauses both
-                WMExecutor:resumeWorkflow(vs)
-                assert.are.equal("running", activeData(vs).status)
-                assert.are.equal("paused",  activeData(vm).status)
-            end)
-
-            it("resuming main does not crash when support is already running", function()
-                local vm, vs = makeLinkedRunningPair()
-                WMExecutor:pauseWorkflow(vm)
-                WMExecutor:resumeWorkflow(vs)   -- resume support independently
-                assert.has_no.errors(function()
-                    WMExecutor:resumeWorkflow(vm)
-                end)
-            end)
-        end)
-    end)
 
     -- =========================================================================
     -- getActiveVehiclesForWorkflow
@@ -1129,173 +1120,6 @@ describe("WMExecutor (real)", function()
             local result = WMExecutor:getActiveVehiclesForWorkflow("wf_a")
             assert.are.equal(1, #result)
             assert.are.equal(activeData(vA), result[1])
-        end)
-    end)
-
-    -- =========================================================================
-    -- Multi-vehicle support: two vehicles on the same support workflow
-    -- =========================================================================
-    describe("multi-vehicle support workflow", function()
-        local function makeLinkedPairWithTwoSupports()
-            local main = {
-                id = "wf_main2", name = "Main",
-                linkRole = "main", linkedWorkflowId = "wf_sup2",
-                steps = {
-                    { type = "autodrive", target = "A", action = "drive", syncGroup = 1 },
-                },
-            }
-            local sup = {
-                id = "wf_sup2", name = "Support",
-                linkRole = "support", linkedWorkflowId = "wf_main2",
-                steps = {
-                    { type = "autodrive", target = "X", action = "unload", syncGroup = 1 },
-                },
-            }
-            local vm  = makeVehicle("MainV")
-            local vs1 = makeVehicle("SupportV1")
-            local vs2 = makeVehicle("SupportV2")
-            WMExecutor:startWorkflow(main, vm)
-            WMExecutor:startWorkflow(sup,  vs1)
-            WMExecutor:startWorkflow(sup,  vs2)
-            _G.WorkflowManager.getLinkedWorkflow = function(_, id)
-                if id == "wf_main2" then return sup end
-                if id == "wf_sup2"  then return main end
-                return nil
-            end
-            return vm, vs1, vs2, main, sup
-        end
-
-        after_each(function()
-            _G.WorkflowManager.getLinkedWorkflow = function() return nil end
-        end)
-
-        describe("stopWorkflow with two support vehicles", function()
-            it("stopping main stops BOTH support vehicles", function()
-                local vm, vs1, vs2 = makeLinkedPairWithTwoSupports()
-                WMExecutor:stopWorkflow(vm)
-                assert.is_nil(activeData(vm))
-                assert.is_nil(activeData(vs1))
-                assert.is_nil(activeData(vs2))
-            end)
-
-            it("stopping one support vehicle does NOT stop the other or main", function()
-                local vm, vs1, vs2 = makeLinkedPairWithTwoSupports()
-                WMExecutor:stopWorkflow(vs1)
-                assert.is_nil(activeData(vs1))
-                assert.is_not_nil(activeData(vm))
-                assert.is_not_nil(activeData(vs2))
-            end)
-        end)
-
-        describe("pauseWorkflow with two support vehicles", function()
-            it("pausing main pauses BOTH support vehicles", function()
-                local vm, vs1, vs2 = makeLinkedPairWithTwoSupports()
-                WMExecutor:pauseWorkflow(vm)
-                assert.are.equal("paused", activeData(vm).status)
-                assert.are.equal("paused", activeData(vs1).status)
-                assert.are.equal("paused", activeData(vs2).status)
-            end)
-        end)
-
-        describe("resumeWorkflow with two support vehicles", function()
-            it("resuming main resumes BOTH paused support vehicles", function()
-                local vm, vs1, vs2 = makeLinkedPairWithTwoSupports()
-                WMExecutor:pauseWorkflow(vm)  -- propagates pause to both supports
-                WMExecutor:resumeWorkflow(vm)
-                assert.are.equal("running", activeData(vm).status)
-                assert.are.equal("running", activeData(vs1).status)
-                assert.are.equal("running", activeData(vs2).status)
-            end)
-        end)
-
-        describe("onSyncGroupTransition with two support vehicles", function()
-            it("transition advances ALL running support vehicles to matching step", function()
-                local main = {
-                    id = "wf_mt", name = "Main",
-                    linkRole = "main", linkedWorkflowId = "wf_st",
-                    steps = {
-                        { type = "autodrive",  target = "A", action = "drive",     syncGroup = 1 },
-                        { type = "courseplay", target = "B", action = "fieldwork", syncGroup = 1 },
-                        { type = "autodrive",  target = "C", action = "drive",     syncGroup = 2 },
-                    },
-                }
-                local sup = {
-                    id = "wf_st", name = "Support",
-                    linkRole = "support", linkedWorkflowId = "wf_mt",
-                    steps = {
-                        { type = "autodrive", target = "X", action = "unload", syncGroup = 1 },
-                        { type = "autodrive", target = "Y", action = "unload", syncGroup = 2 },
-                    },
-                }
-                local vm  = makeVehicle("MainT")
-                local vs1 = makeVehicle("SupportT1")
-                local vs2 = makeVehicle("SupportT2")
-                WMExecutor:startWorkflow(main, vm)
-                WMExecutor:startWorkflow(sup,  vs1)
-                WMExecutor:startWorkflow(sup,  vs2)
-                _G.WorkflowManager.getLinkedWorkflow = function(_, id)
-                    if id == "wf_mt" then return sup end
-                    if id == "wf_st" then return main end
-                    return nil
-                end
-
-                WMExecutor:onSyncGroupTransition(activeData(vm), 1, 2)
-
-                assert.are.equal(2, activeData(vs1).currentStep)
-                assert.are.equal(2, activeData(vs2).currentStep)
-            end)
-
-            it("stops only the support vehicle with no matching group, leaves other running", function()
-                local main = {
-                    id = "wf_mu", name = "Main",
-                    linkRole = "main", linkedWorkflowId = "wf_su",
-                    steps = {
-                        { type = "autodrive", target = "A", action = "drive", syncGroup = 1 },
-                        { type = "autodrive", target = "C", action = "drive", syncGroup = 2 },
-                    },
-                }
-                -- sup1 has step for group 2; sup2 does NOT
-                local sup = {
-                    id = "wf_su", name = "Support",
-                    linkRole = "support", linkedWorkflowId = "wf_mu",
-                    steps = {
-                        { type = "autodrive", target = "X", action = "unload", syncGroup = 1 },
-                        { type = "autodrive", target = "Y", action = "unload", syncGroup = 2 },
-                    },
-                }
-                local supNoGroup2 = {
-                    id = "wf_su", name = "Support",  -- same id, different steps
-                    linkRole = "support", linkedWorkflowId = "wf_mu",
-                    steps = {
-                        { type = "autodrive", target = "X", action = "unload", syncGroup = 1 },
-                        -- no step for group 2
-                    },
-                }
-                local vm  = makeVehicle("MainU")
-                local vs1 = makeVehicle("SupportU1")
-                local vs2 = makeVehicle("SupportU2")
-                WMExecutor:startWorkflow(main, vm)
-                WMExecutor:startWorkflow(sup, vs1)
-                -- vs2 gets the variant with only group 1
-                vs2.spec_workflowManagerSpec.wmExecution = {
-                    workflow = supNoGroup2,
-                    vehicle = vs2,
-                    status = "running",
-                    currentStep = 1,
-                    waitingForCompletion = false,
-                }
-                WMExecutor.activeVehicles[vs2] = true
-                _G.WorkflowManager.getLinkedWorkflow = function(_, id)
-                    if id == "wf_mu" then return sup end
-                    return nil
-                end
-
-                WMExecutor:onSyncGroupTransition(activeData(vm), 1, 2)
-
-                -- vs1 should advance to step 2; vs2 should be stopped (no group 2)
-                assert.are.equal(2, activeData(vs1).currentStep)
-                assert.is_nil(activeData(vs2))
-            end)
         end)
     end)
 

@@ -27,14 +27,16 @@ function WMCommandEvent.emptyNew()
 end
 
 ---Create a new command event.
----@param commandType string  "start"|"stop"|"pause"|"resume"|"next_step"|"prev_step"
----@param vehicle     table   Target vehicle (needs a network node)
----@param workflowId  string|nil  Required for "start" only
-function WMCommandEvent.new(commandType, vehicle, workflowId)
+---@param commandType string       "start"|"stop"|"pause"|"resume"|"next_step"|"prev_step"
+---@param vehicle     table        Target vehicle (needs a network node)
+---@param workflowId  string|nil   Required for "start" only
+---@param isMain      boolean|nil  true = main role, false = support role (only for "start")
+function WMCommandEvent.new(commandType, vehicle, workflowId, isMain)
     local self = WMCommandEvent.emptyNew()
     self.commandType = commandType
     self.vehicle     = vehicle
     self.workflowId  = workflowId
+    self.isMain      = (isMain ~= false)  -- default true
     return self
 end
 
@@ -46,6 +48,8 @@ function WMCommandEvent:writeStream(streamId, connection)
     if hasId then
         streamWriteString(streamId, self.workflowId)
     end
+    -- isMain is only meaningful for "start", but always write it for simplicity
+    streamWriteBool(streamId, self.isMain)
 end
 
 function WMCommandEvent:readStream(streamId, connection)
@@ -55,14 +59,15 @@ function WMCommandEvent:readStream(streamId, connection)
     if hasId then
         self.workflowId = streamReadString(streamId)
     end
+    self.isMain = streamReadBool(streamId)
     self:run(connection)
 end
 
 function WMCommandEvent:run(connection)
     -- Only execute on the server (when received from a client connection)
     if not connection:getIsServer() then
-        WMLogger:debug("WMCommandEvent received on server: cmd=%s", self.commandType)
-        WorkflowManager:executeNetworkCommand(self.commandType, self.vehicle, self.workflowId)
+        WMLogger:debug("WMCommandEvent received on server: cmd=%s isMain=%s", self.commandType, tostring(self.isMain))
+        WorkflowManager:executeNetworkCommand(self.commandType, self.vehicle, self.workflowId, self.isMain)
     end
     -- Clients do nothing here – they wait for the WMStateSyncEvent response
 end

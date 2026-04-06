@@ -11,6 +11,17 @@ WMStorage = {}
 WMStorage.isInitialized = false
 WMStorage.xmlFilename = "workflowManager.xml"
 
+--- Deep-copy a support sub-step (strips any extra runtime fields)
+local function deepCopySupportStep(step)
+    return {
+        type         = step.type,
+        target       = step.target,
+        action       = step.action,
+        unloadTarget = step.unloadTarget,
+        fillType     = step.fillType,
+    }
+end
+
 ---Initialize the storage system
 function WMStorage:init()
     self.isInitialized = true
@@ -55,18 +66,7 @@ function WMStorage:saveWorkflows(workflows)
         xmlFile:setString(workflowKey .. "#id", workflow.id)
         xmlFile:setString(workflowKey .. "#name", workflow.name)
 
-        -- Milestone 4: Vehicle is no longer saved with workflow
-        -- Vehicle is detected at runtime when starting the workflow
-
-        -- Linked workflow pair fields
-        if workflow.linkedWorkflowId ~= nil and workflow.linkedWorkflowId ~= "" then
-            xmlFile:setString(workflowKey .. "#linkedWorkflowId", workflow.linkedWorkflowId)
-        end
-        if workflow.linkRole ~= nil and workflow.linkRole ~= "" then
-            xmlFile:setString(workflowKey .. "#linkRole", workflow.linkRole)
-        end
-
-        -- Save steps
+        -- Save steps (with nested support sub-steps)
         for j, step in ipairs(workflow.steps) do
             local stepKey = string.format("%s.step(%d)", workflowKey, j - 1)
             xmlFile:setString(stepKey .. "#type", step.type)
@@ -81,9 +81,20 @@ function WMStorage:saveWorkflows(workflows)
                 xmlFile:setString(stepKey .. "#fillType", step.fillType)
             end
 
-            -- Sync group for linked workflow pairs
-            if step.syncGroup ~= nil then
-                xmlFile:setInt(stepKey .. "#syncGroup", step.syncGroup)
+            -- Nested support sub-steps
+            local supportSteps = step.support or {}
+            for k, supportStep in ipairs(supportSteps) do
+                local supportKey = string.format("%s.support(%d)", stepKey, k - 1)
+                xmlFile:setString(supportKey .. "#type", supportStep.type)
+                xmlFile:setString(supportKey .. "#target", supportStep.target)
+                xmlFile:setString(supportKey .. "#action", supportStep.action or "default")
+
+                if supportStep.unloadTarget ~= nil and supportStep.unloadTarget ~= "" then
+                    xmlFile:setString(supportKey .. "#unloadTarget", supportStep.unloadTarget)
+                end
+                if supportStep.fillType ~= nil and supportStep.fillType ~= "" then
+                    xmlFile:setString(supportKey .. "#fillType", supportStep.fillType)
+                end
             end
         end
     end
@@ -99,6 +110,99 @@ function WMStorage:saveWorkflows(workflows)
 
     WMLogger:info("Saved %d workflows", #workflows)
     return true
+end
+
+---Migrate old linked-workflow-pair format to hierarchical support format.
+---Old format: two separate workflows with linkedWorkflowId/linkRole/syncGroup.
+---New format: one workflow, each main step has step.support = {sub-steps}.
+---@param workflows table Raw loaded workflow list (may contain old-format entries)
+---@return table workflows Updated list (support workflows removed, steps enriched)
+function WMStorage:migrateOldLinkedWorkflows(workflows)
+    -- Quick check: is migration needed?
+    local needsMigration = false
+    for _, wf in ipairs(workflows) do
+        if wf.linkRole ~= nil then
+            needsMigration = true
+            break
+        end
+    end
+    if not needsMigration then return workflows end
+
+    WMLogger:info("Old linked-workflow format detected — migrating to hierarchical support format...")
+
+    -- Build ID lookup map
+    local wfById = {}
+    for _, wf in ipairs(workflows) do
+        wfById[wf.id] = wf
+    end
+
+    local toRemove = {}
+    local migratedCount = 0
+
+    -- Process each main workflow
+    for _, wf in ipairs(workflows) do
+        if wf.linkRole == "main" and wf.linkedWorkflowId then
+            local supportWf = wfById[wf.linkedWorkflowId]
+            if supportWf and supportWf.linkRole == "support" and #supportWf.steps > 0 then
+                -- Build syncGroup -> [support steps] map
+                local groupSteps = {}
+                for _, step in ipairs(supportWf.steps) do
+                    local g = step.syncGroup
+                    if g ~= nil then
+                        if not groupSteps[g] then groupSteps[g] = {} end
+                        table.insert(groupSteps[g], deepCopySupportStep(step))
+                    end
+                end
+
+                -- Find the LAST main step index for each syncGroup
+                -- (support steps go under the last main step of their group)
+                local lastIndexForGroup = {}
+                for i, step in ipairs(wf.steps) do
+                    local g = step.syncGroup
+                    if g ~= nil then
+                        lastIndexForGroup[g] = i
+                    end
+                end
+
+                -- Assign support sub-steps to the appropriate main step
+                for g, idx in pairs(lastIndexForGroup) do
+                    if groupSteps[g] then
+                        wf.steps[idx].support = groupSteps[g]
+                    end
+                end
+
+                toRemove[supportWf.id] = true
+                migratedCount = migratedCount + 1
+            else
+                WMLogger:warning("Migration: main workflow '%s' has no valid support partner '%s' — keeping as standalone",
+                    wf.name, tostring(wf.linkedWorkflowId))
+            end
+        end
+    end
+
+    -- Build new list, excluding absorbed support workflows
+    local newWorkflows = {}
+    for _, wf in ipairs(workflows) do
+        if not toRemove[wf.id] then
+            table.insert(newWorkflows, wf)
+        end
+    end
+
+    -- Clean up all old link fields and ensure step.support = {} on every step
+    for _, wf in ipairs(newWorkflows) do
+        wf.linkedWorkflowId = nil
+        wf.linkRole = nil
+        for _, step in ipairs(wf.steps) do
+            if step.support == nil then step.support = {} end
+            step.syncGroup = nil
+        end
+    end
+
+    if migratedCount > 0 then
+        WMLogger:info("Migrated %d linked workflow pair(s) to hierarchical support format", migratedCount)
+    end
+
+    return newWorkflows
 end
 
 ---Load all workflows from XML
@@ -133,14 +237,13 @@ function WMStorage:loadWorkflows()
         end
 
         local workflow = {
-            id = workflowId,
+            id   = workflowId,
             name = xmlFile:getString(workflowKey .. "#name", "Unnamed Workflow"),
             -- currentStep and status are per-vehicle runtime state, not persisted
-            -- Vehicle is detected at runtime when starting the workflow
             steps = {},
-            -- Linked workflow pair fields
+            -- Legacy fields read for migration only (cleared after migrateOldLinkedWorkflows)
             linkedWorkflowId = xmlFile:getString(workflowKey .. "#linkedWorkflowId"),
-            linkRole = xmlFile:getString(workflowKey .. "#linkRole")
+            linkRole         = xmlFile:getString(workflowKey .. "#linkRole"),
         }
 
         -- Load steps
@@ -154,15 +257,35 @@ function WMStorage:loadWorkflows()
             end
 
             local step = {
-                type = stepType,
-                target = xmlFile:getString(stepKey .. "#target", ""),
-                action = xmlFile:getString(stepKey .. "#action", "default"),
-                -- AutoDrive advanced mode parameters
+                type         = stepType,
+                target       = xmlFile:getString(stepKey .. "#target", ""),
+                action       = xmlFile:getString(stepKey .. "#action", "default"),
                 unloadTarget = xmlFile:getString(stepKey .. "#unloadTarget"),
-                fillType = xmlFile:getString(stepKey .. "#fillType"),
-                -- Sync group for linked workflow pairs
-                syncGroup = xmlFile:getInt(stepKey .. "#syncGroup")
+                fillType     = xmlFile:getString(stepKey .. "#fillType"),
+                -- Legacy syncGroup read for migration only
+                syncGroup    = xmlFile:getInt(stepKey .. "#syncGroup"),
+                support      = {},
             }
+
+            -- Load nested support sub-steps
+            local supportIndex = 0
+            while true do
+                local supportKey = string.format("%s.support(%d)", stepKey, supportIndex)
+                local supportType = xmlFile:getString(supportKey .. "#type")
+                if supportType == nil then
+                    break
+                end
+
+                local supportStep = {
+                    type         = supportType,
+                    target       = xmlFile:getString(supportKey .. "#target", ""),
+                    action       = xmlFile:getString(supportKey .. "#action", "default"),
+                    unloadTarget = xmlFile:getString(supportKey .. "#unloadTarget"),
+                    fillType     = xmlFile:getString(supportKey .. "#fillType"),
+                }
+                table.insert(step.support, supportStep)
+                supportIndex = supportIndex + 1
+            end
 
             table.insert(workflow.steps, step)
             stepIndex = stepIndex + 1
@@ -172,22 +295,8 @@ function WMStorage:loadWorkflows()
         workflowIndex = workflowIndex + 1
     end
 
-    -- Validate linked workflow IDs (clear invalid links)
-    local workflowIds = {}
-    for _, wf in ipairs(workflows) do
-        workflowIds[wf.id] = true
-    end
-    for _, wf in ipairs(workflows) do
-        if wf.linkedWorkflowId and not workflowIds[wf.linkedWorkflowId] then
-            WMLogger:warning("Clearing invalid linked workflow ID '%s' from workflow '%s'",
-                wf.linkedWorkflowId, wf.name)
-            wf.linkedWorkflowId = nil
-            wf.linkRole = nil
-            for _, step in ipairs(wf.steps) do
-                step.syncGroup = nil
-            end
-        end
-    end
+    -- Migrate old linked-workflow-pair format to hierarchical support format
+    workflows = self:migrateOldLinkedWorkflows(workflows)
 
     -- Load HUD position
     local hudX = xmlFile:getFloat("WorkflowManager.settings.hud#posX")
@@ -203,4 +312,3 @@ function WMStorage:loadWorkflows()
     WMLogger:info("Loaded %d workflows", #workflows)
     return workflows
 end
-

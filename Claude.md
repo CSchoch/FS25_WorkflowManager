@@ -58,8 +58,6 @@ Workflow = {
     id = "workflow_001",
     name = "Harvest wheat - fields 1-2",
     -- currentStep and status are NOT stored here; they are per-vehicle runtime state
-    linkedWorkflowId = nil,   -- ID of the linked partner workflow (nil if unlinked)
-    linkRole = nil,           -- "main" or "support" (nil if unlinked)
     steps = {
         {
             type = "autodrive",  -- "autodrive" or "courseplay"
@@ -67,13 +65,16 @@ Workflow = {
             action = "drive",  -- AutoDrive: drive, pickup_deliver, deliver, load, unload
             unloadTarget = "Silo",  -- Second destination for pickup_deliver mode (optional)
             fillType = "WHEAT",  -- Fill type for cargo filtering (optional)
-            syncGroup = 1        -- Integer for sync coordination (nil if not linked)
+            support = {}         -- Array of support sub-steps (empty if none)
         },
         {
             type = "courseplay",
             target = "Field1_Harvest",
             action = "fieldwork",  -- Courseplay: fieldwork, bale_collect
-            syncGroup = 1
+            support = {            -- Support sub-steps for this main step
+                { type = "autodrive", target = "Field1", action = "unload", unloadTarget = "Silo" },
+                { type = "autodrive", target = "Silo",   action = "deliver" },
+            }
         }
     },
     createdAt = "2026-02-28 10:00:00"
@@ -87,9 +88,11 @@ activeData = {
     vehicle = <vehicle reference>,
     status = "ready",  -- "ready", "running", "paused", "completed"
     currentStep = 1,
+    isMainVehicle = true,        -- true = main role, false = support role
+    currentSupportStep = nil,    -- index within current main step's support array (support vehicles only)
     waitingForCompletion = false,
+    waitingForMainStep = nil,    -- true when support vehicle idles (main step has no sub-steps)
     autoResumeUntil = nil,       -- timestamp: auto-resume window after game load
-    syncOverridden = false,      -- true when user manually switched steps on support workflow
     pausedTrackingState = nil,   -- saved AD/CP state flags when pausing mid-step
     -- plus internal tracking flags (justStoppedAD, pendingADStart, pendingCPStart, etc.)
 }
@@ -116,24 +119,27 @@ activeData = {
 
 ### XML Structure (Savegame)
 
-Workflow **definitions** (with linked workflow support):
+Workflow **definitions** (hierarchical support sub-steps):
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <WorkflowManager>
     <workflows>
-        <workflow id="wf_001" name="Combine Harvest" linkedWorkflowId="wf_002" linkRole="main">
-            <step type="autodrive" target="Route_Field1" action="drive" syncGroup="1"/>
-            <step type="courseplay" target="Field1_Harvest" action="fieldwork" syncGroup="1"/>
-            <step type="autodrive" target="Route_Field2" action="drive" syncGroup="2"/>
-            <step type="courseplay" target="Field2_Harvest" action="fieldwork" syncGroup="2"/>
-        </workflow>
-        <workflow id="wf_002" name="Unloader Support" linkedWorkflowId="wf_001" linkRole="support">
-            <step type="autodrive" target="Field1" action="unload" unloadTarget="Silo" syncGroup="1"/>
-            <step type="autodrive" target="Field2" action="unload" unloadTarget="Silo" syncGroup="2"/>
+        <workflow id="wf_001" name="Combine Harvest">
+            <step type="autodrive" target="Route_Field1" action="drive"/>
+            <step type="courseplay" target="Field1_Harvest" action="fieldwork">
+                <support type="autodrive" target="Field1" action="unload" unloadTarget="Silo"/>
+                <support type="autodrive" target="Silo" action="deliver"/>
+            </step>
+            <step type="autodrive" target="Route_Field2" action="drive"/>
+            <step type="courseplay" target="Field2_Harvest" action="fieldwork">
+                <support type="autodrive" target="Field2" action="unload" unloadTarget="Silo"/>
+                <support type="autodrive" target="Silo" action="deliver"/>
+            </step>
         </workflow>
     </workflows>
 </WorkflowManager>
 ```
+Old savegames with `linkRole`/`linkedWorkflowId`/`syncGroup` are migrated transparently on first load.
 
 Vehicle workflow **runtime state** (stored in vehicle savegame XML via `WorkflowManagerSpec`):
 ```xml
@@ -169,10 +175,9 @@ On `onPostLoad`, this state is restored as `status = "paused"` with a 10-second 
 * **Main dialog simplification** - Removed Status column; list shows only Name + Steps; removed Resume/reset flow (Start always starts fresh on current vehicle)
 * **HUD icon scaling fix** - `getNormalizedScreenValues(24, 24)` now correctly captures both X and Y return values so icons render as squares on all aspect ratios
 * **Draggable HUD** - HUD panel can be repositioned by dragging the header; position clamped to screen bounds
-* **Linked workflow pairs** - Link two workflows as main/support for coordinated multi-vehicle operations (e.g., Combine + Unloader). Full sync group system, auto-group assignment, pause/resume/stop propagation, late-start sync, support auto-looping, and HUD status line for linked partner
-* **Linked workflow GUI** - Link/Unlink buttons in main dialog; sync group column in editor; sync group field in step dialog (visible only when linked)
-* **Multiple support vehicles** - Multiple vehicles can run the same support workflow simultaneously; all receive sync group transitions and pause/resume/stop from main. HUD shows vehicle count (e.g., "2x Running") when more than one support vehicle is active.
-* **Multi-step sync group looping** - Support workflows can have multiple steps sharing the same sync group (e.g. `drive` + `unload`). When the support completes a step and the main is still in the same group, it loops back to the **first** step of that group rather than repeating only the just-completed step.
+* **Hierarchical support steps** - Each main step can have nested support sub-steps (`step.support = {}`). Starting a workflow with support steps shows a mode dialog (Main/Support). Support vehicles execute sub-steps and loop while the main stays on the same step. When the main advances, `onMainStepChanged` resets support to sub-step 1 of the new step. Pause/stop from main propagates to all support vehicles.
+* **Old linked-workflow migration** - Old savegames with `linkRole`/`linkedWorkflowId`/`syncGroup` are migrated transparently on first load via `migrateOldLinkedWorkflows`.
+* **Multiple support vehicles** - Multiple vehicles can start the same workflow as support simultaneously, each with independent `currentSupportStep` state.
 * **Release build support** - `DevConfig.lua` omitted from release zip; `WorkflowManager.lua` installs a release-mode stub if the file is absent (all debug flags off)
 * **DDS textures** - All textures (`modIcon`, HUD icons, `white`) converted to DDS; `tools/png_to_dds.py` handles conversion (texconv DXT5/DXT1 if available, Pillow uncompressed fallback)
 * **Legacy GUI removed** - `WMManagerGUI` and `WMEditorGUI` update/draw calls removed from `WorkflowManager.lua`
@@ -340,21 +345,18 @@ FS25_WorkflowManager/
 - Resume from save: `vehicle:cpStartStopDriver(false)` to start at nearest waypoint
 - Controlled via `startAtNearest` parameter in `CPIntegration:startFieldWork()`
 
-### Linked Workflow Pairs
-- Two workflows can be linked as `main` (drives sync) and `support` (follows main)
-- Methods: `WorkflowManager:linkWorkflows(mainId, supportId)`, `unlinkWorkflow(id)`, `getLinkedWorkflow(workflow)`, `autoAssignSyncGroups(workflowId)`
-- When the main workflow is paused/resumed/stopped, the linked support workflow is automatically propagated
-- When the main workflow completes, the support is stopped
-- Late start: if support starts after main is already running, it syncs to main's current sync group
-- **Multiple support vehicles**: Multiple vehicles can run the same support workflow simultaneously, each with independent per-vehicle state. All support vehicles receive pause/resume/stop/sync-group transitions from main.
-
-### Sync Groups (Linked Workflows)
-- Each step has an optional `syncGroup` integer; steps with the same group across linked workflows are coordinated
-- A sync group may contain **multiple steps** on the support workflow (e.g. `drive` + `unload` both tagged with the same group)
-- When a support step completes and the main is still in the same sync group: if the **next** support step is also in the same group, advance to it normally; only when the **last** step of the group finishes does the support loop back to `findStepByGroup` (the first step of that group)
-- When the main advances to a new sync group, `WMExecutor:onSyncGroupTransition()` advances ALL running support vehicles; a vehicle with no matching step for the new group is stopped
-- `syncOverridden = true` on `activeData` when user manually switches steps on a support workflow; cleared on next main group transition
-- `WMExecutor:getActiveVehiclesForWorkflow(workflowId)` returns a snapshot array of all `activeData` entries for vehicles running a given workflow — used by all propagation callsites
+### Hierarchical Support Steps
+- Each main step has a `step.support = {}` array of support sub-steps
+- When starting a workflow with any support sub-steps, `WorkflowManager:startWorkflow` shows a mode dialog; user picks Main or Support
+- `activeData.isMainVehicle` (bool) determines which execution path runs in `WMExecutor:executeCurrentStep`
+- Support vehicles track position with `activeData.currentSupportStep` (1-based index into current main step's support array)
+- When a support sub-step completes, support advances `currentSupportStep` and loops back to 1 at end of array
+- When main advances step: `WMExecutor:onMainStepChanged` resets support to sub-step 1 and executes immediately
+- If main step has no support sub-steps: support sets `waitingForMainStep = true` and idles (polled in update loop)
+- Pause/stop from main propagates to all support vehicles via `getSupportActiveDataListForWorkflow`
+- `WMExecutor:getMainActiveDataForWorkflow(workflowId)` — finds the single main-role activeData
+- `WMExecutor:getSupportActiveDataListForWorkflow(workflowId)` — finds all support-role activeData entries
+- `WMExecutor:getCurrentStep(activeData)` — returns the current step def (main step or support sub-step)
 
 ### Draggable HUD
 - HUD header acts as a drag handle: clicking and dragging repositions the entire panel
@@ -409,8 +411,8 @@ To run all specs (may stop early on Windows due to Logger I/O issue, pre-existin
 
 ---
 
-**Status**: Phase 1 COMPLETE - Linked workflows with multi-vehicle support implemented; working on GUI refinement (Milestone 8)
-**Last updated**: 2026-04-04
+**Status**: Phases 1-3 COMPLETE — Hierarchical support steps (nested `step.support` arrays), XML migration from old linked-workflow format, WorkflowManager CRUD + mode selection, WorkflowExecutor with `isMainVehicle`/`currentSupportStep` support. Phase 4 (GUI) pending.
+**Last updated**: 2026-04-05
 
 ## Screenshots Needed
 

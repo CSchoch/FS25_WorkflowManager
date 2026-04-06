@@ -149,5 +149,18 @@
         <text name="wm_editor_linked_none" text="(keine)"/>
         <text name="wm_button_change" text="Aendern"/>
         <text name="wm_link_no_candidates" text="Keine anderen Workflows zum Verknuepfen verfuegbar"/>
+
+        <!-- Rollenwahl-Dialog -->
+        <text name="wm_mode_select_title" text="Rolle waehlen"/>
+        <text name="wm_mode_select_description" text="Dieser Workflow hat Unterstuetzungsschritte. Rolle waehlen:"/>
+        <text name="wm_button_run_as_main" text="Als Hauptfahrzeug starten"/>
+        <text name="wm_button_run_as_support" text="Als Unterstuetzungsfahrzeug starten"/>
+
+        <!-- Unterstuetzungsschritte -->
+        <text name="wm_editor_sup_short" text="Unt"/>
+        <text name="wm_button_add_support" text="Unterstuetzungsschritt hinzufuegen"/>
+        <text name="wm_button_del_support" text="Unterstuetzungsschritt loeschen"/>
+        <text name="wm_editor_support_select" text="Schritt auswaehlen zum Verwalten der Unterstuetzungsschritte"/>
+        <text name="wm_editor_support_info" text="Unterstuetzungsschritte fuer Schritt %d: %d"/>
     </texts>
 </l10n>

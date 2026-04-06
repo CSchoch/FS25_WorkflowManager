@@ -66,6 +66,7 @@ source(Utils.getFilename("src/gui/WMTextInputDialog.lua", g_currentModDirectory)
 source(Utils.getFilename("src/gui/WMMainDialog.lua", g_currentModDirectory))
 source(Utils.getFilename("src/gui/WMEditorDialog.lua", g_currentModDirectory))
 source(Utils.getFilename("src/gui/WMStepDialog.lua", g_currentModDirectory))
+source(Utils.getFilename("src/gui/WMModeSelectDialog.lua", g_currentModDirectory))
 
 -- 7. In-vehicle HUD
 source(Utils.getFilename("src/gui/WMHudElements.lua", g_currentModDirectory))
@@ -221,6 +222,19 @@ function WorkflowManager:loadDialogs()
     else
         WMLogger:warning("Failed to load step dialog: %s", tostring(result))
         self.stepDialog = nil
+    end
+
+    -- Load Mode Select Dialog
+    self.modeSelectDialog = WMModeSelectDialog.new()
+    xmlPath = Utils.getFilename("xml/gui/WMModeSelectDialog.xml", self.modDirectory)
+    success, result = pcall(function()
+        g_gui:loadGui(xmlPath, "WMModeSelectDialog", self.modeSelectDialog)
+    end)
+    if success then
+        WMLogger:info("Mode select dialog loaded successfully")
+    else
+        WMLogger:warning("Failed to load mode select dialog: %s", tostring(result))
+        self.modeSelectDialog = nil
     end
 end
 
@@ -615,8 +629,7 @@ end
 ---Show the step add/edit dialog
 ---@param step table|nil Step to edit, or nil for new step
 ---@param callback function Callback when done: callback(step) or callback(nil) if cancelled
----@param isWorkflowLinked boolean|nil Whether the parent workflow is linked (controls sync group visibility)
-function WorkflowManager:showStepDialog(step, callback, isWorkflowLinked)
+function WorkflowManager:showStepDialog(step, callback)
     if self.stepDialog == nil then
         WMLogger:warning("Step dialog not available")
         if callback then
@@ -625,7 +638,7 @@ function WorkflowManager:showStepDialog(step, callback, isWorkflowLinked)
         return
     end
 
-    self.stepDialog:setStep(step, callback, isWorkflowLinked)
+    self.stepDialog:setStep(step, callback)
     g_gui:showDialog("WMStepDialog")
 end
 
@@ -640,9 +653,6 @@ function WorkflowManager:createWorkflow(name)
         -- currentStep and status are per-vehicle runtime state (in vehicle.spec_workflowManagerSpec.wmExecution)
         steps = {},
         createdAt = getDate("%Y-%m-%d %H:%M:%S"),
-        -- Linked workflow pair fields (nil when unlinked)
-        linkedWorkflowId = nil,   -- ID of the linked partner workflow
-        linkRole = nil            -- "main" or "support" (nil when unlinked)
     }
 
     table.insert(self.workflows, workflow)
@@ -669,85 +679,54 @@ function WorkflowManager:getWorkflowById(id)
     return nil
 end
 
----Link two workflows as a main/support pair
----The first workflow becomes "main", the second becomes "support"
----Auto-assigns sync groups on both workflows after linking
----@param mainWorkflowId string ID of the main workflow
----@param supportWorkflowId string ID of the support workflow
----@return boolean success True if linked successfully
-function WorkflowManager:linkWorkflows(mainWorkflowId, supportWorkflowId)
-    local mainWf = self:getWorkflowById(mainWorkflowId)
-    local supportWf = self:getWorkflowById(supportWorkflowId)
-
-    if mainWf == nil or supportWf == nil then
-        WMLogger:error("Cannot link: one or both workflows not found")
+---Add a support sub-step to a specific main step
+---@param workflowId  string  Workflow ID
+---@param stepIndex   number  1-based index of the main step to attach support to
+---@param supportStep table   Support sub-step definition (type, target, action, ...)
+---@return boolean success
+function WorkflowManager:addSupportStep(workflowId, stepIndex, supportStep)
+    local workflow = self:getWorkflowById(workflowId)
+    if workflow == nil then
+        WMLogger:error("addSupportStep: workflow %s not found", workflowId)
         return false
     end
-
-    if mainWf.id == supportWf.id then
-        WMLogger:error("Cannot link a workflow to itself")
+    local step = workflow.steps[stepIndex]
+    if step == nil then
+        WMLogger:error("addSupportStep: step index %d out of range for workflow %s", stepIndex, workflowId)
         return false
     end
-
-    -- Unlink existing partners first
-    if mainWf.linkedWorkflowId then
-        self:unlinkWorkflow(mainWf.id)
-    end
-    if supportWf.linkedWorkflowId then
-        self:unlinkWorkflow(supportWf.id)
-    end
-
-    -- Set bidirectional link
-    mainWf.linkedWorkflowId = supportWf.id
-    mainWf.linkRole = "main"
-    supportWf.linkedWorkflowId = mainWf.id
-    supportWf.linkRole = "support"
-
-    WMLogger:info("Linked workflows: '%s' (main) <-> '%s' (support)", mainWf.name, supportWf.name)
+    if step.support == nil then step.support = {} end
+    table.insert(step.support, supportStep)
     return true
 end
 
----Unlink a workflow from its partner
----Clears linked fields and sync groups on both workflows
----@param workflowId string ID of the workflow to unlink
-function WorkflowManager:unlinkWorkflow(workflowId)
+---Remove a support sub-step from a specific main step
+---@param workflowId    string  Workflow ID
+---@param stepIndex     number  1-based index of the main step
+---@param supportIndex  number  1-based index within step.support to remove
+---@return boolean success
+function WorkflowManager:removeSupportStep(workflowId, stepIndex, supportIndex)
     local workflow = self:getWorkflowById(workflowId)
-    if workflow == nil then
-        return
-    end
-
-    -- Find and unlink partner
-    if workflow.linkedWorkflowId then
-        local partner = self:getWorkflowById(workflow.linkedWorkflowId)
-        if partner then
-            -- Clear partner's sync groups
-            for _, step in ipairs(partner.steps) do
-                step.syncGroup = nil
-            end
-            partner.linkedWorkflowId = nil
-            partner.linkRole = nil
-            WMLogger:debug("Unlinked partner workflow: %s", partner.name)
-        end
-    end
-
-    -- Clear this workflow's sync groups
-    for _, step in ipairs(workflow.steps) do
-        step.syncGroup = nil
-    end
-    workflow.linkedWorkflowId = nil
-    workflow.linkRole = nil
-    WMLogger:debug("Unlinked workflow: %s", workflow.name)
+    if workflow == nil then return false end
+    local step = workflow.steps[stepIndex]
+    if step == nil or step.support == nil then return false end
+    if supportIndex < 1 or supportIndex > #step.support then return false end
+    table.remove(step.support, supportIndex)
+    return true
 end
 
----Get the linked partner workflow for a given workflow
----@param workflowId string ID of the workflow
----@return table|nil linkedWorkflow The linked partner workflow definition, or nil
-function WorkflowManager:getLinkedWorkflow(workflowId)
+---Returns true if any step in this workflow has at least one support sub-step
+---@param workflowId string
+---@return boolean
+function WorkflowManager:hasSupportSteps(workflowId)
     local workflow = self:getWorkflowById(workflowId)
-    if workflow == nil or workflow.linkedWorkflowId == nil then
-        return nil
+    if workflow == nil then return false end
+    for _, step in ipairs(workflow.steps) do
+        if step.support and #step.support > 0 then
+            return true
+        end
     end
-    return self:getWorkflowById(workflow.linkedWorkflowId)
+    return false
 end
 
 ---Delete a workflow
@@ -759,10 +738,6 @@ function WorkflowManager:deleteWorkflow(id)
             -- Stop if running on any vehicle
             if WMExecutor:isWorkflowActive(id) then
                 self:stopWorkflow(id)
-            end
-            -- Auto-unlink partner before deleting
-            if workflow.linkedWorkflowId then
-                self:unlinkWorkflow(id)
             end
             table.remove(self.workflows, i)
             WMLogger:debug("Deleted workflow: %s", id)
@@ -786,9 +761,10 @@ function WorkflowManager:addStep(workflowId, stepType, target, action)
     end
 
     local step = {
-        type = stepType,
-        target = target,
-        action = action or "default"
+        type    = stepType,
+        target  = target,
+        action  = action or "default",
+        support = {},  -- support sub-steps for this step (empty by default)
     }
 
     table.insert(workflow.steps, step)
@@ -856,21 +832,46 @@ function WorkflowManager:startWorkflow(workflowId)
         workflow.name,
         currentVehicle.getName and currentVehicle:getName() or "unknown")
 
-    -- Route through network layer (direct on server, event on client)
-    self:sendCommand(currentVehicle, "start", workflow.id)
-
-    -- Show linked workflow notification if this is a main workflow (client-side UI only)
-    if workflow.linkRole == "main" and workflow.linkedWorkflowId then
-        local linkedWf = self:getLinkedWorkflow(workflow.id)
-        if linkedWf then
-            local msg = string.format(
-                g_i18n:getText("wm_linked_start_prompt") or "Also start linked workflow '%s' on its vehicle",
-                linkedWf.name)
-            g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_INFO, msg)
-        end
+    -- If the workflow has support steps, ask the player which role to start as
+    if self:hasSupportSteps(workflow.id) and self.modeSelectDialog ~= nil then
+        self:showModeSelectDialog(workflow.id, currentVehicle)
+        return true
     end
 
+    -- No support steps (or dialog not loaded yet) — start as main directly
+    self:sendCommand(currentVehicle, "start", workflow.id, true)
+
     return true
+end
+
+---Show the mode selection dialog (Main / Support / Cancel)
+---@param workflowId   string  Workflow to start
+---@param vehicle      table   The vehicle that will run the workflow
+function WorkflowManager:showModeSelectDialog(workflowId, vehicle)
+    if self.modeSelectDialog == nil then
+        -- Fallback: no dialog available — start as main
+        self:sendCommand(vehicle, "start", workflowId, true)
+        return
+    end
+    self.modeSelectDialog:setWorkflow(workflowId, vehicle, function(isMain)
+        if isMain == nil then
+            -- User cancelled
+            return
+        end
+        -- Re-validate vehicle is still the current vehicle
+        local currentVehicle = g_localPlayer and g_localPlayer.getCurrentVehicle and g_localPlayer:getCurrentVehicle()
+        if currentVehicle == nil then return end
+        self:sendCommand(currentVehicle, "start", workflowId, isMain)
+    end)
+    g_gui:showDialog("WMModeSelectDialog")
+end
+
+---Start a workflow with an explicit role (called from mode dialog callback)
+---@param workflowId string
+---@param isMain     boolean  true = main vehicle, false = support vehicle
+---@param vehicle    table
+function WorkflowManager:startWorkflowWithRole(workflowId, isMain, vehicle)
+    self:sendCommand(vehicle, "start", workflowId, isMain)
 end
 
 -- ============================================================
@@ -885,18 +886,19 @@ end
 ---@param vehicle     table       Target vehicle
 ---@param commandType string      "start"|"stop"|"pause"|"resume"|"next_step"|"prev_step"
 ---@param workflowId  string|nil  Only required for "start"
-function WorkflowManager:sendCommand(vehicle, commandType, workflowId)
+---@param isMain      boolean|nil true = main role, false = support role (only for "start")
+function WorkflowManager:sendCommand(vehicle, commandType, workflowId, isMain)
     if vehicle == nil then
         WMLogger:warning("sendCommand: vehicle is nil (cmd=%s)", commandType)
         return
     end
     if g_server ~= nil then
         -- Singleplayer or multiplayer host – execute directly
-        self:executeNetworkCommand(commandType, vehicle, workflowId)
+        self:executeNetworkCommand(commandType, vehicle, workflowId, isMain)
     else
         -- Pure multiplayer client – send to server
         if g_client ~= nil then
-            g_client:sendEvent(WMCommandEvent.new(commandType, vehicle, workflowId))
+            g_client:sendEvent(WMCommandEvent.new(commandType, vehicle, workflowId, isMain))
         else
             WMLogger:error("sendCommand: neither g_server nor g_client available")
         end
@@ -907,14 +909,16 @@ end
 ---@param commandType string
 ---@param vehicle     table
 ---@param workflowId  string|nil
-function WorkflowManager:executeNetworkCommand(commandType, vehicle, workflowId)
+---@param isMain      boolean|nil  true = main role, false = support role (only for "start")
+function WorkflowManager:executeNetworkCommand(commandType, vehicle, workflowId, isMain)
     if commandType == "start" then
         local wf = self:getWorkflowById(workflowId)
         if wf == nil then
             WMLogger:error("executeNetworkCommand: workflowId '%s' not found", tostring(workflowId))
             return
         end
-        WMExecutor:startWorkflow(wf, vehicle)
+        -- isMain defaults to true when not specified
+        WMExecutor:startWorkflow(wf, vehicle, (isMain ~= false))
     elseif commandType == "stop" then
         WMExecutor:stopWorkflow(vehicle)
     elseif commandType == "pause" then
@@ -1143,6 +1147,9 @@ function WorkflowManager:deleteMap()
         end
         if self.textInputDialog ~= nil then
             self.textInputDialog = nil
+        end
+        if self.modeSelectDialog ~= nil then
+            self.modeSelectDialog = nil
         end
     end)
 

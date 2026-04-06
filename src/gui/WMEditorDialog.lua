@@ -124,79 +124,7 @@ function WMEditorDialog:refreshDisplay()
         self.nameInput:setText(self.workflow.name or "")
     end
 
-    -- Refresh linked workflow row
-    self:refreshLinkedWorkflow()
-
     -- Refresh step list
-    self:refreshStepList()
-end
-
----Refresh the linked workflow label and button states
-function WMEditorDialog:refreshLinkedWorkflow()
-    local isLinked = self.workflow and self.workflow.linkedWorkflowId ~= nil
-    local linkedWf = isLinked and WorkflowManager:getLinkedWorkflow(self.workflow.id)
-    local label = (linkedWf and linkedWf.name) or g_i18n:getText("wm_editor_linked_none") or "(none)"
-
-    if self.linkedWorkflowLabel then
-        self.linkedWorkflowLabel:setText(label)
-    end
-    if self.linkChangeButton then
-        local btnText = isLinked
-            and (g_i18n:getText("wm_button_change") or "Change")
-            or  (g_i18n:getText("wm_button_link")   or "Link")
-        self.linkChangeButton:setText(btnText)
-    end
-    if self.unlinkWorkflowButton then
-        self.unlinkWorkflowButton:setDisabled(not isLinked)
-    end
-end
-
----Called when the Link / Change button is clicked
----Cycles through ALL other workflows (including already-linked ones) on each click
-function WMEditorDialog:onClickLinkWorkflow()
-    if not self.workflow then return end
-
-    -- Collect ALL workflows except self as candidates
-    local candidates = {}
-    for _, wf in ipairs(WorkflowManager:getWorkflows()) do
-        if wf.id ~= self.workflow.id then
-            table.insert(candidates, wf)
-        end
-    end
-
-    if #candidates == 0 then
-        g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_INFO,
-            g_i18n:getText("wm_link_no_candidates") or "No other workflows available to link")
-        return
-    end
-
-    -- Find where the current linked partner sits in the candidate list
-    local currentIndex = 0
-    if self.workflow.linkedWorkflowId then
-        for i, wf in ipairs(candidates) do
-            if wf.id == self.workflow.linkedWorkflowId then
-                currentIndex = i
-                break
-            end
-        end
-    end
-
-    -- Advance to the next candidate (wraps around through all workflows)
-    local nextIndex = (currentIndex % #candidates) + 1
-    local targetWf = candidates[nextIndex]
-
-    WorkflowManager:linkWorkflows(self.workflow.id, targetWf.id)
-    WorkflowManager:saveWorkflows()
-    self:refreshLinkedWorkflow()
-    self:refreshStepList()
-end
-
----Called when Unlink button is clicked
-function WMEditorDialog:onClickUnlinkWorkflow()
-    if not self.workflow then return end
-    WorkflowManager:unlinkWorkflow(self.workflow.id)
-    WorkflowManager:saveWorkflows()
-    self:refreshLinkedWorkflow()
     self:refreshStepList()
 end
 
@@ -268,14 +196,11 @@ function WMEditorDialog:populateCellForItemInSection(list, section, index, cell)
         actionElement:setText(self:getActionDisplayName(step.action) or step.action or "")
     end
 
-    -- Sync group (only show when workflow is linked)
+    -- Support sub-step count indicator
     local groupElement = cell:getDescendantByName("stepGroup")
     if groupElement then
-        if self.workflow and self.workflow.linkedWorkflowId and step.syncGroup then
-            groupElement:setText(tostring(step.syncGroup))
-        else
-            groupElement:setText("")
-        end
+        local supportCount = (step.support and #step.support) or 0
+        groupElement:setText(supportCount > 0 and ("+" .. supportCount) or "")
     end
 end
 
@@ -297,9 +222,7 @@ end
 
 ---Update button states based on selection
 function WMEditorDialog:updateButtons()
-    local hasSteps = self.workflow and self.workflow.steps and #self.workflow.steps > 0
     local hasSelection = self.selectedStepIndex > 0
-    local isLinked = self.workflow and self.workflow.linkedWorkflowId ~= nil
 
     if self.editStepButton then
         self.editStepButton:setDisabled(not hasSelection)
@@ -315,13 +238,25 @@ function WMEditorDialog:updateButtons()
         self.moveDownButton:setDisabled(not hasSelection or self.selectedStepIndex >= maxIndex)
     end
 
-    -- Sync group column header: only visible when linked
-    if self.groupColumnHeader then
-        self.groupColumnHeader:setVisible(isLinked)
+    -- Support step buttons
+    local selectedStep = hasSelection and self.workflow and self.workflow.steps[self.selectedStepIndex]
+    local hasSup = selectedStep and selectedStep.support and #selectedStep.support > 0
+    if self.addSupportStepButton then
+        self.addSupportStepButton:setDisabled(not hasSelection)
     end
-
-    -- Keep linked workflow row in sync
-    self:refreshLinkedWorkflow()
+    if self.removeSupportStepButton then
+        self.removeSupportStepButton:setDisabled(not hasSup)
+    end
+    if self.supportStepInfo then
+        if hasSelection and selectedStep then
+            local count = (selectedStep.support and #selectedStep.support) or 0
+            self.supportStepInfo:setText(string.format(
+                g_i18n:getText("wm_editor_support_info") or "Support steps for step %d: %d",
+                self.selectedStepIndex, count))
+        else
+            self.supportStepInfo:setText(g_i18n:getText("wm_editor_support_select") or "Select a step to manage support sub-steps")
+        end
+    end
 end
 
 ---Called when step list selection changes
@@ -348,14 +283,14 @@ end
 ---Called when Add Step button is clicked
 function WMEditorDialog:onClickAddStep()
     WMLogger:debug("WMEditorDialog:onClickAddStep")
-    local isLinked = self.workflow and self.workflow.linkedWorkflowId ~= nil
     WorkflowManager:showStepDialog(nil, function(step)
         if step and self.workflow then
+            step.support = step.support or {}
             table.insert(self.workflow.steps, step)
             self.selectedStepIndex = #self.workflow.steps
             self:refreshStepList()
         end
-    end, isLinked)
+    end)
 end
 
 ---Called when Edit Step button is clicked
@@ -365,14 +300,41 @@ function WMEditorDialog:onClickEditStep()
     if self.selectedStepIndex > 0 and self.workflow and self.workflow.steps then
         local step = self.workflow.steps[self.selectedStepIndex]
         if step then
-            local isLinked = self.workflow and self.workflow.linkedWorkflowId ~= nil
             WorkflowManager:showStepDialog(step, function(editedStep)
                 if editedStep then
+                    editedStep.support = step.support or {}  -- preserve existing support sub-steps
                     self.workflow.steps[self.selectedStepIndex] = editedStep
                     self:refreshStepList()
                 end
-            end, isLinked)
+            end)
         end
+    end
+end
+
+---Called when Add Support Step button is clicked
+function WMEditorDialog:onClickAddSupportStep()
+    WMLogger:debug("WMEditorDialog:onClickAddSupportStep")
+    if self.selectedStepIndex <= 0 or not self.workflow then return end
+
+    local stepIndex = self.selectedStepIndex
+    WorkflowManager:showStepDialog(nil, function(supportStep)
+        if supportStep and self.workflow then
+            supportStep.support = nil  -- support sub-steps don't have their own support
+            WorkflowManager:addSupportStep(self.workflow.id, stepIndex, supportStep)
+            self:refreshStepList()
+        end
+    end)
+end
+
+---Called when Remove Support Step button is clicked (removes the last support sub-step)
+function WMEditorDialog:onClickRemoveSupportStep()
+    WMLogger:debug("WMEditorDialog:onClickRemoveSupportStep")
+    if self.selectedStepIndex <= 0 or not self.workflow then return end
+
+    local step = self.workflow.steps[self.selectedStepIndex]
+    if step and step.support and #step.support > 0 then
+        WorkflowManager:removeSupportStep(self.workflow.id, self.selectedStepIndex, #step.support)
+        self:refreshStepList()
     end
 end
 

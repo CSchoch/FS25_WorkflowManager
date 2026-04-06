@@ -82,8 +82,9 @@ end
 ---Start executing a workflow on a vehicle
 ---@param workflow table Workflow definition (immutable template)
 ---@param vehicle table Vehicle to use for this workflow execution
+---@param isMain boolean|nil true = main role, false = support role (default true)
 ---@return boolean success True if started successfully
-function WMExecutor:startWorkflow(workflow, vehicle)
+function WMExecutor:startWorkflow(workflow, vehicle, isMain)
     if workflow == nil then
         WMLogger:error("Cannot start nil workflow")
         return false
@@ -114,6 +115,8 @@ function WMExecutor:startWorkflow(workflow, vehicle)
 
     local vehicleName = vehicle.getName and vehicle:getName() or "unknown"
 
+    local isMainVehicle = (isMain ~= false)
+
     -- Create per-vehicle execution state on the spec (does NOT mutate workflow definition)
     vehicle.spec_workflowManagerSpec.wmExecution = {
         workflow = workflow,
@@ -121,27 +124,22 @@ function WMExecutor:startWorkflow(workflow, vehicle)
         status = WorkflowManager.STATUS_RUNNING,
         currentStep = 1,
         startTime = g_currentMission.time,
-        waitingForCompletion = false
+        waitingForCompletion = false,
+        isMainVehicle = isMainVehicle,
+        currentSupportStep = not isMainVehicle and 1 or nil,
     }
     self.activeVehicles[vehicle] = true
 
     local activeData = vehicle.spec_workflowManagerSpec.wmExecution
 
-    -- Late-start sync: If this is a support workflow and the main is already running,
-    -- jump to the support step matching the main's current sync group
-    if workflow.linkRole == "support" and workflow.linkedWorkflowId then
-        local mainActiveData = self:getActiveDataForWorkflow(workflow.linkedWorkflowId)
+    -- Late-start sync: if support vehicle, find what main step is current and log it.
+    -- currentSupportStep stays at 1 — support always starts from sub-step 1 of the
+    -- current main step, regardless of how far along the main vehicle is.
+    if not isMainVehicle then
+        local mainActiveData = self:getMainActiveDataForWorkflow(workflow.id)
         if mainActiveData and mainActiveData.status == WorkflowManager.STATUS_RUNNING then
-            local mainStep = mainActiveData.workflow.steps[mainActiveData.currentStep]
-            local mainGroup = mainStep and mainStep.syncGroup
-            if mainGroup then
-                local targetStep = self:findStepByGroup(workflow, mainGroup)
-                if targetStep then
-                    WMLogger:info("Late-start sync: Support '%s' jumping to step %d (group %d) to match main",
-                        workflow.name, targetStep, mainGroup)
-                    activeData.currentStep = targetStep
-                end
-            end
+            WMLogger:info("Late-start sync: support vehicle joining '%s' at main step %d",
+                workflow.name, mainActiveData.currentStep)
         end
     end
 
@@ -177,6 +175,7 @@ function WMExecutor:stopWorkflow(vehicle)
     end
 
     local workflow = activeData.workflow
+    local isMain = activeData.isMainVehicle ~= false
 
     -- Stop current step
     self:stopCurrentStep(activeData)
@@ -186,6 +185,15 @@ function WMExecutor:stopWorkflow(vehicle)
     self.activeVehicles[vehicle] = nil
 
     WMLogger:info("Stopped workflow: %s (reset to step 1)", workflow.name)
+
+    -- If this is the main vehicle, also stop all support vehicles
+    if isMain then
+        local supportDataList = self:getSupportActiveDataListForWorkflow(workflow.id)
+        for _, supportActiveData in ipairs(supportDataList) do
+            WMLogger:info("Main workflow stopped - stopping support vehicle")
+            self:stopWorkflow(supportActiveData.vehicle)
+        end
+    end
 
     -- Broadcast cleared state (isActive=false) to all clients
     WorkflowManager:broadcastState(vehicle)
@@ -246,6 +254,18 @@ function WMExecutor:pauseWorkflow(vehicle)
         currentStep = activeData.currentStep
     })
 
+    -- If this is the main vehicle, pause all running support vehicles
+    if activeData.isMainVehicle ~= false then
+        local supportDataList = self:getSupportActiveDataListForWorkflow(activeData.workflow.id)
+        for _, supportActiveData in ipairs(supportDataList) do
+            if supportActiveData.status == WorkflowManager.STATUS_RUNNING then
+                WMLogger:info("Main workflow paused - also pausing support vehicle")
+                self:pauseWorkflow(supportActiveData.vehicle)
+                WorkflowManager:broadcastState(supportActiveData.vehicle)
+            end
+        end
+    end
+
     return true
 end
 
@@ -289,7 +309,7 @@ function WMExecutor:resumeWorkflow(vehicle)
         -- paused programmatically in this session. AD/CP has auto-started on its own, so
         -- we must NOT restart it – just attach tracking state so the completion loop can
         -- detect when the current step finishes and advance to the next one.
-        local step = activeData.workflow.steps[activeData.currentStep]
+        local step = self:getCurrentStep(activeData)
 
         activeData.status = WorkflowManager.STATUS_RUNNING
         activeData.autoResumeUntil = nil  -- cancel auto-resume window; we are resuming now
@@ -310,13 +330,13 @@ function WMExecutor:resumeWorkflow(vehicle)
         currentStep = activeData.currentStep
     })
 
-    -- If this is a main workflow, resume all vehicles running the linked support workflow
+    -- If this is a main workflow, resume all running support vehicles
     local workflow = activeData.workflow
-    if workflow.linkRole == "main" and workflow.linkedWorkflowId then
-        local supportDataList = self:getActiveVehiclesForWorkflow(workflow.linkedWorkflowId)
+    if activeData.isMainVehicle ~= false then
+        local supportDataList = self:getSupportActiveDataListForWorkflow(workflow.id)
         for _, supportActiveData in ipairs(supportDataList) do
             if supportActiveData.status == WorkflowManager.STATUS_PAUSED then
-                WMLogger:info("Main workflow resumed - also resuming linked support workflow")
+                WMLogger:info("Main workflow resumed - also resuming support vehicle")
                 self:resumeWorkflow(supportActiveData.vehicle)
                 WorkflowManager:broadcastState(supportActiveData.vehicle)
             end
@@ -330,6 +350,76 @@ end
 ---@param activeData table Per-vehicle execution state
 function WMExecutor:executeCurrentStep(activeData)
     local workflow = activeData.workflow
+    local vehicle = activeData.vehicle
+
+    -- ===== Support vehicle path =====
+    if activeData.isMainVehicle == false then
+        local mainActiveData = self:getMainActiveDataForWorkflow(workflow.id)
+        if mainActiveData == nil then
+            WMLogger:info("Support vehicle: main not running, stopping support")
+            self:stopWorkflow(vehicle)
+            return
+        end
+
+        local mainStep = workflow.steps[mainActiveData.currentStep]
+        local supportSteps = mainStep and mainStep.support or {}
+
+        if #supportSteps == 0 then
+            WMLogger:info("Support vehicle: main step %d has no support sub-steps, idling",
+                mainActiveData.currentStep)
+            activeData.waitingForMainStep = true
+            return
+        end
+
+        -- Clamp index in case it drifted
+        if activeData.currentSupportStep > #supportSteps then
+            activeData.currentSupportStep = 1
+        end
+
+        local supportSubStep = supportSteps[activeData.currentSupportStep]
+        if supportSubStep == nil then
+            WMLogger:error("Support vehicle: no sub-step at index %d", activeData.currentSupportStep)
+            return
+        end
+
+        WMLogger:info("Executing support sub-step %d/%d: %s -> %s (main step %d)",
+            activeData.currentSupportStep, #supportSteps,
+            supportSubStep.type, supportSubStep.target or "nil", mainActiveData.currentStep)
+
+        WMEventHandler:fireEvent(WMEventHandler.EVENT_STEP_STARTED, {
+            workflowId = workflow.id,
+            stepNumber = activeData.currentSupportStep,
+            stepType = supportSubStep.type,
+            target = supportSubStep.target
+        })
+
+        if supportSubStep.type == WorkflowManager.STEP_AUTODRIVE then
+            if ADIntegration:isRunning(vehicle) or activeData.justStoppedAD then
+                activeData.waitingForCompletion = true
+                activeData.currentStepType = WorkflowManager.STEP_AUTODRIVE
+                activeData.pendingADStart = true
+                activeData.pendingADStartRetries = 0
+                return
+            end
+            self:startAutoDriveStep(activeData, vehicle, supportSubStep)
+        elseif supportSubStep.type == WorkflowManager.STEP_COURSEPLAY then
+            local comingFromCP = (activeData.currentStepType == WorkflowManager.STEP_COURSEPLAY)
+            if ADIntegration:isRunning(vehicle) or comingFromCP then
+                activeData.waitingForCompletion = true
+                activeData.currentStepType = WorkflowManager.STEP_COURSEPLAY
+                activeData.pendingCPStart = true
+                activeData.pendingCPStartRetries = 0
+                activeData.cpToCpTransition = comingFromCP
+                return
+            end
+            self:startCourseplayStep(activeData, vehicle, supportSubStep)
+        else
+            self:handleStepError(activeData, "Unknown support sub-step type: " .. tostring(supportSubStep.type))
+        end
+        return
+    end
+
+    -- ===== Main vehicle path =====
     local step = workflow.steps[activeData.currentStep]
     if step == nil then
         WMLogger:error("Step %d not found in workflow %s", activeData.currentStep, workflow.id)
@@ -346,8 +436,6 @@ function WMExecutor:executeCurrentStep(activeData)
         stepType = step.type,
         target = step.target
     })
-
-    local vehicle = activeData.vehicle
 
     -- Execute based on step type
     if step.type == WorkflowManager.STEP_AUTODRIVE then
@@ -413,10 +501,12 @@ end
 ---Also handles cyclic handoffs: when CP step has handed off to AD, stops AD too
 ---@param activeData table Per-vehicle execution state
 function WMExecutor:stopCurrentStep(activeData)
-    local workflow = activeData.workflow
-    local step = workflow.steps[activeData.currentStep]
+    local step = self:getCurrentStep(activeData)
     if step == nil then
-        return
+        -- Fallback: use cached step type when step lookup fails
+        -- (e.g. support vehicle whose main has already been cleaned up)
+        if activeData.currentStepType == nil then return end
+        step = { type = activeData.currentStepType }
     end
 
     local vehicle = activeData.vehicle
@@ -459,8 +549,9 @@ end
 ---@param step table Step data
 function WMExecutor:startAutoDriveStep(activeData, vehicle, step)
     local workflow = activeData.workflow
-    -- Check if next step is Courseplay - if so, configure AD to hand off to CP
-    local nextStep = workflow.steps[activeData.currentStep + 1]
+    -- Check if next step is Courseplay - if so, configure AD to hand off to CP.
+    -- Only applicable for main vehicle steps; support sub-steps cycle independently.
+    local nextStep = activeData.isMainVehicle ~= false and workflow.steps[activeData.currentStep + 1] or nil
     local willHandoffToCP = false
 
     if nextStep ~= nil and nextStep.type == WorkflowManager.STEP_COURSEPLAY then
@@ -570,10 +661,10 @@ end
 ---Pause the current step
 ---@param activeData table Per-vehicle execution state
 function WMExecutor:pauseCurrentStep(activeData)
-    local workflow = activeData.workflow
-    local step = workflow.steps[activeData.currentStep]
+    local step = self:getCurrentStep(activeData)
     if step == nil then
-        return
+        if activeData.currentStepType == nil then return end
+        step = { type = activeData.currentStepType }
     end
 
     local vehicle = activeData.vehicle
@@ -594,10 +685,10 @@ end
 ---Resume the current step
 ---@param activeData table Per-vehicle execution state
 function WMExecutor:resumeCurrentStep(activeData)
-    local workflow = activeData.workflow
-    local step = workflow.steps[activeData.currentStep]
+    local step = self:getCurrentStep(activeData)
     if step == nil then
-        return
+        if activeData.currentStepType == nil then return end
+        step = { type = activeData.currentStepType }
     end
 
     local vehicle = activeData.vehicle
@@ -622,72 +713,46 @@ function WMExecutor:onStepCompleted(activeData)
 
     WMLogger:info("Step %d completed for workflow %s", completedStepNum, workflow.name)
 
-    -- Fire step completed event
     WMEventHandler:fireEvent(WMEventHandler.EVENT_STEP_COMPLETED, {
         workflowId = workflow.id,
         stepNumber = completedStepNum
     })
 
-    -- === Linked workflow: Support looping ===
-    -- If this is a support workflow and the user hasn't manually overridden step navigation,
-    -- check if we should loop the current step (stay in same sync group as main)
-    if workflow.linkRole == "support" and not activeData.syncOverridden then
-        local mainWorkflow = WorkflowManager:getLinkedWorkflow(workflow.id)
-        if mainWorkflow then
-            local mainActiveData = self:getActiveDataForWorkflow(mainWorkflow.id)
-            if mainActiveData and mainActiveData.status == WorkflowManager.STATUS_RUNNING then
-                local mainStep = mainWorkflow.steps[mainActiveData.currentStep]
-                local supportStep = workflow.steps[completedStepNum]
-                local mainGroup = mainStep and mainStep.syncGroup
-                local supportGroup = supportStep and supportStep.syncGroup
-
-                if mainGroup and supportGroup and mainGroup == supportGroup then
-                    -- Main is still in the same sync group.
-                    -- If the next support step is in the same group, advance to it normally.
-                    -- Only loop back to the first step of the group after the last step in the group finishes.
-                    local nextSupportStep = workflow.steps[completedStepNum + 1]
-                    local nextSupportGroup = nextSupportStep and nextSupportStep.syncGroup
-                    if nextSupportGroup == supportGroup then
-                        -- More steps remain in this group - fall through to normal advance
-                    else
-                        -- Last step of the group finished - loop back to the first step
-                        local firstStepOfGroup = self:findStepByGroup(workflow, supportGroup)
-                        if firstStepOfGroup then
-                            activeData.currentStep = firstStepOfGroup
-                        end
-                        WMLogger:info("Support workflow '%s' looping from step %d (sync group %d matches main)",
-                            workflow.name, activeData.currentStep, supportGroup)
-                        self:executeCurrentStep(activeData)
-                        return
-                    end
-                end
-                -- If groups differ, or more steps remain in the group, fall through to normal step advance
-            elseif mainActiveData == nil or mainActiveData.status ~= WorkflowManager.STATUS_RUNNING then
-                -- Main is not running - stop support
-                WMLogger:info("Support workflow '%s': main workflow not running, stopping support", workflow.name)
-                self:stopWorkflow(activeData.vehicle)
-                return
-            end
+    -- ===== Support vehicle: advance currentSupportStep and loop =====
+    if activeData.isMainVehicle == false then
+        local mainActiveData = self:getMainActiveDataForWorkflow(workflow.id)
+        if mainActiveData == nil then
+            WMLogger:info("Support vehicle: main not running, stopping support")
+            self:stopWorkflow(activeData.vehicle)
+            return
         end
+
+        local mainStep = workflow.steps[mainActiveData.currentStep]
+        local supportSteps = mainStep and mainStep.support or {}
+
+        activeData.currentSupportStep = activeData.currentSupportStep + 1
+        if activeData.currentSupportStep > #supportSteps then
+            activeData.currentSupportStep = 1
+            WMLogger:info("Support vehicle: sub-step loop back to 1 (main still on step %d)",
+                mainActiveData.currentStep)
+        end
+
+        self:executeCurrentStep(activeData)
+        WorkflowManager:broadcastState(activeData.vehicle)
+        return
     end
 
-    -- Capture previous step info for sync group transition detection
-    local prevStepNum = completedStepNum
-    local prevGroup = workflow.steps[prevStepNum] and workflow.steps[prevStepNum].syncGroup
-
+    -- ===== Main vehicle: advance currentStep =====
     -- Check if AD handed off to CP (AD already started CP for us)
     local adHandedOffToCP = activeData.willHandoffToCP
 
-    -- Move to next step
     activeData.currentStep = activeData.currentStep + 1
 
-    -- === Linked workflow: Main sync group transition ===
-    if workflow.linkRole == "main" and prevGroup then
-        local nextStep = workflow.steps[activeData.currentStep]
-        local nextGroup = nextStep and nextStep.syncGroup
-        if nextGroup and prevGroup ~= nextGroup then
-            WMLogger:info("Main workflow '%s' sync group transition: %d -> %d", workflow.name, prevGroup, nextGroup)
-            self:onSyncGroupTransition(activeData, prevGroup, nextGroup)
+    -- Helper: notify all support vehicles that main moved to a new step
+    local function notifySupport()
+        local supportDataList = self:getSupportActiveDataListForWorkflow(workflow.id)
+        for _, supportActiveData in ipairs(supportDataList) do
+            self:onMainStepChanged(supportActiveData, activeData.currentStep)
         end
     end
 
@@ -698,24 +763,24 @@ function WMExecutor:onStepCompleted(activeData)
         -- AD already started Courseplay - just set up monitoring, don't call executeCurrentStep
         local nextStep = workflow.steps[activeData.currentStep]
         WMLogger:info("AD handed off to CP - skipping CP start, monitoring step %d: %s",
-            activeData.currentStep, nextStep.target or "unknown")
+            activeData.currentStep, nextStep and nextStep.target or "unknown")
 
-        -- Fire step started event for the CP step
         WMEventHandler:fireEvent(WMEventHandler.EVENT_STEP_STARTED, {
             workflowId = workflow.id,
             stepNumber = activeData.currentStep,
-            stepType = nextStep.type,
-            target = nextStep.target
+            stepType = nextStep and nextStep.type,
+            target = nextStep and nextStep.target
         })
 
-        -- Set up CP monitoring (AD already started it)
         activeData.waitingForCompletion = true
         activeData.currentStepType = WorkflowManager.STEP_COURSEPLAY
-        activeData.willHandoffToCP = false  -- Clear the handoff flag
-        activeData.cpWasRunning = true  -- Assume CP is running since AD started it
-        activeData.cpStartedByAD = true  -- Track that AD started CP
+        activeData.willHandoffToCP = false
+        activeData.cpWasRunning = true
+        activeData.cpStartedByAD = true
+
+        notifySupport()
     else
-        -- Normal case: Execute next step
+        notifySupport()
         self:executeCurrentStep(activeData)
     end
     -- Broadcast the new step / status to all multiplayer clients (no-op in singleplayer)
@@ -742,11 +807,11 @@ function WMExecutor:onWorkflowCompleted(activeData)
         workflowName = workflow.name
     })
 
-    -- If this is a main workflow, stop all vehicles running the linked support workflow
-    if workflow.linkRole == "main" and workflow.linkedWorkflowId then
-        local supportDataList = self:getActiveVehiclesForWorkflow(workflow.linkedWorkflowId)
+    -- If this is a main workflow, stop all support vehicles
+    if activeData.isMainVehicle ~= false then
+        local supportDataList = self:getSupportActiveDataListForWorkflow(workflow.id)
         for _, supportActiveData in ipairs(supportDataList) do
-            WMLogger:info("Main workflow completed - stopping linked support workflow")
+            WMLogger:info("Main workflow completed - stopping support vehicle")
             self:stopWorkflow(supportActiveData.vehicle)
         end
     end
@@ -832,6 +897,23 @@ function WMExecutor:update(dt)
                 end
             end
 
+            -- Support vehicle idle polling: check if main has moved to a step with support sub-steps
+            if activeData.isMainVehicle == false and activeData.waitingForMainStep then
+                local mainActiveData = self:getMainActiveDataForWorkflow(workflow.id)
+                if mainActiveData == nil then
+                    WMLogger:info("Support vehicle (idle): main stopped, stopping support")
+                    self:stopWorkflow(vehicle)
+                else
+                    local mainStep = workflow.steps[mainActiveData.currentStep]
+                    local supportSteps = mainStep and mainStep.support or {}
+                    if #supportSteps > 0 then
+                        WMLogger:info("Support vehicle (idle): main moved to step %d which has sub-steps",
+                            mainActiveData.currentStep)
+                        self:onMainStepChanged(activeData, mainActiveData.currentStep)
+                    end
+                end
+            end
+
             if activeData.status == WorkflowManager.STATUS_RUNNING and activeData.waitingForCompletion then
             -- Handle deferred CP start: either AD was stopped (AD->CP) or previous step
             -- was also CP (CP->CP transition needs cleanup time).
@@ -851,7 +933,7 @@ function WMExecutor:update(dt)
                     activeData.pendingCPStartRetries = nil
                     activeData.cpToCpTransition = nil
                     activeData.waitingForCompletion = false
-                    local step = workflow.steps[activeData.currentStep]
+                    local step = self:getCurrentStep(activeData)
                     if step then
                         self:startCourseplayStep(activeData, vehicle, step)
                     end
@@ -863,7 +945,7 @@ function WMExecutor:update(dt)
                         activeData.pendingCPStartRetries = nil
                         activeData.cpToCpTransition = nil
                         activeData.waitingForCompletion = false
-                        local step = workflow.steps[activeData.currentStep]
+                        local step = self:getCurrentStep(activeData)
                         if step then
                             self:startCourseplayStep(activeData, vehicle, step)
                         end
@@ -892,7 +974,7 @@ function WMExecutor:update(dt)
                     activeData.pendingADStartRetries = nil
                     activeData.justStoppedAD = nil
                     activeData.waitingForCompletion = false
-                    local step = workflow.steps[activeData.currentStep]
+                    local step = self:getCurrentStep(activeData)
                     if step then
                         self:startAutoDriveStep(activeData, vehicle, step)
                     end
@@ -903,7 +985,7 @@ function WMExecutor:update(dt)
                     activeData.pendingADStartRetries = nil
                     activeData.justStoppedAD = nil
                     activeData.waitingForCompletion = false
-                    local step = workflow.steps[activeData.currentStep]
+                    local step = self:getCurrentStep(activeData)
                     if step then
                         self:startAutoDriveStep(activeData, vehicle, step)
                     end
@@ -1031,62 +1113,64 @@ function WMExecutor:getActiveVehiclesForWorkflow(workflowId)
     return result
 end
 
----Find the first step index in a workflow that has the given sync group number
----@param workflow table Workflow definition
----@param groupNum number Sync group number to find
----@return number|nil stepIndex 1-based step index, or nil if not found
-function WMExecutor:findStepByGroup(workflow, groupNum)
-    if workflow == nil or workflow.steps == nil or groupNum == nil then
-        return nil
-    end
-    for i, step in ipairs(workflow.steps) do
-        if step.syncGroup == groupNum then
-            return i
+---Get the main-role active execution data for a given workflow ID.
+---@param workflowId string Workflow ID
+---@return table|nil activeData The main vehicle's activeData, or nil
+function WMExecutor:getMainActiveDataForWorkflow(workflowId)
+    for vehicle, _ in pairs(self.activeVehicles) do
+        local activeData = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
+        if activeData and activeData.workflow.id == workflowId and activeData.isMainVehicle ~= false then
+            return activeData
         end
     end
     return nil
 end
 
----Handle a sync group transition on the main workflow
----Moves the linked support workflow to the step matching the new group
----@param mainActiveData table Main workflow's per-vehicle execution state
----@param fromGroup number Previous sync group number
----@param toGroup number New sync group number
-function WMExecutor:onSyncGroupTransition(mainActiveData, fromGroup, toGroup)
-    local mainWorkflow = mainActiveData.workflow
-    local supportWorkflow = WorkflowManager:getLinkedWorkflow(mainWorkflow.id)
-    if supportWorkflow == nil then
-        return
-    end
-
-    local supportDataList = self:getActiveVehiclesForWorkflow(supportWorkflow.id)
-    if #supportDataList == 0 then
-        WMLogger:debug("Sync group transition %d -> %d: support workflow '%s' not running",
-            fromGroup, toGroup, supportWorkflow.name)
-        return
-    end
-
-    for _, supportActiveData in ipairs(supportDataList) do
-        if supportActiveData.status ~= WorkflowManager.STATUS_RUNNING then
-            WMLogger:debug("Sync group transition: support vehicle not in running state, skipping")
-        else
-            -- Each support vehicle may have its own workflow reference (same steps, independent state)
-            local targetStep = self:findStepByGroup(supportActiveData.workflow, toGroup)
-            if targetStep == nil then
-                WMLogger:warning("Sync group transition: support workflow '%s' has no step for group %d - stopping support vehicle",
-                    supportWorkflow.name, toGroup)
-                self:stopWorkflow(supportActiveData.vehicle)
-            else
-                WMLogger:info("Sync group transition %d -> %d: moving support '%s' to step %d",
-                    fromGroup, toGroup, supportWorkflow.name, targetStep)
-                self:stopCurrentStep(supportActiveData)
-                supportActiveData.currentStep = targetStep
-                supportActiveData.syncOverridden = false
-                self:resetStepTrackingState(supportActiveData)
-                self:executeCurrentStep(supportActiveData)
-            end
+---Get all support-role active execution data entries for a given workflow ID.
+---@param workflowId string Workflow ID
+---@return table activeDataList Array of support activeData tables (empty if none)
+function WMExecutor:getSupportActiveDataListForWorkflow(workflowId)
+    local result = {}
+    for vehicle, _ in pairs(self.activeVehicles) do
+        local activeData = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
+        if activeData and activeData.workflow.id == workflowId and activeData.isMainVehicle == false then
+            table.insert(result, activeData)
         end
     end
+    return result
+end
+
+---Get the current step definition for an activeData entry.
+---For main vehicles returns workflow.steps[currentStep].
+---For support vehicles returns the current support sub-step from the main step's support array.
+---@param activeData table Per-vehicle execution state
+---@return table|nil step Step definition, or nil if not found
+function WMExecutor:getCurrentStep(activeData)
+    local workflow = activeData.workflow
+    if activeData.isMainVehicle ~= false then
+        return workflow.steps[activeData.currentStep]
+    else
+        local mainActiveData = self:getMainActiveDataForWorkflow(workflow.id)
+        if mainActiveData == nil then return nil end
+        local mainStep = workflow.steps[mainActiveData.currentStep]
+        if mainStep == nil then return nil end
+        local support = mainStep.support or {}
+        return support[activeData.currentSupportStep]
+    end
+end
+
+---Called when the main vehicle advances to a new step.
+---Stops the current support sub-step, resets to sub-step 1, and executes the new one.
+---@param supportActiveData table Support vehicle's execution state
+---@param newMainStep number New main step index (1-based, for logging)
+function WMExecutor:onMainStepChanged(supportActiveData, newMainStep)
+    WMLogger:info("Main step changed to %d - resetting support vehicle to sub-step 1", newMainStep)
+    self:stopCurrentStep(supportActiveData)
+    supportActiveData.currentSupportStep = 1
+    supportActiveData.waitingForMainStep = nil
+    self:resetStepTrackingState(supportActiveData)
+    self:executeCurrentStep(supportActiveData)
+    WorkflowManager:broadcastState(supportActiveData.vehicle)
 end
 
 ---Get the count of active workflows
@@ -1188,22 +1272,6 @@ function WMExecutor:resetStepTrackingState(activeData)
     activeData.pendingADStartRetries = nil
 end
 
----Handle linked-workflow sync after a manual step change (prev/next).
----For "main" workflows: triggers a sync group transition on the support if the group changed.
----For "support" workflows: marks the step as manually overridden.
----@param activeData table Per-vehicle execution state
----@param prevGroup number|nil Sync group of the step we just left
-function WMExecutor:handleLinkedWorkflowStepChange(activeData, prevGroup)
-    local workflow = activeData.workflow
-    if workflow.linkRole == "main" and prevGroup then
-        local newGroup = workflow.steps[activeData.currentStep] and workflow.steps[activeData.currentStep].syncGroup
-        if newGroup and prevGroup ~= newGroup then
-            self:onSyncGroupTransition(activeData, prevGroup, newGroup)
-        end
-    elseif workflow.linkRole == "support" then
-        activeData.syncOverridden = true
-    end
-end
 
 ---Go to the previous step in a workflow
 ---Stops current step and moves to the previous one
@@ -1226,10 +1294,6 @@ function WMExecutor:goToPreviousStep(vehicle)
     end
 
     local workflow = activeData.workflow
-
-    -- Capture previous sync group for transition detection
-    local prevStepNum = activeData.currentStep
-    local prevGroup = workflow.steps[prevStepNum] and workflow.steps[prevStepNum].syncGroup
 
     -- Remember if workflow was paused so we can resume after step change
     local wasPaused = activeData.status == WorkflowManager.STATUS_PAUSED
@@ -1255,7 +1319,13 @@ function WMExecutor:goToPreviousStep(vehicle)
         self:executeCurrentStep(activeData)
     end
 
-    self:handleLinkedWorkflowStepChange(activeData, prevGroup)
+    -- Notify all support vehicles to follow the new main step
+    if activeData.isMainVehicle ~= false then
+        local supportDataList = self:getSupportActiveDataListForWorkflow(workflow.id)
+        for _, supportActiveData in ipairs(supportDataList) do
+            self:onMainStepChanged(supportActiveData, activeData.currentStep)
+        end
+    end
 
     -- Fire event
     WMEventHandler:fireEvent(WMEventHandler.EVENT_STEP_CHANGED, {
@@ -1289,10 +1359,6 @@ function WMExecutor:goToNextStep(vehicle)
         return false
     end
 
-    -- Capture previous sync group for transition detection
-    local prevStepNum = activeData.currentStep
-    local prevGroup = workflow.steps[prevStepNum] and workflow.steps[prevStepNum].syncGroup
-
     -- Remember if workflow was paused so we can resume after step change
     local wasPaused = activeData.status == WorkflowManager.STATUS_PAUSED
 
@@ -1317,7 +1383,13 @@ function WMExecutor:goToNextStep(vehicle)
         self:executeCurrentStep(activeData)
     end
 
-    self:handleLinkedWorkflowStepChange(activeData, prevGroup)
+    -- Notify all support vehicles to follow the new main step
+    if activeData.isMainVehicle ~= false then
+        local supportDataList = self:getSupportActiveDataListForWorkflow(workflow.id)
+        for _, supportActiveData in ipairs(supportDataList) do
+            self:onMainStepChanged(supportActiveData, activeData.currentStep)
+        end
+    end
 
     -- Fire event
     WMEventHandler:fireEvent(WMEventHandler.EVENT_STEP_CHANGED, {

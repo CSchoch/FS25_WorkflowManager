@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<GUI inputContext="DIALOG_WMModeSelectDialog" onOpen="onOpen" onClose="onClose" onCreate="onCreate">
+    <GuiElement profile="newLayer"/>
+    <Bitmap profile="dialogFullscreenBg"/>
+    <GuiElement profile="fs25_dialogBg" size="540px 220px">
+        <ThreePartBitmap profile="fs25_dialogBgMiddleSmall"/>
+        <ThreePartBitmap profile="fs25_dialogBgTopSmall"/>
+        <ThreePartBitmap profile="fs25_dialogBgBottom"/>
+
+        <BoxLayout profile="wm_dialogContentContainer">
+            <!-- Title: workflow name -->
+            <Text profile="wm_dialogTitle" id="titleElement" text="$l10n_wm_mode_select_title"/>
+            <ThreePartBitmap profile="wm_dialogTitleLineSeparator"/>
+
+            <!-- Description -->
+            <Text profile="wm_dialogText" id="descriptionElement"
+                  text="$l10n_wm_mode_select_description"
+                  size="500px 50px"/>
+        </BoxLayout>
+
+        <!-- Buttons -->
+        <BoxLayout profile="wm_dialogButtonBoxBottom">
+            <Button profile="buttonOK"       text="$l10n_wm_button_run_as_main"    onClick="onClickMain"    focusId="mainBtn"/>
+            <Bitmap  profile="fs25_dialogButtonBoxSeparator"/>
+            <Button profile="buttonActivate" text="$l10n_wm_button_run_as_support" onClick="onClickSupport" focusId="supportBtn"/>
+            <Bitmap  profile="fs25_dialogButtonBoxSeparator"/>
+            <Button profile="buttonBack"     text="$l10n_wm_button_cancel"         onClick="onClickCancel"  focusId="cancelBtn"/>
+        </BoxLayout>
+    </GuiElement>
+</GUI>

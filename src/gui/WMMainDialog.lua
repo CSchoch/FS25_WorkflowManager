@@ -91,14 +91,12 @@ function WMMainDialog:populateCellForItemInSection(list, section, index, cell)
         return
     end
 
-    -- Set workflow name (with linked role indicator)
+    -- Set workflow name (with support steps indicator)
     local nameElement = cell:getDescendantByName("workflowName")
     if nameElement then
         local displayName = workflow.name or "Unnamed"
-        if workflow.linkRole == "main" then
-            displayName = displayName .. (g_i18n:getText("wm_link_role_indicator_main") or " [Main]")
-        elseif workflow.linkRole == "support" then
-            displayName = displayName .. (g_i18n:getText("wm_link_role_indicator_support") or " [Support]")
+        if WorkflowManager:hasSupportSteps(workflow.id) then
+            displayName = displayName .. " [+S]"
         end
         nameElement:setText(displayName)
     end

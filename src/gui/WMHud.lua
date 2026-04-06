@@ -42,8 +42,8 @@ function WMHud:ensureOverlays()
         return
     end
 
-    -- Calculate size from pixel values (175px height to accommodate linked workflow line)
-    local pw, ph = getNormalizedScreenValues(280, 175)
+    -- Calculate size from pixel values
+    local pw, ph = getNormalizedScreenValues(280, 140)
     self.w = pw
     self.h = ph
 
@@ -367,49 +367,29 @@ function WMHud:draw()
         renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_no_vehicle"))
     end
 
-    -- === Linked workflow status ===
-    if workflow and workflow.linkedWorkflowId then
-        lineY = lineY - self.smallSize - my
-        local linkedWf = WorkflowManager:getLinkedWorkflow(workflow.id)
-        if linkedWf then
-            local supportList = WMExecutor:getActiveVehiclesForWorkflow(linkedWf.id)
-            local linkedStatus
-            if #supportList == 0 then
-                setTextColor(0.6, 0.6, 0.6, 1)
-                linkedStatus = g_i18n:getText("wm_hud_idle") or "Idle"
-            elseif #supportList == 1 then
-                local ad = supportList[1]
-                if ad.status == WorkflowManager.STATUS_RUNNING then
-                    setTextColor(0.3, 0.9, 0.3, 1)
-                    linkedStatus = g_i18n:getText("wm_status_running") or "Running"
-                elseif ad.status == WorkflowManager.STATUS_PAUSED then
-                    setTextColor(1, 0.6, 0, 1)
-                    linkedStatus = g_i18n:getText("wm_status_paused") or "Paused"
-                else
-                    setTextColor(0.6, 0.6, 0.6, 1)
-                    linkedStatus = g_i18n:getText("wm_hud_idle") or "Idle"
-                end
-            else
-                -- Multiple support vehicles: count running/paused
-                local running, paused = 0, 0
-                for _, ad in ipairs(supportList) do
-                    if ad.status == WorkflowManager.STATUS_RUNNING then running = running + 1
-                    elseif ad.status == WorkflowManager.STATUS_PAUSED then paused = paused + 1
-                    end
-                end
-                if running > 0 then
-                    setTextColor(0.3, 0.9, 0.3, 1)
-                    linkedStatus = string.format("%dx %s", #supportList, g_i18n:getText("wm_status_running") or "Running")
-                elseif paused > 0 then
-                    setTextColor(1, 0.6, 0, 1)
-                    linkedStatus = string.format("%dx %s", #supportList, g_i18n:getText("wm_status_paused") or "Paused")
-                else
-                    setTextColor(0.6, 0.6, 0.6, 1)
-                    linkedStatus = string.format("%dx %s", #supportList, g_i18n:getText("wm_hud_idle") or "Idle")
+    -- === Support vehicle status ===
+    if activeData and activeData.isMainVehicle ~= false and workflow then
+        local supportList = WMExecutor:getSupportActiveDataListForWorkflow(workflow.id)
+        if #supportList > 0 then
+            lineY = lineY - self.smallSize - my
+            local running, paused = 0, 0
+            for _, sd in ipairs(supportList) do
+                if sd.status == WorkflowManager.STATUS_RUNNING then running = running + 1
+                elseif sd.status == WorkflowManager.STATUS_PAUSED then paused = paused + 1
                 end
             end
+            if running > 0 then
+                setTextColor(0.3, 0.9, 0.3, 1)
+            elseif paused > 0 then
+                setTextColor(1, 0.6, 0, 1)
+            else
+                setTextColor(0.6, 0.6, 0.6, 1)
+            end
+            local statusText = running > 0 and (g_i18n:getText("wm_status_running") or "Running")
+                            or paused > 0 and (g_i18n:getText("wm_status_paused") or "Paused")
+                            or (g_i18n:getText("wm_hud_idle") or "Idle")
             renderText(x + mx, lineY, self.smallSize,
-                string.format(g_i18n:getText("wm_hud_linked") or "Linked: %s - %s", linkedWf.name, linkedStatus))
+                string.format("Support (%d): %s", #supportList, statusText))
         end
     end
 
