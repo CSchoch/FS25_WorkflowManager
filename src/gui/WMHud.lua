@@ -320,13 +320,31 @@ function WMHud:draw()
     lineY = lineY - self.textSize - my
     setTextColor(0.9, 0.9, 0.3, 1)
     if workflow and activeData and workflow.steps then
-        local cs = activeData.currentStep or 1
         local ts = #workflow.steps
-        local step = workflow.steps[cs]
-        if step then
-            local sType = step.type == WorkflowManager.STEP_AUTODRIVE and "AD" or "CP"
-            renderText(x + mx, lineY, self.smallSize,
-                string.format(g_i18n:getText("wm_hud_step_format"), cs, ts, sType, step.target or "?"))
+        if activeData.isMainVehicle == false then
+            -- Support vehicle: show which main step we follow + current support sub-step
+            local mainData = WMExecutor:getMainActiveDataForWorkflow(workflow.id)
+            local mainStep = mainData and workflow.steps[mainData.currentStep]
+            local supSteps = mainStep and mainStep.support or {}
+            local css = activeData.currentSupportStep or 1
+            local tss = #supSteps
+            local supStep = supSteps[css]
+            if supStep then
+                local sType = supStep.type == WorkflowManager.STEP_AUTODRIVE and "AD" or "CP"
+                renderText(x + mx, lineY, self.smallSize,
+                    string.format("Step %s.%d/%d: %s - %s",
+                        mainData and tostring(mainData.currentStep) or "?",
+                        css, tss, sType, supStep.target or "?"))
+            end
+        else
+            -- Main vehicle: show current main step
+            local cs = activeData.currentStep or 1
+            local step = workflow.steps[cs]
+            if step then
+                local sType = step.type == WorkflowManager.STEP_AUTODRIVE and "AD" or "CP"
+                renderText(x + mx, lineY, self.smallSize,
+                    string.format(g_i18n:getText("wm_hud_step_format"), cs, ts, sType, step.target or "?"))
+            end
         end
     end
 

@@ -145,5 +145,6 @@
         <text name="wm_button_del_support" text="Del Support Step"/>
         <text name="wm_editor_support_select" text="Select a step to manage support sub-steps"/>
         <text name="wm_editor_support_info" text="Support steps for step %d: %d"/>
+        <text name="wm_editor_support_step" text="  Support sub-step %d of main step %d (Edit or Delete to change)"/>
     </texts>
 </l10n>

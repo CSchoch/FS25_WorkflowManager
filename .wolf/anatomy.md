@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-06T19:12:53.739Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-06T20:14:43.707Z
 > Files: 19 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
@@ -34,8 +34,8 @@
 
 ## src/gui/
 
-- `WMEditorDialog.lua` — new, onCreate, onOpen, onClose, setWorkflow (~4566 tok)
-- `WMHud.lua` — ensureOverlays, createIconOverlays, updateOverlayPositions, init, show (~6382 tok)
+- `WMEditorDialog.lua` — new, onCreate, onOpen, onClose, setWorkflow (~5304 tok)
+- `WMHud.lua` — ensureOverlays, createIconOverlays, updateOverlayPositions, init, show (~6654 tok)
 - `WMMainDialog.lua` — new, onCreate, onOpen, onClose, refreshWorkflowList (~3028 tok)
 - `WMModeSelectDialog.lua` — new, onCreate, onOpen, onClose, Called (~537 tok)
 - `WMStepDialog.lua` — new, onCreate, onOpen, onClose, Callback (~6074 tok)
@@ -77,8 +77,8 @@
 
 ## translations/
 
-- `translation_de.xml` (~2461 tok)
-- `translation_en.xml` (~2039 tok)
+- `translation_de.xml` (~2495 tok)
+- `translation_en.xml` (~2071 tok)
 
 ## website/
 
@@ -130,5 +130,5 @@
 
 ## xml/gui/
 
-- `WMEditorDialog.xml` (~1472 tok)
+- `WMEditorDialog.xml` (~1439 tok)
 - `WMModeSelectDialog.xml` (~427 tok)

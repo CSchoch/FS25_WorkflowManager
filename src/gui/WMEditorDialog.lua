@@ -1,7 +1,8 @@
 --[[
     WorkflowManager - Editor Dialog
-    Allows editing workflow name and managing steps
-    Uses proper FS25 DialogElement for input blocking
+    Allows editing workflow name and managing steps.
+    The step list is a flat, nested view: main steps are shown with their support
+    sub-steps indented below them (  ↳ 1  AutoDrive  Field1  Unload).
 
     Author: WorkflowManager Team
 ]]
@@ -14,7 +15,9 @@ local WMEditorDialog_mt = Class(WMEditorDialog, DialogElement)
 function WMEditorDialog.new(target)
     local self = DialogElement.new(target, WMEditorDialog_mt)
     self.workflow = nil
-    self.selectedStepIndex = 0
+    -- Flat list for the SmoothList: each entry is {isMain, stepIndex, supportIndex}
+    self.flatItems = {}
+    self.selectedFlatIndex = 0
     self.inputEventIds = {}
     return self
 end
@@ -27,58 +30,75 @@ function WMEditorDialog:onOpen()
     WMEditorDialog:superClass().onOpen(self)
     WMLogger:debug("WMEditorDialog:onOpen")
 
-    -- Register custom input events
     self:registerInputEvents()
 
-    -- Set correct input action indicators on buttons
-    if self.removeStepButton then
-        self.removeStepButton:setInputAction("WM_GUI_DELETE")
-    end
-    if self.moveUpButton then
-        self.moveUpButton:setInputAction("WM_GUI_MOVE_UP")
-    end
-    if self.moveDownButton then
-        self.moveDownButton:setInputAction("WM_GUI_MOVE_DOWN")
-    end
+    if self.removeStepButton then self.removeStepButton:setInputAction("WM_GUI_DELETE") end
+    if self.moveUpButton    then self.moveUpButton:setInputAction("WM_GUI_MOVE_UP")    end
+    if self.moveDownButton  then self.moveDownButton:setInputAction("WM_GUI_MOVE_DOWN") end
 
-    -- Setup list data source
     if self.stepList ~= nil then
         self.stepList:setDataSource(self)
     end
 
-    -- Load data caches for dropdowns
     self:loadDataCaches()
-
-    -- Refresh display
     self:refreshDisplay()
 end
 
 function WMEditorDialog:onClose()
     WMEditorDialog:superClass().onClose(self)
     WMLogger:debug("WMEditorDialog:onClose")
-
-    -- Unregister custom input events
     self:unregisterInputEvents()
 end
 
 ---Set the workflow to edit
----@param workflow table Workflow to edit
 function WMEditorDialog:setWorkflow(workflow)
     self.workflow = workflow
-    self.selectedStepIndex = 0
+    self.flatItems = {}
+    self.selectedFlatIndex = 0
 end
 
----Load data caches for AD destinations and CP courses
-function WMEditorDialog:loadDataCaches()
-    -- Tell loaders to start scanning
-    if CPCoursesLoader then
-        CPCoursesLoader:setGuiOpen(true)
-    end
-    if CPVehiclesLoader then
-        CPVehiclesLoader:setGuiOpen(true)
-    end
+-- ============================================================
+-- Flat item list helpers
+-- ============================================================
 
-    -- Cache AD destinations
+---Rebuild flatItems from workflow steps (main + nested support sub-steps).
+function WMEditorDialog:buildFlatList()
+    self.flatItems = {}
+    if self.workflow == nil then return end
+    for i, step in ipairs(self.workflow.steps or {}) do
+        table.insert(self.flatItems, { isMain = true,  stepIndex = i, supportIndex = nil })
+        for j, _ in ipairs(step.support or {}) do
+            table.insert(self.flatItems, { isMain = false, stepIndex = i, supportIndex = j })
+        end
+    end
+end
+
+---Return the currently selected flat item, or nil.
+function WMEditorDialog:getSelectedItem()
+    if self.selectedFlatIndex < 1 or self.selectedFlatIndex > #self.flatItems then
+        return nil
+    end
+    return self.flatItems[self.selectedFlatIndex]
+end
+
+---Return the flat index of the first row for a given main stepIndex.
+function WMEditorDialog:flatIndexForMainStep(stepIndex)
+    for i, item in ipairs(self.flatItems) do
+        if item.isMain and item.stepIndex == stepIndex then
+            return i
+        end
+    end
+    return 0
+end
+
+-- ============================================================
+-- Data load / display
+-- ============================================================
+
+function WMEditorDialog:loadDataCaches()
+    if CPCoursesLoader then CPCoursesLoader:setGuiOpen(true) end
+    if CPVehiclesLoader then CPVehiclesLoader:setGuiOpen(true) end
+
     self.cachedADDestinations = {}
     if ADIntegration and ADIntegration.isAvailable then
         local adDests = ADIntegration:getDestinations()
@@ -89,18 +109,16 @@ function WMEditorDialog:loadDataCaches()
         end
     end
 
-    -- Cache CP courses
     self.cachedCPCourses = {}
     if CPCoursesLoader and CPCoursesLoader.isInitialized then
         local courses = CPCoursesLoader:getCourses()
-        if courses and #courses > 0 then
+        if courses then
             for _, course in ipairs(courses) do
                 table.insert(self.cachedCPCourses, course)
             end
         end
     end
 
-    -- Cache fill types as {name, title} pairs (name = internal ID like "WHEAT", title = display like "Wheat")
     self.cachedFillTypes = {}
     if ADIntegration and ADIntegration.isAvailable then
         local fillTypes = ADIntegration:getAvailableFillTypes()
@@ -113,395 +131,413 @@ function WMEditorDialog:loadDataCaches()
         #self.cachedADDestinations, #self.cachedCPCourses, #self.cachedFillTypes)
 end
 
----Refresh the display with current workflow data
 function WMEditorDialog:refreshDisplay()
-    if self.workflow == nil then
-        return
-    end
-
-    -- Set workflow name
-    if self.nameInput then
-        self.nameInput:setText(self.workflow.name or "")
-    end
-
-    -- Refresh step list
+    if self.workflow == nil then return end
+    if self.nameInput then self.nameInput:setText(self.workflow.name or "") end
     self:refreshStepList()
 end
 
----Refresh the step list
 function WMEditorDialog:refreshStepList()
-    if self.stepList == nil or self.workflow == nil then
-        return
-    end
+    if self.stepList == nil or self.workflow == nil then return end
 
+    self:buildFlatList()
     self.stepList:reloadData()
 
-    local steps = self.workflow.steps or {}
-
-    -- Restore selection
-    if self.selectedStepIndex > 0 and self.selectedStepIndex <= #steps then
-        self.stepList:setSelectedIndex(self.selectedStepIndex)
-    elseif #steps > 0 then
+    -- Restore selection within valid range
+    local n = #self.flatItems
+    if n == 0 then
+        self.selectedFlatIndex = 0
+    elseif self.selectedFlatIndex < 1 then
+        self.selectedFlatIndex = 1
         self.stepList:setSelectedIndex(1)
-        self.selectedStepIndex = 1
+    elseif self.selectedFlatIndex > n then
+        self.selectedFlatIndex = n
+        self.stepList:setSelectedIndex(n)
     else
-        self.selectedStepIndex = 0
+        self.stepList:setSelectedIndex(self.selectedFlatIndex)
     end
 
     self:updateButtons()
 end
 
----SmoothList data source: Get number of items
+-- ============================================================
+-- SmoothList data source
+-- ============================================================
+
 function WMEditorDialog:getNumberOfItemsInSection(list, section)
-    if self.workflow == nil then
-        return 0
-    end
-    return #(self.workflow.steps or {})
+    return #self.flatItems
 end
 
----SmoothList data source: Populate cell
 function WMEditorDialog:populateCellForItemInSection(list, section, index, cell)
-    if self.workflow == nil then
-        return
-    end
+    local item = self.flatItems[index]
+    if item == nil or self.workflow == nil then return end
 
-    local step = self.workflow.steps[index]
-    if step == nil then
-        return
+    local step
+    if item.isMain then
+        step = self.workflow.steps[item.stepIndex]
+    else
+        local mainStep = self.workflow.steps[item.stepIndex]
+        step = mainStep and mainStep.support and mainStep.support[item.supportIndex]
     end
+    if step == nil then return end
 
-    -- Step number
-    local numElement = cell:getDescendantByName("stepNum")
-    if numElement then
-        numElement:setText(tostring(index))
-    end
-
-    -- Step type
-    local typeElement = cell:getDescendantByName("stepType")
-    if typeElement then
-        local typeText = step.type == "autodrive" and
-            g_i18n:getText("wm_type_autodrive") or g_i18n:getText("wm_type_courseplay")
-        typeElement:setText(typeText or step.type)
-    end
-
-    -- Step target
-    local targetElement = cell:getDescendantByName("stepTarget")
-    if targetElement then
-        targetElement:setText(step.target or "")
-    end
-
-    -- Step action
-    local actionElement = cell:getDescendantByName("stepAction")
-    if actionElement then
-        actionElement:setText(self:getActionDisplayName(step.action) or step.action or "")
-    end
-
-    -- Support sub-step count indicator
-    local groupElement = cell:getDescendantByName("stepGroup")
-    if groupElement then
-        local supportCount = (step.support and #step.support) or 0
-        groupElement:setText(supportCount > 0 and ("+" .. supportCount) or "")
-    end
-end
-
----Get display name for an action
----@param action string Action name
----@return string displayName Localized display name
-function WMEditorDialog:getActionDisplayName(action)
-    local actionDisplayNames = {
-        drive = g_i18n:getText("wm_action_drive") or "Drive To",
-        pickup_deliver = g_i18n:getText("wm_action_pickup_deliver") or "Pickup & Deliver",
-        deliver = g_i18n:getText("wm_action_deliver") or "Deliver",
-        load = g_i18n:getText("wm_action_load") or "Load",
-        unload = g_i18n:getText("wm_action_unload") or "Unload",
-        fieldwork = g_i18n:getText("wm_action_fieldwork") or "Field Work",
-        bale_collect = g_i18n:getText("wm_action_bale_collect") or "Bale Collect"
-    }
-    return actionDisplayNames[action] or action
-end
-
----Update button states based on selection
-function WMEditorDialog:updateButtons()
-    local hasSelection = self.selectedStepIndex > 0
-
-    if self.editStepButton then
-        self.editStepButton:setDisabled(not hasSelection)
-    end
-    if self.removeStepButton then
-        self.removeStepButton:setDisabled(not hasSelection)
-    end
-    if self.moveUpButton then
-        self.moveUpButton:setDisabled(not hasSelection or self.selectedStepIndex <= 1)
-    end
-    if self.moveDownButton then
-        local maxIndex = self.workflow and self.workflow.steps and #self.workflow.steps or 0
-        self.moveDownButton:setDisabled(not hasSelection or self.selectedStepIndex >= maxIndex)
-    end
-
-    -- Support step buttons
-    local selectedStep = hasSelection and self.workflow and self.workflow.steps[self.selectedStepIndex]
-    local hasSup = selectedStep and selectedStep.support and #selectedStep.support > 0
-    if self.addSupportStepButton then
-        self.addSupportStepButton:setDisabled(not hasSelection)
-    end
-    if self.removeSupportStepButton then
-        self.removeSupportStepButton:setDisabled(not hasSup)
-    end
-    if self.supportStepInfo then
-        if hasSelection and selectedStep then
-            local count = (selectedStep.support and #selectedStep.support) or 0
-            self.supportStepInfo:setText(string.format(
-                g_i18n:getText("wm_editor_support_info") or "Support steps for step %d: %d",
-                self.selectedStepIndex, count))
+    -- # column: "1" for main, "  ↳1" for support
+    local numEl = cell:getDescendantByName("stepNum")
+    if numEl then
+        if item.isMain then
+            numEl:setText(tostring(item.stepIndex))
         else
-            self.supportStepInfo:setText(g_i18n:getText("wm_editor_support_select") or "Select a step to manage support sub-steps")
+            numEl:setText(item.stepIndex .. "." .. item.supportIndex)
+        end
+    end
+
+    -- Type column
+    local typeEl = cell:getDescendantByName("stepType")
+    if typeEl then
+        local typeText = step.type == "autodrive"
+            and (g_i18n:getText("wm_type_autodrive") or "AutoDrive")
+            or  (g_i18n:getText("wm_type_courseplay") or "Courseplay")
+        typeEl:setText(item.isMain and typeText or ("      " .. typeText))
+    end
+
+    -- Target column
+    local targetEl = cell:getDescendantByName("stepTarget")
+    if targetEl then
+        targetEl:setText(item.isMain and (step.target or "") or ("      " .. (step.target or "")))
+    end
+
+    -- Action column
+    local actionEl = cell:getDescendantByName("stepAction")
+    if actionEl then
+        actionEl:setText(self:getActionDisplayName(step.action) or step.action or "")
+    end
+
+    -- Sup column: support count for main rows, empty for support rows
+    local supEl = cell:getDescendantByName("stepGroup")
+    if supEl then
+        if item.isMain then
+            local count = (self.workflow.steps[item.stepIndex].support and
+                           #self.workflow.steps[item.stepIndex].support) or 0
+            supEl:setText(count > 0 and ("+" .. count) or "")
+        else
+            supEl:setText("")
         end
     end
 end
 
----Called when step list selection changes
-function WMEditorDialog:onStepListSelectionChanged(list, section, index)
-    self.selectedStepIndex = index
-    self:updateButtons()
-    WMLogger:debug("Selected step index: %d", index)
+-- ============================================================
+-- Action display helper
+-- ============================================================
+
+function WMEditorDialog:getActionDisplayName(action)
+    local names = {
+        drive          = g_i18n:getText("wm_action_drive")          or "Drive To",
+        pickup_deliver = g_i18n:getText("wm_action_pickup_deliver") or "Pickup & Deliver",
+        deliver        = g_i18n:getText("wm_action_deliver")        or "Deliver",
+        load           = g_i18n:getText("wm_action_load")           or "Load",
+        unload         = g_i18n:getText("wm_action_unload")         or "Unload",
+        fieldwork      = g_i18n:getText("wm_action_fieldwork")      or "Field Work",
+        bale_collect   = g_i18n:getText("wm_action_bale_collect")   or "Bale Collect",
+    }
+    return names[action] or action
 end
 
----Called when step list item is double-clicked
+-- ============================================================
+-- Button state
+-- ============================================================
+
+function WMEditorDialog:updateButtons()
+    local item = self:getSelectedItem()
+    local hasSelection = item ~= nil
+    local isMain    = hasSelection and item.isMain
+    local isSupport = hasSelection and not item.isMain
+
+    -- Edit / Remove work for both types
+    if self.editStepButton   then self.editStepButton:setDisabled(not hasSelection)   end
+    if self.removeStepButton then self.removeStepButton:setDisabled(not hasSelection) end
+
+    -- Move Up
+    if self.moveUpButton then
+        local canUp = false
+        if isMain    then canUp = item.stepIndex > 1 end
+        if isSupport then canUp = item.supportIndex > 1 end
+        self.moveUpButton:setDisabled(not canUp)
+    end
+
+    -- Move Down
+    if self.moveDownButton then
+        local canDown = false
+        if isMain then
+            canDown = item.stepIndex < #(self.workflow and self.workflow.steps or {})
+        end
+        if isSupport then
+            local mainStep = self.workflow and self.workflow.steps[item.stepIndex]
+            canDown = item.supportIndex < #(mainStep and mainStep.support or {})
+        end
+        self.moveDownButton:setDisabled(not canDown)
+    end
+
+    -- Add Support Step: only when a main step is selected
+    if self.addSupportStepButton then
+        self.addSupportStepButton:setDisabled(not isMain)
+    end
+
+    -- Info line
+    if self.supportStepInfo then
+        if isMain then
+            local mainStep = self.workflow and self.workflow.steps[item.stepIndex]
+            local count = (mainStep and mainStep.support and #mainStep.support) or 0
+            self.supportStepInfo:setText(string.format(
+                g_i18n:getText("wm_editor_support_info") or "Support steps for step %d: %d",
+                item.stepIndex, count))
+        elseif isSupport then
+            self.supportStepInfo:setText(string.format(
+                g_i18n:getText("wm_editor_support_step") or "  ↳ Support sub-step %d of main step %d",
+                item.supportIndex, item.stepIndex))
+        else
+            self.supportStepInfo:setText(
+                g_i18n:getText("wm_editor_support_select") or "Select a step to manage support sub-steps")
+        end
+    end
+end
+
+-- ============================================================
+-- List callbacks
+-- ============================================================
+
+function WMEditorDialog:onStepListSelectionChanged(list, section, index)
+    self.selectedFlatIndex = index
+    self:updateButtons()
+    WMLogger:debug("Selected flat index: %d", index)
+end
+
 function WMEditorDialog:onStepListDoubleClick(list, section, index)
-    self.selectedStepIndex = index
+    self.selectedFlatIndex = index
     self:onClickEditStep()
 end
 
----Called when name input text changes
+-- ============================================================
+-- Step operations
+-- ============================================================
+
 function WMEditorDialog:onNameEnterPressed()
     if self.workflow and self.nameInput then
         self.workflow.name = self.nameInput.text or ""
-        WMLogger:debug("Workflow name changed to: %s", self.workflow.name)
     end
 end
 
----Called when Add Step button is clicked
+---Add a new main step at the end of the workflow.
 function WMEditorDialog:onClickAddStep()
-    WMLogger:debug("WMEditorDialog:onClickAddStep")
     WorkflowManager:showStepDialog(nil, function(step)
         if step and self.workflow then
-            step.support = step.support or {}
+            step.support = {}
             table.insert(self.workflow.steps, step)
-            self.selectedStepIndex = #self.workflow.steps
+            -- Select the new main step row after rebuild
+            self:buildFlatList()
+            self.selectedFlatIndex = self:flatIndexForMainStep(#self.workflow.steps)
             self:refreshStepList()
         end
     end)
 end
 
----Called when Edit Step button is clicked
+---Edit the currently selected row (main step or support sub-step).
 function WMEditorDialog:onClickEditStep()
-    WMLogger:debug("WMEditorDialog:onClickEditStep")
+    local item = self:getSelectedItem()
+    if item == nil or self.workflow == nil then return end
 
-    if self.selectedStepIndex > 0 and self.workflow and self.workflow.steps then
-        local step = self.workflow.steps[self.selectedStepIndex]
-        if step then
-            WorkflowManager:showStepDialog(step, function(editedStep)
-                if editedStep then
-                    editedStep.support = step.support or {}  -- preserve existing support sub-steps
-                    self.workflow.steps[self.selectedStepIndex] = editedStep
-                    self:refreshStepList()
+    if item.isMain then
+        local step = self.workflow.steps[item.stepIndex]
+        if step == nil then return end
+        local si = item.stepIndex
+        WorkflowManager:showStepDialog(step, function(editedStep)
+            if editedStep and self.workflow then
+                editedStep.support = step.support or {}  -- preserve nested support
+                self.workflow.steps[si] = editedStep
+                self:refreshStepList()
+            end
+        end)
+    else
+        local mainStep = self.workflow.steps[item.stepIndex]
+        if mainStep == nil or mainStep.support == nil then return end
+        local supportStep = mainStep.support[item.supportIndex]
+        if supportStep == nil then return end
+        local si, sj = item.stepIndex, item.supportIndex
+        WorkflowManager:showStepDialog(supportStep, function(editedSupportStep)
+            if editedSupportStep and self.workflow then
+                editedSupportStep.support = nil  -- sub-steps don't nest
+                local ms = self.workflow.steps[si]
+                if ms and ms.support then
+                    ms.support[sj] = editedSupportStep
                 end
-            end)
-        end
+                self:refreshStepList()
+            end
+        end)
     end
 end
 
----Called when Add Support Step button is clicked
-function WMEditorDialog:onClickAddSupportStep()
-    WMLogger:debug("WMEditorDialog:onClickAddSupportStep")
-    if self.selectedStepIndex <= 0 or not self.workflow then return end
+---Remove the currently selected row (main step or support sub-step).
+function WMEditorDialog:onClickRemoveStep()
+    local item = self:getSelectedItem()
+    if item == nil or self.workflow == nil then return end
 
-    local stepIndex = self.selectedStepIndex
+    if item.isMain then
+        table.remove(self.workflow.steps, item.stepIndex)
+        -- Try to keep selection on same flat position
+        self:buildFlatList()
+        self.selectedFlatIndex = math.max(1, math.min(self.selectedFlatIndex, #self.flatItems))
+        if #self.flatItems == 0 then self.selectedFlatIndex = 0 end
+    else
+        local mainStep = self.workflow.steps[item.stepIndex]
+        if mainStep and mainStep.support then
+            table.remove(mainStep.support, item.supportIndex)
+        end
+        -- Move selection to parent main step row
+        self:buildFlatList()
+        self.selectedFlatIndex = self:flatIndexForMainStep(item.stepIndex)
+        if self.selectedFlatIndex < 1 then self.selectedFlatIndex = 1 end
+    end
+
+    self:refreshStepList()
+end
+
+---Move selected row up (main steps or support sub-steps).
+function WMEditorDialog:onClickMoveUp()
+    local item = self:getSelectedItem()
+    if item == nil or self.workflow == nil then return end
+
+    if item.isMain then
+        if item.stepIndex <= 1 then return end
+        local steps = self.workflow.steps
+        steps[item.stepIndex], steps[item.stepIndex - 1] = steps[item.stepIndex - 1], steps[item.stepIndex]
+        self:buildFlatList()
+        self.selectedFlatIndex = self:flatIndexForMainStep(item.stepIndex - 1)
+    else
+        if item.supportIndex <= 1 then return end
+        local sup = self.workflow.steps[item.stepIndex].support
+        sup[item.supportIndex], sup[item.supportIndex - 1] = sup[item.supportIndex - 1], sup[item.supportIndex]
+        self.selectedFlatIndex = self.selectedFlatIndex - 1
+    end
+
+    self:refreshStepList()
+end
+
+---Move selected row down (main steps or support sub-steps).
+function WMEditorDialog:onClickMoveDown()
+    local item = self:getSelectedItem()
+    if item == nil or self.workflow == nil then return end
+
+    if item.isMain then
+        if item.stepIndex >= #self.workflow.steps then return end
+        local steps = self.workflow.steps
+        steps[item.stepIndex], steps[item.stepIndex + 1] = steps[item.stepIndex + 1], steps[item.stepIndex]
+        self:buildFlatList()
+        self.selectedFlatIndex = self:flatIndexForMainStep(item.stepIndex + 1)
+    else
+        local mainStep = self.workflow.steps[item.stepIndex]
+        local sup = mainStep and mainStep.support
+        if sup == nil or item.supportIndex >= #sup then return end
+        sup[item.supportIndex], sup[item.supportIndex + 1] = sup[item.supportIndex + 1], sup[item.supportIndex]
+        self.selectedFlatIndex = self.selectedFlatIndex + 1
+    end
+
+    self:refreshStepList()
+end
+
+---Add a support sub-step to the currently selected main step.
+function WMEditorDialog:onClickAddSupportStep()
+    local item = self:getSelectedItem()
+    if item == nil or not item.isMain or self.workflow == nil then return end
+
+    local si = item.stepIndex
     WorkflowManager:showStepDialog(nil, function(supportStep)
         if supportStep and self.workflow then
-            supportStep.support = nil  -- support sub-steps don't have their own support
-            WorkflowManager:addSupportStep(self.workflow.id, stepIndex, supportStep)
+            supportStep.support = nil
+            WorkflowManager:addSupportStep(self.workflow.id, si, supportStep)
+            -- Select the newly added support row
+            self:buildFlatList()
+            local mainStep = self.workflow.steps[si]
+            local newSj = mainStep and mainStep.support and #mainStep.support or 1
+            for i, fi in ipairs(self.flatItems) do
+                if not fi.isMain and fi.stepIndex == si and fi.supportIndex == newSj then
+                    self.selectedFlatIndex = i
+                    break
+                end
+            end
             self:refreshStepList()
         end
     end)
 end
 
----Called when Remove Support Step button is clicked (removes the last support sub-step)
-function WMEditorDialog:onClickRemoveSupportStep()
-    WMLogger:debug("WMEditorDialog:onClickRemoveSupportStep")
-    if self.selectedStepIndex <= 0 or not self.workflow then return end
+-- ============================================================
+-- Save / Cancel
+-- ============================================================
 
-    local step = self.workflow.steps[self.selectedStepIndex]
-    if step and step.support and #step.support > 0 then
-        WorkflowManager:removeSupportStep(self.workflow.id, self.selectedStepIndex, #step.support)
-        self:refreshStepList()
-    end
-end
-
----Called when Remove Step button is clicked
-function WMEditorDialog:onClickRemoveStep()
-    WMLogger:debug("WMEditorDialog:onClickRemoveStep")
-
-    if self.selectedStepIndex > 0 and self.workflow and self.workflow.steps then
-        table.remove(self.workflow.steps, self.selectedStepIndex)
-        if self.selectedStepIndex > #self.workflow.steps then
-            self.selectedStepIndex = #self.workflow.steps
-        end
-        self:refreshStepList()
-    end
-end
-
----Called when Move Up button is clicked
-function WMEditorDialog:onClickMoveUp()
-    WMLogger:debug("WMEditorDialog:onClickMoveUp")
-
-    if self.selectedStepIndex > 1 and self.workflow and self.workflow.steps then
-        local steps = self.workflow.steps
-        local temp = steps[self.selectedStepIndex]
-        steps[self.selectedStepIndex] = steps[self.selectedStepIndex - 1]
-        steps[self.selectedStepIndex - 1] = temp
-        self.selectedStepIndex = self.selectedStepIndex - 1
-        self:refreshStepList()
-    end
-end
-
----Called when Move Down button is clicked
-function WMEditorDialog:onClickMoveDown()
-    WMLogger:debug("WMEditorDialog:onClickMoveDown")
-
-    if self.workflow and self.workflow.steps then
-        local maxIndex = #self.workflow.steps
-        if self.selectedStepIndex > 0 and self.selectedStepIndex < maxIndex then
-            local steps = self.workflow.steps
-            local temp = steps[self.selectedStepIndex]
-            steps[self.selectedStepIndex] = steps[self.selectedStepIndex + 1]
-            steps[self.selectedStepIndex + 1] = temp
-            self.selectedStepIndex = self.selectedStepIndex + 1
-            self:refreshStepList()
-        end
-    end
-end
-
----Called when Save button is clicked
 function WMEditorDialog:onClickSave()
-    WMLogger:debug("WMEditorDialog:onClickSave")
-
-    -- Get final name from input
     if self.workflow and self.nameInput then
         self.workflow.name = self.nameInput.text or self.workflow.name
     end
-
-    -- Stop loaders
-    if CPCoursesLoader then
-        CPCoursesLoader:setGuiOpen(false)
-    end
-    if CPVehiclesLoader then
-        CPVehiclesLoader:setGuiOpen(false)
-    end
-
-    -- Save workflows
+    if CPCoursesLoader then CPCoursesLoader:setGuiOpen(false) end
+    if CPVehiclesLoader then CPVehiclesLoader:setGuiOpen(false) end
     WorkflowManager:saveWorkflows()
-
     self:close()
-
-    -- Reopen main dialog
     WorkflowManager:showMainDialog()
 end
 
----Called when Cancel button is clicked
 function WMEditorDialog:onClickCancel()
-    WMLogger:debug("WMEditorDialog:onClickCancel")
-
-    -- Stop loaders
-    if CPCoursesLoader then
-        CPCoursesLoader:setGuiOpen(false)
-    end
-    if CPVehiclesLoader then
-        CPVehiclesLoader:setGuiOpen(false)
-    end
-
+    if CPCoursesLoader then CPCoursesLoader:setGuiOpen(false) end
+    if CPVehiclesLoader then CPVehiclesLoader:setGuiOpen(false) end
     self:close()
-
-    -- Reopen main dialog
     WorkflowManager:showMainDialog()
 end
 
----Called when Escape is pressed
 function WMEditorDialog:onEscPressed()
     self:onClickCancel()
 end
 
----Get cached AD destinations
-function WMEditorDialog:getADDestinations()
-    return self.cachedADDestinations or {}
-end
+-- ============================================================
+-- Cache accessors (used by WMStepDialog)
+-- ============================================================
 
----Get cached CP courses
-function WMEditorDialog:getCPCourses()
-    return self.cachedCPCourses or {}
-end
+function WMEditorDialog:getADDestinations() return self.cachedADDestinations or {} end
+function WMEditorDialog:getCPCourses()      return self.cachedCPCourses or {}      end
+function WMEditorDialog:getFillTypes()      return self.cachedFillTypes or {}      end
 
----Get cached fill types
-function WMEditorDialog:getFillTypes()
-    return self.cachedFillTypes or {}
-end
+-- ============================================================
+-- Input events
+-- ============================================================
 
----Register custom input events for hotkeys
 function WMEditorDialog:registerInputEvents()
     self.inputEventIds = {}
 
-    -- Remove: Backspace key
-    local _, eventId = g_inputBinding:registerActionEvent(InputAction.WM_GUI_DELETE, self, self.onInputRemove, false, true, false, true)
-    if eventId ~= nil then
-        table.insert(self.inputEventIds, eventId)
-        g_inputBinding:setActionEventTextPriority(eventId, GS_PRIO_VERY_LOW)
-        g_inputBinding:setActionEventTextVisibility(eventId, false)
-    end
-
-    -- Move Up: + key
-    _, eventId = g_inputBinding:registerActionEvent(InputAction.WM_GUI_MOVE_UP, self, self.onInputMoveUp, false, true, false, true)
-    if eventId ~= nil then
-        table.insert(self.inputEventIds, eventId)
-        g_inputBinding:setActionEventTextPriority(eventId, GS_PRIO_VERY_LOW)
-        g_inputBinding:setActionEventTextVisibility(eventId, false)
-    end
-
-    -- Move Down: - key
-    _, eventId = g_inputBinding:registerActionEvent(InputAction.WM_GUI_MOVE_DOWN, self, self.onInputMoveDown, false, true, false, true)
-    if eventId ~= nil then
-        table.insert(self.inputEventIds, eventId)
-        g_inputBinding:setActionEventTextPriority(eventId, GS_PRIO_VERY_LOW)
-        g_inputBinding:setActionEventTextVisibility(eventId, false)
-    end
-end
-
----Unregister custom input events
-function WMEditorDialog:unregisterInputEvents()
-    if self.inputEventIds then
-        for _, eventId in ipairs(self.inputEventIds) do
-            g_inputBinding:removeActionEvent(eventId)
+    local function reg(action, handler)
+        local _, eventId = g_inputBinding:registerActionEvent(InputAction[action], self, handler, false, true, false, true)
+        if eventId then
+            table.insert(self.inputEventIds, eventId)
+            g_inputBinding:setActionEventTextPriority(eventId, GS_PRIO_VERY_LOW)
+            g_inputBinding:setActionEventTextVisibility(eventId, false)
         end
-        self.inputEventIds = {}
     end
+
+    reg("WM_GUI_DELETE",    self.onInputRemove)
+    reg("WM_GUI_MOVE_UP",   self.onInputMoveUp)
+    reg("WM_GUI_MOVE_DOWN", self.onInputMoveDown)
 end
 
----Input handler for Remove key (Backspace)
-function WMEditorDialog:onInputRemove(actionName, inputValue)
-    if self.removeStepButton and not self.removeStepButton.disabled then
-        self:onClickRemoveStep()
+function WMEditorDialog:unregisterInputEvents()
+    for _, eventId in ipairs(self.inputEventIds or {}) do
+        g_inputBinding:removeActionEvent(eventId)
     end
+    self.inputEventIds = {}
 end
 
----Input handler for Move Up key (+)
-function WMEditorDialog:onInputMoveUp(actionName, inputValue)
-    if self.moveUpButton and not self.moveUpButton.disabled then
-        self:onClickMoveUp()
-    end
+function WMEditorDialog:onInputRemove()
+    if self.removeStepButton and not self.removeStepButton.disabled then self:onClickRemoveStep() end
 end
 
----Input handler for Move Down key (-)
-function WMEditorDialog:onInputMoveDown(actionName, inputValue)
-    if self.moveDownButton and not self.moveDownButton.disabled then
-        self:onClickMoveDown()
-    end
+function WMEditorDialog:onInputMoveUp()
+    if self.moveUpButton and not self.moveUpButton.disabled then self:onClickMoveUp() end
+end
+
+function WMEditorDialog:onInputMoveDown()
+    if self.moveDownButton and not self.moveDownButton.disabled then self:onClickMoveDown() end
 end

@@ -66,11 +66,10 @@
                 </ThreePartBitmap>
             </BoxLayout>
 
-            <!-- Support Steps Row -->
+            <!-- Support Steps Row: info + add button (remove is handled by the main Delete button) -->
             <BoxLayout profile="wm_hBox" size="1060px 40px">
-                <Text profile="wm_dialogText" id="supportStepInfo" text="$l10n_wm_editor_support_select" size="580px 40px"/>
-                <Button profile="buttonOK" id="addSupportStepButton" text="$l10n_wm_button_add_support" onClick="onClickAddSupportStep" size="210px 36px" focusId="addSupBtn"/>
-                <Button profile="buttonActivate" id="removeSupportStepButton" text="$l10n_wm_button_del_support" onClick="onClickRemoveSupportStep" size="210px 36px" focusId="delSupBtn"/>
+                <Text profile="wm_dialogText" id="supportStepInfo" text="$l10n_wm_editor_support_select" size="740px 40px"/>
+                <Button profile="buttonOK" id="addSupportStepButton" text="$l10n_wm_button_add_support" onClick="onClickAddSupportStep" size="260px 36px" focusId="addSupBtn"/>
             </BoxLayout>
         </BoxLayout>
 
