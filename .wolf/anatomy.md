@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-07T08:43:04.589Z
-> Files: 20 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-07T10:33:50.860Z
+> Files: 26 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -110,12 +110,18 @@
 
 ## website/docs/api/
 
+- `xml-format.md` — XML Format (~1850 tok)
 
 ## website/docs/ui/
 
+- `editor-dialog.md` — Editor Dialog (~1510 tok)
+- `hud-controls.md` — HUD Controls (~1432 tok)
 
 ## website/docs/workflows/
 
+- `creating-workflows.md` — Creating Workflows (~1624 tok)
+- `executing-workflows.md` — Executing Workflows (~1691 tok)
+- `linked-workflows.md` — Multi-Vehicle Workflows (~1880 tok)
 
 ## website/src/components/HomepageFeatures/
 

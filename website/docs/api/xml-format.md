@@ -49,16 +49,18 @@ The file is created automatically when you save your first workflow.
 |-----------|------|-------------|
 | `id` | string | Unique identifier (auto-generated, do not change) |
 | `name` | string | Display name shown in the Workflow Manager |
-| `linkedWorkflowId` | string | ID of the linked partner workflow (omit if not linked) |
-| `linkRole` | string | `main` or `support` (omit if not linked) |
 
 ### Step Element
 
+Main steps are direct children of `<workflow>`. Steps that have support sub-steps contain nested `<support>` child elements.
+
 ```xml
-<step
-    type="autodrive"
-    target="Route_Field1"
-    action="drive"/>
+<step type="autodrive" target="Route_Field1" action="drive"/>
+
+<step type="courseplay" target="Field1_Harvest" action="fieldwork">
+    <support type="autodrive" target="Field1" action="unload" unloadTarget="Silo"/>
+    <support type="autodrive" target="Silo" action="deliver"/>
+</step>
 ```
 
 #### Step Attributes
@@ -70,11 +72,16 @@ The file is created automatically when you save your first workflow.
 | `action` | string | Yes | Action to perform |
 | `unloadTarget` | string | No | Secondary destination (AutoDrive only) |
 | `fillType` | string | No | Cargo filter (AutoDrive only) |
-| `syncGroup` | integer | No | Sync group number for linked workflow coordination |
+
+#### Support Sub-Step Attributes
+
+`<support>` elements use the same attributes as `<step>` (without nesting of their own).
+
+Steps with no support activity simply have no `<support>` children. You can leave the closing tag out entirely (self-closing `/>` is fine).
 
 ## Complete Example
 
-### Single workflow
+### Single-vehicle workflow
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -96,25 +103,31 @@ The file is created automatically when you save your first workflow.
 </WorkflowManager>
 ```
 
-### Linked workflow pair (combine + unloader)
+### Two-vehicle workflow (combine + unloader)
+
+Support sub-steps are nested inside the main steps they belong to. Drive-to steps have no `<support>` children — the support vehicle idles during transit.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <WorkflowManager>
     <workflows>
-        <workflow id="wf_001" name="Combine Harvest" linkedWorkflowId="wf_002" linkRole="main">
-            <step type="autodrive" target="Route_Field1" action="drive" syncGroup="1"/>
-            <step type="courseplay" target="Field1_Harvest" action="fieldwork" syncGroup="1"/>
-            <step type="autodrive" target="Route_Field2" action="drive" syncGroup="2"/>
-            <step type="courseplay" target="Field2_Harvest" action="fieldwork" syncGroup="2"/>
-        </workflow>
-        <workflow id="wf_002" name="Unloader Support" linkedWorkflowId="wf_001" linkRole="support">
-            <step type="autodrive" target="Field1" action="unload" unloadTarget="Silo" syncGroup="1"/>
-            <step type="autodrive" target="Field2" action="unload" unloadTarget="Silo" syncGroup="2"/>
+        <workflow id="wf_001" name="Combine Harvest">
+            <step type="autodrive" target="Route_Field1" action="drive"/>
+            <step type="courseplay" target="Field1_Harvest" action="fieldwork">
+                <support type="autodrive" target="Field1" action="unload" unloadTarget="Silo"/>
+                <support type="autodrive" target="Silo" action="deliver"/>
+            </step>
+            <step type="autodrive" target="Route_Field2" action="drive"/>
+            <step type="courseplay" target="Field2_Harvest" action="fieldwork">
+                <support type="autodrive" target="Field2" action="unload" unloadTarget="Silo"/>
+                <support type="autodrive" target="Silo" action="deliver"/>
+            </step>
         </workflow>
     </workflows>
 </WorkflowManager>
 ```
+
+Both vehicles start the **same** workflow and choose their role (Main or Support) in-game when starting. There is only one workflow element — not two separate linked files.
 
 ## AutoDrive Step Examples
 
@@ -138,7 +151,7 @@ The file is created automatically when you save your first workflow.
 ### Unload Mode (Combine Support)
 
 ```xml
-<step
+<support
     type="autodrive"
     target="Field1_Harvest"
     action="unload"
@@ -193,6 +206,10 @@ Common FS25 fill types for the `fillType` attribute:
 - `SUNFLOWER`
 - `SOYBEAN`
 - (and others — the name is the internal fill type ID shown in the step dialog)
+
+## Old Format Migration
+
+If you have a savegame from an older version of Workflow Manager that used `linkRole`, `linkedWorkflowId`, and `syncGroup` attributes, those files are migrated automatically when you load the game. The old linked workflow pair is converted into a single workflow with nested `<support>` elements. No manual action is required.
 
 ## Backup and Recovery
 

@@ -26,18 +26,38 @@ When a workflow is running, an overlay appears on screen:
 
 The **Pause** and **Resume** buttons share the same slot. The button shows `||` (Pause) while the workflow is running, and switches to `▶` (Resume) when the workflow is paused.
 
-If the vehicle is part of a **linked workflow** pair, a second status line shows the partner's progress:
+### Main Vehicle with Support Vehicles
+
+If one or more support vehicles are following the same workflow, the HUD shows their combined status:
 
 ```
 ┌──────────────────────────────────────┐
-│  Wheat Harvest (Combine)       ════  │
+│  Wheat Harvest – Fields 1 & 2  ════  │
 │  Step 2/4: Courseplay - Field Work   │
-│  Target: Field1_Harvest              │
-│  Partner: Unloader Support · Step 1/2│
+│  CP active (67%)                     │
+│  Support (1): Running                │
 ├──────────────────────────────────────┤
 │  [<<]  [||/▶]   [□]   [>>]          │
 └──────────────────────────────────────┘
 ```
+
+`Support (1): Running` shows the number of active support vehicles and their current status.
+
+### Support Vehicle HUD
+
+When running as a **support vehicle**, the HUD shows which main step is being followed and which sub-step is currently executing:
+
+```
+┌──────────────────────────────────────┐
+│  Wheat Harvest – Fields 1 & 2  ════  │
+│  Step 2.1/2: AD - Field1             │
+│  AD active                           │
+├──────────────────────────────────────┤
+│  [<<]  [||/▶]   [□]   [>>]          │
+└──────────────────────────────────────┘
+```
+
+`Step 2.1/2` means: the main vehicle is on step 2, and the support vehicle is executing sub-step 1 of 2 sub-steps for that main step. When the support vehicle finishes all sub-steps it waits until the main advances.
 
 ![HUD while workflow is running](/img/screenshots/hud-running.png)
 
@@ -55,7 +75,7 @@ The HUD can be freely repositioned by dragging:
 Shows the name of the currently running workflow.
 
 ### Step Counter
-Shows current step and total steps (e.g., "Step 2/5").
+Shows current step and total steps (e.g., "Step 2/5"). For support vehicles, shows the sub-step counter (e.g., "Step 2.1/2").
 
 ### Step Details
 Displays:
@@ -88,6 +108,7 @@ Displays:
 - Suspends the current step
 - AutoDrive pauses navigation
 - Courseplay pauses field work
+- If you are the main vehicle, all support vehicles pause too
 
 **Resume (`▶`)** — shown while the workflow is paused:
 - Continues from where it stopped
@@ -105,6 +126,7 @@ Displays:
 - Resets workflow to step 1
 - Sets status to Ready
 - Stops any running AD/CP jobs
+- If you are the main vehicle, all support vehicles are stopped too
 
 **When to use**:
 - Abort the workflow

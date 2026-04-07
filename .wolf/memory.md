@@ -126,3 +126,16 @@
 | 10:42 | Edited src/network/WMNetworkEvents.lua | 4→6 lines | ~95 |
 | 10:43 | Edited src/WorkflowExecutor.lua | 10→15 lines | ~205 |
 | 10:43 | Session end: 37 writes across 13 files (WMMainDialog.lua, WMStepDialog.lua, WMEditorDialog.lua, WMEditorDialog.xml, WMHud.lua) | 10 reads | ~54883 tok |
+| 12:28 | Created website/docs/workflows/linked-workflows.md | — | ~2005 |
+
+## Session: 2026-04-07 12:30
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 12:31 | Created website/docs/ui/editor-dialog.md | — | ~1611 |
+| 12:32 | Created website/docs/ui/hud-controls.md | — | ~1527 |
+| 12:32 | Created website/docs/workflows/executing-workflows.md | — | ~1804 |
+| 12:33 | Created website/docs/workflows/creating-workflows.md | — | ~1733 |
+| 12:33 | Created website/docs/api/xml-format.md | — | ~1974 |
+| 12:34 | Updated 5 Docusaurus docs for hierarchical support steps | website/docs/ui/editor-dialog.md, hud-controls.md, workflows/executing-workflows.md, creating-workflows.md, api/xml-format.md | Removed syncGroup/linkRole/linkedWorkflowId references; added N.M numbering, role dialog, nested support sub-step docs | ~3000 |
+| 12:34 | Session end: 5 writes across 5 files (editor-dialog.md, hud-controls.md, executing-workflows.md, creating-workflows.md, xml-format.md) | 5 reads | ~9266 tok |

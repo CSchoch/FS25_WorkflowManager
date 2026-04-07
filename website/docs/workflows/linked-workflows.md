@@ -1,80 +1,119 @@
 ---
 id: linked-workflows
-title: Linked Workflows
+title: Multi-Vehicle Workflows (Support Steps)
 sidebar_position: 4
 ---
 
-# Linked Workflows
+# Multi-Vehicle Workflows
 
-Linked workflows let you coordinate two vehicles working together — for example, a combine harvester and an unloader/grain cart running in sync across multiple fields.
+Workflow Manager lets a single workflow coordinate multiple vehicles working together — for example, a combine harvester and an unloader running in sync across multiple fields — using **support sub-steps** nested directly inside main steps.
 
-## What Are Linked Workflows?
+## How It Works
 
-Two workflows can be paired as **main** and **support**:
-
-- The **main** workflow drives the operation (e.g., combine harvesting field by field)
-- The **support** workflow follows the main's progress (e.g., unloader driving between the combine and the silo)
-
-When the main workflow advances to the next field, the support automatically follows. Pausing, resuming, or stopping the main also affects the support vehicle automatically.
-
-## Roles
+Each main step in a workflow can contain one or more **support sub-steps**. When you start a workflow that has support sub-steps, you choose a **role**:
 
 | Role | Description |
 |------|-------------|
-| **Main** | The lead vehicle. Its progress determines when the pair advances to the next field. |
-| **Support** | The helper vehicle. Repeats its current task until the main moves on. |
+| **Main** | The lead vehicle. Executes the main steps in order. |
+| **Support** | The helper vehicle. Executes the sub-steps of whichever main step the main vehicle is currently on. |
 
-## Sync Groups
+The support vehicle works through its sub-steps in order, then waits until the main vehicle advances to the next step. When the main moves on, the support immediately starts the sub-steps for the new step.
 
-Sync groups coordinate which steps on each workflow belong to the same phase of work. Steps with the same sync group number run in parallel — the support loops its step while the main is in that group.
+### Example — Combine + Unloader
 
-**Example — Harvest + Unloader:**
+```
+Workflow: "Wheat Harvest – Fields 1 & 2"
 
-| Step | Main (Combine) | Sync Group | Support (Unloader) |
-|------|---------------|------------|-------------------|
-| 1 | Drive to Field 1 | 1 | Unload combine at Field 1 → Silo |
-| 2 | Harvest Field 1 | 1 | *(loops unload step)* |
-| 3 | Drive to Field 2 | 2 | Unload combine at Field 2 → Silo |
-| 4 | Harvest Field 2 | 2 | *(loops unload step)* |
+Step 1: AutoDrive → Field1_Entrance    Drive To
+  1.1 (support): AutoDrive → Silo      Deliver
 
-When the main finishes step 2 (harvesting) and moves to step 3 (drive to Field 2), the sync group changes from 1 → 2. The support automatically stops its current loop and jumps to its step 3.
+Step 2: Courseplay → Field1_Harvest    Field Work
+  2.1 (support): AutoDrive → Field1    Unload Combine → Silo
+  2.2 (support): AutoDrive → Silo      Deliver
 
-## Setting Up Linked Workflows
+Step 3: AutoDrive → Field2_Entrance    Drive To
+  3.1 (support): AutoDrive → Silo      Deliver
 
-### Step 1: Create Both Workflows
+Step 4: Courseplay → Field2_Harvest    Field Work
+  4.1 (support): AutoDrive → Field2    Unload Combine → Silo
+  4.2 (support): AutoDrive → Silo      Deliver
+```
 
-Create each workflow independently first:
-- **Main workflow**: Full sequence (drive → fieldwork → drive → fieldwork…)
-- **Support workflow**: Support actions for each phase (unload → unload…)
+**Main vehicle** (combine): drives to Field 1 → harvests → drives to Field 2 → harvests.
 
-### Step 2: Link Them
+**Support vehicle** (unloader): while main is on step 2 (harvesting Field 1), the unloader executes sub-steps 2.1 then 2.2 (unload → deliver), then **waits**. When the main advances to step 3 (drive to Field 2), the support immediately executes sub-step 3.1, and so on.
 
-1. Open the **Workflow Manager** (Left Alt + W)
-2. Select the workflow you want to make the **main**
-3. Click **Link**
-4. Select the workflow to become the **support** from the dialog
+## Setting Up Support Steps
+
+### Step 1: Create the Workflow
+
+Create a single workflow with all the main steps in sequence. See [Creating Workflows](creating-workflows) for details.
+
+### Step 2: Add Support Sub-Steps
+
+1. Open the **Workflow Manager** and open the workflow in the **Editor**
+2. Select a main step from the list
+3. Click **Add Support Step** at the bottom of the editor
+4. Configure the support sub-step (type, target, action) in the Step Dialog
 5. Click **OK**
 
-The main workflow now shows a link indicator, and the support shows its partner.
+The new sub-step appears indented below the main step in the list, numbered `N.M` (e.g., `2.1`, `2.2`).
 
-### Step 3: Assign Sync Groups
+Repeat for each main step that needs support activity. Steps with no support sub-steps (e.g., drive-to steps where the support just waits) can be left empty.
 
-In the **Step Dialog**, set the **Sync Group** field (only visible when the workflow is linked). Use the same integer for all steps that belong to the same phase of work.
+### Step 3: Start with Role Selection
 
-## Starting Linked Workflows
+When you start a workflow that has support sub-steps, a **Role Selection dialog** appears:
 
-Start each workflow separately on its respective vehicle:
+```
+┌──────────────────────────────────────────┐
+│  Wheat Harvest – Fields 1 & 2            │
+│  This workflow has support steps.        │
+│  Choose your role:                       │
+│                                          │
+│  [Run as Main Vehicle] [Run as Support]  │
+│                       [Cancel]           │
+└──────────────────────────────────────────┘
+```
 
-1. Enter the **combine** and start the **main** workflow
-2. Enter the **unloader** and start the **support** workflow
+- **Enter the combine** → open Workflow Manager → select the workflow → click **Start** → choose **Run as Main Vehicle**
+- **Enter the unloader** → open Workflow Manager → select the same workflow → click **Start** → choose **Run as Support Vehicle**
 
-The support will sync to the main's current phase automatically if it starts late.
-
-:::note
-Workflows are started independently. The main does not auto-start the support.
+:::tip
+Workflows without any support sub-steps start immediately without showing the role dialog.
 :::
 
+## Editing Support Sub-Steps
+
+The editor shows main steps and their support sub-steps in a single nested list:
+
+```
+  #     Type        Target              Action          Sup
+  ─────────────────────────────────────────────────────────
+  1     AutoDrive   Field1_Entrance     Drive To
+  1.1     AutoDrive   Silo              Deliver
+  2     Courseplay  Field1_Harvest      Field Work        +2
+  2.1     AutoDrive   Field1            Unload Combine
+  2.2     AutoDrive   Silo              Deliver
+  3     AutoDrive   Field2_Entrance     Drive To
+```
+
+- Select any row (main or support sub-step) and click **Edit** to modify it
+- Click **Delete** to remove the selected row (main step or sub-step)
+- **Move Up / Move Down** reorders main steps or reorders support sub-steps within their parent step
+- The **Sup** column on main step rows shows `+N` where N is the number of sub-steps
+
 ## Runtime Behavior
+
+### Support Step Sequencing
+
+The support vehicle executes sub-steps for the current main step one at a time:
+1. Execute sub-step 1
+2. Execute sub-step 2
+3. … (continue through all sub-steps)
+4. Finished all sub-steps → **wait** for main to advance
+
+When the main vehicle moves to the next step, the support immediately starts sub-step 1 of the new step. If the new step has no support sub-steps, the support idles until the main advances again.
 
 ### Pause / Resume / Stop Propagation
 
@@ -84,86 +123,57 @@ Workflows are started independently. The main does not auto-start the support.
 | Resume | Support is also resumed |
 | Stop | Support is also stopped |
 
-### Support Looping
-
-While the main remains in the same sync group, the support loops **all steps in that sync group** from the beginning. If the support has only one step in a group it repeats that step; if it has two or more steps (e.g. `drive` then `unload`) it runs through all of them and then restarts from the first step of the group.
-
-This is the intended behavior for unloader vehicles — they keep shuttling until the harvester moves to the next field.
+The support vehicle can also be paused/stopped independently from its own HUD without affecting the main.
 
 ### Late Start
 
-If the support vehicle starts its workflow after the main is already running, it syncs to the main's current sync group and jumps to the matching step. You don't need to manually fast-forward.
+If the support vehicle starts after the main is already running, it joins at sub-step 1 of the main's current step and continues from there.
 
-### Manual Step Override
+### Save and Load
 
-You can still use **Previous**/**Next** on the support vehicle's HUD to change its step manually at any time. It will automatically re-sync the next time the main workflow advances to a new phase.
+When you save the game, both the **role** (Main or Support) and the current **sub-step index** are saved with the vehicle. On reload, the vehicle resumes as paused and auto-resumes within 10 seconds, continuing from where it left off.
 
-## HUD Status Line
+## HUD Display
 
-When a workflow is linked, the HUD shows a second status line with the partner's info:
+### Main Vehicle HUD
+
+If one or more support vehicles are active, the HUD shows their combined status:
 
 ```
 ┌──────────────────────────────────────────┐
-│  Wheat Harvest (Combine)                 │
+│  Wheat Harvest – Fields 1 & 2      ════  │
 │  Step 2/4: Courseplay - Field Work       │
-│  Target: Field1_Harvest                  │
-│  Partner: Unloader Support · Step 1/2    │
+│  CP active (67%)                         │
+│  Support (1): Running                    │
 ├──────────────────────────────────────────┤
-│  [<<]  [||/▶]   [□]   [>>]              │
+│  [<<]  [||]   [□]   [>>]                │
 └──────────────────────────────────────────┘
 ```
 
-The partner line shows the linked workflow's name and current step, giving you visibility into both vehicles from either HUD.
+### Support Vehicle HUD
 
-## Unlinking Workflows
+The support vehicle's HUD shows which main step it is following and which sub-step it is currently executing:
 
-To remove a link between workflows:
+```
+┌──────────────────────────────────────────┐
+│  Wheat Harvest – Fields 1 & 2      ════  │
+│  Step 2.1/2: AD - Field1                 │
+│  AD active                               │
+├──────────────────────────────────────────┤
+│  [<<]  [||]   [□]   [>>]                │
+└──────────────────────────────────────────┘
+```
 
-1. Open the **Workflow Manager**
-2. Select either workflow in the pair
-3. Click **Unlink**
+`Step 2.1/2` means: main is on step 2, support is on sub-step 1 of 2.
 
-Both workflows are unlinked simultaneously. Their steps and sync group values are preserved.
+## Multiple Support Vehicles
 
-:::warning
-Unlinking does not remove sync group values from steps. If you later re-link with a different partner, review the sync groups in the editor.
-:::
-
-## Pre-positioning the Unloader
-
-When AutoDrive starts an **Unload** step and the unloader is already on or near the field, it immediately enters passive waiting mode at its current position. It stays there until the combine signals it needs emptying — it will not move to a designated waiting spot on its own. This can cause the unloader to sit in the middle of the field and block the combine's path.
-
-**Solution**: add a **Drive** step with the same sync group before the **Unload** step. This moves the unloader to a marker near the field first. Once it arrives, the Unload step loops it between the field and the silo as normal.
-
-**Example support workflow:**
-
-| Step | Action | Target | Unload Target | Sync Group |
-|------|--------|--------|---------------|------------|
-| 1 | Drive | Field1\_Entrance | — | 1 |
-| 2 | Unload | Field1\_Area | Silo | 1 |
-| 3 | Drive | Field2\_Entrance | — | 2 |
-| 4 | Unload | Field2\_Area | Silo | 2 |
-
-Steps 1 and 2 share sync group 1, so the support loops 1 → 2 → 1 → 2 while the main harvests field 1. On the first pass the unloader drives to the field entrance; on subsequent loops it goes straight to the field area. When the main transitions to sync group 2, the support jumps to step 3 and repeats the pattern for field 2.
-
-:::tip
-Place the **Drive** marker at the field entrance or a nearby headland position. This keeps the unloader close enough to respond quickly when the combine calls, without blocking the combine's path.
-:::
-
-:::tip
-The Drive step also acts as a natural delay that prevents the unloader from arriving at the field before the combine and blocking it. Both vehicles start their sync group at the same time, but the unloader spends the drive leg in transit. By the time it reaches the entrance marker and the Unload step begins, the combine has usually already started field work and is ready to call for unloading. If the unloader still arrives too early, use a farther Drive marker to extend the delay.
-:::
-
-:::note
-Because both steps share the same sync group, assign them the same sync group number in the Step Dialog.
-:::
-
----
+You can start the same workflow as Support on multiple vehicles simultaneously. Each support vehicle has its own independent `currentSupportStep` counter and runs through the sub-steps independently.
 
 ## Tips and Best Practices
 
-- **Name clearly**: Use names like "Harvest - Main" and "Harvest - Unloader" so the pair is obvious
-- **Test each workflow first**: Verify both work independently before linking
-- **Support should loop safely**: The support's step at each sync group should be one that makes sense to repeat (e.g., unload, not a one-time drive)
-- **Multiple steps per sync group are supported**: You can add a `Drive` step and an `Unload` step in the same group — the support loops through all steps in the group, not just the last one
-- **Pre-position the unloader**: Add a Drive step (same sync group) before each Unload step so the unloader is already near the field when it starts — see [Pre-positioning the Unloader](#pre-positioning-the-unloader) above
+- **One workflow, two roles**: There is only one workflow file — both vehicles start the same workflow but pick different roles
+- **Leave drive steps without support sub-steps** if the support vehicle should just deliver to the silo or wait during transit
+- **Add a drive sub-step first** in fieldwork support to pre-position the unloader near the field before it starts unloading
+- **Name the workflow clearly**: e.g. "Wheat Harvest (2-vehicle)" so it's obvious it requires a support vehicle
+- **Test each vehicle independently**: run the main without support first to verify all main steps work, then add the support

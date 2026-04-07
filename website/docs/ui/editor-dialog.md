@@ -16,18 +16,21 @@ The Editor Dialog is where you build and modify workflow steps.
 ## Interface Overview
 
 ```
-┌────────────────────────────────────────────────────────┐
-│  Edit Workflow: Harvest Fields                    [X]  │
-├────────────────────────────────────────────────────────┤
-│  #  Type        Target              Action     Group  │
-│  ────────────────────────────────────────────────────  │
-│  1  AutoDrive   Field1_Entrance     Drive To      1   │
-│  2  Courseplay  Field1_Harvest      Field Work    1   │
-│  3  AutoDrive   Farm/Silo           Drive To      2   │
-│                                                        │
-├────────────────────────────────────────────────────────┤
-│  [Add Step]  [Edit]  [Delete]  [↑]  [↓]  [Auto Groups]│
-└────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│  Edit Workflow: Harvest Fields                     [X]  │
+├─────────────────────────────────────────────────────────┤
+│  #       Type        Target                 Action  Sup │
+│  ──────────────────────────────────────────────────────  │
+│  1       AutoDrive   Field1_Entrance        Drive To    │
+│  2       Courseplay  Field1_Harvest         Field Work +2│
+│  2.1       AutoDrive   Field1              Unload       │
+│  2.2       AutoDrive   Silo                Deliver      │
+│  3       AutoDrive   Field2_Entrance        Drive To    │
+│                                                         │
+├─────────────────────────────────────────────────────────┤
+│  [Add Step]  [Edit]  [Delete]  [↑]  [↓]                │
+│  [Add Support Step]                                     │
+└─────────────────────────────────────────────────────────┘
 
         Double-click a step to edit
 ```
@@ -36,15 +39,15 @@ The Editor Dialog is where you build and modify workflow steps.
 
 ## Step List
 
-The main area shows all steps in the workflow:
+The step list shows main steps and their support sub-steps in a single nested list. Main steps are numbered starting at 1. Support sub-steps appear indented directly below their parent step, numbered `N.M` — where `N` is the parent step number and `M` is the sub-step's position within that step.
 
 | Column | Description |
 |--------|-------------|
-| # | Step number (execution order) |
+| # | Step number (`1`, `2`, …) or sub-step number (`2.1`, `2.2`, …) |
 | Type | AutoDrive or Courseplay |
 | Target | Destination name or course name |
 | Action | The action to perform |
-| Group | Sync group number (only shown when workflow is linked) |
+| Sup | Shows `+N` on main step rows that have N support sub-steps |
 
 ### For AutoDrive steps with two destinations:
 - Shows `Target → Unload Target` format
@@ -54,61 +57,51 @@ The main area shows all steps in the workflow:
 
 ### Add Step
 
-Opens the Step Dialog to add a new step:
+Opens the Step Dialog to add a new **main step**:
 1. Click **Add Step**
 2. Configure the step (type, target, action)
 3. Click **OK**
 4. Step is added at the end of the list
 
-### Edit Step
+### Add Support Step
 
-Modify an existing step:
-1. Select a step from the list
-2. Click **Edit** (or double-click the step)
+Adds a support sub-step to the currently selected **main step**:
+1. Select a main step row (numbered `1`, `2`, `3`, …)
+2. Click **Add Support Step**
+3. Configure the sub-step in the Step Dialog
+4. Click **OK**
+
+The new sub-step appears indented below its parent, numbered `N.M`. The **Add Support Step** button is disabled when a support sub-step row is selected — select the parent main step first.
+
+For more on support sub-steps and multi-vehicle setups, see [Multi-Vehicle Workflows](../workflows/linked-workflows).
+
+### Edit
+
+Modify the selected step or sub-step:
+1. Select a row from the list
+2. Click **Edit** (or double-click the row)
 3. Modify properties in the Step Dialog
 4. Click **OK**
 
-### Delete Step
+### Delete
 
-Remove a step:
-1. Select the step
+Remove the selected step or sub-step:
+1. Select the row
 2. Click **Delete**
-3. Step is removed immediately
+
+Deleting a main step also removes all of its support sub-steps.
 
 :::tip
 Deleting a step automatically renumbers remaining steps.
 :::
 
-### Move Up (↑)
+### Move Up (↑) / Move Down (↓)
 
-Move the selected step earlier in the sequence:
-1. Select a step
-2. Click **↑** (Move Up)
-3. Step swaps with the step above
+Reorder steps:
+- For **main steps**: swaps the step with the one above or below
+- For **support sub-steps**: reorders within the parent main step's sub-step list
 
-Disabled if the step is already first.
-
-### Move Down (↓)
-
-Move the selected step later in the sequence:
-1. Select a step
-2. Click **↓** (Move Down)
-3. Step swaps with the step below
-
-Disabled if the step is already last.
-
-### Auto Groups
-
-Automatically assigns sync group numbers to all steps (only available when the workflow is linked as **main**):
-- Group increments after each Courseplay step
-- All steps in the same harvest phase share the same group number
-- The partner (support) workflow can then use **Auto Groups** too to receive matching sequential groups
-
-:::tip
-For most combine + unloader setups, clicking **Auto Groups** on both workflows is all you need.
-:::
-
-See [Linked Workflows](../workflows/linked-workflows) for more detail on sync groups.
+Disabled at the top/bottom of the respective list.
 
 ## Step Dialog
 
@@ -130,8 +123,6 @@ When adding or editing a step, the Step Dialog appears:
 │  Fill Type:    [WHEAT          ▼]           │
 │  (Optional cargo filter)                    │
 │                                             │
-│  Sync Group:   [1            ]              │
-│  (Only shown when workflow is linked)       │
 ├─────────────────────────────────────────────┤
 │              [Cancel]   [OK]                │
 └─────────────────────────────────────────────┘
@@ -167,12 +158,6 @@ Fields shown depend on step type and action:
 - Target (course)
 - Action
 
-**Sync Group** (linked workflows only):
-- Visible only when the workflow is part of a linked pair
-- Enter an integer to assign this step to a sync group
-- Steps with the same number across linked workflows are coordinated
-- Use **Auto Groups** in the editor for automatic assignment
-
 ## Keyboard Shortcuts
 
 | Key | Action |
@@ -198,3 +183,4 @@ Changes are saved automatically when:
 2. **Complete sequences**: End with a step that returns the vehicle to a known location
 3. **Test components**: Verify AD routes and CP courses work before adding to workflow
 4. **Use descriptive targets**: Name your AD destinations and CP courses clearly
+5. **Add support sub-steps to field work steps**: Drive-to steps usually need no support activity — leave them empty so the support vehicle idles during transit

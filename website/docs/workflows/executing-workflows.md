@@ -23,7 +23,33 @@ Before starting a workflow:
 2. Select a workflow from the list
 3. Click **Start** (or press **S**)
 
-The workflow begins with the first step and the dialog closes automatically.
+Workflows without support sub-steps start immediately and the dialog closes.
+
+### Role Selection (Multi-Vehicle Workflows)
+
+If the workflow contains support sub-steps, a **Role Selection** dialog appears before starting:
+
+```
+┌──────────────────────────────────────────┐
+│  Wheat Harvest – Fields 1 & 2            │
+│  This workflow has support steps.        │
+│  Choose your role:                       │
+│                                          │
+│  [Run as Main Vehicle] [Run as Support]  │
+│                       [Cancel]           │
+└──────────────────────────────────────────┘
+```
+
+- **Run as Main Vehicle** — this vehicle leads the workflow. It executes the main steps in order.
+- **Run as Support Vehicle** — this vehicle is a helper. It executes the support sub-steps for whichever main step the lead vehicle is currently on.
+
+To run a two-vehicle setup:
+1. Enter the **main vehicle** (e.g., combine) → open Workflow Manager → Start → **Run as Main Vehicle**
+2. Enter the **support vehicle** (e.g., unloader) → open Workflow Manager → Start → **Run as Support Vehicle**
+
+Both vehicles use the same workflow. The main dialog shows `[+S]` next to workflows that have support sub-steps.
+
+See [Multi-Vehicle Workflows](linked-workflows) for full details.
 
 ## Workflow Status
 
@@ -43,6 +69,8 @@ When a workflow is running, an HUD overlay appears showing:
 - Current step (e.g., "Step 2/5")
 - Step details (type, target, action)
 - Control buttons
+
+For support vehicles the step counter shows the sub-step position, e.g. `Step 2.1/2` (main is on step 2, support is executing sub-step 1 of 2).
 
 ![HUD while workflow is running](/img/screenshots/hud-running.png)
 
@@ -76,6 +104,7 @@ When paused:
 - The current step remains active but suspended
 - AutoDrive pauses navigation
 - Courseplay pauses field work
+- If paused from the **main vehicle**, all active support vehicles pause too
 
 ### Resuming
 
@@ -99,6 +128,7 @@ Stop a workflow completely:
 - Resets the workflow to step 1
 - Sets status back to Ready
 - Stops any running AutoDrive or Courseplay jobs
+- Stopping the **main vehicle** also stops all active support vehicles
 
 ## Step Completion
 
@@ -111,6 +141,16 @@ An AutoDrive step completes when:
 ### Courseplay Step Completion
 
 A Courseplay step completes when the field work course finishes.
+
+### Support Sub-Step Sequencing
+
+When running as a support vehicle:
+1. Execute sub-step 1 for the current main step
+2. Execute sub-step 2 … continue through all sub-steps
+3. After the last sub-step — **wait** for the main vehicle to advance
+4. When the main advances, immediately start sub-step 1 of the new step
+
+If the main vehicle advances to a step that has no support sub-steps, the support vehicle idles until the main moves on again.
 
 ### Cyclic Operations
 
@@ -146,7 +186,7 @@ In multiplayer:
 
 ## Resume After Save
 
-If you save the game while a workflow is running, the vehicle's state is preserved automatically. When you reload, the workflow is restored as paused — use the **HUD Resume button** (`>`) to continue from where it left off.
+If you save the game while a workflow is running, the vehicle's state is preserved automatically. When you reload, the workflow is restored as paused — use the **HUD Resume button** (`>`) to continue from where it left off. The role (Main or Support) and the current sub-step are also saved and restored.
 
 Clicking **Start** in the main dialog always starts the workflow fresh from step 1.
 
@@ -164,3 +204,4 @@ Workflows are monitored via the game's update loop:
 3. **Monitor first runs**: Watch the first execution to catch issues
 4. **Use pause for adjustments**: Pause if you need to intervene
 5. **Check vehicle position**: Ensure the vehicle is appropriately positioned before starting
+6. **Start main vehicle first**: For multi-vehicle setups, start the main vehicle before the support vehicle so the support can join at the correct step
