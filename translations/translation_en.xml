@@ -136,8 +136,8 @@
         <!-- Mode Select Dialog -->
         <text name="wm_mode_select_title" text="Select Role"/>
         <text name="wm_mode_select_description" text="This workflow has support steps. Choose your role:"/>
-        <text name="wm_button_run_as_main" text="Run as Main Vehicle"/>
-        <text name="wm_button_run_as_support" text="Run as Support Vehicle"/>
+        <text name="wm_button_run_as_main" text="Main Vehicle"/>
+        <text name="wm_button_run_as_support" text="Support Vehicle"/>
 
         <!-- Support Steps Editor -->
         <text name="wm_editor_sup_short" text="Sup"/>

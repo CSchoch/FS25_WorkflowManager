@@ -1,11 +1,10 @@
-# OpenWolf
+# FS25 Workflow Manager
+
+## OpenWolf
 
 @.wolf/OPENWOLF.md
 
 This project uses OpenWolf for context management. Read and follow .wolf/OPENWOLF.md every session. Check .wolf/cerebrum.md before generating code. Check .wolf/anatomy.md before reading files.
-
-
-# FS25 Workflow Manager
 
 ## Project Overview
 
@@ -13,32 +12,37 @@ A mod for Farming Simulator 25 that combines AutoDrive and Courseplay to create 
 
 ## Technical Stack
 
-* **Language**: Lua (FS25-compatible)
-* **Integration**: AutoDrive API, Courseplay API
-* **UI Framework**: FS25 GUI system
-* **Data Storage**: XML (workflow definitions in savegame folder; runtime state in vehicle XML)
-* **Mod Structure**: Standard FS25 ModDesc.xml
+- **Language**: Lua (FS25-compatible)
+- **Integration**: AutoDrive API, Courseplay API
+- **UI Framework**: FS25 GUI system
+- **Data Storage**: XML (workflow definitions in savegame folder; runtime state in vehicle XML)
+- **Mod Structure**: Standard FS25 ModDesc.xml
 
 ## Standing Requirements
 
 After every code change, always do all three of the following:
 
 ### 1. Update CLAUDE.md
+
 Keep this file current. If new patterns, tools, constraints, or project facts are introduced, add them here so future sessions stay accurate.
 
 ### 2. User-Centric Documentation
+
 When writing or updating documentation, focus on the user's perspective:
+
 - What does the user do to trigger this feature?
 - What do they see / what happens as a result?
 - Avoid internal implementation details unless the user needs them.
 
 ### 3. Update Tests
+
 Any new or changed functionality must be covered by tests. Run tests with:
+
 ```
 "/c/Program Files (x86)/Lua/5.1/lua.exe" tests/run_tests.lua
 ```
-Add or update test cases in `tests/` to match the new behaviour before considering a task done.
 
+Add or update test cases in `tests/` to match the new behaviour before considering a task done.
 
 ## Architecture
 
@@ -53,6 +57,7 @@ Add or update test cases in `tests/` to match the new behaviour before consideri
 ### Data Structure
 
 **Workflow definition** (immutable template, stored in XML):
+
 ```lua
 Workflow = {
     id = "workflow_001",
@@ -82,6 +87,7 @@ Workflow = {
 ```
 
 **Runtime state** (per-vehicle, stored on `vehicle.spec_workflowManagerSpec.wmExecution`):
+
 ```lua
 activeData = {
     workflow = <workflow reference>,  -- pointer to immutable template
@@ -102,13 +108,13 @@ activeData = {
 
 #### AutoDrive Actions/Modes
 
-| Action           | Mode                      | Targets | Description                                |
-| ---------------- | ------------------------- | ------- | ------------------------------------------ |
-| `drive`          | MODE_DRIVETO (1)          | 1       | Simple point-to-point navigation           |
-| `unload`         | MODE_UNLOAD (5)           | 2       | Unload combine                             |
-| `pickup_deliver` | MODE_PICKUPANDDELIVER (2) | 2       | Load at target, deliver to unloadTarget    |
-| `deliver`        | MODE_DELIVERTO (3)        | 1       | Start at target, deliver to unloadTarget   |
-| `load`           | MODE_LOAD (4)             | 2       | Load at target, return to unloadTarget     |
+| Action           | Mode                      | Targets | Description                              |
+| ---------------- | ------------------------- | ------- | ---------------------------------------- |
+| `drive`          | MODE_DRIVETO (1)          | 1       | Simple point-to-point navigation         |
+| `unload`         | MODE_UNLOAD (5)           | 2       | Unload combine                           |
+| `pickup_deliver` | MODE_PICKUPANDDELIVER (2) | 2       | Load at target, deliver to unloadTarget  |
+| `deliver`        | MODE_DELIVERTO (3)        | 1       | Start at target, deliver to unloadTarget |
+| `load`           | MODE_LOAD (4)             | 2       | Load at target, return to unloadTarget   |
 
 #### Courseplay Actions
 
@@ -120,6 +126,7 @@ activeData = {
 ### XML Structure (Savegame)
 
 Workflow **definitions** (hierarchical support sub-steps):
+
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <WorkflowManager>
@@ -139,9 +146,11 @@ Workflow **definitions** (hierarchical support sub-steps):
     </workflows>
 </WorkflowManager>
 ```
+
 Old savegames with `linkRole`/`linkedWorkflowId`/`syncGroup` are migrated transparently on first load.
 
 Vehicle workflow **runtime state** (stored in vehicle savegame XML via `WorkflowManagerSpec`):
+
 ```xml
 <vehicles>
     <vehicle ...>
@@ -151,56 +160,61 @@ Vehicle workflow **runtime state** (stored in vehicle savegame XML via `Workflow
     </vehicle>
 </vehicles>
 ```
+
 On `onPostLoad`, this state is restored as `status = "paused"` with a 10-second auto-resume window.
 
 ## Development Roadmap
 
 ### Completed
 
-* **Milestone 1**: Project Setup - ModDesc.xml, Lua structure, API analysis
-* **Milestone 2**: Core Functionality - WorkflowManager, XML storage, Executor, AD/CP integration
-* **Milestone 3**: Basic GUI - Main window, workflow editor, step management
-* **Milestone 4**: Vehicle Selection - Runtime vehicle detection (uses current vehicle when starting)
-* **Milestone 5**: Player UI - In-vehicle HUD with workflow controls (pause/resume, stop, prev/next steps)
-* **Milestone 6**: Logo & Icons - Mod icon and HUD button icons with hover effects
-* **Milestone 7**: Search - Searchable dropdowns in step dialog for AD targets and CP courses
-* Multi-field workflows (more than 2 fields per workflow)
-* Vehicle hint removed from GUI
-* Delete confirmation, delete shortcut, scrollbar, step editor descriptions fixed
-* Fill type dropdown shows localized names (title) instead of internal IDs
-* **Per-vehicle runtime state** - Workflow definitions are immutable; `currentStep`/`status` live on the vehicle spec (`wmExecution`). `WMExecutor.activeVehicles` replaces `activeWorkflows`
-* **Vehicle savegame persistence** - Active workflow and current step are saved/restored via `WorkflowManagerSpec.saveToXMLFile` / `onPostLoad`; restored as paused so player can resume
-* **Auto-resume after load** - 10-second window (`autoResumeUntil`) for AD/CP to re-initialize before WM resumes the workflow automatically
-* **Courseplay resume at nearest waypoint** - `CPIntegration:startFieldWork()` accepts `startAtNearest` flag; uses `cpStartStopDriver` to resume at the closest waypoint
-* **Main dialog simplification** - Removed Status column; list shows only Name + Steps; removed Resume/reset flow (Start always starts fresh on current vehicle)
-* **HUD icon scaling fix** - `getNormalizedScreenValues(24, 24)` now correctly captures both X and Y return values so icons render as squares on all aspect ratios
-* **Draggable HUD** - HUD panel can be repositioned by dragging the header; position clamped to screen bounds
-* **Hierarchical support steps** - Each main step can have nested support sub-steps (`step.support = {}`). Starting a workflow with support steps shows a mode dialog (Main/Support). Support vehicles execute sub-steps and loop while the main stays on the same step. When the main advances, `onMainStepChanged` resets support to sub-step 1 of the new step. Pause/stop from main propagates to all support vehicles.
-* **Old linked-workflow migration** - Old savegames with `linkRole`/`linkedWorkflowId`/`syncGroup` are migrated transparently on first load via `migrateOldLinkedWorkflows`.
-* **Multiple support vehicles** - Multiple vehicles can start the same workflow as support simultaneously, each with independent `currentSupportStep` state.
-* **Release build support** - `DevConfig.lua` omitted from release zip; `WorkflowManager.lua` installs a release-mode stub if the file is absent (all debug flags off)
-* **DDS textures** - All textures (`modIcon`, HUD icons, `white`) converted to DDS; `tools/png_to_dds.py` handles conversion (texconv DXT5/DXT1 if available, Pillow uncompressed fallback)
-* **Legacy GUI removed** - `WMManagerGUI` and `WMEditorGUI` update/draw calls removed from `WorkflowManager.lua`
-* **WMStorage path fix** - Fallback path in `WMStorage:getXmlPath()` now correctly joins `modDirectory .. "/" .. xmlFilename`
+- **Milestone 1**: Project Setup - ModDesc.xml, Lua structure, API analysis
+- **Milestone 2**: Core Functionality - WorkflowManager, XML storage, Executor, AD/CP integration
+- **Milestone 3**: Basic GUI - Main window, workflow editor, step management
+- **Milestone 4**: Vehicle Selection - Runtime vehicle detection (uses current vehicle when starting)
+- **Milestone 5**: Player UI - In-vehicle HUD with workflow controls (pause/resume, stop, prev/next steps)
+- **Milestone 6**: Logo & Icons - Mod icon and HUD button icons with hover effects
+- **Milestone 7**: Search - Searchable dropdowns in step dialog for AD targets and CP courses
+- Multi-field workflows (more than 2 fields per workflow)
+- Vehicle hint removed from GUI
+- Delete confirmation, delete shortcut, scrollbar, step editor descriptions fixed
+- Fill type dropdown shows localized names (title) instead of internal IDs
+- **Per-vehicle runtime state** - Workflow definitions are immutable; `currentStep`/`status` live on the vehicle spec (`wmExecution`). `WMExecutor.activeVehicles` replaces `activeWorkflows`
+- **Vehicle savegame persistence** - Active workflow and current step are saved/restored via `WorkflowManagerSpec.saveToXMLFile` / `onPostLoad`; restored as paused so player can resume
+- **Auto-resume after load** - 10-second window (`autoResumeUntil`) for AD/CP to re-initialize before WM resumes the workflow automatically
+- **Courseplay resume at nearest waypoint** - `CPIntegration:startFieldWork()` accepts `startAtNearest` flag; uses `cpStartStopDriver` to resume at the closest waypoint
+- **Main dialog simplification** - Removed Status column; list shows only Name + Steps; removed Resume/reset flow (Start always starts fresh on current vehicle)
+- **HUD icon scaling fix** - `getNormalizedScreenValues(24, 24)` now correctly captures both X and Y return values so icons render as squares on all aspect ratios
+- **Draggable HUD** - HUD panel can be repositioned by dragging the header; position clamped to screen bounds
+- **Hierarchical support steps** - Each main step can have nested support sub-steps (`step.support = {}`). Starting a workflow with support steps shows a mode dialog (Main/Support). Support vehicles execute sub-steps and loop while the main stays on the same step. When the main advances, `onMainStepChanged` resets support to sub-step 1 of the new step. Pause/stop from main propagates to all support vehicles.
+- **Old linked-workflow migration** - Old savegames with `linkRole`/`linkedWorkflowId`/`syncGroup` are migrated transparently on first load via `migrateOldLinkedWorkflows`.
+- **Multiple support vehicles** - Multiple vehicles can start the same workflow as support simultaneously, each with independent `currentSupportStep` state.
+- **Release build support** - `DevConfig.lua` omitted from release zip; `WorkflowManager.lua` installs a release-mode stub if the file is absent (all debug flags off)
+- **DDS textures** - All textures (`modIcon`, HUD icons, `white`) converted to DDS; `tools/png_to_dds.py` handles conversion (texconv DXT5/DXT1 if available, Pillow uncompressed fallback)
+- **Legacy GUI removed** - `WMManagerGUI` and `WMEditorGUI` update/draw calls removed from `WorkflowManager.lua`
+- **WMStorage path fix** - Fallback path in `WMStorage:getXmlPath()` now correctly joins `modDirectory .. "/" .. xmlFilename`
 
 ### Milestone 8: GUI Refinement
-* [ ] F1 ingame help menu overlays the GUI
-* [ ] Relocate double-click-to-edit hint to the bottom
-* [ ] Editor dialog X button to close in top right corner
+
+- [ ] F1 ingame help menu overlays the GUI
+- [ ] Relocate double-click-to-edit hint to the bottom
+- [ ] Editor dialog X button to close in top right corner
 
 ### Milestone 9: Folder View
-* [ ] Show folders in dropdowns (collapsed by default)
-* [ ] For AD Targets and CP Courses
-* [ ] Collapse all / Expand all buttons
+
+- [ ] Show folders in dropdowns (collapsed by default)
+- [ ] For AD Targets and CP Courses
+- [ ] Collapse all / Expand all buttons
 
 ### Milestone 10: Polish
-* [ ] Error handling improvements
-* [ ] Performance optimization
+
+- [ ] Error handling improvements
+- [ ] Performance optimization
 
 ### Milestone 11: Phase 2 Features
-* [ ] Queue system for multiple vehicles
-* [ ] Advanced conditions
-* [ ] Add further CP settings for multiple vehicle courses
+
+- [ ] Queue system for multiple vehicles
+- [ ] Advanced conditions
+- [ ] Add further CP settings for multiple vehicle courses
 
 ## API Integration
 
@@ -208,32 +222,34 @@ On `onPostLoad`, this state is restored as `status = "paused"` with a 10-second 
 
 Key functions from `ExternalInterface.lua`, `Specialization.lua` and `GraphManager.lua`:
 
-* **Start route**: `AutoDrive:StartDriving(vehicle, destinationID, unloadDestinationID, callBackObject, callBackFunction, callBackArg)`
-* **Stop route**: `vehicle:stopAutoDrive()` - proper stop with braking, cruise control off, module resets
-* **Pause route**: `AutoDrive:HoldDriving(vehicle)`
-* **Get destinations**: `AutoDrive:GetAvailableDestinations()` - returns `{markerID = {name, x, y, z, id}}`
-* **Check active**: `vehicle.ad.stateModule:isActive()`
-* **Mode constants**: `MODE_DRIVETO=1`, `MODE_PICKUPANDDELIVER=2`, `MODE_DELIVERTO=3`, etc.
+- **Start route**: `AutoDrive:StartDriving(vehicle, destinationID, unloadDestinationID, callBackObject, callBackFunction, callBackArg)`
+- **Stop route**: `vehicle:stopAutoDrive()` - proper stop with braking, cruise control off, module resets
+- **Pause route**: `AutoDrive:HoldDriving(vehicle)`
+- **Get destinations**: `AutoDrive:GetAvailableDestinations()` - returns `{markerID = {name, x, y, z, id}}`
+- **Check active**: `vehicle.ad.stateModule:isActive()`
+- **Mode constants**: `MODE_DRIVETO=1`, `MODE_PICKUPANDDELIVER=2`, `MODE_DELIVERTO=3`, etc.
 
 **AD -> CP Handoff**:
-* `vehicle.ad.stateModule:setStartHelper(true)` - tells AD to start helper on completion
-* Pre-load CP course before starting AD, AD handles the switch automatically
+
+- `vehicle.ad.stateModule:setStartHelper(true)` - tells AD to start helper on completion
+- Pre-load CP course before starting AD, AD handles the switch automatically
 
 **Destination Groups/Folders**:
-* `ADGraphManager:getMapMarkers()` - returns all markers with group info
-* Markers in "All" group shown without prefix, others as `"Group/Name"`
+
+- `ADGraphManager:getMapMarkers()` - returns all markers with group info
+- Markers in "All" group shown without prefix, others as `"Group/Name"`
 
 ### Courseplay
 
 Key functions from `CpAIWorker.lua` and `CpAIFieldWorker.lua`:
 
-* **Check available**: `g_Courseplay ~= nil`
-* **Start field work**: `vehicle:startCpAtLastWp()` or `vehicle:startCpAtFirstWp()`
-* **Resume at nearest wp**: `vehicle:cpStartStopDriver(false)` (used when restoring from save)
-* **Stop**: `vehicle:stopCurrentAIJob(AIMessageSuccessStoppedByUser.new())`
-* **Check active**: `vehicle:getIsCpActive()`
-* **Has course**: `vehicle:hasCpCourse()`
-* **Load course**: `vehicle:appendLoadedCpCourse(entity)`
+- **Check available**: `g_Courseplay ~= nil`
+- **Start field work**: `vehicle:startCpAtLastWp()` or `vehicle:startCpAtFirstWp()`
+- **Resume at nearest wp**: `vehicle:cpStartStopDriver(false)` (used when restoring from save)
+- **Stop**: `vehicle:stopCurrentAIJob(AIMessageSuccessStoppedByUser.new())`
+- **Check active**: `vehicle:getIsCpActive()`
+- **Has course**: `vehicle:hasCpCourse()`
+- **Load course**: `vehicle:appendLoadedCpCourse(entity)`
 
 **Important**: Access globals via `FS25_AutoDrive.AutoDrive` and `FS25_Courseplay.g_Courseplay`
 
@@ -309,6 +325,7 @@ FS25_WorkflowManager/
 ## Key Implementation Notes
 
 ### Vehicle Detection
+
 - Vehicles are NOT stored with workflows (definitions are immutable templates)
 - When starting a workflow, uses `g_currentMission.controlledVehicle`
 - Vehicle must have both AutoDrive AND Courseplay support
@@ -316,12 +333,14 @@ FS25_WorkflowManager/
 - Prevents starting a new workflow on a vehicle already running one (`isWorkflowActiveOnVehicle`)
 
 ### Per-Vehicle Runtime State
+
 - All mutable execution state lives on `vehicle.spec_workflowManagerSpec.wmExecution` (`activeData`)
 - `WMExecutor.activeVehicles` is `{[vehicle]=true}` — a lightweight set for update-loop iteration
 - GUI components query `WorkflowManager:getVehicleWorkflowState(vehicle)` for current vehicle's state
 - Workflow definitions only contain `id`, `name`, `steps`, `createdAt`, `linkedWorkflowId`, `linkRole` — never `status` or `currentStep`
 
 ### Vehicle Savegame Persistence
+
 - `WorkflowManagerSpec.saveToXMLFile` saves `workflowId` + `currentStep` into the vehicle's XML
 - `WorkflowManagerSpec.onPostLoad` restores state as `status = "paused"` with `autoResumeUntil = g_currentMission.time + 10000`
 - The 10-second window lets AD/CP re-initialize; the update loop auto-resumes once they are active
@@ -329,11 +348,13 @@ FS25_WorkflowManager/
 - On vehicle delete, `onDelete` stops the workflow to prevent dangling state
 
 ### CP<->AD Cyclic Handoff
+
 - When CP finishes and starts AD internally (e.g., for unloading), executor waits for AD
 - When AD finishes and restarts CP, executor continues monitoring CP
 - Step only completes when BOTH CP and AD are not running
 
 ### Manual Step Switching (Prev/Next)
+
 - Uses `vehicle:stopAutoDrive()` for proper AD stopping (handles braking, cruise control, module resets)
 - AD->AD transitions use deferred start: waits ~1 second for AD to fully reset before starting new route
 - AD->CP transitions also defer CP start until AD is fully stopped
@@ -341,11 +362,13 @@ FS25_WorkflowManager/
 - HUD calls `WMExecutor:goToPreviousStep(vehicle)` / `goToNextStep(vehicle)` (vehicle reference, not workflow)
 
 ### Courseplay Resume
+
 - Normal start: `vehicle:startCpAtLastWp()` or `vehicle:startCpAtFirstWp()`
 - Resume from save: `vehicle:cpStartStopDriver(false)` to start at nearest waypoint
 - Controlled via `startAtNearest` parameter in `CPIntegration:startFieldWork()`
 
 ### Hierarchical Support Steps
+
 - Each main step has a `step.support = {}` array of support sub-steps
 - When starting a workflow with any support sub-steps, `WorkflowManager:startWorkflow` shows a mode dialog; user picks Main or Support
 - `activeData.isMainVehicle` (bool) determines which execution path runs in `WMExecutor:executeCurrentStep`
@@ -359,25 +382,30 @@ FS25_WorkflowManager/
 - `WMExecutor:getCurrentStep(activeData)` — returns the current step def (main step or support sub-step)
 
 ### Draggable HUD
+
 - HUD header acts as a drag handle: clicking and dragging repositions the entire panel
 - State tracked via `WMHud.isDragging`, `dragOffsetX`, `dragOffsetY`
 - Position clamped to screen bounds; header color changes while dragging for visual feedback
 
 ### Fill Types
+
 - Fill type dropdowns use `{name = "WHEAT", title = "Wheat"}` pairs
 - `name` is the internal FS25 fill type ID used in step XML; `title` is the localized display name
 - Sourced via `ADIntegration:getAvailableFillTypes()`
 
 ### GUI Input
+
 - Works both when walking and in a vehicle
 - Uses vehicle specialization (`WorkflowManagerSpec`) for in-vehicle input
 - Uses `PlayerInputComponent.registerGlobalPlayerActionEvents` for global input
 
 ### Data Caching
+
 - AD destinations and CP courses loaded once when GUI opens
 - Cache cleared on GUI close to avoid conflicts with CP internal state
 
 ### HUD Icons
+
 - 32x32 DDS icons (uncompressed RGBA) with white shapes on transparent background
 - Source PNGs kept in `textures/` alongside DDS; regenerate with `tools/png_to_dds.py`
 - Color-tinted at runtime: normal (white), hover (cyan), disabled (gray), active (green)
@@ -392,11 +420,13 @@ FS25_WorkflowManager/
 **Preferred runner for WorkflowExecutor changes.** `tests/run_executor_spec.lua` is a self-contained runner that loads mocks, fixtures, and only `WorkflowExecutor_spec.lua`. It properly handles `before_each` and `after_each` and avoids the Windows Logger I/O issue.
 
 To run all specs (may stop early on Windows due to Logger I/O issue, pre-existing):
+
 ```bash
 "C:\Program Files (x86)\Lua\5.1\lua.exe" tests/run_tests.lua
 ```
 
 **Test structure:**
+
 - `tests/mocks/` — game globals, XMLFile, vehicle factory, event handler stubs
 - `tests/specs/` — one spec file per module
 - `tests/fixtures/` — shared workflow test data
@@ -404,10 +434,10 @@ To run all specs (may stop early on Windows due to Logger I/O issue, pre-existin
 
 ## Resources
 
-* FS25 Modding Documentation: https://gdn.giants-software.com/
-* AutoDrive source: `FS25_AutoDrive`
-* Courseplay source: `FS25_Courseplay`
-* FS25 Forum: https://forum.giants-software.com/
+- FS25 Modding Documentation: https://gdn.giants-software.com/
+- AutoDrive source: `FS25_AutoDrive`
+- Courseplay source: `FS25_Courseplay`
+- FS25 Forum: https://forum.giants-software.com/
 
 ---
 
@@ -418,14 +448,13 @@ To run all specs (may stop early on Windows due to Logger I/O issue, pre-existin
 
 Screenshots for the Docusaurus documentation site (`website/static/img/screenshots/`). Take these in-game and save them at the listed paths:
 
-| File | What to show | Used in |
-|------|-------------|---------|
-| `main-dialog.png` | Main Workflow Manager dialog open, showing a list of at least 2–3 workflows with their step counts | `ui/main-dialog.md`, `workflows/creating-workflows.md` |
-| `editor-dialog.png` | Editor dialog open for a workflow with 3–5 steps visible, including a mix of AutoDrive and Courseplay rows | `ui/editor-dialog.md` |
-| `step-dialog-autodrive.png` | Step dialog open with **AutoDrive** selected, showing Target, Action, Unload Target, and Fill Type fields | `ui/editor-dialog.md`, `workflows/step-types.md` |
-| `step-dialog-courseplay.png` | Step dialog open with **Courseplay** selected, showing the course dropdown and Action field | `ui/editor-dialog.md`, `workflows/step-types.md` |
-| `hud-running.png` | In-vehicle HUD overlay while a workflow is actively running, showing workflow name, step counter, and the 4 control buttons | `ui/hud-controls.md`, `workflows/executing-workflows.md`, `getting-started.md` |
-
+| File                         | What to show                                                                                                                | Used in                                                                        |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `main-dialog.png`            | Main Workflow Manager dialog open, showing a list of at least 2–3 workflows with their step counts                          | `ui/main-dialog.md`, `workflows/creating-workflows.md`                         |
+| `editor-dialog.png`          | Editor dialog open for a workflow with 3–5 steps visible, including a mix of AutoDrive and Courseplay rows                  | `ui/editor-dialog.md`                                                          |
+| `step-dialog-autodrive.png`  | Step dialog open with **AutoDrive** selected, showing Target, Action, Unload Target, and Fill Type fields                   | `ui/editor-dialog.md`, `workflows/step-types.md`                               |
+| `step-dialog-courseplay.png` | Step dialog open with **Courseplay** selected, showing the course dropdown and Action field                                 | `ui/editor-dialog.md`, `workflows/step-types.md`                               |
+| `hud-running.png`            | In-vehicle HUD overlay while a workflow is actively running, showing workflow name, step counter, and the 4 control buttons | `ui/hud-controls.md`, `workflows/executing-workflows.md`, `getting-started.md` |
 
 ## Todo
 

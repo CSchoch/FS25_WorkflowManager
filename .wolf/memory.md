@@ -139,3 +139,26 @@
 | 12:33 | Created website/docs/api/xml-format.md | — | ~1974 |
 | 12:34 | Updated 5 Docusaurus docs for hierarchical support steps | website/docs/ui/editor-dialog.md, hud-controls.md, workflows/executing-workflows.md, creating-workflows.md, api/xml-format.md | Removed syncGroup/linkRole/linkedWorkflowId references; added N.M numbering, role dialog, nested support sub-step docs | ~3000 |
 | 12:34 | Session end: 5 writes across 5 files (editor-dialog.md, hud-controls.md, executing-workflows.md, creating-workflows.md, xml-format.md) | 5 reads | ~9266 tok |
+
+## Session: 2026-04-07 22:11
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 23:10 | Edited src/WorkflowExecutor.lua | 10→11 lines | ~193 |
+| 23:10 | Edited src/WorkflowExecutor.lua | modified info() | ~160 |
+| 23:10 | Edited src/WorkflowExecutor.lua | 4→5 lines | ~77 |
+| 23:11 | Fix support vehicle restart loop after last sub-step | WorkflowExecutor.lua | waitingForMainStepIndex tracks which step triggered idle; idle poll only restarts when main step changes | ~500 tok |
+| 23:12 | Session end: 3 writes across 1 files (WorkflowExecutor.lua) | 1 reads | ~17147 tok |
+
+## Session: 2026-04-07 23:19
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 23:21 | Edited xml/gui/WMModeSelectDialog.xml | inline fix | ~16 |
+| 23:21 | Edited xml/gui/WMModeSelectDialog.xml | "500px 50px" → "660px 50px" | ~10 |
+| 07:00 | Fixed WMModeSelectDialog button overflow: dialog 540px→700px, height 220px→240px, desc width 500px→660px | xml/gui/WMModeSelectDialog.xml | fixed | ~20 |
+| 23:21 | Session end: 2 writes across 1 files (WMModeSelectDialog.xml) | 4 reads | ~2431 tok |
+| 23:32 | Edited translations/translation_en.xml | 2→2 lines | ~36 |
+| 23:32 | Edited translations/translation_de.xml | 2→2 lines | ~36 |
+| 23:32 | Session end: 4 writes across 3 files (WMModeSelectDialog.xml, translation_en.xml, translation_de.xml) | 6 reads | ~7075 tok |
+| 23:40 | Session end: 4 writes across 3 files (WMModeSelectDialog.xml, translation_en.xml, translation_de.xml) | 6 reads | ~7075 tok |

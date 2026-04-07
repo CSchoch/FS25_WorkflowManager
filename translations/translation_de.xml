@@ -153,8 +153,8 @@
         <!-- Rollenwahl-Dialog -->
         <text name="wm_mode_select_title" text="Rolle waehlen"/>
         <text name="wm_mode_select_description" text="Dieser Workflow hat Unterstuetzungsschritte. Rolle waehlen:"/>
-        <text name="wm_button_run_as_main" text="Als Hauptfahrzeug starten"/>
-        <text name="wm_button_run_as_support" text="Als Unterstuetzungsfahrzeug starten"/>
+        <text name="wm_button_run_as_main" text="Hauptfahrzeug"/>
+        <text name="wm_button_run_as_support" text="Hilfsfahrzeug"/>
 
         <!-- Unterstuetzungsschritte -->
         <text name="wm_editor_sup_short" text="Unt"/>

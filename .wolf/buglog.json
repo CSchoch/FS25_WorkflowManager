@@ -256,6 +256,83 @@
       "related_bugs": [],
       "occurrences": 3,
       "last_seen": "2026-04-07T08:42:55.982Z"
+    },
+    {
+      "id": "bug-017",
+      "timestamp": "2026-04-07T23:11:00.000Z",
+      "error_message": "Support vehicle restarts sub-steps immediately after completing the last one, instead of waiting for main to advance",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "Idle polling (waitingForMainStep) checked if current main step has sub-steps, but not whether the main step had actually CHANGED. So after support finished all sub-steps and set waitingForMainStep=true, the very next update cycle saw the same main step still had sub-steps and called onMainStepChanged again, restarting from sub-step 1 in an infinite loop.",
+      "fix": "Added activeData.waitingForMainStepIndex to record which main step index triggered the idle state. Idle poll now only calls onMainStepChanged when mainActiveData.currentStep ~= waitingForMainStepIndex. Cleared in onMainStepChanged.",
+      "tags": [
+        "support-vehicle",
+        "looping",
+        "idle-poll",
+        "executor"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-07T23:11:00.000Z"
+    },
+    {
+      "id": "bug-018",
+      "timestamp": "2026-04-07T21:21:22.847Z",
+      "error_message": "Incorrect value in code",
+      "file": "xml/gui/WMModeSelectDialog.xml",
+      "root_cause": "Had \"540px 220px\"",
+      "fix": "Changed to \"700px 240px\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-07T21:21:30.192Z"
+    },
+    {
+      "id": "bug-019",
+      "timestamp": "2026-04-07T21:32:44.359Z",
+      "error_message": "Incorrect value in code",
+      "file": "translations/translation_en.xml",
+      "root_cause": "Had \"Run as Main Vehicle\"",
+      "fix": "Changed to \"Main Vehicle\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-07T21:32:44.359Z"
+    },
+    {
+      "id": "bug-020",
+      "timestamp": "2026-04-07T21:32:47.797Z",
+      "error_message": "Incorrect value in code",
+      "file": "translations/translation_de.xml",
+      "root_cause": "Had \"Als Hauptfahrzeug starten\"",
+      "fix": "Changed to \"Hauptfahrzeug\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-07T21:32:47.797Z"
+    },
+    {
+      "id": "bug-021",
+      "timestamp": "2026-04-07T07:05:00.000Z",
+      "error_message": "Buttons in WMModeSelectDialog overflow outside dialog boundaries",
+      "file": "xml/gui/WMModeSelectDialog.xml, translations/translation_en.xml, translations/translation_de.xml",
+      "root_cause": "Dialog 540px wide; 3 buttons with long labels ('Run as Support Vehicle' / 'Als Unterstuetzungsfahrzeug starten') exceeded available width",
+      "fix": "Widened dialog to 700px x 240px; shortened button labels to 'Main Vehicle'/'Support Vehicle' (EN) and 'Hauptfahrzeug'/'Hilfsfahrzeug' (DE)",
+      "tags": ["gui", "layout", "dialog", "overflow", "translations"],
+      "related_bugs": ["bug-018"],
+      "occurrences": 1,
+      "last_seen": "2026-04-07T07:05:00.000Z"
     }
   ]
 }

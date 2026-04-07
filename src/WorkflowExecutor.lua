@@ -733,9 +733,10 @@ function WMExecutor:onStepCompleted(activeData)
         activeData.currentSupportStep = activeData.currentSupportStep + 1
         if activeData.currentSupportStep > #supportSteps then
             -- All sub-steps for this main step are done — wait for main to advance.
-            -- onMainStepChanged will restart from sub-step 1 when the main moves on.
+            -- Record which main step we finished so the idle poll can detect when it changes.
             activeData.currentSupportStep = 1
             activeData.waitingForMainStep = true
+            activeData.waitingForMainStepIndex = mainActiveData.currentStep
             WMLogger:info("Support vehicle: all sub-steps done, waiting for main to advance (main step %d)",
                 mainActiveData.currentStep)
             WorkflowManager:broadcastState(activeData.vehicle)
@@ -911,7 +912,8 @@ function WMExecutor:update(dt)
                 else
                     local mainStep = workflow.steps[mainActiveData.currentStep]
                     local supportSteps = mainStep and mainStep.support or {}
-                    if #supportSteps > 0 then
+                    local mainStepChanged = mainActiveData.currentStep ~= activeData.waitingForMainStepIndex
+                    if #supportSteps > 0 and mainStepChanged then
                         WMLogger:info("Support vehicle (idle): main moved to step %d which has sub-steps",
                             mainActiveData.currentStep)
                         self:onMainStepChanged(activeData, mainActiveData.currentStep)
@@ -1173,6 +1175,7 @@ function WMExecutor:onMainStepChanged(supportActiveData, newMainStep)
     self:stopCurrentStep(supportActiveData)
     supportActiveData.currentSupportStep = 1
     supportActiveData.waitingForMainStep = nil
+    supportActiveData.waitingForMainStepIndex = nil
     self:resetStepTrackingState(supportActiveData)
     self:executeCurrentStep(supportActiveData)
     WorkflowManager:broadcastState(supportActiveData.vehicle)

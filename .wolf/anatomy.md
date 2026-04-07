@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-07T10:33:50.860Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-07T21:32:47.777Z
 > Files: 26 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
@@ -28,7 +28,7 @@
 
 ## src/
 
-- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~16688 tok)
+- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~16760 tok)
 - `WorkflowManager.lua` — init, loadDialogs, Callback, showTextInputDialog, setupInGameMenu (~12912 tok)
 - `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~4320 tok)
 - `WorkflowStorage.lua` — deepCopySupportStep, init, getXmlPath, saveWorkflows, migrateOldLinkedWorkflows (~3097 tok)
@@ -78,8 +78,8 @@
 
 ## translations/
 
-- `translation_de.xml` (~2495 tok)
-- `translation_en.xml` (~2071 tok)
+- `translation_de.xml` (~2486 tok)
+- `translation_en.xml` (~2067 tok)
 
 ## website/
 
