@@ -224,6 +224,38 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-06T19:12:35.413Z"
+    },
+    {
+      "id": "bug-015",
+      "timestamp": "2026-04-07T08:42:11.233Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowManagerSpec.lua",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 7→12 lines (3 removed) | Also: workflow = workflow,; vehicle = self, | Also: WMLogger:debug(\"onWriteStream: sent wmExecution wf; activeData.workflow.id, activeData.currentStep, ac | Also: local workflowId  = streamReadString(streamId); local currentStep = streamReadInt32(streamId)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 4,
+      "last_seen": "2026-04-07T08:42:37.025Z"
+    },
+    {
+      "id": "bug-016",
+      "timestamp": "2026-04-07T08:42:43.157Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/network/WMNetworkEvents.lua",
+      "root_cause": "8 lines replaced/restructured",
+      "fix": "Rewrote 11→15 lines (8 removed) | Also: self.workflowId  = streamReadString(streamId); self.currentStep = streamReadInt32(streamId) | Also: activeData.workflow     = workflow; activeData.vehicle      = vehicle",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-04-07T08:42:55.982Z"
     }
   ]
 }

@@ -63,19 +63,29 @@ function WorkflowManagerSpec:onPostLoad(savegame)
             end
         end
         if workflow then
+            local isMainVehicle = savegame.xmlFile:getValue(key .. "#isMainVehicle")
+            if isMainVehicle == nil then isMainVehicle = true end  -- default: main role
+            local currentSupportStep = nil
+            if not isMainVehicle then
+                currentSupportStep = savegame.xmlFile:getValue(key .. "#currentSupportStep") or 1
+            end
+
             self.spec_workflowManagerSpec.wmExecution = {
-                workflow = workflow,
-                vehicle = self,
-                status = WorkflowManager.STATUS_PAUSED,
-                currentStep = currentStep,
-                startTime = g_currentMission.time,
+                workflow             = workflow,
+                vehicle              = self,
+                status               = WorkflowManager.STATUS_PAUSED,
+                currentStep          = currentStep,
+                startTime            = g_currentMission.time,
                 waitingForCompletion = false,
-                autoResumeUntil = g_currentMission.time + 10000
+                isMainVehicle        = isMainVehicle,
+                currentSupportStep   = currentSupportStep,
+                autoResumeUntil      = g_currentMission.time + 10000
             }
             WMExecutor.activeVehicles[self] = true
             WMHud:show(self)
-            WMLogger:info("Restored workflow '%s' at step %d on '%s' (paused)",
-                workflow.name, currentStep, self.getName and self:getName() or "unknown")
+            WMLogger:info("Restored workflow '%s' step=%d isMain=%s on '%s' (paused)",
+                workflow.name, currentStep, tostring(isMainVehicle),
+                self.getName and self:getName() or "unknown")
         else
             WMLogger:warning("Cannot restore workflow: id '%s' not found", workflowId)
         end
@@ -94,10 +104,15 @@ function WorkflowManagerSpec:saveToXMLFile(xmlFile, key, usedModNames)
     local activeData = spec.wmExecution
     -- 'key' already contains the full path including our mod/spec namespace
     -- (e.g. "vehicles.vehicle(49).FS25_WorkflowManager.workflowManagerSpec")
-    xmlFile:setValue(key .. "#workflowId", activeData.workflow.id)
-    xmlFile:setValue(key .. "#currentStep", activeData.currentStep)
+    xmlFile:setValue(key .. "#workflowId",    activeData.workflow.id)
+    xmlFile:setValue(key .. "#currentStep",   activeData.currentStep)
+    xmlFile:setValue(key .. "#isMainVehicle", activeData.isMainVehicle ~= false)
+    if activeData.isMainVehicle == false then
+        xmlFile:setValue(key .. "#currentSupportStep", activeData.currentSupportStep or 1)
+    end
 
-    WMLogger:info("Saved workflow state: id=%s step=%d", activeData.workflow.id, activeData.currentStep)
+    WMLogger:info("Saved workflow state: id=%s step=%d isMain=%s",
+        activeData.workflow.id, activeData.currentStep, tostring(activeData.isMainVehicle ~= false))
 end
 
 ---Called on the SERVER when sending this vehicle to a newly-connected client.
@@ -111,8 +126,11 @@ function WorkflowManagerSpec:onWriteStream(streamId, connection)
         streamWriteString(streamId, activeData.workflow.id)
         streamWriteInt32(streamId, activeData.currentStep)
         streamWriteString(streamId, activeData.status)
-        WMLogger:debug("onWriteStream: sent wmExecution wf=%s step=%d status=%s",
-            activeData.workflow.id, activeData.currentStep, activeData.status)
+        streamWriteBool(streamId, activeData.isMainVehicle ~= false)
+        streamWriteInt32(streamId, activeData.currentSupportStep or 0)
+        WMLogger:debug("onWriteStream: sent wmExecution wf=%s step=%d status=%s isMain=%s",
+            activeData.workflow.id, activeData.currentStep, activeData.status,
+            tostring(activeData.isMainVehicle ~= false))
     else
         streamWriteBool(streamId, false)
     end
@@ -126,9 +144,12 @@ function WorkflowManagerSpec:onReadStream(streamId, connection)
     local isActive = streamReadBool(streamId)
     if not isActive then return end
 
-    local workflowId  = streamReadString(streamId)
-    local currentStep = streamReadInt32(streamId)
-    local status      = streamReadString(streamId)
+    local workflowId         = streamReadString(streamId)
+    local currentStep        = streamReadInt32(streamId)
+    local status             = streamReadString(streamId)
+    local isMainVehicle      = streamReadBool(streamId)
+    local currentSupportStep = streamReadInt32(streamId)
+    if currentSupportStep == 0 then currentSupportStep = nil end
 
     -- Resolve workflow definition (loadMap has run by the time vehicles are streamed)
     local workflow = WorkflowManager:getWorkflowById(workflowId)
@@ -143,6 +164,8 @@ function WorkflowManagerSpec:onReadStream(streamId, connection)
         status               = status,
         currentStep          = currentStep,
         waitingForCompletion = false,
+        isMainVehicle        = isMainVehicle,
+        currentSupportStep   = currentSupportStep,
     }
     WMExecutor.activeVehicles[self] = true
 
@@ -338,8 +361,12 @@ function WorkflowManagerSpec.initSpecialization()
     local key = "vehicles.vehicle(?).FS25_WorkflowManager.workflowManagerSpec"
     schema:register(XMLValueType.STRING, key .. "#workflowId",
         "Active workflow ID for WorkflowManager")
-    schema:register(XMLValueType.INT, key .. "#currentStep",
+    schema:register(XMLValueType.INT,  key .. "#currentStep",
         "Current workflow step for WorkflowManager")
+    schema:register(XMLValueType.BOOL, key .. "#isMainVehicle",
+        "true = main role, false = support role")
+    schema:register(XMLValueType.INT,  key .. "#currentSupportStep",
+        "Current support sub-step index (support vehicles only)")
     print("[WorkflowManager] Registered savegame XML schema")
 end
 

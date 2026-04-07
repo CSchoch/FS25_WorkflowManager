@@ -732,9 +732,14 @@ function WMExecutor:onStepCompleted(activeData)
 
         activeData.currentSupportStep = activeData.currentSupportStep + 1
         if activeData.currentSupportStep > #supportSteps then
+            -- All sub-steps for this main step are done — wait for main to advance.
+            -- onMainStepChanged will restart from sub-step 1 when the main moves on.
             activeData.currentSupportStep = 1
-            WMLogger:info("Support vehicle: sub-step loop back to 1 (main still on step %d)",
+            activeData.waitingForMainStep = true
+            WMLogger:info("Support vehicle: all sub-steps done, waiting for main to advance (main step %d)",
                 mainActiveData.currentStep)
+            WorkflowManager:broadcastState(activeData.vehicle)
+            return
         end
 
         self:executeCurrentStep(activeData)

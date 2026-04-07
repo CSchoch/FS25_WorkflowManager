@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-06T20:14:43.707Z
-> Files: 19 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-07T08:43:04.589Z
+> Files: 20 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -28,8 +28,9 @@
 
 ## src/
 
-- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~16602 tok)
+- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~16688 tok)
 - `WorkflowManager.lua` — init, loadDialogs, Callback, showTextInputDialog, setupInGameMenu (~12912 tok)
+- `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~4320 tok)
 - `WorkflowStorage.lua` — deepCopySupportStep, init, getXmlPath, saveWorkflows, migrateOldLinkedWorkflows (~3097 tok)
 
 ## src/gui/
@@ -45,7 +46,7 @@
 
 ## src/network/
 
-- `WMNetworkEvents.lua` — emptyNew, new, writeStream, readStream, run (~1866 tok)
+- `WMNetworkEvents.lua` — emptyNew, new, writeStream, readStream, run (~2058 tok)
 
 ## src/utils/
 

@@ -90,15 +90,19 @@ function WMStateSyncEvent.new(vehicle)
     self.vehicle = vehicle
     local activeData = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
     if activeData ~= nil then
-        self.isActive    = true
-        self.workflowId  = activeData.workflow.id
-        self.currentStep = activeData.currentStep
-        self.status      = activeData.status
+        self.isActive           = true
+        self.workflowId         = activeData.workflow.id
+        self.currentStep        = activeData.currentStep
+        self.status             = activeData.status
+        self.isMainVehicle      = activeData.isMainVehicle ~= false
+        self.currentSupportStep = activeData.currentSupportStep or 0
     else
-        self.isActive    = false
-        self.workflowId  = ""
-        self.currentStep = 0
-        self.status      = ""
+        self.isActive           = false
+        self.workflowId         = ""
+        self.currentStep        = 0
+        self.status             = ""
+        self.isMainVehicle      = true
+        self.currentSupportStep = 0
     end
     return self
 end
@@ -110,6 +114,8 @@ function WMStateSyncEvent:writeStream(streamId, connection)
         streamWriteString(streamId, self.workflowId)
         streamWriteInt32(streamId, self.currentStep)
         streamWriteString(streamId, self.status)
+        streamWriteBool(streamId, self.isMainVehicle)
+        streamWriteInt32(streamId, self.currentSupportStep)
     end
 end
 
@@ -117,9 +123,11 @@ function WMStateSyncEvent:readStream(streamId, connection)
     self.vehicle  = NetworkUtil.readNodeObject(streamId)
     self.isActive = streamReadBool(streamId)
     if self.isActive then
-        self.workflowId  = streamReadString(streamId)
-        self.currentStep = streamReadInt32(streamId)
-        self.status      = streamReadString(streamId)
+        self.workflowId         = streamReadString(streamId)
+        self.currentStep        = streamReadInt32(streamId)
+        self.status             = streamReadString(streamId)
+        self.isMainVehicle      = streamReadBool(streamId)
+        self.currentSupportStep = streamReadInt32(streamId)
     end
     self:run(connection)
 end
@@ -155,10 +163,12 @@ function WMStateSyncEvent:run(connection)
         activeData = { waitingForCompletion = false }
         vehicle.spec_workflowManagerSpec.wmExecution = activeData
     end
-    activeData.workflow     = workflow
-    activeData.vehicle      = vehicle
-    activeData.status       = self.status
-    activeData.currentStep  = self.currentStep
+    activeData.workflow             = workflow
+    activeData.vehicle              = vehicle
+    activeData.status               = self.status
+    activeData.currentStep          = self.currentStep
+    activeData.isMainVehicle        = self.isMainVehicle
+    activeData.currentSupportStep   = self.currentSupportStep ~= 0 and self.currentSupportStep or nil
 
     WMExecutor.activeVehicles[vehicle] = true
 
