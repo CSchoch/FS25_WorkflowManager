@@ -327,3 +327,15 @@
 | 00:25 | Session end: 25 writes across 4 files (WMStepDialog.xml, WMHud.lua, WorkflowManager.lua, WorkflowManagerSpec.lua) | 7 reads | ~28329 tok |
 | 00:28 | HUD auto-hide/show fully working: hide after 3s on workflow end, re-show on vehicle enter with active workflow | WMHud.lua, WorkflowManagerSpec.lua | confirmed working | ~50 |
 | 00:28 | Session end: 25 writes across 4 files (WMStepDialog.xml, WMHud.lua, WorkflowManager.lua, WorkflowManagerSpec.lua) | 7 reads | ~28329 tok |
+
+## Session: 2026-04-08 00:30
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 00:38 | Edited src/WorkflowManager.lua | 10→8 lines | ~83 |
+
+| 00:00 | bug-046: support vehicle not starting — mode dialog callback re-queried getCurrentVehicle() instead of using closure vehicle | src/WorkflowManager.lua | fixed | ~200 |
+| 00:38 | Session end: 1 writes across 1 files (WorkflowManager.lua) | 2 reads | ~12882 tok |
+| 00:44 | Session end: 1 writes across 1 files (WorkflowManager.lua) | 4 reads | ~12838 tok |
+| 00:56 | Session end: 1 writes across 1 files (WorkflowManager.lua) | 5 reads | ~12838 tok |
+| 00:58 | Session end: 1 writes across 1 files (WorkflowManager.lua) | 5 reads | ~12838 tok |

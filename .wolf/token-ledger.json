@@ -2,14 +2,14 @@
   "version": 1,
   "created_at": "2026-04-05T21:01:47.995Z",
   "lifetime": {
-    "total_tokens_estimated": 930213,
-    "total_reads": 419,
-    "total_writes": 1093,
-    "total_sessions": 11,
-    "anatomy_hits": 110,
-    "anatomy_misses": 309,
-    "repeated_reads_blocked": 372,
-    "estimated_savings_vs_bare_cli": 1718818
+    "total_tokens_estimated": 981609,
+    "total_reads": 435,
+    "total_writes": 1097,
+    "total_sessions": 12,
+    "anatomy_hits": 114,
+    "anatomy_misses": 321,
+    "repeated_reads_blocked": 412,
+    "estimated_savings_vs_bare_cli": 1834359
   },
   "sessions": [
     {
@@ -8822,6 +8822,190 @@
         "writes_count": 25,
         "repeated_reads_blocked": 15,
         "anatomy_lookups": 3
+      }
+    },
+    {
+      "id": "session-2026-04-08-0030",
+      "started": "2026-04-08T22:30:00.681Z",
+      "ended": "2026-04-08T22:38:39.301Z",
+      "reads": [
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManager.lua",
+          "tokens_estimated": 12793,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMModeSelectDialog.lua",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManager.lua",
+          "tokens_estimated": 89,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 12793,
+        "output_tokens_estimated": 89,
+        "reads_count": 2,
+        "writes_count": 1,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 1
+      }
+    },
+    {
+      "id": "session-2026-04-08-0030",
+      "started": "2026-04-08T22:30:00.681Z",
+      "ended": "2026-04-08T22:44:55.635Z",
+      "reads": [
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManager.lua",
+          "tokens_estimated": 12749,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMModeSelectDialog.lua",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/log.txt",
+          "tokens_estimated": 0,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowExecutor.lua",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManager.lua",
+          "tokens_estimated": 89,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 12749,
+        "output_tokens_estimated": 89,
+        "reads_count": 4,
+        "writes_count": 1,
+        "repeated_reads_blocked": 4,
+        "anatomy_lookups": 1
+      }
+    },
+    {
+      "id": "session-2026-04-08-0030",
+      "started": "2026-04-08T22:30:00.681Z",
+      "ended": "2026-04-08T22:56:38.164Z",
+      "reads": [
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManager.lua",
+          "tokens_estimated": 12749,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMModeSelectDialog.lua",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/log.txt",
+          "tokens_estimated": 0,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowExecutor.lua",
+          "tokens_estimated": 0,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/integration/AutoDriveIntegration.lua",
+          "tokens_estimated": 0,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManager.lua",
+          "tokens_estimated": 89,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 12749,
+        "output_tokens_estimated": 89,
+        "reads_count": 5,
+        "writes_count": 1,
+        "repeated_reads_blocked": 18,
+        "anatomy_lookups": 1
+      }
+    },
+    {
+      "id": "session-2026-04-08-0030",
+      "started": "2026-04-08T22:30:00.681Z",
+      "ended": "2026-04-08T22:58:04.023Z",
+      "reads": [
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManager.lua",
+          "tokens_estimated": 12749,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMModeSelectDialog.lua",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/log.txt",
+          "tokens_estimated": 0,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowExecutor.lua",
+          "tokens_estimated": 0,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/integration/AutoDriveIntegration.lua",
+          "tokens_estimated": 0,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManager.lua",
+          "tokens_estimated": 89,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 12749,
+        "output_tokens_estimated": 89,
+        "reads_count": 5,
+        "writes_count": 1,
+        "repeated_reads_blocked": 18,
+        "anatomy_lookups": 1
       }
     }
   ],

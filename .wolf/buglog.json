@@ -710,6 +710,34 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-08T22:14:41.352Z"
+    },
+    {
+      "id": "bug-045",
+      "timestamp": "2026-04-08T22:38:09.317Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowManager.lua",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 10→8 lines (4 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-08T22:38:09.317Z"
+    },
+    {
+      "id": "bug-046",
+      "timestamp": "2026-04-09T00:00:00.000Z",
+      "error_message": "Support vehicle does not start when player is not in the vehicle after selecting Support in mode dialog",
+      "file": "src/WorkflowManager.lua",
+      "root_cause": "showModeSelectDialog callback re-queried g_localPlayer:getCurrentVehicle() instead of using the vehicle already captured in the closure. FS25 can release vehicle control when a dialog opens, so getCurrentVehicle() returns nil → workflow silently never starts.",
+      "fix": "Removed the re-query; callback now uses the `vehicle` variable captured in the closure (already validated before the dialog opened).",
+      "tags": ["support", "mode-dialog", "vehicle", "nil-check", "workflow-start"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-09T00:00:00.000Z"
     }
   ]
 }

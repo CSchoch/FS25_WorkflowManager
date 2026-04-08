@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-08T22:25:49.247Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-08T22:38:09.285Z
 > Files: 13 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
@@ -27,7 +27,7 @@
 
 ## src/
 
-- `WorkflowManager.lua` — init, loadDialogs, Callback, showTextInputDialog, setupInGameMenu (~12793 tok)
+- `WorkflowManager.lua` — init, loadDialogs, Callback, showTextInputDialog, setupInGameMenu (~12749 tok)
 - `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~4381 tok)
 
 ## src/gui/

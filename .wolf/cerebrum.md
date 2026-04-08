@@ -32,3 +32,5 @@
 ## Decision Log
 
 <!-- Significant technical decisions with rationale. Why X was chosen over Y. -->
+
+[2026-04-09] Support step visibility: when a support sub-step starts automatically (triggered by main advancing), the player in another vehicle has no HUD feedback. This is known and intentional — no cross-vehicle notification was added (user explicitly declined).

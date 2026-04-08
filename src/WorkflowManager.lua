@@ -841,10 +841,8 @@ function WorkflowManager:showModeSelectDialog(workflowId, vehicle)
             -- User cancelled
             return
         end
-        -- Re-validate vehicle is still the current vehicle
-        local currentVehicle = g_localPlayer and g_localPlayer.getCurrentVehicle and g_localPlayer:getCurrentVehicle()
-        if currentVehicle == nil then return end
-        self:sendCommand(currentVehicle, "start", workflowId, isMain)
+        -- Use the vehicle that was validated before the dialog opened
+        self:sendCommand(vehicle, "start", workflowId, isMain)
     end)
     g_gui:showDialog("WMModeSelectDialog")
 end
