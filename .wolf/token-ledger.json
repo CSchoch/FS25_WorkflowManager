@@ -2,14 +2,14 @@
   "version": 1,
   "created_at": "2026-04-05T21:01:47.995Z",
   "lifetime": {
-    "total_tokens_estimated": 259173,
-    "total_reads": 67,
-    "total_writes": 191,
-    "total_sessions": 7,
+    "total_tokens_estimated": 275136,
+    "total_reads": 83,
+    "total_writes": 272,
+    "total_sessions": 9,
     "anatomy_hits": 20,
-    "anatomy_misses": 47,
-    "repeated_reads_blocked": 63,
-    "estimated_savings_vs_bare_cli": 913844
+    "anatomy_misses": 63,
+    "repeated_reads_blocked": 74,
+    "estimated_savings_vs_bare_cli": 928980
   },
   "sessions": [
     {
@@ -1554,6 +1554,626 @@
         "writes_count": 4,
         "repeated_reads_blocked": 0,
         "anatomy_lookups": 5
+      }
+    },
+    {
+      "id": "session-2026-04-08-1113",
+      "started": "2026-04-08T09:13:38.196Z",
+      "ended": "2026-04-08T09:20:16.685Z",
+      "reads": [
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 345,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 0,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 0,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 345,
+        "reads_count": 2,
+        "writes_count": 3,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-04-08-1113",
+      "started": "2026-04-08T09:13:38.196Z",
+      "ended": "2026-04-08T09:26:44.013Z",
+      "reads": [
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 1376,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 345,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 0,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 0,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 18,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 109,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 33,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 507,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 1376,
+        "output_tokens_estimated": 1012,
+        "reads_count": 2,
+        "writes_count": 7,
+        "repeated_reads_blocked": 1,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-04-08-1113",
+      "started": "2026-04-08T09:13:38.196Z",
+      "ended": "2026-04-08T11:05:58.999Z",
+      "reads": [
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 1376,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 345,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 0,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 0,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 18,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 109,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 33,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 507,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 46,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 28,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 28,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 0,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 1,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 1376,
+        "output_tokens_estimated": 1115,
+        "reads_count": 2,
+        "writes_count": 12,
+        "repeated_reads_blocked": 2,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-04-08-1113",
+      "started": "2026-04-08T09:13:38.196Z",
+      "ended": "2026-04-08T11:06:41.423Z",
+      "reads": [
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 1376,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 345,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 0,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 0,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 18,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 109,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 33,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 507,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 46,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 28,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 28,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 0,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 1,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 96,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 61,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 1376,
+        "output_tokens_estimated": 1272,
+        "reads_count": 2,
+        "writes_count": 14,
+        "repeated_reads_blocked": 2,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-04-08-1113",
+      "started": "2026-04-08T09:13:38.196Z",
+      "ended": "2026-04-08T11:07:01.523Z",
+      "reads": [
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 1376,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 345,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 0,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 0,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 18,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 109,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 33,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 507,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 46,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 28,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 28,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 0,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 1,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 96,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 61,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 1376,
+        "output_tokens_estimated": 1272,
+        "reads_count": 2,
+        "writes_count": 14,
+        "repeated_reads_blocked": 2,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-04-08-1113",
+      "started": "2026-04-08T09:13:38.196Z",
+      "ended": "2026-04-08T12:03:15.208Z",
+      "reads": [
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 1376,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMStepDialog.xml",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 345,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 0,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 0,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 18,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 109,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 33,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 507,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 46,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 28,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 28,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 0,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 1,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 96,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 61,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMStepDialog.xml",
+          "tokens_estimated": 1,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 1376,
+        "output_tokens_estimated": 1273,
+        "reads_count": 3,
+        "writes_count": 15,
+        "repeated_reads_blocked": 2,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-04-08-1113",
+      "started": "2026-04-08T09:13:38.196Z",
+      "ended": "2026-04-08T13:02:37.363Z",
+      "reads": [
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 1376,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMStepDialog.xml",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 345,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 0,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 0,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 18,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 109,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 33,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 507,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 46,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 28,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 28,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 0,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 1,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMEditorDialog.xml",
+          "tokens_estimated": 96,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 61,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/xml/gui/WMStepDialog.xml",
+          "tokens_estimated": 1,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua",
+          "tokens_estimated": 145,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 1376,
+        "output_tokens_estimated": 1418,
+        "reads_count": 3,
+        "writes_count": 16,
+        "repeated_reads_blocked": 2,
+        "anatomy_lookups": 0
       }
     }
   ],

@@ -75,6 +75,10 @@ end
 
 ---Return the currently selected flat item, or nil.
 function WMEditorDialog:getSelectedItem()
+    -- Mouse clicks may not fire onSelectionChanged, so read the list's actual state
+    if self.stepList and self.stepList.selectedIndex and self.stepList.selectedIndex > 0 then
+        self.selectedFlatIndex = self.stepList.selectedIndex
+    end
     if self.selectedFlatIndex < 1 or self.selectedFlatIndex > #self.flatItems then
         return nil
     end
@@ -212,17 +216,6 @@ function WMEditorDialog:populateCellForItemInSection(list, section, index, cell)
         actionEl:setText(self:getActionDisplayName(step.action) or step.action or "")
     end
 
-    -- Sup column: support count for main rows, empty for support rows
-    local supEl = cell:getDescendantByName("stepGroup")
-    if supEl then
-        if item.isMain then
-            local count = (self.workflow.steps[item.stepIndex].support and
-                           #self.workflow.steps[item.stepIndex].support) or 0
-            supEl:setText(count > 0 and ("+" .. count) or "")
-        else
-            supEl:setText("")
-        end
-    end
 end
 
 -- ============================================================
@@ -264,6 +257,11 @@ function WMEditorDialog:updateButtons()
         self.moveUpButton:setDisabled(not canUp)
     end
 
+    -- Add Support Step: only when a main step is selected
+    if self.addSupportStepButton then
+        self.addSupportStepButton:setDisabled(not isMain)
+    end
+
     -- Move Down
     if self.moveDownButton then
         local canDown = false
@@ -277,28 +275,7 @@ function WMEditorDialog:updateButtons()
         self.moveDownButton:setDisabled(not canDown)
     end
 
-    -- Add Support Step: only when a main step is selected
-    if self.addSupportStepButton then
-        self.addSupportStepButton:setDisabled(not isMain)
-    end
 
-    -- Info line
-    if self.supportStepInfo then
-        if isMain then
-            local mainStep = self.workflow and self.workflow.steps[item.stepIndex]
-            local count = (mainStep and mainStep.support and #mainStep.support) or 0
-            self.supportStepInfo:setText(string.format(
-                g_i18n:getText("wm_editor_support_info") or "Support steps for step %d: %d",
-                item.stepIndex, count))
-        elseif isSupport then
-            self.supportStepInfo:setText(string.format(
-                g_i18n:getText("wm_editor_support_step") or "  ↳ Support sub-step %d of main step %d",
-                item.supportIndex, item.stepIndex))
-        else
-            self.supportStepInfo:setText(
-                g_i18n:getText("wm_editor_support_select") or "Select a step to manage support sub-steps")
-        end
-    end
 end
 
 -- ============================================================

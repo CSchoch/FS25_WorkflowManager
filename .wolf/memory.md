@@ -162,3 +162,37 @@
 | 23:32 | Edited translations/translation_de.xml | 2→2 lines | ~36 |
 | 23:32 | Session end: 4 writes across 3 files (WMModeSelectDialog.xml, translation_en.xml, translation_de.xml) | 6 reads | ~7075 tok |
 | 23:40 | Session end: 4 writes across 3 files (WMModeSelectDialog.xml, translation_en.xml, translation_de.xml) | 6 reads | ~7075 tok |
+
+## Session: 2026-04-08 11:12
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-04-08 11:13
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 11:19 | Edited xml/gui/WMEditorDialog.xml | 9→10 lines | ~322 |
+| 11:19 | Edited xml/gui/WMEditorDialog.xml | — | ~0 |
+| 11:20 | Edited src/gui/WMEditorDialog.lua | — | ~0 |
+| 11:20 | Remove support step counter text and fix button overlap | WMEditorDialog.xml, WMEditorDialog.lua | Removed supportStepInfo row; moved addSupportStepButton into header buttons row | ~300 |
+| 11:20 | Session end: 3 writes across 2 files (WMEditorDialog.xml, WMEditorDialog.lua) | 2 reads | ~345 tok |
+| 11:26 | Edited xml/gui/WMEditorDialog.xml | inline fix | ~16 |
+| 11:26 | Edited xml/gui/WMEditorDialog.xml | 4→4 lines | ~102 |
+| 11:26 | Edited xml/gui/WMEditorDialog.xml | 2→2 lines | ~31 |
+| 11:26 | Edited xml/gui/WMEditorDialog.xml | 26→26 lines | ~473 |
+| 11:26 | Session end: 7 writes across 2 files (WMEditorDialog.xml, WMEditorDialog.lua) | 2 reads | ~2388 tok |
+| 13:05 | Edited xml/gui/WMEditorDialog.xml | 2→1 lines | ~43 |
+| 13:05 | Edited xml/gui/WMEditorDialog.xml | 2→1 lines | ~26 |
+| 13:05 | Edited xml/gui/WMEditorDialog.xml | 2→1 lines | ~26 |
+| 13:05 | Edited src/gui/WMEditorDialog.lua | — | ~0 |
+| 13:05 | Edited src/gui/WMEditorDialog.lua | removed 6 lines | ~1 |
+| 13:05 | Session end: 12 writes across 2 files (WMEditorDialog.xml, WMEditorDialog.lua) | 2 reads | ~2491 tok |
+| 13:06 | Edited xml/gui/WMEditorDialog.xml | 1→2 lines | ~90 |
+| 13:06 | Edited src/gui/WMEditorDialog.lua | 2→7 lines | ~57 |
+| 13:06 | Session end: 14 writes across 2 files (WMEditorDialog.xml, WMEditorDialog.lua) | 2 reads | ~2648 tok |
+| 13:07 | Session end: 14 writes across 2 files (WMEditorDialog.xml, WMEditorDialog.lua) | 2 reads | ~2648 tok |
+| 14:03 | Edited xml/gui/WMStepDialog.xml | removed 12 lines | ~1 |
+| 14:03 | Session end: 15 writes across 3 files (WMEditorDialog.xml, WMEditorDialog.lua, WMStepDialog.xml) | 3 reads | ~2649 tok |
+| 15:02 | Edited src/gui/WMEditorDialog.lua | modified WMEditorDialog() | ~135 |
+| 15:02 | Session end: 16 writes across 3 files (WMEditorDialog.xml, WMEditorDialog.lua, WMStepDialog.xml) | 3 reads | ~2794 tok |

@@ -25,16 +25,6 @@
                 <MultiTextOption profile="fs25_settingsMultiTextOption" id="actionDropdown" onStateChanged="onActionChanged" size="500px 40px"/>
             </BoxLayout>
 
-            <!-- Sync Group (only visible when workflow is linked) -->
-            <GuiElement id="syncGroupSection" size="860px 45px">
-                <BoxLayout profile="wm_hBox" size="860px 45px">
-                    <Text profile="wm_dialogText" text="$l10n_wm_sync_group" size="150px 40px"/>
-                    <TextInput profile="fs25_dialogTextInput" id="syncGroupInput" maxCharacters="3" size="80px 40px" focusId="syncGroupInput">
-                        <ThreePartBitmap profile="fs25_textInputBg"/>
-                    </TextInput>
-                </BoxLayout>
-            </GuiElement>
-
             <!-- Target Section -->
             <BoxLayout profile="wm_hBox" size="860px 40px">
                 <Text profile="wm_dialogText" text="$l10n_wm_editor_target" size="150px 35px"/>

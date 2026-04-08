@@ -329,10 +329,62 @@
       "file": "xml/gui/WMModeSelectDialog.xml, translations/translation_en.xml, translations/translation_de.xml",
       "root_cause": "Dialog 540px wide; 3 buttons with long labels ('Run as Support Vehicle' / 'Als Unterstuetzungsfahrzeug starten') exceeded available width",
       "fix": "Widened dialog to 700px x 240px; shortened button labels to 'Main Vehicle'/'Support Vehicle' (EN) and 'Hauptfahrzeug'/'Hilfsfahrzeug' (DE)",
-      "tags": ["gui", "layout", "dialog", "overflow", "translations"],
-      "related_bugs": ["bug-018"],
+      "tags": [
+        "gui",
+        "layout",
+        "dialog",
+        "overflow",
+        "translations"
+      ],
+      "related_bugs": [
+        "bug-018"
+      ],
       "occurrences": 1,
       "last_seen": "2026-04-07T07:05:00.000Z"
+    },
+    {
+      "id": "bug-022",
+      "timestamp": "2026-04-08T09:26:17.231Z",
+      "error_message": "Incorrect value in code",
+      "file": "xml/gui/WMEditorDialog.xml",
+      "root_cause": "Had \"1100px 750px\"",
+      "fix": "Changed to \"1300px 750px\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-08T09:26:27.414Z"
+    },
+    {
+      "id": "bug-023",
+      "timestamp": "2026-04-08T11:05:41.593Z",
+      "error_message": "Incorrect value in code",
+      "file": "xml/gui/WMEditorDialog.xml",
+      "root_cause": "Had \"280px 30px\"",
+      "fix": "Changed to \"340px 30px\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-08T11:05:45.368Z"
+    }
+  ,{
+      "id": "bug-024",
+      "timestamp": "2026-04-08T00:00:00.000Z",
+      "error_message": "Deletion of workflow steps always deletes the first one regardless which step is selected",
+      "file": "src/gui/WMEditorDialog.lua",
+      "root_cause": "Mouse clicks on SmoothList do not reliably fire onSelectionChanged, so selectedFlatIndex stays stale at 1. All operations (remove, edit, move) used this stale value.",
+      "fix": "In getSelectedItem(), sync selectedFlatIndex from self.stepList.selectedIndex before using it, covering all operations in one place.",
+      "tags": ["gui", "smoothlist", "selection", "delete"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-08T00:00:00.000Z"
     }
   ]
 }
