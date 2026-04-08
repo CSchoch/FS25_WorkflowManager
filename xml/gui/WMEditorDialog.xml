@@ -35,12 +35,14 @@
                 <Button profile="buttonOK" id="addSupportStepButton" text="$l10n_wm_button_add_support" onClick="onClickAddSupportStep" size="200px 40px" focusId="addSupBtn"/>
             </BoxLayout>
 
-            <!-- Column Headers for Steps -->
-            <BoxLayout profile="wm_hBox" size="1260px 30px">
-                <Text profile="wm_columnHeader" text="#" size="50px 30px"/>
-                <Text profile="wm_columnHeader" text="$l10n_wm_editor_type" size="150px 30px"/>
-                <Text profile="wm_columnHeader" text="$l10n_wm_editor_target" size="680px 30px"/>
-                <Text profile="wm_columnHeader" text="$l10n_wm_editor_action" size="340px 30px"/>
+            <!-- Column Headers for Steps: # | Type | Action | Target -->
+            <!-- Width matches list outer container (1260px); 40px spacer aligns with slider -->
+            <BoxLayout flowDirection="horizontal" size="1260px 30px">
+                <Text profile="wm_columnHeader" text="#" size="50px 30px" textOffset="8px 0px"/>
+                <Text profile="wm_columnHeader" text="$l10n_wm_editor_type" size="150px 30px" textOffset="8px 0px"/>
+                <Text profile="wm_columnHeader" text="$l10n_wm_editor_action" size="250px 30px" textOffset="8px 0px"/>
+                <Text profile="wm_columnHeader" text="$l10n_wm_editor_target" size="770px 30px" textOffset="8px 0px"/>
+                <GuiElement size="40px 30px"/>
             </BoxLayout>
 
             <!-- Step List -->
@@ -54,8 +56,8 @@
                         <BoxLayout flowDirection="horizontal" alignmentY="middle" size="100% 100%">
                             <Text name="stepNum" profile="wm_listItemText" size="50px 100%"/>
                             <Text name="stepType" profile="wm_listItemText" size="150px 100%"/>
-                            <Text name="stepTarget" profile="wm_listItemText" size="680px 100%"/>
-                            <Text name="stepAction" profile="wm_listItemText" size="340px 100%"/>
+                            <Text name="stepAction" profile="wm_listItemText" size="250px 100%"/>
+                            <Text name="stepTarget" profile="wm_listItemText" size="770px 100%"/>
                         </BoxLayout>
                     </ListItem>
                 </SmoothList>

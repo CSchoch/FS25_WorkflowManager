@@ -196,3 +196,134 @@
 | 14:03 | Session end: 15 writes across 3 files (WMEditorDialog.xml, WMEditorDialog.lua, WMStepDialog.xml) | 3 reads | ~2649 tok |
 | 15:02 | Edited src/gui/WMEditorDialog.lua | modified WMEditorDialog() | ~135 |
 | 15:02 | Session end: 16 writes across 3 files (WMEditorDialog.xml, WMEditorDialog.lua, WMStepDialog.xml) | 3 reads | ~2794 tok |
+
+## Session: 2026-04-08 15:11
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 15:22 | Created ../../../../../.claude/plans/sprightly-jingling-frog.md | — | ~2253 |
+| 15:31 | Session end: 1 writes across 1 files (sprightly-jingling-frog.md) | 13 reads | ~9517 tok |
+| 15:31 | Session end: 1 writes across 1 files (sprightly-jingling-frog.md) | 13 reads | ~9517 tok |
+| 15:41 | Session end: 1 writes across 1 files (sprightly-jingling-frog.md) | 13 reads | ~9517 tok |
+| 15:41 | Edited ../../../../../.claude/plans/sprightly-jingling-frog.md | removed 7 lines | ~1 |
+| 15:41 | Edited ../../../../../.claude/plans/sprightly-jingling-frog.md | removed 7 lines | ~2 |
+| 15:41 | Edited ../../../../../.claude/plans/sprightly-jingling-frog.md | 4→3 lines | ~63 |
+| 15:46 | Edited xml/gui/guiProfiles.xml | "0.7 0.7 0.7 1" → "0.85 0.85 0.85 1" | ~12 |
+| 15:47 | Edited xml/gui/WMEditorDialog.xml | 35→37 lines | ~803 |
+| 15:47 | Edited src/gui/WMEditorDialog.lua | 30→28 lines | ~322 |
+| 15:47 | Edited src/gui/WMMainDialog.lua | count() → setColor() | ~563 |
+| 15:48 | Edited xml/gui/WMStepDialog.xml | expanded (+26 lines) | ~1791 |
+| 15:48 | Edited xml/gui/WMStepDialog.xml | inline fix | ~16 |
+| 15:48 | Edited src/gui/WMStepDialog.lua | modified WMStepDialog() | ~356 |
+| 15:49 | Edited src/gui/WMStepDialog.lua | modified WMStepDialog() | ~1333 |
+| 15:49 | Edited src/gui/WMStepDialog.lua | modified WMStepDialog() | ~100 |
+| 15:49 | Edited src/gui/WMStepDialog.lua | modified WMStepDialog() | ~111 |
+| 15:49 | Edited src/gui/WMStepDialog.lua | modified WMStepDialog() | ~104 |
+| 15:49 | Edited src/gui/WMStepDialog.lua | expanded (+12 lines) | ~508 |
+| 15:50 | Edited src/gui/WMHud.lua | expanded (+8 lines) | ~135 |
+| 15:50 | Edited src/gui/WMHud.lua | expanded (+12 lines) | ~215 |
+| 15:50 | Edited src/gui/WMHud.lua | modified WMHud() | ~139 |
+| 15:50 | Edited src/gui/WMHud.lua | modified WMHud() | ~217 |
+| 15:50 | Edited src/gui/WMHud.lua | modified WMHud() | ~77 |
+| 15:51 | Edited src/gui/WMHud.lua | modified WMHud() | ~2743 |
+| 15:52 | Edited translations/translation_en.xml | expanded (+6 lines) | ~136 |
+| 15:52 | Edited translations/translation_de.xml | expanded (+6 lines) | ~145 |
+
+| 15:58 | UI improvement pass: column contrast, editor column reorder (Type→Action→Target), support step '└' prefix, main dialog status color, step dialog selected labels + clear buttons + auto-select, HUD vehicle name header + full type names + progress bar + support badge + button tooltips + auto-hide timer | WMHud.lua WMMainDialog.lua WMEditorDialog.lua WMEditorDialog.xml WMStepDialog.lua WMStepDialog.xml guiProfiles.xml translations | 106 tests pass | ~4000 |
+| 15:58 | Session end: 24 writes across 10 files (sprightly-jingling-frog.md, guiProfiles.xml, WMEditorDialog.xml, WMEditorDialog.lua, WMMainDialog.lua) | 15 reads | ~21437 tok |
+| 16:02 | Edited src/gui/WMMainDialog.lua | setColor() → setTextColor() | ~119 |
+| 16:02 | Session end: 25 writes across 10 files (sprightly-jingling-frog.md, guiProfiles.xml, WMEditorDialog.xml, WMEditorDialog.lua, WMMainDialog.lua) | 15 reads | ~21565 tok |
+| 22:14 | Edited xml/gui/WMStepDialog.xml | inline fix | ~26 |
+| 22:14 | Session end: 26 writes across 10 files (sprightly-jingling-frog.md, guiProfiles.xml, WMEditorDialog.xml, WMEditorDialog.lua, WMMainDialog.lua) | 15 reads | ~21593 tok |
+| 22:19 | Edited xml/gui/WMStepDialog.xml | — | ~0 |
+| 22:19 | Session end: 27 writes across 10 files (sprightly-jingling-frog.md, guiProfiles.xml, WMEditorDialog.xml, WMEditorDialog.lua, WMMainDialog.lua) | 15 reads | ~21593 tok |
+| 22:26 | Edited src/gui/WMHud.lua | removed 5 lines | ~5 |
+| 22:27 | Edited src/gui/WMHud.lua | removed 13 lines | ~8 |
+| 22:27 | Edited src/gui/WMHud.lua | — | ~0 |
+| 22:27 | Edited src/gui/WMHud.lua | removed 9 lines | ~8 |
+| 22:27 | Edited src/gui/WMHud.lua | removed 18 lines | ~6 |
+| 22:27 | Edited src/gui/WMHud.lua | 6→3 lines | ~38 |
+| 22:27 | Edited src/gui/WMHud.lua | 15→13 lines | ~182 |
+| 22:27 | Edited src/gui/WMHud.lua | 2→2 lines | ~16 |
+| 22:27 | Session end: 35 writes across 10 files (sprightly-jingling-frog.md, guiProfiles.xml, WMEditorDialog.xml, WMEditorDialog.lua, WMMainDialog.lua) | 15 reads | ~21873 tok |
+| 22:38 | Edited xml/gui/WMEditorDialog.xml | 6→4 lines | ~176 |
+| 22:38 | Session end: 36 writes across 10 files (sprightly-jingling-frog.md, guiProfiles.xml, WMEditorDialog.xml, WMEditorDialog.lua, WMMainDialog.lua) | 15 reads | ~22061 tok |
+| 22:41 | Edited src/gui/WMHud.lua | 3→4 lines | ~58 |
+| 22:41 | Edited src/gui/WMHud.lua | 9→13 lines | ~155 |
+| 22:41 | Edited src/gui/WMHud.lua | 2→6 lines | ~70 |
+| 22:41 | Session end: 39 writes across 10 files (sprightly-jingling-frog.md, guiProfiles.xml, WMEditorDialog.xml, WMEditorDialog.lua, WMMainDialog.lua) | 15 reads | ~22363 tok |
+| 22:47 | Edited src/gui/WMHud.lua | reduced (-7 lines) | ~162 |
+| 22:47 | Session end: 40 writes across 10 files (sprightly-jingling-frog.md, guiProfiles.xml, WMEditorDialog.xml, WMEditorDialog.lua, WMMainDialog.lua) | 15 reads | ~22537 tok |
+| 22:50 | Edited xml/gui/WMEditorDialog.xml | 7→7 lines | ~171 |
+| 22:50 | Session end: 41 writes across 10 files (sprightly-jingling-frog.md, guiProfiles.xml, WMEditorDialog.xml, WMEditorDialog.lua, WMMainDialog.lua) | 15 reads | ~22728 tok |
+| 22:56 | Edited xml/gui/WMEditorDialog.xml | 7→9 lines | ~204 |
+| 22:56 | Session end: 42 writes across 10 files (sprightly-jingling-frog.md, guiProfiles.xml, WMEditorDialog.xml, WMEditorDialog.lua, WMMainDialog.lua) | 15 reads | ~22947 tok |
+| 22:59 | Edited xml/gui/WMMainDialog.xml | 5→7 lines | ~130 |
+| 22:59 | Session end: 43 writes across 11 files (sprightly-jingling-frog.md, guiProfiles.xml, WMEditorDialog.xml, WMEditorDialog.lua, WMMainDialog.lua) | 15 reads | ~23086 tok |
+| 23:02 | Created xml/gui/WMStepDialog.xml | — | ~2349 |
+| 23:03 | Session end: 44 writes across 11 files (sprightly-jingling-frog.md, guiProfiles.xml, WMEditorDialog.xml, WMEditorDialog.lua, WMMainDialog.lua) | 15 reads | ~25967 tok |
+| 23:07 | Created xml/gui/WMStepDialog.xml | — | ~2358 |
+| 23:07 | Session end: 45 writes across 11 files (sprightly-jingling-frog.md, guiProfiles.xml, WMEditorDialog.xml, WMEditorDialog.lua, WMMainDialog.lua) | 15 reads | ~28493 tok |
+| 23:11 | Edited xml/gui/WMStepDialog.xml | 8→10 lines | ~208 |
+| 23:11 | Edited xml/gui/WMStepDialog.xml | 7→9 lines | ~212 |
+| 23:11 | Edited xml/gui/WMStepDialog.xml | 7→9 lines | ~202 |
+| 23:11 | Session end: 48 writes across 11 files (sprightly-jingling-frog.md, guiProfiles.xml, WMEditorDialog.xml, WMEditorDialog.lua, WMMainDialog.lua) | 15 reads | ~29160 tok |
+| 23:20 | Edited xml/gui/WMStepDialog.xml | 10→7 lines | ~137 |
+| 23:20 | Edited xml/gui/WMStepDialog.xml | 9→6 lines | ~139 |
+| 23:21 | Edited xml/gui/WMStepDialog.xml | 9→6 lines | ~131 |
+| 23:21 | Edited src/gui/WMStepDialog.lua | — | ~0 |
+| 23:21 | Session end: 52 writes across 11 files (sprightly-jingling-frog.md, guiProfiles.xml, WMEditorDialog.xml, WMEditorDialog.lua, WMMainDialog.lua) | 15 reads | ~29596 tok |
+| 23:28 | Edited xml/gui/WMStepDialog.xml | 7→10 lines | ~186 |
+| 23:28 | Edited xml/gui/WMStepDialog.xml | 6→9 lines | ~187 |
+| 23:28 | Edited xml/gui/WMStepDialog.xml | 6→9 lines | ~178 |
+| 23:28 | Session end: 55 writes across 11 files (sprightly-jingling-frog.md, guiProfiles.xml, WMEditorDialog.xml, WMEditorDialog.lua, WMMainDialog.lua) | 15 reads | ~30185 tok |
+| 23:33 | Edited xml/gui/WMStepDialog.xml | "460px 120px" → "500px 120px" | ~5 |
+
+## Session: 2026-04-08 23:35
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 23:40 | Edited xml/gui/WMStepDialog.xml | 19→14 lines | ~223 |
+| 23:41 | Edited xml/gui/WMStepDialog.xml | 19→14 lines | ~229 |
+| 23:41 | Edited xml/gui/WMStepDialog.xml | 19→14 lines | ~226 |
+| 23:41 | Removed sliders from Step Dialog lists; SmoothList now 500px full-width (no inner wrapper) | xml/gui/WMStepDialog.xml | lists match dropdown width | ~200 |
+| 23:41 | Session end: 3 writes across 1 files (WMStepDialog.xml) | 2 reads | ~4182 tok |
+| 23:45 | Edited xml/gui/WMStepDialog.xml | 14→17 lines | ~295 |
+| 23:45 | Edited xml/gui/WMStepDialog.xml | 14→17 lines | ~282 |
+| 23:46 | Edited xml/gui/WMStepDialog.xml | 14→17 lines | ~278 |
+| 23:46 | Re-added sliders to Step Dialog lists; 3-child wm_hBox with 200px spacer for aligned left edge | xml/gui/WMStepDialog.xml | sliders back, list width preserved at 500px | ~150 |
+| 23:46 | Session end: 6 writes across 1 files (WMStepDialog.xml) | 2 reads | ~5098 tok |
+| 23:48 | Edited xml/gui/WMStepDialog.xml | 17→19 lines | ~331 |
+| 23:48 | Edited xml/gui/WMStepDialog.xml | 17→19 lines | ~331 |
+| 23:48 | Edited xml/gui/WMStepDialog.xml | 17→19 lines | ~327 |
+| 23:49 | Session end: 9 writes across 1 files (WMStepDialog.xml) | 2 reads | ~6158 tok |
+| 23:52 | Edited src/gui/WMHud.lua | 4→4 lines | ~68 |
+| 23:52 | Edited src/gui/WMHud.lua | hide() → draw() | ~27 |
+| 23:52 | Edited src/gui/WMHud.lua | expanded (+7 lines) | ~221 |
+| 23:52 | Fixed auto-hide HUD: update(dt) was never called; switched to g_currentMission.time absolute timestamp checked in draw() | src/gui/WMHud.lua | auto-hide now works | ~100 |
+| 23:53 | Session end: 12 writes across 2 files (WMStepDialog.xml, WMHud.lua) | 3 reads | ~13929 tok |
+| 23:56 | Edited src/WorkflowManager.lua | hide() → draw() | ~60 |
+| 23:56 | Edited src/gui/WMHud.lua | draw() → hide() | ~74 |
+| 23:56 | Edited src/gui/WMHud.lua | reduced (-16 lines) | ~52 |
+| 23:56 | Edited src/gui/WMHud.lua | 4→2 lines | ~39 |
+| 23:56 | Fixed auto-hide: checkAndHideHUD() was immediately hiding HUD; now sets autoHideAt timer instead; update(dt) fires hide after 3s | WorkflowManager.lua, WMHud.lua | auto-hide works | ~120 |
+| 23:56 | Session end: 16 writes across 3 files (WMStepDialog.xml, WMHud.lua, WorkflowManager.lua) | 4 reads | ~14169 tok |
+| 00:03 | Edited src/WorkflowManager.lua | 5→8 lines | ~144 |
+| 00:03 | Edited src/gui/WMHud.lua | modified WMHud() | ~120 |
+| 00:03 | Session end: 18 writes across 3 files (WMStepDialog.xml, WMHud.lua, WorkflowManager.lua) | 6 reads | ~27389 tok |
+| 00:06 | Session end: 18 writes across 3 files (WMStepDialog.xml, WMHud.lua, WorkflowManager.lua) | 6 reads | ~27389 tok |
+| 00:08 | Edited src/WorkflowManager.lua | update() → set() | ~347 |
+| 00:08 | Session end: 19 writes across 3 files (WMStepDialog.xml, WMHud.lua, WorkflowManager.lua) | 6 reads | ~27846 tok |
+| 00:14 | Edited src/gui/WMHud.lua | modified WMHud() | ~225 |
+| 00:14 | Edited src/gui/WMHud.lua | — | ~0 |
+| 00:14 | Edited src/WorkflowManager.lua | removed 28 lines | ~38 |
+| 00:14 | Rearchitected HUD auto-hide: update(dt) polls workflow state every frame; show/hide/timer all in one place | WMHud.lua, WorkflowManager.lua | all vehicle-switch cases handled correctly | ~100 |
+| 00:14 | Session end: 22 writes across 3 files (WMStepDialog.xml, WMHud.lua, WorkflowManager.lua) | 6 reads | ~28127 tok |
+| 00:19 | Edited src/gui/WMHud.lua | modified WMHud() | ~252 |
+| 00:19 | Session end: 23 writes across 3 files (WMStepDialog.xml, WMHud.lua, WorkflowManager.lua) | 6 reads | ~28397 tok |
+| 00:25 | Edited src/WorkflowManagerSpec.lua | expanded (+8 lines) | ~109 |
+| 00:25 | Edited src/gui/WMHud.lua | 5→4 lines | ~41 |
+| 00:25 | HUD re-show on vehicle switch: added WMHud:show() to onRegisterActionEvents when wmExecution present | WorkflowManagerSpec.lua | HUD shows when entering vehicle with active workflow | ~80 |
+| 00:25 | Session end: 25 writes across 4 files (WMStepDialog.xml, WMHud.lua, WorkflowManager.lua, WorkflowManagerSpec.lua) | 7 reads | ~28329 tok |
+| 00:28 | HUD auto-hide/show fully working: hide after 3s on workflow end, re-show on vehicle enter with active workflow | WMHud.lua, WorkflowManagerSpec.lua | confirmed working | ~50 |
+| 00:28 | Session end: 25 writes across 4 files (WMStepDialog.xml, WMHud.lua, WorkflowManager.lua, WorkflowManagerSpec.lua) | 7 reads | ~28329 tok |

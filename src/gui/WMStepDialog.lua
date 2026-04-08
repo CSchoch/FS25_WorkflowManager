@@ -360,8 +360,12 @@ function WMStepDialog:refreshTargetDisplay()
             if item.name == self.stepTarget then
                 self.selectedTargetIndex = i
                 self.targetList:setSelectedIndex(i)
+                self:updateSelectedLabel("target", item.display)
                 break
             end
+        end
+        if self.selectedTargetIndex == 0 then
+            self:updateSelectedLabel("target", nil)
         end
     end
 
@@ -375,8 +379,12 @@ function WMStepDialog:refreshTargetDisplay()
             if item.name == self.stepUnloadTarget then
                 self.selectedUnloadTargetIndex = i
                 self.unloadTargetList:setSelectedIndex(i)
+                self:updateSelectedLabel("unloadTarget", item.display)
                 break
             end
+        end
+        if self.selectedUnloadTargetIndex == 0 then
+            self:updateSelectedLabel("unloadTarget", nil)
         end
     end
 
@@ -390,8 +398,12 @@ function WMStepDialog:refreshTargetDisplay()
             if item.name == self.stepFillType then
                 self.selectedFillTypeIndex = i
                 self.fillTypeList:setSelectedIndex(i)
+                self:updateSelectedLabel("fillType", item.display)
                 break
             end
+        end
+        if self.selectedFillTypeIndex == 0 then
+            self:updateSelectedLabel("fillType", nil)
         end
     end
 
@@ -428,17 +440,23 @@ function WMStepDialog:updateFieldVisibility()
         end
     end
 
-    -- Unload target section and list
+    -- Unload target section, selected label, and list
     if self.unloadTargetSection then
         self.unloadTargetSection:setVisible(needsUnloadTarget)
+    end
+    if self.unloadSelectedRow then
+        self.unloadSelectedRow:setVisible(needsUnloadTarget)
     end
     if self.unloadTargetDropdownContainer then
         self.unloadTargetDropdownContainer:setVisible(needsUnloadTarget)
     end
 
-    -- Fill type section and list
+    -- Fill type section, selected label, and list
     if self.fillTypeSection then
         self.fillTypeSection:setVisible(needsFillType)
+    end
+    if self.fillTypeSelectedRow then
+        self.fillTypeSelectedRow:setVisible(needsFillType)
     end
     if self.fillTypeDropdownContainer then
         self.fillTypeDropdownContainer:setVisible(needsFillType)
@@ -476,12 +494,20 @@ function WMStepDialog:filterTargets(searchText)
         end
     end
 
-    -- Set flag to ignore selection callbacks during reload
+    -- Reload list
     self.isFiltering = true
     if self.targetList then
         self.targetList:reloadData()
     end
     self.isFiltering = false
+
+    -- Auto-select when exactly one result matches
+    if #self.filteredTargetItems == 1 then
+        self.selectedTargetIndex = 1
+        self.stepTarget = self.filteredTargetItems[1].name
+        if self.targetList then self.targetList:setSelectedIndex(1) end
+        self:updateSelectedLabel("target", self.filteredTargetItems[1].display)
+    end
 end
 
 ---Filter unload target list by search text
@@ -499,12 +525,20 @@ function WMStepDialog:filterUnloadTargets(searchText)
         end
     end
 
-    -- Set flag to ignore selection callbacks during reload
+    -- Reload list
     self.isFiltering = true
     if self.unloadTargetList then
         self.unloadTargetList:reloadData()
     end
     self.isFiltering = false
+
+    -- Auto-select when exactly one result matches
+    if #self.filteredUnloadTargetItems == 1 then
+        self.selectedUnloadTargetIndex = 1
+        self.stepUnloadTarget = self.filteredUnloadTargetItems[1].name
+        if self.unloadTargetList then self.unloadTargetList:setSelectedIndex(1) end
+        self:updateSelectedLabel("unloadTarget", self.filteredUnloadTargetItems[1].display)
+    end
 end
 
 ---Filter fill type list by search text
@@ -522,13 +556,39 @@ function WMStepDialog:filterFillTypes(searchText)
         end
     end
 
-    -- Set flag to ignore selection callbacks during reload
+    -- Reload list
     self.isFiltering = true
     if self.fillTypeList then
         self.fillTypeList:reloadData()
     end
     self.isFiltering = false
+
+    -- Auto-select when exactly one result matches
+    if #self.filteredFillTypeItems == 1 then
+        self.selectedFillTypeIndex = 1
+        self.stepFillType = self.filteredFillTypeItems[1].name
+        if self.fillTypeList then self.fillTypeList:setSelectedIndex(1) end
+        self:updateSelectedLabel("fillType", self.filteredFillTypeItems[1].display)
+    end
 end
+
+---Update the "Selected: ..." label for a given field
+---@param field string "target", "unloadTarget", or "fillType"
+---@param displayName string|nil The selected item's display name, or nil to clear
+function WMStepDialog:updateSelectedLabel(field, displayName)
+    local none = g_i18n:getText("wm_none") or "(None)"
+    local prefix = g_i18n:getText("wm_step_selected") or "Selected"
+    local text = displayName and (prefix .. ": " .. displayName) or ""
+
+    if field == "target" and self.selectedTargetLabel then
+        self.selectedTargetLabel:setText(text)
+    elseif field == "unloadTarget" and self.selectedUnloadTargetLabel then
+        self.selectedUnloadTargetLabel:setText(text)
+    elseif field == "fillType" and self.selectedFillTypeLabel then
+        self.selectedFillTypeLabel:setText(displayName and (prefix .. ": " .. displayName) or ("(" .. none .. ")"))
+    end
+end
+
 
 -- Event handlers
 
@@ -618,6 +678,7 @@ function WMStepDialog:onTargetListSelectionChanged(list, section, index)
     if index > 0 and index <= #self.filteredTargetItems then
         local item = self.filteredTargetItems[index]
         self.stepTarget = item.name
+        self:updateSelectedLabel("target", item.display)
     end
 end
 
@@ -634,6 +695,7 @@ function WMStepDialog:onUnloadTargetListSelectionChanged(list, section, index)
     if index > 0 and index <= #self.filteredUnloadTargetItems then
         local item = self.filteredUnloadTargetItems[index]
         self.stepUnloadTarget = item.name
+        self:updateSelectedLabel("unloadTarget", item.display)
     end
 end
 
@@ -650,6 +712,7 @@ function WMStepDialog:onFillTypeListSelectionChanged(list, section, index)
     if index > 0 and index <= #self.filteredFillTypeItems then
         local item = self.filteredFillTypeItems[index]
         self.stepFillType = item.name
+        self:updateSelectedLabel("fillType", item.display)
     end
 end
 

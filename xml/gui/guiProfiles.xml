@@ -57,7 +57,7 @@
     <Profile name="wm_columnHeader" extends="baseReference">
         <textBold value="true"/>
         <textSize value="14px"/>
-        <textColor value="0.7 0.7 0.7 1"/>
+        <textColor value="0.85 0.85 0.85 1"/>
         <textAlignment value="left"/>
         <textVerticalAlignment value="middle"/>
     </Profile>

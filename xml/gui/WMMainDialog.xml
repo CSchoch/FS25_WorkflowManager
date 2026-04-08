@@ -23,9 +23,11 @@
             </BoxLayout>
 
             <!-- Column Headers -->
-            <BoxLayout profile="wm_hBox" size="860px 30px">
-                <Text profile="wm_columnHeader" text="$l10n_wm_header_name" size="680px 30px"/>
-                <Text profile="wm_columnHeader" text="$l10n_wm_header_steps" size="120px 30px"/>
+            <!-- 860px = 750 name + 50 steps + 20 row gap + 40 slider -->
+            <BoxLayout flowDirection="horizontal" size="860px 30px">
+                <Text profile="wm_columnHeader" text="$l10n_wm_header_name" size="750px 30px" textOffset="8px 0px"/>
+                <Text profile="wm_columnHeader" text="$l10n_wm_header_steps" size="50px 30px" textOffset="8px 0px"/>
+                <GuiElement size="60px 30px"/>
             </BoxLayout>
 
             <!-- Workflow List -->

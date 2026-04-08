@@ -18,6 +18,9 @@ WMHud.headerOverlay = nil
 WMHud.iconOverlays = nil
 WMHud.hoveredButton = nil
 
+-- Auto-hide after workflow completion
+WMHud.autoHideAt = nil             -- absolute g_currentMission.time when HUD should hide, nil = inactive
+
 -- Drag state
 WMHud.isDragging = false
 WMHud.dragOffsetX = 0
@@ -155,6 +158,7 @@ function WMHud:updateOverlayPositions()
     self.bgOverlay:setPosition(self.x, self.y)
     self.headerOverlay:setPosition(self.x, self.y + self.h - self.headerH)
 
+
     local btnY = self.y + self.marginY
     local startX = self.x + self.marginX
     local btnTotalW = self.iconW + self.btnSpacing
@@ -248,7 +252,29 @@ function WMHud:getActiveWorkflow()
 end
 
 function WMHud:update(dt)
-    -- Nothing to do; draw reads live data
+    if not g_currentMission then return end
+
+    local _, activeData = self:getActiveWorkflow()
+    local hasWorkflow = activeData ~= nil
+
+    if hasWorkflow then
+        -- Workflow active on current vehicle: ensure HUD is visible, cancel any hide timer
+        if not self.isVisible then
+            local cv = g_currentMission.controlledVehicle
+            if cv ~= nil then self:show(cv) end
+        end
+        self.autoHideAt = nil
+    elseif self.isVisible then
+        -- HUD visible but no active workflow: countdown then hide
+        if self.autoHideAt == nil then
+            self.autoHideAt = g_currentMission.time + 3000
+        elseif g_currentMission.time >= self.autoHideAt then
+            self.autoHideAt = nil
+            self:hide()
+        end
+    else
+        self.autoHideAt = nil
+    end
 end
 
 function WMHud:draw()
@@ -273,6 +299,10 @@ function WMHud:draw()
     -- Lazy-create overlays on first draw (guarantees screen globals exist)
     self:ensureOverlays()
 
+    -- Get workflow data early (used for header and all content)
+    local workflow, activeData = self:getActiveWorkflow()
+
+
     -- Draw backgrounds
     self.bgOverlay:render()
 
@@ -293,14 +323,23 @@ function WMHud:draw()
     local mx = self.marginX
     local my = self.marginY
 
-    -- Get workflow data (both definition and runtime state)
-    local workflow, activeData = self:getActiveWorkflow()
+    -- === Header: title + vehicle name ===
+    local vehicleName = ""
+    if activeData and activeData.vehicle then
+        local v = activeData.vehicle
+        local ok, name = pcall(function() return v:getName() end)
+        if ok and name and name ~= "" then
+            -- Truncate to ~16 chars
+            if #name > 16 then name = string.sub(name, 1, 15) .. "\226\128\166" end  -- "…" U+2026
+            vehicleName = " | " .. name
+        end
+    end
+    local headerTitle = (g_i18n:getText("wm_hud_title") or "WorkflowManager") .. vehicleName
 
-    -- === Header ===
     setTextBold(true)
     setTextColor(1, 1, 1, 1)
     setTextAlignment(RenderText.ALIGN_LEFT)
-    renderText(x + mx, y + h - self.headerH + my, self.titleSize, g_i18n:getText("wm_hud_title"))
+    renderText(x + mx, y + h - self.headerH + my, self.titleSize, headerTitle)
     setTextBold(false)
 
     -- Close X
@@ -311,18 +350,46 @@ function WMHud:draw()
     -- === Content area ===
     local lineY = y + h - self.headerH - my - self.textSize
 
-    -- Workflow name
+    -- Workflow name; append compact support badge if support vehicles exist
     setTextColor(1, 1, 1, 1)
-    local name = workflow and workflow.name or g_i18n:getText("wm_hud_no_workflow")
-    renderText(x + mx, lineY, self.textSize, name)
+    local displayName = workflow and workflow.name or (g_i18n:getText("wm_hud_no_workflow") or "No workflow")
+    if workflow and activeData and activeData.isMainVehicle ~= false then
+        local supportList = WMExecutor:getSupportActiveDataListForWorkflow(workflow.id)
+        if #supportList > 0 then
+            local running, paused = 0, 0
+            for _, sd in ipairs(supportList) do
+                if sd.status == WorkflowManager.STATUS_RUNNING then running = running + 1
+                elseif sd.status == WorkflowManager.STATUS_PAUSED then paused = paused + 1
+                end
+            end
+            -- Append colored badge-style count (rendered as a second text segment)
+            renderText(x + mx, lineY, self.textSize, displayName)
+            -- Draw support count badge to the right of the name
+            local nameW = getTextWidth(self.textSize, displayName)
+            if running > 0 then
+                setTextColor(0.3, 0.9, 0.3, 1)
+            elseif paused > 0 then
+                setTextColor(1, 0.6, 0, 1)
+            else
+                setTextColor(0.5, 0.5, 0.5, 1)
+            end
+            renderText(x + mx + nameW + mx * 0.5, lineY, self.smallSize,
+                string.format("[%dS]", #supportList))
+            setTextColor(1, 1, 1, 1)
+        else
+            renderText(x + mx, lineY, self.textSize, displayName)
+        end
+    else
+        renderText(x + mx, lineY, self.textSize, displayName)
+    end
 
-    -- Step info (read from activeData, not workflow definition)
+    -- Step info: full type names, em dash separator
     lineY = lineY - self.textSize - my
     setTextColor(0.9, 0.9, 0.3, 1)
     if workflow and activeData and workflow.steps then
         local ts = #workflow.steps
         if activeData.isMainVehicle == false then
-            -- Support vehicle: show which main step we follow + current support sub-step
+            -- Support vehicle
             local mainData = WMExecutor:getMainActiveDataForWorkflow(workflow.id)
             local mainStep = mainData and workflow.steps[mainData.currentStep]
             local supSteps = mainStep and mainStep.support or {}
@@ -330,20 +397,18 @@ function WMHud:draw()
             local tss = #supSteps
             local supStep = supSteps[css]
             if supStep then
-                local sType = supStep.type == WorkflowManager.STEP_AUTODRIVE and "AD" or "CP"
                 renderText(x + mx, lineY, self.smallSize,
-                    string.format("Step %s.%d/%d: %s - %s",
+                    string.format("Step %s.%d/%d: %s",
                         mainData and tostring(mainData.currentStep) or "?",
-                        css, tss, sType, supStep.target or "?"))
+                        css, tss, supStep.target or "?"))
             end
         else
-            -- Main vehicle: show current main step
+            -- Main vehicle
             local cs = activeData.currentStep or 1
             local step = workflow.steps[cs]
             if step then
-                local sType = step.type == WorkflowManager.STEP_AUTODRIVE and "AD" or "CP"
                 renderText(x + mx, lineY, self.smallSize,
-                    string.format(g_i18n:getText("wm_hud_step_format"), cs, ts, sType, step.target or "?"))
+                    string.format("Step %d/%d: %s", cs, ts, step.target or "?"))
             end
         end
     end
@@ -385,38 +450,49 @@ function WMHud:draw()
         renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_no_vehicle"))
     end
 
-    -- === Support vehicle status ===
-    if activeData and activeData.isMainVehicle ~= false and workflow then
-        local supportList = WMExecutor:getSupportActiveDataListForWorkflow(workflow.id)
-        if #supportList > 0 then
-            lineY = lineY - self.smallSize - my
-            local running, paused = 0, 0
-            for _, sd in ipairs(supportList) do
-                if sd.status == WorkflowManager.STATUS_RUNNING then running = running + 1
-                elseif sd.status == WorkflowManager.STATUS_PAUSED then paused = paused + 1
-                end
-            end
-            if running > 0 then
-                setTextColor(0.3, 0.9, 0.3, 1)
-            elseif paused > 0 then
-                setTextColor(1, 0.6, 0, 1)
-            else
-                setTextColor(0.6, 0.6, 0.6, 1)
-            end
-            local statusText = running > 0 and (g_i18n:getText("wm_status_running") or "Running")
-                            or paused > 0 and (g_i18n:getText("wm_status_paused") or "Paused")
-                            or (g_i18n:getText("wm_hud_idle") or "Idle")
-            renderText(x + mx, lineY, self.smallSize,
-                string.format("Support (%d): %s", #supportList, statusText))
-        end
-    end
-
     -- === Button row (icons) ===
     self:drawIconButtons(activeData)
+
+    -- === Tooltip for hovered button ===
+    self:drawButtonTooltip(activeData)
 
     -- Reset
     setTextColor(1, 1, 1, 1)
     setTextBold(false)
+    setTextAlignment(RenderText.ALIGN_LEFT)
+end
+
+---Draw a tooltip label above the currently hovered button
+function WMHud:drawButtonTooltip(activeData)
+    if self.hoveredButton == nil or self.buttonBounds == nil then return end
+
+    local bounds = self.buttonBounds[self.hoveredButton]
+    if bounds == nil then return end
+
+    local isPaused = activeData and activeData.status == WorkflowManager.STATUS_PAUSED
+
+    local tooltipText
+    if self.hoveredButton == "prev" then
+        tooltipText = g_i18n:getText("wm_hud_tooltip_prev") or "Previous Step"
+    elseif self.hoveredButton == "pauseResume" then
+        tooltipText = isPaused
+            and (g_i18n:getText("wm_hud_tooltip_resume") or "Resume")
+            or  (g_i18n:getText("wm_hud_tooltip_pause")  or "Pause")
+    elseif self.hoveredButton == "stop" then
+        tooltipText = g_i18n:getText("wm_hud_tooltip_stop") or "Stop"
+    elseif self.hoveredButton == "next" then
+        tooltipText = g_i18n:getText("wm_hud_tooltip_next") or "Next Step"
+    end
+
+    if not tooltipText then return end
+
+    -- Render tooltip text centered above the button
+    local tipY = bounds.y + bounds.h + self.marginY * 0.5
+    local tipX = bounds.x + bounds.w * 0.5
+
+    setTextAlignment(RenderText.ALIGN_CENTER)
+    setTextColor(0.9, 0.9, 0.9, 0.95)
+    renderText(tipX, tipY, self.smallSize, tooltipText)
     setTextAlignment(RenderText.ALIGN_LEFT)
 end
 

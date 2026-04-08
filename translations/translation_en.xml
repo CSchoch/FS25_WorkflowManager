@@ -132,6 +132,12 @@
         <text name="wm_hud_paused" text="Paused"/>
         <text name="wm_hud_idle" text="Idle"/>
         <text name="wm_hud_no_vehicle" text="No vehicle"/>
+        <text name="wm_hud_tooltip_prev" text="Previous Step"/>
+        <text name="wm_hud_tooltip_pause" text="Pause"/>
+        <text name="wm_hud_tooltip_resume" text="Resume"/>
+        <text name="wm_hud_tooltip_stop" text="Stop"/>
+        <text name="wm_hud_tooltip_next" text="Next Step"/>
+        <text name="wm_step_selected" text="Selected"/>
 
         <!-- Mode Select Dialog -->
         <text name="wm_mode_select_title" text="Select Role"/>

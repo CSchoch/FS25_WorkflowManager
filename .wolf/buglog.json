@@ -373,18 +373,343 @@
       "related_bugs": [],
       "occurrences": 2,
       "last_seen": "2026-04-08T11:05:45.368Z"
-    }
-  ,{
+    },
+    {
       "id": "bug-024",
       "timestamp": "2026-04-08T00:00:00.000Z",
       "error_message": "Deletion of workflow steps always deletes the first one regardless which step is selected",
       "file": "src/gui/WMEditorDialog.lua",
       "root_cause": "Mouse clicks on SmoothList do not reliably fire onSelectionChanged, so selectedFlatIndex stays stale at 1. All operations (remove, edit, move) used this stale value.",
       "fix": "In getSelectedItem(), sync selectedFlatIndex from self.stepList.selectedIndex before using it, covering all operations in one place.",
-      "tags": ["gui", "smoothlist", "selection", "delete"],
+      "tags": [
+        "gui",
+        "smoothlist",
+        "selection",
+        "delete"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-08T00:00:00.000Z"
+    },
+    {
+      "id": "bug-025",
+      "timestamp": "2026-04-08T13:46:46.599Z",
+      "error_message": "Incorrect value in code",
+      "file": "xml/gui/guiProfiles.xml",
+      "root_cause": "Had \"0.7 0.7 0.7 1\"",
+      "fix": "Changed to \"0.85 0.85 0.85 1\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-08T13:46:46.599Z"
+    },
+    {
+      "id": "bug-026",
+      "timestamp": "2026-04-08T13:47:41.349Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/gui/WMMainDialog.lua",
+      "root_cause": "5 lines replaced/restructured",
+      "fix": "Rewrote 38→48 lines (5 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-08T13:47:41.349Z"
+    },
+    {
+      "id": "bug-027",
+      "timestamp": "2026-04-08T13:48:16.929Z",
+      "error_message": "Significant refactor of ",
+      "file": "xml/gui/WMStepDialog.xml",
+      "root_cause": "5 lines replaced/restructured",
+      "fix": "Rewrote 87→113 lines (5 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-08T13:48:16.929Z"
+    },
+    {
+      "id": "bug-028",
+      "timestamp": "2026-04-08T13:48:45.840Z",
+      "error_message": "Incorrect value in code",
+      "file": "xml/gui/WMStepDialog.xml",
+      "root_cause": "Had \"900px 800px\"",
+      "fix": "Changed to \"900px 900px\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-08T13:48:45.840Z"
+    },
+    {
+      "id": "bug-029",
+      "timestamp": "2026-04-08T13:49:25.189Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/gui/WMStepDialog.lua",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 68→142 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-08T13:49:25.189Z"
+    },
+    {
+      "id": "bug-030",
+      "timestamp": "2026-04-08T13:51:53.055Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/gui/WMHud.lua",
+      "root_cause": "21 lines replaced/restructured",
+      "fix": "Rewrote 168→253 lines (21 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-08T13:51:53.055Z"
+    },
+    {
+      "id": "bug-031",
+      "timestamp": "2026-04-08T20:14:54.845Z",
+      "error_message": "Incorrect value in code",
+      "file": "xml/gui/WMStepDialog.xml",
+      "root_cause": "Had \"$l10n_wm_editor_target *\"",
+      "fix": "Changed to \"$l10n_wm_editor_target\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-08T20:14:54.845Z"
+    },
+    {
+      "id": "bug-032",
+      "timestamp": "2026-04-08T20:27:21.689Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/gui/WMHud.lua",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 6→3 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-08T20:27:21.689Z"
+    },
+    {
+      "id": "bug-033",
+      "timestamp": "2026-04-08T20:41:35.791Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/gui/WMHud.lua",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 9→13 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-08T20:41:35.791Z"
+    },
+    {
+      "id": "bug-034",
+      "timestamp": "2026-04-08T20:47:24.758Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/gui/WMHud.lua",
+      "root_cause": "10 lines replaced/restructured",
+      "fix": "Rewrote 21→14 lines (10 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-08T20:47:24.758Z"
+    },
+    {
+      "id": "bug-035",
+      "timestamp": "2026-04-08T20:59:18.498Z",
+      "error_message": "Significant refactor of ",
+      "file": "xml/gui/WMMainDialog.xml",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 5→7 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-08T20:59:18.498Z"
+    },
+    {
+      "id": "bug-036",
+      "timestamp": "2026-04-08T21:20:50.727Z",
+      "error_message": "Significant refactor of ",
+      "file": "xml/gui/WMStepDialog.xml",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 10→7 lines (4 removed) | Also: <BoxLayout flowDirection=\"horizontal\" size=\"500px ; <TextInput profile=\"fs25_dialogTextInput\" id=\"unlo | Also: <BoxLayout flowDirection=\"horizontal\" size=\"500px ; <TextInput profile=\"fs25_dialogTextInput\" id=\"fill",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-04-08T21:21:02.858Z"
+    },
+    {
+      "id": "bug-037",
+      "timestamp": "2026-04-08T21:28:34.057Z",
+      "error_message": "Significant refactor of ",
+      "file": "xml/gui/WMStepDialog.xml",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 7→10 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-08T21:28:34.057Z"
+    },
+    {
+      "id": "bug-038",
+      "timestamp": "2026-04-08T21:33:35.329Z",
+      "error_message": "Incorrect value in code",
+      "file": "xml/gui/WMStepDialog.xml",
+      "root_cause": "Had \"460px 120px\"",
+      "fix": "Changed to \"500px 120px\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-08T21:33:35.329Z"
+    },
+    {
+      "id": "bug-039",
+      "timestamp": "2026-04-08T21:45:48.077Z",
+      "error_message": "Significant refactor of ",
+      "file": "xml/gui/WMStepDialog.xml",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 14→17 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-08T21:45:48.077Z"
+    },
+    {
+      "id": "bug-040",
+      "timestamp": "2026-04-08T21:52:45.086Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/gui/WMHud.lua",
+      "root_cause": "6 lines replaced/restructured",
+      "fix": "Rewrote 10→3 lines (6 removed) | Also: and self.autoHideTimer == nil then; self.autoHideTimer = 3000 | Also: -- Auto-hide: start 3s timer only when the workflo; -- (a vehicle switch should not trigger the timer)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-04-08T21:56:29.668Z"
+    },
+    {
+      "id": "bug-041",
+      "timestamp": "2026-04-08T21:56:15.634Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowManager.lua",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 5→5 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-08T21:56:15.634Z"
+    },
+    {
+      "id": "bug-042",
+      "timestamp": "2026-04-08T22:08:36.751Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowManager.lua",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 23→28 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-08T22:08:36.751Z"
+    },
+    {
+      "id": "bug-043",
+      "timestamp": "2026-04-08T22:14:27.059Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/gui/WMHud.lua",
+      "root_cause": "5 lines replaced/restructured",
+      "fix": "Rewrote 11→25 lines (5 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-08T22:14:27.059Z"
+    },
+    {
+      "id": "bug-044",
+      "timestamp": "2026-04-08T22:14:41.352Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowManager.lua",
+      "root_cause": "19 lines replaced/restructured",
+      "fix": "Rewrote 28→3 lines (19 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-08T22:14:41.352Z"
     }
   ]
 }

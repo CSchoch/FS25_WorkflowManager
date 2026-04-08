@@ -252,6 +252,14 @@ function WorkflowManagerSpec:onRegisterActionEvents(isActiveForInput, isActiveFo
         g_inputBinding:setActionEventTextPriority(guiEventId, GS_PRIO_HIGH)
         g_inputBinding:setActionEventTextVisibility(guiEventId, true)
     end
+
+    -- Show HUD when player enters a vehicle that has an active workflow
+    if WMHud then
+        local wmExec = spec and spec.wmExecution
+        if wmExec ~= nil then
+            WMHud:show(self)
+        end
+    end
 end
 
 ---Called when the toggle HUD action is triggered (in-vehicle)

@@ -130,6 +130,12 @@
         <text name="wm_hud_paused" text="Pausiert"/>
         <text name="wm_hud_idle" text="Leerlauf"/>
         <text name="wm_hud_no_vehicle" text="Kein Fahrzeug"/>
+        <text name="wm_hud_tooltip_prev" text="Vorheriger Schritt"/>
+        <text name="wm_hud_tooltip_pause" text="Pausieren"/>
+        <text name="wm_hud_tooltip_resume" text="Fortsetzen"/>
+        <text name="wm_hud_tooltip_stop" text="Stoppen"/>
+        <text name="wm_hud_tooltip_next" text="Naechster Schritt"/>
+        <text name="wm_step_selected" text="Ausgewaehlt"/>
 
         <!-- Verknuepfte Workflow-Paare -->
         <text name="wm_button_link" text="Verknuepfen"/>

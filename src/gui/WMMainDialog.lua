@@ -91,7 +91,17 @@ function WMMainDialog:populateCellForItemInSection(list, section, index, cell)
         return
     end
 
-    -- Set workflow name (with support steps indicator)
+    -- Get runtime state for the current vehicle
+    local vehicle = g_currentMission and g_currentMission.controlledVehicle
+    if vehicle == nil and g_localPlayer and g_localPlayer.getCurrentVehicle then
+        vehicle = g_localPlayer:getCurrentVehicle()
+    end
+    local activeData = vehicle and WorkflowManager:getVehicleWorkflowState(vehicle)
+    local isThisWorkflow = activeData and activeData.workflow and activeData.workflow.id == workflow.id
+    local currentStep = isThisWorkflow and activeData.currentStep or 1
+    local status = isThisWorkflow and activeData.status or nil
+
+    -- Set workflow name (with support steps indicator), colored by status
     local nameElement = cell:getDescendantByName("workflowName")
     if nameElement then
         local displayName = workflow.name or "Unnamed"
@@ -99,23 +109,23 @@ function WMMainDialog:populateCellForItemInSection(list, section, index, cell)
             displayName = displayName .. " [+S]"
         end
         nameElement:setText(displayName)
+
+        -- Color name by workflow status on current vehicle
+        if status == WorkflowManager.STATUS_RUNNING then
+            nameElement:setTextColor(0.3, 0.9, 0.3, 1)      -- green: running
+        elseif status == WorkflowManager.STATUS_PAUSED then
+            nameElement:setTextColor(1, 0.65, 0.1, 1)        -- orange: paused
+        else
+            nameElement:setTextColor(1, 1, 1, 1)             -- white: idle/not active
+        end
     end
 
-    -- Get runtime state for the current vehicle
-    local vehicle = g_currentMission and g_currentMission.controlledVehicle
-    if vehicle == nil and g_localPlayer and g_localPlayer.getCurrentVehicle then
-        vehicle = g_localPlayer:getCurrentVehicle()
-    end
-    local activeData = vehicle and WorkflowManager:getVehicleWorkflowState(vehicle)
-    local isThisWorkflow = activeData and activeData.workflow.id == workflow.id
-    local currentStep = isThisWorkflow and activeData.currentStep or 1
-
-    -- Set step count (show progress if running/paused)
+    -- Set step count; show progress and vehicle name when active on current vehicle
     local stepsElement = cell:getDescendantByName("workflowSteps")
     if stepsElement then
         local stepCount = workflow.steps and #workflow.steps or 0
-        if isThisWorkflow and currentStep > 1 then
-            -- Show progress: "3/5"
+        if isThisWorkflow then
+            -- Show progress: "2/5"
             stepsElement:setText(string.format("%d/%d", currentStep, stepCount))
         else
             stepsElement:setText(tostring(stepCount))

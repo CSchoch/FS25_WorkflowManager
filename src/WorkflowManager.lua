@@ -578,24 +578,7 @@ end
 
 ---Check if HUD should be hidden (no active workflows for current vehicle)
 function WorkflowManager:checkAndHideHUD()
-    local currentVehicle = g_currentMission.controlledVehicle
-    if currentVehicle == nil then
-        return
-    end
-
-    -- Check if there are any active workflows for this vehicle
-    local hasActiveWorkflow = false
-    for vehicle, _ in pairs(WMExecutor.activeVehicles) do
-        if vehicle == currentVehicle then
-            hasActiveWorkflow = true
-            break
-        end
-    end
-
-    -- Hide HUD if no active workflows
-    if not hasActiveWorkflow and WMHud:getIsVisible() then
-        WMHud:hide()
-    end
+    -- No-op: WMHud:update() now reactively manages show/hide based on current vehicle state
 end
 
 ---Show the main workflow list dialog

@@ -185,35 +185,33 @@ function WMEditorDialog:populateCellForItemInSection(list, section, index, cell)
     end
     if step == nil then return end
 
-    -- # column: "1" for main, "  ↳1" for support
+    -- # column: step number for main rows, "└" for support sub-steps
     local numEl = cell:getDescendantByName("stepNum")
     if numEl then
-        if item.isMain then
-            numEl:setText(tostring(item.stepIndex))
-        else
-            numEl:setText(item.stepIndex .. "." .. item.supportIndex)
-        end
+        numEl:setText(item.isMain and tostring(item.stepIndex) or "\226\148\148")  -- "└" U+2514
     end
 
-    -- Type column
+    -- Type column (indent support steps with "  " prefix)
     local typeEl = cell:getDescendantByName("stepType")
     if typeEl then
         local typeText = step.type == "autodrive"
             and (g_i18n:getText("wm_type_autodrive") or "AutoDrive")
             or  (g_i18n:getText("wm_type_courseplay") or "Courseplay")
-        typeEl:setText(item.isMain and typeText or ("      " .. typeText))
+        typeEl:setText(item.isMain and typeText or ("  " .. typeText))
     end
 
-    -- Target column
-    local targetEl = cell:getDescendantByName("stepTarget")
-    if targetEl then
-        targetEl:setText(item.isMain and (step.target or "") or ("      " .. (step.target or "")))
-    end
-
-    -- Action column
+    -- Action column (indent support steps)
     local actionEl = cell:getDescendantByName("stepAction")
     if actionEl then
-        actionEl:setText(self:getActionDisplayName(step.action) or step.action or "")
+        local actionText = self:getActionDisplayName(step.action) or step.action or ""
+        actionEl:setText(item.isMain and actionText or ("  " .. actionText))
+    end
+
+    -- Target column (indent support steps)
+    local targetEl = cell:getDescendantByName("stepTarget")
+    if targetEl then
+        local targetText = step.target or ""
+        targetEl:setText(item.isMain and targetText or ("  " .. targetText))
     end
 
 end
