@@ -344,3 +344,14 @@
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+
+## Session: 2026-04-09 13:08
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 13:11 | Edited src/gui/WMEditorDialog.lua | 3→3 lines | ~42 |
+
+| 13:11 | fix: support sub-step numbers missing in editor step list | WMEditorDialog.lua:191 | stepNum now shows └N instead of just └ | ~50 |
+| 13:11 | Session end: 1 writes across 1 files (WMEditorDialog.lua) | 1 reads | ~5239 tok |
+| 13:16 | Edited src/gui/WMEditorDialog.lua | "\226\148\148" → "." | ~35 |
+| 13:16 | Session end: 2 writes across 1 files (WMEditorDialog.lua) | 1 reads | ~5277 tok |

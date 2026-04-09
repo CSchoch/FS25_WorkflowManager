@@ -188,7 +188,7 @@ function WMEditorDialog:populateCellForItemInSection(list, section, index, cell)
     -- # column: step number for main rows, "└" for support sub-steps
     local numEl = cell:getDescendantByName("stepNum")
     if numEl then
-        numEl:setText(item.isMain and tostring(item.stepIndex) or "\226\148\148")  -- "└" U+2514
+        numEl:setText(item.isMain and tostring(item.stepIndex) or (tostring(item.stepIndex) .. "." .. tostring(item.supportIndex)))
     end
 
     -- Type column (indent support steps with "  " prefix)
