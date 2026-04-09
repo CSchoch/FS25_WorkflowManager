@@ -359,3 +359,12 @@
 | 00:22 | Edited CLAUDE.md | inline fix | ~8 |
 | 00:22 | update CLAUDE.md + docs for N.M sub-step numbering | CLAUDE.md | completed | ~50 |
 | 00:22 | Session end: 4 writes across 2 files (WMEditorDialog.lua, CLAUDE.md) | 5 reads | ~5384 tok |
+| 00:29 | Edited CLAUDE.md | modified Support() | ~504 |
+| 00:29 | Edited CLAUDE.md | inline fix | ~84 |
+| 00:29 | cleanup CLAUDE.md from 2nd-to-last commit (2ac1983) — added 11 completed items for UI polish | CLAUDE.md | completed | ~200 |
+| 00:30 | Session end: 6 writes across 2 files (WMEditorDialog.lua, CLAUDE.md) | 5 reads | ~12341 tok |
+
+## Session: 2026-04-09 00:31
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|

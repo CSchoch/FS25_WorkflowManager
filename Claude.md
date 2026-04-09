@@ -193,6 +193,16 @@ On `onPostLoad`, this state is restored as `status = "paused"` with a 10-second 
 - **Legacy GUI removed** - `WMManagerGUI` and `WMEditorGUI` update/draw calls removed from `WorkflowManager.lua`
 - **WMStorage path fix** - Fallback path in `WMStorage:getXmlPath()` now correctly joins `modDirectory .. "/" .. xmlFilename`
 - **Sub-step numbering in editor** - Support sub-steps now display as `N.M` (e.g., `2.1`, `2.2`) in the `#` column of the Editor Dialog step list, where `N` is the parent main step number and `M` is the sub-step position
+- **HUD reactive show/hide** - `WMHud:update()` reactively shows/hides HUD based on current vehicle state; 3-second auto-hide after workflow completes. `checkAndHideHUD()` is now a no-op. HUD auto-shows when player enters a vehicle with an active workflow (`WorkflowManagerSpec:onRegisterActionEvents`)
+- **HUD vehicle name in header** - Header displays "WorkflowManager | VehicleName" (truncated to 16 chars)
+- **HUD support badge** - Main vehicle HUD shows a colored `[NS]` count badge next to workflow name (green = running, orange = paused, gray = idle); replaces the old separate "Support (N): Running" line
+- **HUD button tooltips** - Hovering a HUD button shows a tooltip label (Previous Step / Pause / Resume / Stop / Next Step)
+- **HUD step info simplified** - Step line no longer shows AD/CP type prefix; shows step target only (`Step N/T: TargetName`)
+- **Main dialog status colors** - Workflow name is colored green (running), orange (paused), white (idle/not active on current vehicle)
+- **Main dialog step progress** - Step counter shows `currentStep/total` progress (e.g., `2/5`) whenever the workflow is active on the current vehicle
+- **Step dialog selected-label rows** - Added visible selected-value rows for Unload Target and Fill Type so the current selection is always readable without opening the dropdown
+- **Step dialog auto-select** - Dropdowns auto-select the item when a search query narrows results to exactly one match
+- **Mode dialog vehicle fix** - `showModeSelectDialog` now passes the pre-validated vehicle reference to `sendCommand` instead of re-querying the current vehicle after the dialog closes
 
 ### Milestone 8: GUI Refinement
 
@@ -442,7 +452,7 @@ To run all specs (may stop early on Windows due to Logger I/O issue, pre-existin
 
 ---
 
-**Status**: Phases 1-3 COMPLETE — Hierarchical support steps (nested `step.support` arrays), XML migration from old linked-workflow format, WorkflowManager CRUD + mode selection, WorkflowExecutor with `isMainVehicle`/`currentSupportStep` support. Phase 4 (GUI) pending.
+**Status**: Phases 1-4 IN PROGRESS — Core, executor, GUI layer all functional. Recent GUI polish: HUD reactive show/hide, vehicle name in header, support badge, button tooltips, main dialog status colors + progress, step dialog UX improvements. Milestone 8 items (F1 overlay, hint relocation, X button) remain open.
 **Last updated**: 2026-04-10
 
 ## Screenshots Needed
