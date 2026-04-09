@@ -355,3 +355,7 @@
 | 13:11 | Session end: 1 writes across 1 files (WMEditorDialog.lua) | 1 reads | ~5239 tok |
 | 13:16 | Edited src/gui/WMEditorDialog.lua | "\226\148\148" → "." | ~35 |
 | 13:16 | Session end: 2 writes across 1 files (WMEditorDialog.lua) | 1 reads | ~5277 tok |
+| 00:22 | Edited CLAUDE.md | 1→2 lines | ~93 |
+| 00:22 | Edited CLAUDE.md | inline fix | ~8 |
+| 00:22 | update CLAUDE.md + docs for N.M sub-step numbering | CLAUDE.md | completed | ~50 |
+| 00:22 | Session end: 4 writes across 2 files (WMEditorDialog.lua, CLAUDE.md) | 5 reads | ~5384 tok |

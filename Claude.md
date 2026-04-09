@@ -192,6 +192,7 @@ On `onPostLoad`, this state is restored as `status = "paused"` with a 10-second 
 - **DDS textures** - All textures (`modIcon`, HUD icons, `white`) converted to DDS; `tools/png_to_dds.py` handles conversion (texconv DXT5/DXT1 if available, Pillow uncompressed fallback)
 - **Legacy GUI removed** - `WMManagerGUI` and `WMEditorGUI` update/draw calls removed from `WorkflowManager.lua`
 - **WMStorage path fix** - Fallback path in `WMStorage:getXmlPath()` now correctly joins `modDirectory .. "/" .. xmlFilename`
+- **Sub-step numbering in editor** - Support sub-steps now display as `N.M` (e.g., `2.1`, `2.2`) in the `#` column of the Editor Dialog step list, where `N` is the parent main step number and `M` is the sub-step position
 
 ### Milestone 8: GUI Refinement
 
@@ -442,7 +443,7 @@ To run all specs (may stop early on Windows due to Logger I/O issue, pre-existin
 ---
 
 **Status**: Phases 1-3 COMPLETE — Hierarchical support steps (nested `step.support` arrays), XML migration from old linked-workflow format, WorkflowManager CRUD + mode selection, WorkflowExecutor with `isMainVehicle`/`currentSupportStep` support. Phase 4 (GUI) pending.
-**Last updated**: 2026-04-05
+**Last updated**: 2026-04-10
 
 ## Screenshots Needed
 
