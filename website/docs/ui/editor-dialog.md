@@ -15,26 +15,6 @@ The Editor Dialog is where you build and modify workflow steps.
 
 ## Interface Overview
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  Edit Workflow: Harvest Fields                     [X]  │
-├─────────────────────────────────────────────────────────┤
-│  #       Type        Target                 Action  Sup │
-│  ──────────────────────────────────────────────────────  │
-│  1       AutoDrive   Field1_Entrance        Drive To    │
-│  2       Courseplay  Field1_Harvest         Field Work +2│
-│  2.1       AutoDrive   Field1              Unload       │
-│  2.2       AutoDrive   Silo                Deliver      │
-│  3       AutoDrive   Field2_Entrance        Drive To    │
-│                                                         │
-├─────────────────────────────────────────────────────────┤
-│  [Add Step]  [Edit]  [Delete]  [↑]  [↓]                │
-│  [Add Support Step]                                     │
-└─────────────────────────────────────────────────────────┘
-
-        Double-click a step to edit
-```
-
 ![Editor Dialog](/img/screenshots/editor-dialog.png)
 
 ## Step List
@@ -107,28 +87,8 @@ Disabled at the top/bottom of the respective list.
 
 When adding or editing a step, the Step Dialog appears:
 
-```
-┌─────────────────────────────────────────────┐
-│  Add Step                               [X] │
-├─────────────────────────────────────────────┤
-│  Type:         [AutoDrive     ▼]            │
-│                                             │
-│  Target:       [Field1_Entrance  ▼] 🔍      │
-│                                             │
-│  Action:       [Drive To       ▼]           │
-│                                             │
-│  Unload Target: [               ▼] 🔍       │
-│  (Only for Pickup and Deliver, Load, Unload Combine) │
-│                                             │
-│  Fill Type:    [WHEAT          ▼]           │
-│  (Optional cargo filter)                    │
-│                                             │
-├─────────────────────────────────────────────┤
-│              [Cancel]   [OK]                │
-└─────────────────────────────────────────────┘
-```
-
 ![Step Dialog – AutoDrive](/img/screenshots/step-dialog-autodrive.png)
+
 ![Step Dialog – Courseplay](/img/screenshots/step-dialog-courseplay.png)
 
 ### Searchable Dropdowns

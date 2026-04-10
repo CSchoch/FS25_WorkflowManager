@@ -12,54 +12,27 @@ The in-vehicle HUD provides workflow control without opening menus.
 
 When a workflow is running, an overlay appears on screen:
 
-```
-┌──────────────────────────────────────┐
-│  Harvest Fields 1-2            ════  │  ← drag handle
-│  Step 2/5: Courseplay - Field Work   │
-│  Target: Field1_Harvest              │
-├──────────────────────────────────────┤
-│  [<<]  [||/▶]   [□]   [>>]          │
-│  Prev  Pause/  Stop   Next           │
-│        Resume                        │
-└──────────────────────────────────────┘
-```
+![HUD while workflow is running](/img/screenshots/hud-running.png)
 
 The **Pause** and **Resume** buttons share the same slot. The button shows `||` (Pause) while the workflow is running, and switches to `▶` (Resume) when the workflow is paused.
 
+Hovering over any button shows a tooltip label: **Previous Step**, **Pause**, **Resume**, **Stop**, or **Next Step**.
+
 ### Main Vehicle with Support Vehicles
 
-If one or more support vehicles are following the same workflow, the HUD shows their combined status:
+If one or more support vehicles are following the same workflow, a colored badge appears next to the workflow name in the header:
 
-```
-┌──────────────────────────────────────┐
-│  Wheat Harvest – Fields 1 & 2  ════  │
-│  Step 2/4: Courseplay - Field Work   │
-│  CP active (67%)                     │
-│  Support (1): Running                │
-├──────────────────────────────────────┤
-│  [<<]  [||/▶]   [□]   [>>]          │
-└──────────────────────────────────────┘
-```
+![Main vehicle HUD with support badge](/img/screenshots/hud-support-main.png)
 
-`Support (1): Running` shows the number of active support vehicles and their current status.
+The `[NS]` badge shows the number of active support vehicles. Its color indicates their combined status: **green** (running), **orange** (paused), **gray** (idle/waiting).
 
 ### Support Vehicle HUD
 
 When running as a **support vehicle**, the HUD shows which main step is being followed and which sub-step is currently executing:
 
-```
-┌──────────────────────────────────────┐
-│  Wheat Harvest – Fields 1 & 2  ════  │
-│  Step 2.1/2: AD - Field1             │
-│  AD active                           │
-├──────────────────────────────────────┤
-│  [<<]  [||/▶]   [□]   [>>]          │
-└──────────────────────────────────────┘
-```
+![Support vehicle HUD](/img/screenshots/hud-support-vehicle.png)
 
 `Step 2.1/2` means: the main vehicle is on step 2, and the support vehicle is executing sub-step 1 of 2 sub-steps for that main step. When the support vehicle finishes all sub-steps it waits until the main advances.
-
-![HUD while workflow is running](/img/screenshots/hud-running.png)
 
 ## HUD Position
 
@@ -71,17 +44,14 @@ The HUD can be freely repositioned by dragging:
 
 ## Status Display
 
-### Workflow Name
-Shows the name of the currently running workflow.
+### Vehicle Name / Workflow Name
+The header shows **WorkflowManager | VehicleName** (vehicle name truncated to 16 characters). The line below shows the workflow name, including the support badge if support vehicles are active.
 
 ### Step Counter
-Shows current step and total steps (e.g., "Step 2/5"). For support vehicles, shows the sub-step counter (e.g., "Step 2.1/2").
+Shows current step and total steps (e.g., `Step 2/5`). For support vehicles, shows the sub-step counter (e.g., `Step 2.1/2`).
 
-### Step Details
-Displays:
-- Step type (AutoDrive or Courseplay)
-- Action being performed
-- Target destination or course
+### Step Target
+Displays the target destination or course name for the current step (e.g., `Field1_Harvest`). No AD/CP type prefix is shown.
 
 ## Control Buttons
 

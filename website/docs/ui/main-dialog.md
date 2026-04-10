@@ -14,21 +14,6 @@ The Main Dialog is the entry point for managing all your workflows.
 
 ## Interface Overview
 
-```
-┌───────────────────────────────────────────────────────┐
-│  Workflow Manager                                 [X] │
-├───────────────────────────────────────────────────────┤
-│                                                       │
-│  [Harvest Fields 1-3]          6 steps                │
-│  [Fertilize - North]           4 steps                │
-│  [Baling Route]                3 steps                │
-│                                                       │
-├───────────────────────────────────────────────────────┤
-│  [New]  [Edit]  [Delete]  [Link]  [Unlink]            │
-│  [Start]  [Stop]                                      │
-└───────────────────────────────────────────────────────┘
-```
-
 ![Main Dialog](/img/screenshots/main-dialog.png)
 
 ## Workflow List
@@ -37,8 +22,8 @@ The main area displays all saved workflows with:
 
 | Column | Description |
 |--------|-------------|
-| Name | Workflow name (click to select) |
-| Steps | Number of steps in the workflow |
+| Name | Workflow name — colored **green** (running), **orange** (paused), or **white** (idle) on the current vehicle |
+| Steps | Total step count, or `current/total` progress (e.g., `2/6`) while the workflow is active on the current vehicle |
 
 ### Selection
 
@@ -72,24 +57,6 @@ Removes the selected workflow:
 :::warning
 Deleted workflows cannot be recovered.
 :::
-
-### Link Workflow
-
-Links the selected workflow to a partner workflow for coordinated multi-vehicle operation:
-1. Select a workflow (this becomes the **main**)
-2. Click **Link**
-3. Select the partner workflow (this becomes the **support**)
-4. Click **OK**
-
-The two workflows are now paired. See [Linked Workflows](../workflows/linked-workflows) for details.
-
-### Unlink Workflow
-
-Removes the link between the selected workflow and its partner:
-1. Select either workflow in a linked pair
-2. Click **Unlink**
-
-Both workflows are unlinked simultaneously.
 
 ### Start Workflow
 

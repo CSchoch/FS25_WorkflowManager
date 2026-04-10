@@ -17,7 +17,7 @@ Workflow Manager bridges the gap between AutoDrive and Courseplay, allowing you 
 - **Workflow Creation**: Create multi-step workflows combining AutoDrive routes and Courseplay courses
 - **Visual Editor**: Simple tabular interface for creating and managing workflows
 - **In-Vehicle HUD**: Control workflows directly from your vehicle with pause, resume, and step navigation — draggable to any screen position
-- **Linked Workflows**: Pair two workflows as main/support for coordinated multi-vehicle operations (e.g., combine + unloader), with automatic sync group coordination
+- **Multi-Vehicle Workflows**: Nest support sub-steps inside main steps so a helper vehicle (e.g., unloader) works in sync with the main vehicle (e.g., combine) — all in a single workflow
 - **XML Storage**: Workflows are saved per savegame and persist between sessions
 - **Automatic Switching**: Seamlessly transitions between AutoDrive and Courseplay
 - **Save/Resume**: Active workflows are saved with the game and auto-resume after loading
@@ -53,5 +53,5 @@ Both mods must be installed and properly configured with destinations (AutoDrive
 - [Getting Started](getting-started) - Set up your first workflow
 - [Creating Workflows](workflows/creating-workflows) - Detailed workflow creation guide
 - [Step Types](workflows/step-types) - AutoDrive and Courseplay step options
-- [Linked Workflows](workflows/linked-workflows) - Coordinate two vehicles with main/support pairing
+- [Multi-Vehicle Workflows](workflows/linked-workflows) - Coordinate main + support vehicles with support sub-steps
 - [Troubleshooting](troubleshooting) - Common issues and solutions

@@ -89,9 +89,9 @@ Common issues and solutions for Workflow Manager.
 
 **Cause**: AutoDrive's **Unload** mode is reactive — the unloader waits in place until the combine signals it needs emptying. If the unloader is already on or near the field when the step starts, AutoDrive skips any driving and immediately puts it into passive wait mode at its current position. This can leave it blocking the combine's path.
 
-**Solution**: Add a **Drive** step (same sync group) immediately before the **Unload** step in the support workflow. This moves the unloader to a marker near the field first, so it is already in position when the combine calls.
+**Solution**: Add a **Drive To** sub-step immediately before the **Unload Combine** sub-step in the workflow's support sub-steps for that field work step. This moves the unloader to a marker near the field first, so it is already in position when the combine calls.
 
-See [Pre-positioning the Unloader](workflows/linked-workflows#pre-positioning-the-unloader) in the Linked Workflows guide for a step-by-step example.
+See [Multi-Vehicle Workflows](workflows/linked-workflows) for tips on structuring support sub-steps.
 
 ---
 

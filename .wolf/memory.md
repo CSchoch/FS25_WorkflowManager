@@ -368,3 +368,38 @@
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+| 00:35 | Edited website/docs/intro.md | inline fix | ~50 |
+| 00:35 | Edited website/docs/intro.md | inline fix | ~31 |
+| 00:35 | Edited website/docs/ui/main-dialog.md | 14→14 lines | ~193 |
+| 00:35 | Edited website/docs/ui/main-dialog.md | name() → progress() | ~123 |
+| 00:35 | Edited website/docs/ui/main-dialog.md | removed 19 lines | ~5 |
+| 00:36 | Edited website/docs/ui/hud-controls.md | 48→48 lines | ~556 |
+| 00:36 | Edited website/docs/ui/hud-controls.md | type() → step() | ~137 |
+| 00:36 | Edited website/docs/faq.md | 3→3 lines | ~64 |
+| 00:36 | Edited website/docs/faq.md | 25→21 lines | ~292 |
+| 00:37 | Edited website/docs/troubleshooting.md | 5→5 lines | ~190 |
+
+## Session: 2026-04-10
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| -- | Updated Docusaurus docs to match current implementation | intro.md, main-dialog.md, hud-controls.md, faq.md, troubleshooting.md | Removed old Link/Unlink system refs; updated HUD header/step/badge format; replaced old FAQ linked-workflows section; fixed broken anchor in troubleshooting | ~8000 |
+| 00:37 | Session end: 10 writes across 5 files (intro.md, main-dialog.md, hud-controls.md, faq.md, troubleshooting.md) | 11 reads | ~1760 tok |
+| 00:45 | Edited website/docs/ui/main-dialog.md | removed 18 lines | ~19 |
+| 00:45 | Edited website/docs/ui/editor-dialog.md | removed 21 lines | ~14 |
+| 00:46 | Edited website/docs/ui/editor-dialog.md | removed 23 lines | ~39 |
+| 00:46 | Edited website/docs/ui/hud-controls.md | reduced (-9 lines) | ~34 |
+| 00:46 | Edited website/docs/ui/hud-controls.md | reduced (-8 lines) | ~38 |
+| 00:46 | Edited website/docs/ui/hud-controls.md | reduced (-10 lines) | ~75 |
+| 00:46 | Edited website/docs/workflows/linked-workflows.md | reduced (-9 lines) | ~23 |
+| 00:46 | Edited website/docs/workflows/linked-workflows.md | reduced (-9 lines) | ~25 |
+| 00:46 | Edited website/docs/workflows/linked-workflows.md | reduced (-9 lines) | ~28 |
+| 00:46 | Edited website/docs/workflows/linked-workflows.md | reduced (-8 lines) | ~36 |
+| 00:47 | Session end: 20 writes across 7 files (intro.md, main-dialog.md, hud-controls.md, faq.md, troubleshooting.md) | 11 reads | ~5013 tok |
+| 13:01 | Created docs/SCREENSHOTS.md | — | ~1332 |
+| 13:02 | Session end: 21 writes across 8 files (intro.md, main-dialog.md, hud-controls.md, faq.md, troubleshooting.md) | 11 reads | ~6441 tok |
+
+## Session: 2026-04-10 21:29
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|

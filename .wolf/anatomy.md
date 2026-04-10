@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-09T22:29:54.785Z
-> Files: 14 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-10T11:01:28.352Z
+> Files: 22 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -25,6 +25,7 @@
 
 ## docs/
 
+- `SCREENSHOTS.md` — Screenshot Guide (Developer Reference) (~1249 tok)
 
 ## src/
 
@@ -99,15 +100,22 @@
 
 ## website/docs/
 
+- `faq.md` — Frequently Asked Questions (~1197 tok)
+- `intro.md` — FS25 Workflow Manager (~675 tok)
+- `troubleshooting.md` — Troubleshooting (~1562 tok)
 
 ## website/docs/api/
 
 
 ## website/docs/ui/
 
+- `editor-dialog.md` — Editor Dialog (~1090 tok)
+- `hud-controls.md` — HUD Controls (~1359 tok)
+- `main-dialog.md` — Main Dialog (~675 tok)
 
 ## website/docs/workflows/
 
+- `linked-workflows.md` — Multi-Vehicle Workflows (~1612 tok)
 
 ## website/src/components/HomepageFeatures/
 

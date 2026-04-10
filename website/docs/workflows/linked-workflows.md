@@ -65,16 +65,7 @@ Repeat for each main step that needs support activity. Steps with no support sub
 
 When you start a workflow that has support sub-steps, a **Role Selection dialog** appears:
 
-```
-┌──────────────────────────────────────────┐
-│  Wheat Harvest – Fields 1 & 2            │
-│  This workflow has support steps.        │
-│  Choose your role:                       │
-│                                          │
-│  [Run as Main Vehicle] [Run as Support]  │
-│                       [Cancel]           │
-└──────────────────────────────────────────┘
-```
+![Role selection dialog](/img/screenshots/mode-dialog.png)
 
 - **Enter the combine** → open Workflow Manager → select the workflow → click **Start** → choose **Run as Main Vehicle**
 - **Enter the unloader** → open Workflow Manager → select the same workflow → click **Start** → choose **Run as Support Vehicle**
@@ -87,16 +78,7 @@ Workflows without any support sub-steps start immediately without showing the ro
 
 The editor shows main steps and their support sub-steps in a single nested list:
 
-```
-  #     Type        Target              Action          Sup
-  ─────────────────────────────────────────────────────────
-  1     AutoDrive   Field1_Entrance     Drive To
-  1.1     AutoDrive   Silo              Deliver
-  2     Courseplay  Field1_Harvest      Field Work        +2
-  2.1     AutoDrive   Field1            Unload Combine
-  2.2     AutoDrive   Silo              Deliver
-  3     AutoDrive   Field2_Entrance     Drive To
-```
+![Editor with support sub-steps](/img/screenshots/editor-support-steps.png)
 
 - Select any row (main or support sub-step) and click **Edit** to modify it
 - Click **Delete** to remove the selected row (main step or sub-step)
@@ -139,30 +121,13 @@ When you save the game, both the **role** (Main or Support) and the current **su
 
 If one or more support vehicles are active, the HUD shows their combined status:
 
-```
-┌──────────────────────────────────────────┐
-│  Wheat Harvest – Fields 1 & 2      ════  │
-│  Step 2/4: Courseplay - Field Work       │
-│  CP active (67%)                         │
-│  Support (1): Running                    │
-├──────────────────────────────────────────┤
-│  [<<]  [||]   [□]   [>>]                │
-└──────────────────────────────────────────┘
-```
+![Main vehicle HUD with support badge](/img/screenshots/hud-support-main.png)
 
 ### Support Vehicle HUD
 
 The support vehicle's HUD shows which main step it is following and which sub-step it is currently executing:
 
-```
-┌──────────────────────────────────────────┐
-│  Wheat Harvest – Fields 1 & 2      ════  │
-│  Step 2.1/2: AD - Field1                 │
-│  AD active                               │
-├──────────────────────────────────────────┤
-│  [<<]  [||]   [□]   [>>]                │
-└──────────────────────────────────────────┘
-```
+![Support vehicle HUD](/img/screenshots/hud-support-vehicle.png)
 
 `Step 2.1/2` means: main is on step 2, support is on sub-step 1 of 2.
 

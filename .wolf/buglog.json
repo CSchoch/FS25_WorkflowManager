@@ -734,10 +734,112 @@
       "file": "src/WorkflowManager.lua",
       "root_cause": "showModeSelectDialog callback re-queried g_localPlayer:getCurrentVehicle() instead of using the vehicle already captured in the closure. FS25 can release vehicle control when a dialog opens, so getCurrentVehicle() returns nil → workflow silently never starts.",
       "fix": "Removed the re-query; callback now uses the `vehicle` variable captured in the closure (already validated before the dialog opened).",
-      "tags": ["support", "mode-dialog", "vehicle", "nil-check", "workflow-start"],
+      "tags": [
+        "support",
+        "mode-dialog",
+        "vehicle",
+        "nil-check",
+        "workflow-start"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-09T00:00:00.000Z"
+    },
+    {
+      "id": "bug-047",
+      "timestamp": "2026-04-09T22:35:47.356Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/docs/ui/main-dialog.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 13→13 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-09T22:35:47.356Z"
+    },
+    {
+      "id": "bug-048",
+      "timestamp": "2026-04-09T22:36:32.025Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/docs/ui/hud-controls.md",
+      "root_cause": "8 lines replaced/restructured",
+      "fix": "Rewrote 11→8 lines (8 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-09T22:36:32.025Z"
+    },
+    {
+      "id": "bug-049",
+      "timestamp": "2026-04-09T22:45:43.748Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/docs/ui/main-dialog.md",
+      "root_cause": "14 lines replaced/restructured",
+      "fix": "Rewrote 18→3 lines (14 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-09T22:45:43.748Z"
+    },
+    {
+      "id": "bug-050",
+      "timestamp": "2026-04-09T22:46:11.483Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/docs/ui/editor-dialog.md",
+      "root_cause": "20 lines replaced/restructured",
+      "fix": "Rewrote 23→3 lines (20 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-09T22:46:11.483Z"
+    },
+    {
+      "id": "bug-051",
+      "timestamp": "2026-04-09T22:46:19.524Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/docs/ui/hud-controls.md",
+      "root_cause": "10 lines replaced/restructured",
+      "fix": "Rewrote 12→3 lines (10 removed) | Also: ```; ┌──────────────────────────────────────┐",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-04-09T22:46:31.895Z"
+    },
+    {
+      "id": "bug-052",
+      "timestamp": "2026-04-09T22:46:38.030Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/docs/workflows/linked-workflows.md",
+      "root_cause": "10 lines replaced/restructured",
+      "fix": "Rewrote 12→3 lines (10 removed) | Also: ```; #     Type        Target              Action       | Also: ```; ┌──────────────────────────────────────────┐",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 4,
+      "last_seen": "2026-04-09T22:46:55.986Z"
     }
   ]
 }
