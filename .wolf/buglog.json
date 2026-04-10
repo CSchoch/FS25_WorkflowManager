@@ -840,6 +840,75 @@
       "related_bugs": [],
       "occurrences": 4,
       "last_seen": "2026-04-09T22:46:55.986Z"
+    },
+    {
+      "id": "bug-053",
+      "timestamp": "2026-04-10T00:00:00.000Z",
+      "error_message": "Support vehicle stales when idle (no sub-steps) and does not start when work order arrives",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "Two issues: (1) justStoppedAD was not cleared in resetStepTrackingState, causing unnecessary pendingADStart deferral after idle transitions. (2) No dummy helper kept AD subsystem alive during idle, so AD could stale and refuse to start.",
+      "fix": "Added startDummyADHold() — starts AD to lastADTarget (or first available destination) then immediately holds it when support enters waitingForMainStep. Added justStoppedAD=nil and dummyHelperActive=nil to resetStepTrackingState. Track lastADTarget in startAutoDriveStep. Guard resumeCurrentStep to re-hold dummy AD instead of unpausing it.",
+      "tags": [
+        "support-vehicle",
+        "autodrive",
+        "idle",
+        "stale",
+        "dummy-helper"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-10T00:00:00.000Z"
+    },
+    {
+      "id": "bug-054",
+      "timestamp": "2026-04-10T19:59:00.319Z",
+      "error_message": "Significant refactor of ",
+      "file": "CLAUDE.md",
+      "root_cause": "6 lines replaced/restructured",
+      "fix": "Rewrote 17→29 lines (6 removed) | Also: After every code change, always do all three of th; ### 1. Update CLAUDE.md | Also: ```lua; Workflow = { | Also: ```lua; activeData = { | Also: - **Milestone 1**: Project Setup - ModDesc.xml, Lu; - **Milestone 2**: Core Functionality - WorkflowMa | Also: - Each main step has a `step.support = {}` array o; - When starting a workflow with any support sub-st | Also: \"C:\\Program Files (x86)\\Lua\\5.1\\lua.exe\" tests/run; **Preferred runner for WorkflowExecutor changes.**",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 7,
+      "last_seen": "2026-04-10T20:04:35.621Z"
+    },
+    {
+      "id": "bug-055",
+      "timestamp": "2026-04-10T19:59:17.986Z",
+      "error_message": "Incorrect value in code",
+      "file": "CLAUDE.md",
+      "root_cause": "Had `getSupportActiveDataListForWorkflow`",
+      "fix": "Changed to `startDummyADHold`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-10T19:59:35.607Z"
+    },
+    {
+      "id": "bug-054",
+      "timestamp": "2026-04-10T22:00:33.000Z",
+      "error_message": "attempt to call a boolean value (AutoDriveIntegration.lua:792)",
+      "file": "src/integration/AutoDriveIntegration.lua",
+      "root_cause": "vehicle.ad.drivePathModule.isPaused is a boolean field in this AD version, not a method. Guard `if ... isPaused then` passed because a truthy boolean, then :isPaused() tried to call it as a function.",
+      "fix": "Check type() before using: call if function, read directly if boolean.",
+      "tags": [
+        "autodrive",
+        "isPaused",
+        "type-error",
+        "drivePathModule"
+      ],
+      "related_bugs": [
+        "bug-053"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-10T22:00:33.000Z"
     }
   ]
 }

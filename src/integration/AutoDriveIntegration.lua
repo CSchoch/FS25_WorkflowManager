@@ -788,8 +788,13 @@ function ADIntegration:isPaused(vehicle)
         return false
     end
 
-    if vehicle.ad.drivePathModule and vehicle.ad.drivePathModule.isPaused then
-        return vehicle.ad.drivePathModule:isPaused()
+    if vehicle.ad.drivePathModule then
+        local isPausedField = vehicle.ad.drivePathModule.isPaused
+        if type(isPausedField) == "function" then
+            return vehicle.ad.drivePathModule:isPaused()
+        elseif type(isPausedField) == "boolean" then
+            return isPausedField
+        end
     end
 
     return false

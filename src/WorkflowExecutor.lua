@@ -368,6 +368,7 @@ function WMExecutor:executeCurrentStep(activeData)
             WMLogger:info("Support vehicle: main step %d has no support sub-steps, idling",
                 mainActiveData.currentStep)
             activeData.waitingForMainStep = true
+            self:startDummyADHold(activeData, vehicle)
             return
         end
 
@@ -543,6 +544,43 @@ function WMExecutor:stopCurrentStep(activeData)
     end
 end
 
+---Start a minimal AutoDrive hold to keep AD subsystem alive while support vehicle is idle.
+---The vehicle is started toward its last known AD destination then immediately paused.
+---Without this, AD can stale after prolonged idle and refuse to start when work arrives.
+---When real work arrives, stopCurrentStep() stops the dummy before the real step begins.
+---@param activeData table Per-vehicle execution state
+---@param vehicle table Vehicle
+function WMExecutor:startDummyADHold(activeData, vehicle)
+    if not ADIntegration.isAvailable then return end
+    if activeData.dummyHelperActive then return end
+
+    -- Use last known AD target (from most recent real AD step) to park in place.
+    -- Fall back to first available destination if none recorded yet.
+    local target = activeData.lastADTarget
+    if target == nil then
+        local destinations = ADIntegration:getDestinations()
+        if #destinations > 0 then
+            target = destinations[1].name
+        end
+    end
+
+    if target == nil then
+        WMLogger:debug("Support idle: no AD destination available for dummy hold — vehicle may stale")
+        return
+    end
+
+    WMLogger:info("Support idle: starting dummy AD hold at '%s' to prevent stale", target)
+    local success = ADIntegration:startRoute(vehicle, target, "drive", nil, nil)
+    if success then
+        ADIntegration:pauseRoute(vehicle)
+        activeData.dummyHelperActive = true
+        activeData.currentStepType = WorkflowManager.STEP_AUTODRIVE
+        WMLogger:info("Support idle: dummy AD hold active")
+    else
+        WMLogger:warning("Support idle: failed to start dummy AD hold — vehicle may stale")
+    end
+end
+
 ---Start an AutoDrive step (extracted for reuse by deferred start)
 ---@param activeData table Per-vehicle execution state
 ---@param vehicle table Vehicle
@@ -587,6 +625,7 @@ function WMExecutor:startAutoDriveStep(activeData, vehicle, step)
         activeData.pendingADStart = nil
         activeData.pendingADStartRetries = nil
         activeData.justStoppedAD = nil  -- Clear the flag now that AD has started
+        activeData.lastADTarget = step.target  -- Remember for dummy parking when idle
         WMLogger:info("AutoDrive step started successfully, waiting for completion (handoffToCP=%s)",
             tostring(willHandoffToCP))
     else
@@ -699,7 +738,13 @@ function WMExecutor:resumeCurrentStep(activeData)
     end
 
     if step.type == WorkflowManager.STEP_AUTODRIVE then
-        ADIntegration:resumeRoute(vehicle)
+        -- If dummy AD hold is active (support waiting for main step), re-hold rather than
+        -- unpausing — otherwise the vehicle would start driving to the dummy destination.
+        if activeData.dummyHelperActive then
+            ADIntegration:pauseRoute(vehicle)
+        else
+            ADIntegration:resumeRoute(vehicle)
+        end
     elseif step.type == WorkflowManager.STEP_COURSEPLAY then
         CPIntegration:resumeCourse(vehicle)
     end
@@ -739,6 +784,7 @@ function WMExecutor:onStepCompleted(activeData)
             activeData.waitingForMainStepIndex = mainActiveData.currentStep
             WMLogger:info("Support vehicle: all sub-steps done, waiting for main to advance (main step %d)",
                 mainActiveData.currentStep)
+            self:startDummyADHold(activeData, activeData.vehicle)
             WorkflowManager:broadcastState(activeData.vehicle)
             return
         end
@@ -917,6 +963,13 @@ function WMExecutor:update(dt)
                         WMLogger:info("Support vehicle (idle): main moved to step %d which has sub-steps",
                             mainActiveData.currentStep)
                         self:onMainStepChanged(activeData, mainActiveData.currentStep)
+                    elseif activeData.dummyHelperActive then
+                        -- AD's stuck detection can restart a held route, causing the vehicle to
+                        -- drive toward the dummy destination. Re-hold immediately if that happens.
+                        if ADIntegration:isRunning(vehicle) and not ADIntegration:isPaused(vehicle) then
+                            ADIntegration:pauseRoute(vehicle)
+                            WMLogger:debug("Support idle: re-held dummy AD after auto-restart by stuck detection")
+                        end
                     end
                 end
             end
@@ -1278,6 +1331,9 @@ function WMExecutor:resetStepTrackingState(activeData)
     activeData.cpToCpTransition = nil
     activeData.pendingADStart = nil
     activeData.pendingADStartRetries = nil
+    activeData.justStoppedAD = nil
+    activeData.dummyHelperActive = nil
+    -- Note: lastADTarget is intentionally preserved for dummy hold reuse
 end
 
 

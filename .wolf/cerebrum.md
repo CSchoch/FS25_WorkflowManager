@@ -18,6 +18,12 @@
 
 ## Do-Not-Repeat
 
+[2026-04-10] `justStoppedAD` was not cleared in `resetStepTrackingState`. This caused a spurious `pendingADStart` deferral whenever `onMainStepChanged` fired on an idle support vehicle, making the first real sub-step appear to not start. Fix: always clear `justStoppedAD` (and `dummyHelperActive`) in `resetStepTrackingState`.
+
+[2026-04-10] `vehicle.ad.drivePathModule.isPaused` is a **boolean field**, not a method, in the current AD version. Always check `type(...) == "function"` before calling any AD drivePathModule member. Same pattern may apply to other AD module fields.
+
+[2026-04-10] AutoDrive's stuck detection will restart a `HoldDriving`-paused route if the vehicle sits still too long. When using a dummy AD hold to keep the AD subsystem alive during support idle, the idle poll must re-hold on every update cycle that the vehicle is active-but-not-paused. Use `ADIntegration:isPaused(vehicle)` to detect the restart and call `pauseRoute` again.
+
 <!-- Mistakes made and corrected. Each entry prevents the same mistake recurring. -->
 <!-- Format: [YYYY-MM-DD] Description of what went wrong and what to do instead. -->
 

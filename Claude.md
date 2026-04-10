@@ -20,29 +20,10 @@ A mod for Farming Simulator 25 that combines AutoDrive and Courseplay to create 
 
 ## Standing Requirements
 
-After every code change, always do all three of the following:
-
-### 1. Update CLAUDE.md
-
-Keep this file current. If new patterns, tools, constraints, or project facts are introduced, add them here so future sessions stay accurate.
-
-### 2. User-Centric Documentation
-
-When writing or updating documentation, focus on the user's perspective:
-
-- What does the user do to trigger this feature?
-- What do they see / what happens as a result?
-- Avoid internal implementation details unless the user needs them.
-
-### 3. Update Tests
-
-Any new or changed functionality must be covered by tests. Run tests with:
-
-```
-"/c/Program Files (x86)/Lua/5.1/lua.exe" tests/run_tests.lua
-```
-
-Add or update test cases in `tests/` to match the new behaviour before considering a task done.
+After every code change:
+1. Update CLAUDE.md with new patterns/constraints
+2. Run tests: `"C:\Program Files (x86)\Lua\5.1\lua.exe" tests/run_executor_spec.lua`
+3. Add test cases for new functionality
 
 ## Architecture
 
@@ -57,52 +38,16 @@ Add or update test cases in `tests/` to match the new behaviour before consideri
 ### Data Structure
 
 **Workflow definition** (immutable template, stored in XML):
-
-```lua
-Workflow = {
-    id = "workflow_001",
-    name = "Harvest wheat - fields 1-2",
-    -- currentStep and status are NOT stored here; they are per-vehicle runtime state
-    steps = {
-        {
-            type = "autodrive",  -- "autodrive" or "courseplay"
-            target = "Route_Field1",  -- AutoDrive destination or Courseplay course
-            action = "drive",  -- AutoDrive: drive, pickup_deliver, deliver, load, unload
-            unloadTarget = "Silo",  -- Second destination for pickup_deliver mode (optional)
-            fillType = "WHEAT",  -- Fill type for cargo filtering (optional)
-            support = {}         -- Array of support sub-steps (empty if none)
-        },
-        {
-            type = "courseplay",
-            target = "Field1_Harvest",
-            action = "fieldwork",  -- Courseplay: fieldwork, bale_collect
-            support = {            -- Support sub-steps for this main step
-                { type = "autodrive", target = "Field1", action = "unload", unloadTarget = "Silo" },
-                { type = "autodrive", target = "Silo",   action = "deliver" },
-            }
-        }
-    },
-    createdAt = "2026-02-28 10:00:00"
-}
-```
+- `id`, `name`, `createdAt`, `steps[]` array only — no runtime state
+- Each step: `{type="autodrive"|"courseplay", target, action, unloadTarget?, fillType?, support[]?}`
+- Support array contains sub-steps with same structure (no nesting deeper)
 
 **Runtime state** (per-vehicle, stored on `vehicle.spec_workflowManagerSpec.wmExecution`):
-
-```lua
-activeData = {
-    workflow = <workflow reference>,  -- pointer to immutable template
-    vehicle = <vehicle reference>,
-    status = "ready",  -- "ready", "running", "paused", "completed"
-    currentStep = 1,
-    isMainVehicle = true,        -- true = main role, false = support role
-    currentSupportStep = nil,    -- index within current main step's support array (support vehicles only)
-    waitingForCompletion = false,
-    waitingForMainStep = nil,    -- true when support vehicle idles (main step has no sub-steps)
-    autoResumeUntil = nil,       -- timestamp: auto-resume window after game load
-    pausedTrackingState = nil,   -- saved AD/CP state flags when pausing mid-step
-    -- plus internal tracking flags (justStoppedAD, pendingADStart, pendingCPStart, etc.)
-}
-```
+- Core: `workflow`, `vehicle`, `status`, `currentStep`, `isMainVehicle`, `currentSupportStep`
+- Idle support: `waitingForMainStep`, `waitingForMainStepIndex`, `dummyHelperActive`, `lastADTarget`
+- Transitions: `justStoppedAD`, `pendingADStart/Retries`, `pendingCPStart/Retries`, `cpToCpTransition`
+- State: `waitingForCompletion`, `pausedTrackingState`, `autoResumeUntil`
+- Handoffs: `willHandoffToCP`, `cpHandedOffToAD`, `cpWasRunning`
 
 `WMExecutor.activeVehicles` is a lightweight `{[vehicle] = true}` set used for update-loop iteration.
 
@@ -167,42 +112,11 @@ On `onPostLoad`, this state is restored as `status = "paused"` with a 10-second 
 
 ### Completed
 
-- **Milestone 1**: Project Setup - ModDesc.xml, Lua structure, API analysis
-- **Milestone 2**: Core Functionality - WorkflowManager, XML storage, Executor, AD/CP integration
-- **Milestone 3**: Basic GUI - Main window, workflow editor, step management
-- **Milestone 4**: Vehicle Selection - Runtime vehicle detection (uses current vehicle when starting)
-- **Milestone 5**: Player UI - In-vehicle HUD with workflow controls (pause/resume, stop, prev/next steps)
-- **Milestone 6**: Logo & Icons - Mod icon and HUD button icons with hover effects
-- **Milestone 7**: Search - Searchable dropdowns in step dialog for AD targets and CP courses
-- Multi-field workflows (more than 2 fields per workflow)
-- Vehicle hint removed from GUI
-- Delete confirmation, delete shortcut, scrollbar, step editor descriptions fixed
-- Fill type dropdown shows localized names (title) instead of internal IDs
-- **Per-vehicle runtime state** - Workflow definitions are immutable; `currentStep`/`status` live on the vehicle spec (`wmExecution`). `WMExecutor.activeVehicles` replaces `activeWorkflows`
-- **Vehicle savegame persistence** - Active workflow and current step are saved/restored via `WorkflowManagerSpec.saveToXMLFile` / `onPostLoad`; restored as paused so player can resume
-- **Auto-resume after load** - 10-second window (`autoResumeUntil`) for AD/CP to re-initialize before WM resumes the workflow automatically
-- **Courseplay resume at nearest waypoint** - `CPIntegration:startFieldWork()` accepts `startAtNearest` flag; uses `cpStartStopDriver` to resume at the closest waypoint
-- **Main dialog simplification** - Removed Status column; list shows only Name + Steps; removed Resume/reset flow (Start always starts fresh on current vehicle)
-- **HUD icon scaling fix** - `getNormalizedScreenValues(24, 24)` now correctly captures both X and Y return values so icons render as squares on all aspect ratios
-- **Draggable HUD** - HUD panel can be repositioned by dragging the header; position clamped to screen bounds
-- **Hierarchical support steps** - Each main step can have nested support sub-steps (`step.support = {}`). Starting a workflow with support steps shows a mode dialog (Main/Support). Support vehicles execute sub-steps and loop while the main stays on the same step. When the main advances, `onMainStepChanged` resets support to sub-step 1 of the new step. Pause/stop from main propagates to all support vehicles.
-- **Old linked-workflow migration** - Old savegames with `linkRole`/`linkedWorkflowId`/`syncGroup` are migrated transparently on first load via `migrateOldLinkedWorkflows`.
-- **Multiple support vehicles** - Multiple vehicles can start the same workflow as support simultaneously, each with independent `currentSupportStep` state.
-- **Release build support** - `DevConfig.lua` omitted from release zip; `WorkflowManager.lua` installs a release-mode stub if the file is absent (all debug flags off)
-- **DDS textures** - All textures (`modIcon`, HUD icons, `white`) converted to DDS; `tools/png_to_dds.py` handles conversion (texconv DXT5/DXT1 if available, Pillow uncompressed fallback)
-- **Legacy GUI removed** - `WMManagerGUI` and `WMEditorGUI` update/draw calls removed from `WorkflowManager.lua`
-- **WMStorage path fix** - Fallback path in `WMStorage:getXmlPath()` now correctly joins `modDirectory .. "/" .. xmlFilename`
-- **Sub-step numbering in editor** - Support sub-steps now display as `N.M` (e.g., `2.1`, `2.2`) in the `#` column of the Editor Dialog step list, where `N` is the parent main step number and `M` is the sub-step position
-- **HUD reactive show/hide** - `WMHud:update()` reactively shows/hides HUD based on current vehicle state; 3-second auto-hide after workflow completes. `checkAndHideHUD()` is now a no-op. HUD auto-shows when player enters a vehicle with an active workflow (`WorkflowManagerSpec:onRegisterActionEvents`)
-- **HUD vehicle name in header** - Header displays "WorkflowManager | VehicleName" (truncated to 16 chars)
-- **HUD support badge** - Main vehicle HUD shows a colored `[NS]` count badge next to workflow name (green = running, orange = paused, gray = idle); replaces the old separate "Support (N): Running" line
-- **HUD button tooltips** - Hovering a HUD button shows a tooltip label (Previous Step / Pause / Resume / Stop / Next Step)
-- **HUD step info simplified** - Step line no longer shows AD/CP type prefix; shows step target only (`Step N/T: TargetName`)
-- **Main dialog status colors** - Workflow name is colored green (running), orange (paused), white (idle/not active on current vehicle)
-- **Main dialog step progress** - Step counter shows `currentStep/total` progress (e.g., `2/5`) whenever the workflow is active on the current vehicle
-- **Step dialog selected-label rows** - Added visible selected-value rows for Unload Target and Fill Type so the current selection is always readable without opening the dropdown
-- **Step dialog auto-select** - Dropdowns auto-select the item when a search query narrows results to exactly one match
-- **Mode dialog vehicle fix** - `showModeSelectDialog` now passes the pre-validated vehicle reference to `sendCommand` instead of re-querying the current vehicle after the dialog closes
+**Milestones 1–7:** Core (WorkflowManager, Executor, XML storage), GUI (main dialog, editor, HUD, ESC menu), Vehicle selection, AD/CP integration, Searchable dropdowns
+
+**Recent:** Multi-field workflows, hierarchical support steps, per-vehicle runtime state with savegame persistence, auto-resume after load, draggable HUD, reactive HUD show/hide, HUD badges/tooltips, step editor UX (selected-value rows, auto-select), support vehicle dummy AD hold to prevent staling, `justStoppedAD` fix for idle transitions
+
+**Other:** Courseplay resume at nearest waypoint, release build support (DevConfig stub), DDS textures, old linked-workflow migration, multiple simultaneous support vehicles, sub-step editor numbering (N.M format), mode dialog vehicle reference fix
 
 ### Milestone 8: GUI Refinement
 
@@ -370,6 +284,7 @@ FS25_WorkflowManager/
 - AD->AD transitions use deferred start: waits ~1 second for AD to fully reset before starting new route
 - AD->CP transitions also defer CP start until AD is fully stopped
 - Tracked via `justStoppedAD` flag and `pendingADStart`/`pendingCPStart` in update loop
+- `justStoppedAD` is cleared by `resetStepTrackingState` — do not let it survive across idle transitions
 - HUD calls `WMExecutor:goToPreviousStep(vehicle)` / `goToNextStep(vehicle)` (vehicle reference, not workflow)
 
 ### Courseplay Resume
@@ -380,17 +295,13 @@ FS25_WorkflowManager/
 
 ### Hierarchical Support Steps
 
-- Each main step has a `step.support = {}` array of support sub-steps
-- When starting a workflow with any support sub-steps, `WorkflowManager:startWorkflow` shows a mode dialog; user picks Main or Support
-- `activeData.isMainVehicle` (bool) determines which execution path runs in `WMExecutor:executeCurrentStep`
-- Support vehicles track position with `activeData.currentSupportStep` (1-based index into current main step's support array)
-- When a support sub-step completes, support advances `currentSupportStep` and loops back to 1 at end of array
-- When main advances step: `WMExecutor:onMainStepChanged` resets support to sub-step 1 and executes immediately
-- If main step has no support sub-steps: support sets `waitingForMainStep = true` and idles (polled in update loop)
-- Pause/stop from main propagates to all support vehicles via `getSupportActiveDataListForWorkflow`
-- `WMExecutor:getMainActiveDataForWorkflow(workflowId)` — finds the single main-role activeData
-- `WMExecutor:getSupportActiveDataListForWorkflow(workflowId)` — finds all support-role activeData entries
-- `WMExecutor:getCurrentStep(activeData)` — returns the current step def (main step or support sub-step)
+- Each main step has `step.support = {}` array of sub-steps
+- Mode dialog (Main/Support) on workflow start with support steps
+- `isMainVehicle` bool determines execution path; support vehicles use `currentSupportStep` (1-based index in current main's support array)
+- Support loops sub-steps; when main advances, `onMainStepChanged` resets support to sub-step 1
+- No sub-steps? Support enters `waitingForMainStep`, starts dummy AD hold via `startDummyADHold()` to prevent staling, idles until main moves
+- Pause/stop from main propagates to all support via `getSupportActiveDataListForWorkflow`
+- Helpers: `getMainActiveDataForWorkflow()`, `getSupportActiveDataListForWorkflow()`, `getCurrentStep(activeData)`
 
 ### Draggable HUD
 
@@ -425,23 +336,13 @@ FS25_WorkflowManager/
 ## Running Tests
 
 ```bash
-"C:\Program Files (x86)\Lua\5.1\lua.exe" tests/run_executor_spec.lua
+"C:\Program Files (x86)\Lua\5.1\lua.exe" tests/run_executor_spec.lua  # Preferred (TDD)
+"C:\Program Files (x86)\Lua\5.1\lua.exe" tests/run_tests.lua          # All tests
 ```
 
-**Preferred runner for WorkflowExecutor changes.** `tests/run_executor_spec.lua` is a self-contained runner that loads mocks, fixtures, and only `WorkflowExecutor_spec.lua`. It properly handles `before_each` and `after_each` and avoids the Windows Logger I/O issue.
-
-To run all specs (may stop early on Windows due to Logger I/O issue, pre-existing):
-
-```bash
-"C:\Program Files (x86)\Lua\5.1\lua.exe" tests/run_tests.lua
-```
-
-**Test structure:**
-
-- `tests/mocks/` — game globals, XMLFile, vehicle factory, event handler stubs
-- `tests/specs/` — one spec file per module
+- `tests/mocks/` — game globals, XMLFile, vehicle factory stubs
+- `tests/specs/` — one spec per module
 - `tests/fixtures/` — shared workflow test data
-- `tests/run_executor_spec.lua` — standalone runner for WorkflowExecutor spec (use this for TDD)
 
 ## Resources
 
@@ -452,7 +353,7 @@ To run all specs (may stop early on Windows due to Logger I/O issue, pre-existin
 
 ---
 
-**Status**: Phases 1-4 IN PROGRESS — Core, executor, GUI layer all functional. Recent GUI polish: HUD reactive show/hide, vehicle name in header, support badge, button tooltips, main dialog status colors + progress, step dialog UX improvements. Milestone 8 items (F1 overlay, hint relocation, X button) remain open.
+**Status**: Phases 1-4 IN PROGRESS — Core, executor, GUI layer all functional. Recent: support vehicle dummy AD hold to prevent staling, `justStoppedAD` fix for idle-to-work transitions. Milestone 8 items (F1 overlay, hint relocation, X button) remain open.
 **Last updated**: 2026-04-10
 
 ## Screenshots Needed
@@ -475,5 +376,5 @@ Screenshots for the Docusaurus documentation site (`website/static/img/screensho
 
 ### Low Priority
 
-- [ ] **Remove `or true` dead code** in `WorkflowExecutor.lua:483` — `if not CPIntegration:hasCourse(vehicle) or true then` makes the CP check permanently dead
+- [ ] **Remove `or true` dead code** in `WorkflowExecutor.lua` — `if not CPIntegration:hasCourse(vehicle) or true then` makes the CP check permanently dead
 - [ ] **Remove unused action declarations** in `modDesc.xml` — `WM_START_WORKFLOW` and `WM_STOP_WORKFLOW` are declared but have no bindings and no references in source code

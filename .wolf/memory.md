@@ -3,6 +3,8 @@
 > Chronological action log. Hooks and AI append to this file automatically.
 > Old sessions are consolidated by the daemon weekly.
 
+| 2026-04-10 | Added dummy AD hold for support vehicle idle state + fixed justStoppedAD not cleared in resetStepTrackingState | WorkflowExecutor.lua | 106/106 tests pass |
+
 ## Session: 2026-04-05 23:05
 
 | Time | Action | File(s) | Outcome | ~Tokens |
@@ -403,3 +405,27 @@
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+| 21:55 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~234 |
+| 21:55 | Edited src/WorkflowExecutor.lua | 8→9 lines | ~154 |
+| 21:55 | Edited src/WorkflowExecutor.lua | 6→7 lines | ~82 |
+| 21:55 | Edited src/WorkflowExecutor.lua | 7→8 lines | ~126 |
+| 21:55 | Edited src/WorkflowExecutor.lua | expanded (+6 lines) | ~146 |
+| 21:55 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~462 |
+| 21:57 | Edited src/WorkflowExecutor.lua | modified info() | ~451 |
+| 21:58 | Session end: 7 writes across 1 files (WorkflowExecutor.lua) | 2 reads | ~19165 tok |
+| 21:59 | Edited CLAUDE.md | expanded (+12 lines) | ~514 |
+| 21:59 | Edited CLAUDE.md | 3→5 lines | ~323 |
+| 21:59 | Edited CLAUDE.md | idles() → hold() | ~90 |
+| 21:59 | Edited CLAUDE.md | 1→2 lines | ~52 |
+| 21:59 | Edited CLAUDE.md | 4→4 lines | ~78 |
+| 21:59 | Edited CLAUDE.md | inline fix | ~42 |
+| 21:59 | Session end: 13 writes across 2 files (WorkflowExecutor.lua, CLAUDE.md) | 3 reads | ~27092 tok |
+| 22:01 | Edited src/integration/AutoDriveIntegration.lua | 6→11 lines | ~91 |
+| 22:02 | Session end: 14 writes across 3 files (WorkflowExecutor.lua, CLAUDE.md, AutoDriveIntegration.lua) | 3 reads | ~27189 tok |
+| 22:03 | Edited CLAUDE.md | reduced (-19 lines) | ~60 |
+| 22:03 | Edited CLAUDE.md | reduced (-25 lines) | ~87 |
+| 22:03 | Edited CLAUDE.md | reduced (-23 lines) | ~141 |
+| 22:04 | Edited CLAUDE.md | removed 40 lines | ~207 |
+| 22:04 | Edited CLAUDE.md | 14→9 lines | ~198 |
+| 22:04 | Edited CLAUDE.md | reduced (-10 lines) | ~94 |
+| 22:04 | Session end: 20 writes across 3 files (WorkflowExecutor.lua, CLAUDE.md, AutoDriveIntegration.lua) | 3 reads | ~26212 tok |
