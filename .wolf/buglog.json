@@ -949,10 +949,34 @@
       "file": "src/WorkflowExecutor.lua",
       "root_cause": "pauseWorkflow called pauseCurrentStep BEFORE deactivating dummyHelperActive. pauseCurrentStep fell back to currentStepType (set by last real sub-step), called ADIntegration:pauseRoute -> HoldDriving AFTER setActive(false), re-activating AI control or leaving AD in a broken state that blocked player input.",
       "fix": "1) Moved dummy deactivation before pauseCurrentStep. 2) When wasDummy=true, skip pauseCurrentStep entirely — no real AD/CP step was running, nothing to pause.",
-      "tags": ["dummy-helper", "pause", "player-control", "autodrive", "support-vehicle"],
-      "related_bugs": ["bug-055"],
+      "tags": [
+        "dummy-helper",
+        "pause",
+        "player-control",
+        "autodrive",
+        "support-vehicle"
+      ],
+      "related_bugs": [
+        "bug-055"
+      ],
       "occurrences": 1,
       "last_seen": "2026-04-10T00:00:00.000Z"
+    },
+    {
+      "id": "bug-060",
+      "timestamp": "2026-04-11T21:50:03.440Z",
+      "error_message": "Wrong reference: run_executor_spec should be run_tests",
+      "file": "CLAUDE.md",
+      "root_cause": "Used \"run_executor_spec\" instead of \"run_tests\"",
+      "fix": "Changed run_executor_spec → run_tests",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-11T21:50:03.440Z"
     }
   ]
 }

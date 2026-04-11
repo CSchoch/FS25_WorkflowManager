@@ -22,7 +22,7 @@ A mod for Farming Simulator 25 that combines AutoDrive and Courseplay to create 
 
 After every code change:
 1. Update CLAUDE.md with new patterns/constraints
-2. Run tests: `"C:\Program Files (x86)\Lua\5.1\lua.exe" tests/run_executor_spec.lua`
+2. Run tests: `"C:\Program Files (x86)\Lua\5.1\lua.exe" tests/run_tests.lua`
 3. Add test cases for new functionality
 
 ## Architecture
@@ -199,6 +199,7 @@ FS25_WorkflowManager/
 │   │   ├── WMEditorDialog.lua         # Workflow editor dialog
 │   │   ├── WMStepDialog.lua           # Step add/edit dialog with searchable lists
 │   │   ├── WMTextInputDialog.lua      # Text input overlay dialog
+│   │   ├── WMModeSelectDialog.lua     # Role selection dialog (Main/Support) when starting a workflow with support steps
 │   │   ├── WMHud.lua                  # In-vehicle HUD with icon buttons (draggable)
 │   │   ├── WMHudElements.lua          # HUD element classes
 │   │   ├── WorkflowManagerGUI.lua     # GUI manager / controller
@@ -241,6 +242,7 @@ FS25_WorkflowManager/
     ├── WMMainDialog.xml               # Main dialog layout (2 columns: name + steps)
     ├── WMEditorDialog.xml             # Editor dialog layout
     ├── WMStepDialog.xml               # Step dialog layout
+    ├── WMModeSelectDialog.xml         # Role selection dialog layout (Main/Support)
     ├── TextInputDialog.xml            # Text input dialog layout
     ├── WorkflowManagerGUI.xml         # Main GUI layout
     ├── WorkflowEditorGUI.xml          # Editor GUI layout
@@ -336,7 +338,9 @@ FS25_WorkflowManager/
 ## Running Tests
 
 ```bash
-"C:\Program Files (x86)\Lua\5.1\lua.exe" tests/run_executor_spec.lua  # Preferred (TDD)
+"C:\Program Files (x86)\Lua\5.1\lua.exe" tests/run_executor_spec.lua  # Executor spec
+"C:\Program Files (x86)\Lua\5.1\lua.exe" tests/run_storage_spec.lua   # Storage spec
+"C:\Program Files (x86)\Lua\5.1\lua.exe" tests/run_wm_spec.lua        # WorkflowManager spec
 "C:\Program Files (x86)\Lua\5.1\lua.exe" tests/run_tests.lua          # All tests
 ```
 
@@ -354,7 +358,7 @@ FS25_WorkflowManager/
 ---
 
 **Status**: Phases 1-4 IN PROGRESS — Core, executor, GUI layer all functional. Recent: support vehicle dummy AD hold to prevent staling, `justStoppedAD` fix for idle-to-work transitions. Milestone 8 items (F1 overlay, hint relocation, X button) remain open.
-**Last updated**: 2026-04-10
+**Last updated**: 2026-04-11
 
 ## Screenshots Needed
 
