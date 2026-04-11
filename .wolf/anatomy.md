@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-10T20:04:35.596Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-11T20:58:06.162Z
 > Files: 24 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
@@ -9,7 +9,7 @@
 
 ## ./
 
-- `CLAUDE.md` — FS25 Workflow Manager (~4928 tok)
+- `CLAUDE.md` — FS25 Workflow Manager (~4994 tok)
 
 ## .claude/
 
@@ -29,7 +29,7 @@
 
 ## src/
 
-- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~17545 tok)
+- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~17718 tok)
 - `WorkflowManager.lua` — init, loadDialogs, Callback, showTextInputDialog, setupInGameMenu (~12749 tok)
 - `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~4381 tok)
 

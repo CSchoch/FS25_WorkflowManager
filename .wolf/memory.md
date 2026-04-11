@@ -429,3 +429,28 @@
 | 22:04 | Edited CLAUDE.md | 14→9 lines | ~198 |
 | 22:04 | Edited CLAUDE.md | reduced (-10 lines) | ~94 |
 | 22:04 | Session end: 20 writes across 3 files (WorkflowExecutor.lua, CLAUDE.md, AutoDriveIntegration.lua) | 3 reads | ~26212 tok |
+| 22:08 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~96 |
+| 22:08 | Edited src/WorkflowExecutor.lua | expanded (+7 lines) | ~125 |
+| 22:08 | Edited src/WorkflowExecutor.lua | expanded (+6 lines) | ~150 |
+| 22:09 | Edited src/WorkflowExecutor.lua | 8→8 lines | ~173 |
+| 22:11 | Session end: 24 writes across 3 files (WorkflowExecutor.lua, CLAUDE.md, AutoDriveIntegration.lua) | 3 reads | ~26947 tok |
+| 22:24 | Session end: 24 writes across 3 files (WorkflowExecutor.lua, CLAUDE.md, AutoDriveIntegration.lua) | 3 reads | ~26947 tok |
+| 22:29 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~353 |
+| 22:30 | Edited src/WorkflowExecutor.lua | expanded (+14 lines) | ~250 |
+| 22:30 | Edited src/WorkflowExecutor.lua | 6→8 lines | ~101 |
+| 22:30 | Edited src/WorkflowExecutor.lua | 14→11 lines | ~104 |
+| 22:30 | Edited src/WorkflowExecutor.lua | removed 8 lines | ~7 |
+| 22:31 | Edited CLAUDE.md | inline fix | ~108 |
+| 22:31 | Session end: 30 writes across 3 files (WorkflowExecutor.lua, CLAUDE.md, AutoDriveIntegration.lua) | 3 reads | ~28021 tok |
+| 22:51 | Session end: 30 writes across 3 files (WorkflowExecutor.lua, CLAUDE.md, AutoDriveIntegration.lua) | 3 reads | ~28021 tok |
+
+## Session: 2026-04-11 22:57
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 22:57 | Edited src/WorkflowExecutor.lua | 11→12 lines | ~138 |
+| 22:58 | Edited src/WorkflowExecutor.lua | 12→16 lines | ~192 |
+
+| 00:00 | Fixed: can't control vehicle after pausing with dummy helper active — moved setActive(false) before pauseCurrentStep, skip pauseCurrentStep when wasDummy=true | WorkflowExecutor.lua | bug-059 | ~120 |
+| 22:58 | Session end: 2 writes across 1 files (WorkflowExecutor.lua) | 1 reads | ~18017 tok |
+| 23:45 | Session end: 2 writes across 1 files (WorkflowExecutor.lua) | 1 reads | ~18017 tok |

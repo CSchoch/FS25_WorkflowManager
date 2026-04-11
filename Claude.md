@@ -299,7 +299,7 @@ FS25_WorkflowManager/
 - Mode dialog (Main/Support) on workflow start with support steps
 - `isMainVehicle` bool determines execution path; support vehicles use `currentSupportStep` (1-based index in current main's support array)
 - Support loops sub-steps; when main advances, `onMainStepChanged` resets support to sub-step 1
-- No sub-steps? Support enters `waitingForMainStep`, starts dummy AD hold via `startDummyADHold()` to prevent staling, idles until main moves
+- No sub-steps? Support enters `waitingForMainStep`, calls `startDummyADHold()` which sets `vehicle.ad.stateModule:setActive(true)` directly (pcall-guarded, no real route) to keep AD's subsystem alive. Deactivated with `setActive(false)` on pause or when real work starts. **Never use `startRoute + HoldDriving` as a dummy** — `ADDrivePathModule.PAUSE_TIMEOUT = 3000ms` causes it to auto-resume and drive.
 - Pause/stop from main propagates to all support via `getSupportActiveDataListForWorkflow`
 - Helpers: `getMainActiveDataForWorkflow()`, `getSupportActiveDataListForWorkflow()`, `getCurrentStep(activeData)`
 

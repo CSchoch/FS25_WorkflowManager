@@ -18,11 +18,13 @@
 
 ## Do-Not-Repeat
 
+[2026-04-10] When deactivating a dummy helper on pause, always call `setActive(false)` AND skip `pauseCurrentStep` entirely (`wasDummy` guard). `pauseCurrentStep` falls back to `currentStepType` from the last real sub-step, which calls `HoldDriving` and blocks player control even after `setActive(false)`.
+
 [2026-04-10] `justStoppedAD` was not cleared in `resetStepTrackingState`. This caused a spurious `pendingADStart` deferral whenever `onMainStepChanged` fired on an idle support vehicle, making the first real sub-step appear to not start. Fix: always clear `justStoppedAD` (and `dummyHelperActive`) in `resetStepTrackingState`.
 
 [2026-04-10] `vehicle.ad.drivePathModule.isPaused` is a **boolean field**, not a method, in the current AD version. Always check `type(...) == "function"` before calling any AD drivePathModule member. Same pattern may apply to other AD module fields.
 
-[2026-04-10] AutoDrive's stuck detection will restart a `HoldDriving`-paused route if the vehicle sits still too long. When using a dummy AD hold to keep the AD subsystem alive during support idle, the idle poll must re-hold on every update cycle that the vehicle is active-but-not-paused. Use `ADIntegration:isPaused(vehicle)` to detect the restart and call `pauseRoute` again.
+[2026-04-10] `ADDrivePathModule.PAUSE_TIMEOUT = 3000 ms` — `HoldDriving` only pauses AD for 3 seconds before it auto-resumes. Do NOT use `startRoute + HoldDriving` as a dummy idle helper; the timeout causes the vehicle to start driving. Instead, call `vehicle.ad.stateModule:setActive(true)` directly (via pcall) to keep AD's subsystem alive without a real route. Deactivate with `setActive(false)` when real work starts.
 
 <!-- Mistakes made and corrected. Each entry prevents the same mistake recurring. -->
 <!-- Format: [YYYY-MM-DD] Description of what went wrong and what to do instead. -->

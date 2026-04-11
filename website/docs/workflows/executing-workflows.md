@@ -29,16 +29,7 @@ Workflows without support sub-steps start immediately and the dialog closes.
 
 If the workflow contains support sub-steps, a **Role Selection** dialog appears before starting:
 
-```
-┌──────────────────────────────────────────┐
-│  Wheat Harvest – Fields 1 & 2            │
-│  This workflow has support steps.        │
-│  Choose your role:                       │
-│                                          │
-│  [Run as Main Vehicle] [Run as Support]  │
-│                       [Cancel]           │
-└──────────────────────────────────────────┘
-```
+![Mode dialog](/img/screenshots/mode-dialog.png)
 
 - **Run as Main Vehicle** — this vehicle leads the workflow. It executes the main steps in order.
 - **Run as Support Vehicle** — this vehicle is a helper. It executes the support sub-steps for whichever main step the lead vehicle is currently on.
