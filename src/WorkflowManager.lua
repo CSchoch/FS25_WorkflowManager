@@ -847,14 +847,6 @@ function WorkflowManager:showModeSelectDialog(workflowId, vehicle)
     g_gui:showDialog("WMModeSelectDialog")
 end
 
----Start a workflow with an explicit role (called from mode dialog callback)
----@param workflowId string
----@param isMain     boolean  true = main vehicle, false = support vehicle
----@param vehicle    table
-function WorkflowManager:startWorkflowWithRole(workflowId, isMain, vehicle)
-    self:sendCommand(vehicle, "start", workflowId, isMain)
-end
-
 -- ============================================================
 -- Multiplayer network helpers
 -- ============================================================

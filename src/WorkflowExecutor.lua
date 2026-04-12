@@ -303,8 +303,15 @@ function WMExecutor:resumeWorkflow(vehicle)
         return false
     end
 
+    -- Step was updated while paused (e.g., main advanced to a new step while support was paused).
+    -- resetStepTrackingState already cleared pausedTrackingState, so we must execute fresh.
+    if activeData.pendingExecuteOnResume then
+        activeData.pendingExecuteOnResume = nil
+        activeData.status = WorkflowManager.STATUS_RUNNING
+        WMLogger:info("Resumed workflow: %s — executing staged sub-step", activeData.workflow.name)
+        self:executeCurrentStep(activeData)
     -- Restore tracking state from before pause
-    if activeData.pausedTrackingState then
+    elseif activeData.pausedTrackingState then
         activeData.waitingForCompletion = activeData.pausedTrackingState.waitingForCompletion
         activeData.currentStepType = activeData.pausedTrackingState.currentStepType
         activeData.willHandoffToCP = activeData.pausedTrackingState.willHandoffToCP
@@ -1244,7 +1251,15 @@ function WMExecutor:onMainStepChanged(supportActiveData, newMainStep)
     supportActiveData.waitingForMainStep = nil
     supportActiveData.waitingForMainStepIndex = nil
     self:resetStepTrackingState(supportActiveData)
-    self:executeCurrentStep(supportActiveData)
+
+    if supportActiveData.status == WorkflowManager.STATUS_PAUSED then
+        -- Support is paused — update step state but do not start execution.
+        -- Mark it so executeCurrentStep is called when the vehicle resumes.
+        supportActiveData.pendingExecuteOnResume = true
+        WMLogger:info("Support vehicle is paused — sub-step staged, will execute on resume")
+    else
+        self:executeCurrentStep(supportActiveData)
+    end
     WorkflowManager:broadcastState(supportActiveData.vehicle)
 end
 
@@ -1347,6 +1362,7 @@ function WMExecutor:resetStepTrackingState(activeData)
     activeData.pendingADStartRetries = nil
     activeData.justStoppedAD = nil
     activeData.dummyHelperActive = nil
+    activeData.pendingExecuteOnResume = nil
     -- Note: lastADTarget is intentionally preserved for dummy hold reuse
 end
 
@@ -1404,6 +1420,9 @@ function WMExecutor:goToPreviousStep(vehicle)
             self:onMainStepChanged(supportActiveData, activeData.currentStep)
         end
     end
+
+    -- Broadcast main vehicle's new step/status to all clients
+    WorkflowManager:broadcastState(vehicle)
 
     -- Fire event
     WMEventHandler:fireEvent(WMEventHandler.EVENT_STEP_CHANGED, {
@@ -1468,6 +1487,9 @@ function WMExecutor:goToNextStep(vehicle)
             self:onMainStepChanged(supportActiveData, activeData.currentStep)
         end
     end
+
+    -- Broadcast main vehicle's new step/status to all clients
+    WorkflowManager:broadcastState(vehicle)
 
     -- Fire event
     WMEventHandler:fireEvent(WMEventHandler.EVENT_STEP_CHANGED, {

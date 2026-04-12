@@ -454,3 +454,29 @@
 | 00:00 | Fixed: can't control vehicle after pausing with dummy helper active — moved setActive(false) before pauseCurrentStep, skip pauseCurrentStep when wasDummy=true | WorkflowExecutor.lua | bug-059 | ~120 |
 | 22:58 | Session end: 2 writes across 1 files (WorkflowExecutor.lua) | 1 reads | ~18017 tok |
 | 23:45 | Session end: 2 writes across 1 files (WorkflowExecutor.lua) | 1 reads | ~18017 tok |
+
+## Session: 2026-04-12 21:41
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 21:48 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~245 |
+| 21:48 | Edited src/WorkflowExecutor.lua | expanded (+7 lines) | ~156 |
+| 21:49 | Fixed: paused support vehicle starts anyway when main advances step | WorkflowExecutor.lua | onMainStepChanged now checks pause state; pendingExecuteOnResume flag defers executeCurrentStep to resume | ~200 tok |
+| 21:50 | Session end: 2 writes across 1 files (WorkflowExecutor.lua) | 1 reads | ~18388 tok |
+| 21:55 | Session end: 2 writes across 1 files (WorkflowExecutor.lua) | 1 reads | ~18388 tok |
+| 21:57 | Edited src/WorkflowExecutor.lua | 4→5 lines | ~52 |
+| 21:57 | Edited src/WorkflowManager.lua | removed 9 lines | ~17 |
+| 21:58 | Edited tests/specs/WorkflowExecutor_spec.lua | expanded (+52 lines) | ~834 |
+| 22:05 | Fix 1: pendingExecuteOnResume added to resetStepTrackingState | WorkflowExecutor.lua | prevents stale flag surviving prev/next while paused | ~50 tok |
+| 22:05 | Fix 3: removed dead startWorkflowWithRole | WorkflowManager.lua | method was never called | ~20 tok |
+| 22:05 | Fix 4: added 3 tests for paused support + step change | WorkflowExecutor_spec.lua | 109 passing | ~100 tok |
+| 21:58 | Session end: 5 writes across 3 files (WorkflowExecutor.lua, WorkflowManager.lua, WorkflowExecutor_spec.lua) | 3 reads | ~32104 tok |
+| 22:12 | Edited src/WorkflowExecutor.lua | 19→22 lines | ~194 |
+| 22:12 | Edited src/WorkflowExecutor.lua | 17→20 lines | ~182 |
+| 22:13 | Edited src/network/WMNetworkEvents.lua | 15→17 lines | ~205 |
+| 22:13 | Edited src/network/WMNetworkEvents.lua | modified WMStateSyncEvent() | ~248 |
+| 22:13 | Edited src/network/WMNetworkEvents.lua | 6→7 lines | ~114 |
+| 22:13 | Edited src/WorkflowManagerSpec.lua | 3→4 lines | ~82 |
+| 22:13 | Edited src/WorkflowManagerSpec.lua | 3→4 lines | ~64 |
+| 22:13 | Edited src/WorkflowManagerSpec.lua | 7→8 lines | ~82 |
+| 22:13 | Session end: 13 writes across 5 files (WorkflowExecutor.lua, WorkflowManager.lua, WorkflowExecutor_spec.lua, WMNetworkEvents.lua, WorkflowManagerSpec.lua) | 5 reads | ~37750 tok |

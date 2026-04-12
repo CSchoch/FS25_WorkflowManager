@@ -1,33 +1,123 @@
 {
-  "session_id": "session-2026-04-11-2257",
-  "started": "2026-04-11T20:57:19.751Z",
+  "session_id": "session-2026-04-12-2141",
+  "started": "2026-04-12T19:41:07.361Z",
   "files_read": {
     "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowExecutor.lua": {
+      "count": 11,
+      "tokens": 17971,
+      "first_read": "2026-04-12T19:42:51.043Z"
+    },
+    "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/WorkflowExecutor_spec.lua": {
+      "count": 3,
+      "tokens": 0,
+      "first_read": "2026-04-12T19:57:31.452Z"
+    },
+    "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManager.lua": {
+      "count": 1,
+      "tokens": 12749,
+      "first_read": "2026-04-12T19:57:54.820Z"
+    },
+    "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/network/WMNetworkEvents.lua": {
       "count": 2,
-      "tokens": 17663,
-      "first_read": "2026-04-11T20:57:26.427Z"
+      "tokens": 0,
+      "first_read": "2026-04-12T20:10:54.393Z"
+    },
+    "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManagerSpec.lua": {
+      "count": 1,
+      "tokens": 4381,
+      "first_read": "2026-04-12T20:10:55.082Z"
     }
   },
   "files_written": [
     {
       "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowExecutor.lua",
       "action": "edit",
-      "tokens": 148,
-      "at": "2026-04-11T20:57:32.229Z"
+      "tokens": 262,
+      "at": "2026-04-12T19:48:49.638Z"
     },
     {
       "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowExecutor.lua",
       "action": "edit",
-      "tokens": 206,
-      "at": "2026-04-11T20:58:06.189Z"
+      "tokens": 167,
+      "at": "2026-04-12T19:48:58.385Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowExecutor.lua",
+      "action": "edit",
+      "tokens": 56,
+      "at": "2026-04-12T19:57:44.539Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManager.lua",
+      "action": "edit",
+      "tokens": 18,
+      "at": "2026-04-12T19:57:59.214Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/WorkflowExecutor_spec.lua",
+      "action": "edit",
+      "tokens": 893,
+      "at": "2026-04-12T19:58:17.535Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowExecutor.lua",
+      "action": "edit",
+      "tokens": 207,
+      "at": "2026-04-12T20:12:47.660Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowExecutor.lua",
+      "action": "edit",
+      "tokens": 195,
+      "at": "2026-04-12T20:12:53.635Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/network/WMNetworkEvents.lua",
+      "action": "edit",
+      "tokens": 220,
+      "at": "2026-04-12T20:13:04.974Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/network/WMNetworkEvents.lua",
+      "action": "edit",
+      "tokens": 265,
+      "at": "2026-04-12T20:13:12.424Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/network/WMNetworkEvents.lua",
+      "action": "edit",
+      "tokens": 122,
+      "at": "2026-04-12T20:13:17.694Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManagerSpec.lua",
+      "action": "edit",
+      "tokens": 87,
+      "at": "2026-04-12T20:13:24.299Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManagerSpec.lua",
+      "action": "edit",
+      "tokens": 69,
+      "at": "2026-04-12T20:13:28.951Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManagerSpec.lua",
+      "action": "edit",
+      "tokens": 88,
+      "at": "2026-04-12T20:13:34.533Z"
     }
   ],
   "edit_counts": {
-    "src/WorkflowExecutor.lua": 2
+    "src/WorkflowExecutor.lua": 5,
+    "src/WorkflowManager.lua": 1,
+    "tests/specs/WorkflowExecutor_spec.lua": 1,
+    "src/network/WMNetworkEvents.lua": 3,
+    "src/WorkflowManagerSpec.lua": 3
   },
-  "anatomy_hits": 1,
-  "anatomy_misses": 0,
-  "repeated_reads_warned": 1,
+  "anatomy_hits": 3,
+  "anatomy_misses": 2,
+  "repeated_reads_warned": 13,
   "cerebrum_warnings": 0,
-  "stop_count": 2
+  "stop_count": 4
 }

@@ -128,6 +128,7 @@ function WorkflowManagerSpec:onWriteStream(streamId, connection)
         streamWriteString(streamId, activeData.status)
         streamWriteBool(streamId, activeData.isMainVehicle ~= false)
         streamWriteInt32(streamId, activeData.currentSupportStep or 0)
+        streamWriteBool(streamId, activeData.waitingForMainStep == true)
         WMLogger:debug("onWriteStream: sent wmExecution wf=%s step=%d status=%s isMain=%s",
             activeData.workflow.id, activeData.currentStep, activeData.status,
             tostring(activeData.isMainVehicle ~= false))
@@ -150,6 +151,7 @@ function WorkflowManagerSpec:onReadStream(streamId, connection)
     local isMainVehicle      = streamReadBool(streamId)
     local currentSupportStep = streamReadInt32(streamId)
     if currentSupportStep == 0 then currentSupportStep = nil end
+    local waitingForMainStep = streamReadBool(streamId) or nil
 
     -- Resolve workflow definition (loadMap has run by the time vehicles are streamed)
     local workflow = WorkflowManager:getWorkflowById(workflowId)
@@ -166,6 +168,7 @@ function WorkflowManagerSpec:onReadStream(streamId, connection)
         waitingForCompletion = false,
         isMainVehicle        = isMainVehicle,
         currentSupportStep   = currentSupportStep,
+        waitingForMainStep   = waitingForMainStep,
     }
     WMExecutor.activeVehicles[self] = true
 

@@ -807,6 +807,58 @@ describe("WMExecutor (real)", function()
             WMExecutor:onMainStepChanged(d, 2)
             assert.is_nil(activeData(vs).waitingForMainStep)
         end)
+
+        it("paused support: sets pendingExecuteOnResume, does not start execution", function()
+            local wf = makeWorkflowWithSupport("wf_msc_pause")
+            local vm = makeVehicle("Main")
+            local vs = makeVehicle("Support")
+            WMExecutor:startWorkflow(wf, vm, true)
+            WMExecutor:startWorkflow(wf, vs, false)
+            activeData(vm).currentStep = 2
+            local d = activeData(vs)
+            d.status = WorkflowManager.STATUS_PAUSED
+            WMExecutor:onMainStepChanged(d, 2)
+            -- Must not have started execution (waitingForCompletion stays false)
+            assert.is_false(d.waitingForCompletion)
+            -- Must have staged the sub-step for when vehicle resumes
+            assert.is_true(d.pendingExecuteOnResume)
+            -- Sub-step index must be reset to 1
+            assert.are.equal(1, d.currentSupportStep)
+        end)
+
+        it("paused support: executeCurrentStep called on resume after main step change", function()
+            local wf = makeWorkflowWithSupport("wf_msc_resume")
+            local vm = makeVehicle("Main")
+            local vs = makeVehicle("Support")
+            WMExecutor:startWorkflow(wf, vm, true)
+            WMExecutor:startWorkflow(wf, vs, false)
+            activeData(vm).currentStep = 2
+            local d = activeData(vs)
+            -- Pause the support vehicle
+            WMExecutor:pauseWorkflow(vs)
+            assert.are.equal(WorkflowManager.STATUS_PAUSED, d.status)
+            -- Main advances while support is paused
+            WMExecutor:onMainStepChanged(d, 2)
+            assert.is_true(d.pendingExecuteOnResume)
+            -- Resume — should call executeCurrentStep for the new sub-step
+            WMExecutor:resumeWorkflow(vs)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, d.status)
+            assert.is_nil(d.pendingExecuteOnResume)
+            -- Sub-step should now be executing (waitingForCompletion set by startAutoDriveStep)
+            assert.is_true(d.waitingForCompletion)
+        end)
+
+        it("resetStepTrackingState clears pendingExecuteOnResume", function()
+            local wf = makeWorkflowWithSupport("wf_msc_rst")
+            local vm = makeVehicle("Main")
+            local vs = makeVehicle("Support")
+            WMExecutor:startWorkflow(wf, vm, true)
+            WMExecutor:startWorkflow(wf, vs, false)
+            local d = activeData(vs)
+            d.pendingExecuteOnResume = true
+            WMExecutor:resetStepTrackingState(d)
+            assert.is_nil(d.pendingExecuteOnResume)
+        end)
     end)
 
     -- =========================================================================
