@@ -977,6 +977,22 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-11T21:50:03.440Z"
+    },
+    {
+      "id": "bug-061",
+      "timestamp": "2026-04-12T21:01:48.370Z",
+      "error_message": "Significant refactor of ",
+      "file": "modDesc.xml",
+      "root_cause": "8 lines replaced/restructured",
+      "fix": "Rewrote 28→49 lines (8 removed) | Also: <![CDATA[Nutzt du AutoDrive und Courseplay? Der Wo; Richte einen Workflow einmal ein: Wähle, welche Au",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-12T21:02:13.026Z"
     }
   ]
 }

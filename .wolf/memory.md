@@ -480,3 +480,12 @@
 | 22:13 | Edited src/WorkflowManagerSpec.lua | 3→4 lines | ~64 |
 | 22:13 | Edited src/WorkflowManagerSpec.lua | 7→8 lines | ~82 |
 | 22:13 | Session end: 13 writes across 5 files (WorkflowExecutor.lua, WorkflowManager.lua, WorkflowExecutor_spec.lua, WMNetworkEvents.lua, WorkflowManagerSpec.lua) | 5 reads | ~37750 tok |
+| 22:55 | Created modDesc.xml | — | ~1644 |
+| 22:18 | Updated modDesc.xml: descriptions, changelog v1.0/v1.1, removed dead actions | modDesc.xml | ~100 tok |
+| 22:55 | Session end: 14 writes across 6 files (WorkflowExecutor.lua, WorkflowManager.lua, WorkflowExecutor_spec.lua, WMNetworkEvents.lua, WorkflowManagerSpec.lua) | 7 reads | ~42100 tok |
+| 22:59 | Edited modDesc.xml | reduced (-13 lines) | ~379 |
+| 22:59 | Edited modDesc.xml | reduced (-13 lines) | ~411 |
+| 22:59 | Session end: 16 writes across 6 files (WorkflowExecutor.lua, WorkflowManager.lua, WorkflowExecutor_spec.lua, WMNetworkEvents.lua, WorkflowManagerSpec.lua) | 7 reads | ~42946 tok |
+| 23:01 | Edited modDesc.xml | expanded (+21 lines) | ~714 |
+| 23:02 | Edited modDesc.xml | Aufgaben() → Schritt() | ~760 |
+| 23:02 | Session end: 18 writes across 6 files (WorkflowExecutor.lua, WorkflowManager.lua, WorkflowExecutor_spec.lua, WMNetworkEvents.lua, WorkflowManagerSpec.lua) | 7 reads | ~45852 tok |

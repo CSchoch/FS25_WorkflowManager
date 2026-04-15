@@ -7,29 +7,101 @@
     </title>
     <description>
         <en>
-<![CDATA[Combines AutoDrive and Courseplay to create automated workflows.
-Create sequences of field work tasks: use AutoDrive for transport between fields and Courseplay for the actual field work.
+<![CDATA[Do you use AutoDrive and Courseplay? Workflow Manager connects them so your vehicles work through entire fields automatically — from driving to the field, doing the work, and moving on to the next one — without you having to lift a finger.
 
-Features:
-- Link AutoDrive routes with Courseplay courses
-- Create multi-field workflows
-- GUI for workflow creation and management
-- Automatic switching between AutoDrive and Courseplay
+HOW IT WORKS:
+Set up a workflow once in the editor: chain together any number of AutoDrive routes and Courseplay courses in whatever order you need. Give a vehicle that workflow, press Start, and it will run through every step on its own. When the last field is done it stops and waits for you.
 
-Requirements: AutoDrive, Courseplay
+A typical multi-field harvest looks like this:
+  1. AutoDrive: drive to Field 1
+  2. Courseplay: harvest Field 1
+  3. AutoDrive: drive to Field 2
+  4. Courseplay: harvest Field 2
+  ... and so on for as many fields as you like.
+
+SUPPORT VEHICLES:
+Got a combine that needs a grain cart following it around? Add a second vehicle as support. It gets its own tasks attached to each harvest step — for example: drive to the field, unload the combine, deliver to the silo — and runs them automatically in sync with the main vehicle. When the combine moves on to the next field, the support vehicle follows.
+
+WORKFLOW EDITOR:
+- Create and manage multiple workflows, one per farm operation
+- Add, remove, and reorder steps freely
+- AutoDrive destinations and Courseplay courses are loaded automatically — just pick from a searchable list
+- Support tasks are added directly inside each step, so everything stays neatly organised
+
+IN-VEHICLE HUD:
+- Always visible when a workflow is running on your current vehicle
+- Shows the workflow name and which step you are on (e.g. Step 2 of 5)
+- Five buttons: go to previous step, pause, resume, stop, go to next step
+- Drag the HUD panel to any corner of the screen
+
+WHILE YOU PLAY:
+- Pause a workflow at any time and resume it later — the vehicle picks up exactly where it left off
+- Skip forward or back to any step manually if something needs attention
+- Workflows are saved with your savegame and automatically resume after loading
+- Works in multiplayer — all players see the correct state on their screens
+
+REQUIREMENTS: AutoDrive, Courseplay
+
+CHANGELOG:
+v1.1.0 (2026-04-12)
+- Support vehicles that work alongside the main vehicle (e.g. a grain cart following a combine)
+- Choose your role (Main or Support) when starting a workflow that has support tasks
+- Workflow progress for support vehicles is saved and restored correctly
+- Pausing now works correctly when the main vehicle moves to a new step
+- HUD can be dragged to any position on screen
+- Multiplayer improvements: all vehicles stay in sync across all players
+
+v1.0.0 (2026-03-11)
+- Initial release
 ]]>
         </en>
         <de>
-<![CDATA[Kombiniert AutoDrive und Courseplay zu automatisierten Arbeitsablaeufen.
-Erstellen Sie Sequenzen von Feldarbeiten: AutoDrive fuer den Transport zwischen Feldern und Courseplay fuer die eigentliche Feldarbeit.
+<![CDATA[Nutzt du AutoDrive und Courseplay? Der Workflow Manager verbindet beide Mods, sodass deine Fahrzeuge vollautomatisch ganze Felder abarbeiten — vom Anfahren über die Feldarbeit bis zum nächsten Feld — ganz ohne dein Zutun.
 
-Funktionen:
-- Verknuepfung von AutoDrive-Routen mit Courseplay-Kursen
-- Erstellung von Multi-Feld-Workflows
-- GUI zur Workflow-Erstellung und -Verwaltung
-- Automatisches Umschalten zwischen AutoDrive und Courseplay
+SO FUNKTIONIERT ES:
+Erstelle einmalig einen Workflow im Editor: Verknüpfe beliebig viele AutoDrive-Routen und Courseplay-Kurse in der Reihenfolge, die du brauchst. Weise einem Fahrzeug diesen Workflow zu, drücke Start — und es arbeitet jeden Schritt eigenständig ab. Nach dem letzten Feld hält es an und wartet auf dich.
 
-Voraussetzungen: AutoDrive, Courseplay
+Eine typische Mehrfeld-Ernte sieht so aus:
+  1. AutoDrive: zu Feld 1 fahren
+  2. Courseplay: Feld 1 ernten
+  3. AutoDrive: zu Feld 2 fahren
+  4. Courseplay: Feld 2 ernten
+  ... und so weiter für beliebig viele Felder.
+
+HILFSFAHRZEUGE:
+Braucht dein Mähdrescher einen Überladewagen nebenher? Füge ein zweites Fahrzeug als Hilfsfahrzeug hinzu. Es bekommt eigene Aufgaben für jeden Ernteschritt — zum Beispiel: zum Feld fahren, den Mähdrescher entladen, zum Silo liefern — und führt sie automatisch im Takt des Hauptfahrzeugs aus. Wenn der Mähdrescher zum nächsten Feld weiterzieht, folgt das Hilfsfahrzeug.
+
+WORKFLOW-EDITOR:
+- Mehrere Workflows anlegen und verwalten, einen pro Betriebsablauf
+- Schritte frei hinzufügen, entfernen und umsortieren
+- AutoDrive-Ziele und Courseplay-Kurse werden automatisch geladen — einfach aus einer durchsuchbaren Liste auswählen
+- Hilfsaufgaben werden direkt am jeweiligen Schritt eingetragen, alles bleibt übersichtlich
+
+FAHRZEUG-HUD:
+- Immer sichtbar, wenn ein Workflow auf deinem aktuellen Fahrzeug läuft
+- Zeigt den Workflow-Namen und den aktuellen Schritt (z.B. Schritt 2 von 5)
+- Fünf Tasten: vorheriger Schritt, Pause, Weiter, Stopp, nächster Schritt
+- Das HUD-Fenster lässt sich frei auf dem Bildschirm verschieben
+
+WÄHREND DES SPIELENS:
+- Workflow jederzeit pausieren und später fortsetzen — das Fahrzeug macht genau dort weiter, wo es aufgehört hat
+- Manuell zu jedem Schritt vor- oder zurückspringen, wenn etwas Aufmerksamkeit braucht
+- Workflows werden mit dem Spielstand gespeichert und nach dem Laden automatisch fortgesetzt
+- Multiplayer-fähig — alle Spieler sehen den korrekten Zustand auf ihrem Bildschirm
+
+VORAUSSETZUNGEN: AutoDrive, Courseplay
+
+CHANGELOG:
+v1.1.0 (2026-04-12)
+- Hilfsfahrzeuge, die parallel zum Hauptfahrzeug arbeiten (z.B. Überladewagen beim Mähdrescher)
+- Rollenauswahl (Haupt- oder Hilfsfahrzeug) beim Start eines Workflows mit Hilfsaufgaben
+- Workflow-Fortschritt für Hilfsfahrzeuge wird korrekt gespeichert und wiederhergestellt
+- Pause funktioniert jetzt korrekt, wenn das Hauptfahrzeug zum nächsten Schritt wechselt
+- HUD lässt sich frei auf dem Bildschirm verschieben
+- Multiplayer verbessert: alle Fahrzeuge bleiben bei allen Spielern synchron
+
+v1.0.0 (2026-03-11)
+- Erstveröffentlichung
 ]]>
         </de>
     </description>
@@ -48,8 +120,6 @@ Voraussetzungen: AutoDrive, Courseplay
     <actions>
         <action name="WM_TOGGLE_GUI" />
         <action name="WM_TOGGLE_HUD" />
-        <action name="WM_START_WORKFLOW" />
-        <action name="WM_STOP_WORKFLOW" />
         <action name="WM_GUI_DELETE" />
         <action name="WM_GUI_START" />
         <action name="WM_GUI_STOP" />

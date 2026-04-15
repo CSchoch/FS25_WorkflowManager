@@ -26,6 +26,16 @@
       "count": 1,
       "tokens": 4381,
       "first_read": "2026-04-12T20:10:55.082Z"
+    },
+    "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/modDesc.xml": {
+      "count": 2,
+      "tokens": 1328,
+      "first_read": "2026-04-12T20:54:30.148Z"
+    },
+    "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/translations/translation_de.xml": {
+      "count": 1,
+      "tokens": 2588,
+      "first_read": "2026-04-12T20:54:50.652Z"
     }
   },
   "files_written": [
@@ -106,6 +116,36 @@
       "action": "edit",
       "tokens": 88,
       "at": "2026-04-12T20:13:34.533Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/modDesc.xml",
+      "action": "create",
+      "tokens": 1762,
+      "at": "2026-04-12T20:55:23.689Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/modDesc.xml",
+      "action": "edit",
+      "tokens": 406,
+      "at": "2026-04-12T20:59:28.385Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/modDesc.xml",
+      "action": "edit",
+      "tokens": 440,
+      "at": "2026-04-12T20:59:49.048Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/modDesc.xml",
+      "action": "edit",
+      "tokens": 764,
+      "at": "2026-04-12T21:01:48.366Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/modDesc.xml",
+      "action": "edit",
+      "tokens": 814,
+      "at": "2026-04-12T21:02:13.022Z"
     }
   ],
   "edit_counts": {
@@ -113,11 +153,12 @@
     "src/WorkflowManager.lua": 1,
     "tests/specs/WorkflowExecutor_spec.lua": 1,
     "src/network/WMNetworkEvents.lua": 3,
-    "src/WorkflowManagerSpec.lua": 3
+    "src/WorkflowManagerSpec.lua": 3,
+    "modDesc.xml": 5
   },
-  "anatomy_hits": 3,
-  "anatomy_misses": 2,
-  "repeated_reads_warned": 13,
+  "anatomy_hits": 4,
+  "anatomy_misses": 3,
+  "repeated_reads_warned": 14,
   "cerebrum_warnings": 0,
-  "stop_count": 4
+  "stop_count": 7
 }
