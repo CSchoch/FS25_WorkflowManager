@@ -4,6 +4,7 @@
 > Old sessions are consolidated by the daemon weekly.
 
 | 2026-04-10 | Added dummy AD hold for support vehicle idle state + fixed justStoppedAD not cleared in resetStepTrackingState | WorkflowExecutor.lua | 106/106 tests pass |
+| 2026-04-29 | Support vehicle no longer paused/resumed when main pauses/resumes — support runs independently | WorkflowExecutor.lua, WorkflowExecutor_spec.lua | 109/109 tests pass |
 
 ## Session: 2026-04-05 23:05
 
@@ -489,3 +490,22 @@
 | 23:01 | Edited modDesc.xml | expanded (+21 lines) | ~714 |
 | 23:02 | Edited modDesc.xml | Aufgaben() → Schritt() | ~760 |
 | 23:02 | Session end: 18 writes across 6 files (WorkflowExecutor.lua, WorkflowManager.lua, WorkflowExecutor_spec.lua, WMNetworkEvents.lua, WorkflowManagerSpec.lua) | 7 reads | ~45852 tok |
+
+## Session: 2026-04-29 22:20
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-04-29 22:21
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 22:26 | Edited src/WorkflowExecutor.lua | removed 14 lines | ~6 |
+| 22:26 | Edited src/WorkflowExecutor.lua | removed 15 lines | ~6 |
+| 22:27 | Edited tests/specs/WorkflowExecutor_spec.lua | 29→29 lines | ~354 |
+| 22:27 | Session end: 3 writes across 2 files (WorkflowExecutor.lua, WorkflowExecutor_spec.lua) | 2 reads | ~31627 tok |
+
+## Session: 2026-04-30 08:45
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|

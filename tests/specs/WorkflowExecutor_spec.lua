@@ -963,11 +963,11 @@ describe("WMExecutor (real)", function()
             return vm, vs
         end
 
-        it("pausing main also pauses support vehicle", function()
+        it("pausing main does NOT pause support vehicle", function()
             local vm, vs = makeMainSupportPair("wf_pr1")
             WMExecutor:pauseWorkflow(vm)
-            assert.are.equal("paused", activeData(vm).status)
-            assert.are.equal("paused", activeData(vs).status)
+            assert.are.equal("paused",  activeData(vm).status)
+            assert.are.equal("running", activeData(vs).status)
         end)
 
         it("pausing support alone does NOT pause main", function()
@@ -977,9 +977,9 @@ describe("WMExecutor (real)", function()
             assert.are.equal("running", activeData(vm).status)
         end)
 
-        it("resuming main also resumes paused support", function()
+        it("resuming main does not affect independently-running support", function()
             local vm, vs = makeMainSupportPair("wf_pr3")
-            WMExecutor:pauseWorkflow(vm)  -- pauses both
+            WMExecutor:pauseWorkflow(vm)
             WMExecutor:resumeWorkflow(vm)
             assert.are.equal("running", activeData(vm).status)
             assert.are.equal("running", activeData(vs).status)
@@ -987,7 +987,7 @@ describe("WMExecutor (real)", function()
 
         it("resuming support alone does NOT resume main", function()
             local vm, vs = makeMainSupportPair("wf_pr4")
-            WMExecutor:pauseWorkflow(vm)  -- pauses both
+            WMExecutor:pauseWorkflow(vm)
             WMExecutor:resumeWorkflow(vs)
             assert.are.equal("running", activeData(vs).status)
             assert.are.equal("paused",  activeData(vm).status)

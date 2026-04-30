@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-12T21:02:13.007Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-29T20:27:24.032Z
 > Files: 27 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
@@ -30,7 +30,7 @@
 
 ## src/
 
-- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~18030 tok)
+- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~17688 tok)
 - `WorkflowManager.lua` — init, loadDialogs, Callback, showTextInputDialog, setupInGameMenu (~12654 tok)
 - `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~4432 tok)
 
@@ -66,7 +66,7 @@
 
 ## tests/specs/
 
-- `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport (~13206 tok)
+- `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport (~13204 tok)
 
 ## textures/
 

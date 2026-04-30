@@ -2,14 +2,14 @@
   "version": 1,
   "created_at": "2026-04-05T21:01:47.995Z",
   "lifetime": {
-    "total_tokens_estimated": 1506220,
-    "total_reads": 536,
-    "total_writes": 1397,
-    "total_sessions": 18,
-    "anatomy_hits": 146,
+    "total_tokens_estimated": 1537847,
+    "total_reads": 538,
+    "total_writes": 1400,
+    "total_sessions": 21,
+    "anatomy_hits": 148,
     "anatomy_misses": 390,
-    "repeated_reads_blocked": 617,
-    "estimated_savings_vs_bare_cli": 4647498
+    "repeated_reads_blocked": 618,
+    "estimated_savings_vs_bare_cli": 4665928
   },
   "sessions": [
     {
@@ -11520,6 +11520,50 @@
         "writes_count": 18,
         "repeated_reads_blocked": 14,
         "anatomy_lookups": 4
+      }
+    },
+    {
+      "id": "session-2026-04-29-2221",
+      "started": "2026-04-29T20:21:54.806Z",
+      "ended": "2026-04-29T20:27:44.207Z",
+      "reads": [
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowExecutor.lua",
+          "tokens_estimated": 18030,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/WorkflowExecutor_spec.lua",
+          "tokens_estimated": 13206,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowExecutor.lua",
+          "tokens_estimated": 6,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowExecutor.lua",
+          "tokens_estimated": 6,
+          "action": "edit"
+        },
+        {
+          "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/WorkflowExecutor_spec.lua",
+          "tokens_estimated": 379,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 31236,
+        "output_tokens_estimated": 391,
+        "reads_count": 2,
+        "writes_count": 3,
+        "repeated_reads_blocked": 1,
+        "anatomy_lookups": 2
       }
     }
   ],

@@ -268,18 +268,6 @@ function WMExecutor:pauseWorkflow(vehicle)
         currentStep = activeData.currentStep
     })
 
-    -- If this is the main vehicle, pause all running support vehicles
-    if activeData.isMainVehicle ~= false then
-        local supportDataList = self:getSupportActiveDataListForWorkflow(activeData.workflow.id)
-        for _, supportActiveData in ipairs(supportDataList) do
-            if supportActiveData.status == WorkflowManager.STATUS_RUNNING then
-                WMLogger:info("Main workflow paused - also pausing support vehicle")
-                self:pauseWorkflow(supportActiveData.vehicle)
-                WorkflowManager:broadcastState(supportActiveData.vehicle)
-            end
-        end
-    end
-
     return true
 end
 
@@ -356,19 +344,6 @@ function WMExecutor:resumeWorkflow(vehicle)
         vehicle = vehicle,
         currentStep = activeData.currentStep
     })
-
-    -- If this is a main workflow, resume all running support vehicles
-    local workflow = activeData.workflow
-    if activeData.isMainVehicle ~= false then
-        local supportDataList = self:getSupportActiveDataListForWorkflow(workflow.id)
-        for _, supportActiveData in ipairs(supportDataList) do
-            if supportActiveData.status == WorkflowManager.STATUS_PAUSED then
-                WMLogger:info("Main workflow resumed - also resuming support vehicle")
-                self:resumeWorkflow(supportActiveData.vehicle)
-                WorkflowManager:broadcastState(supportActiveData.vehicle)
-            end
-        end
-    end
 
     return true
 end
