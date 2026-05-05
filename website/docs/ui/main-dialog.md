@@ -78,6 +78,35 @@ Stops a running workflow:
 
 This resets the workflow to step 1 and sets status to "ready".
 
+### AD/CP Settings
+
+Opens the AutoDrive settings override dialog for the selected workflow:
+1. Select a workflow from the list
+2. Click **AD/CP Settings**
+3. Adjust the values and click **OK**
+
+These settings are applied automatically every time the workflow starts. See [Per-Workflow AD Settings](#per-workflow-ad-settings) below for details.
+
+## Per-Workflow AD Settings
+
+Each workflow can store AutoDrive setting overrides that are applied to the vehicle automatically whenever the workflow starts (or auto-resumes after a save/reload).
+
+Click **AD/CP Settings** in the main dialog to open the settings dialog for the selected workflow.
+
+![AD/CP Settings Dialog](/img/screenshots/ad-settings-dialog.png)
+
+| Setting | Unit | Description |
+|---------|------|-------------|
+| **Unload Fill Level** | % (0–100) | Minimum fill level before AutoDrive calls an unloader. Leave empty to keep AutoDrive's current value. |
+| **Pipe Offset** | meters | Horizontal pipe position offset for unloading. Leave empty to keep AutoDrive's current value. |
+| **Pre-Call Level** | % (0–100) | Fill level at which AutoDrive pre-calls the unloader so it arrives just in time. Leave empty to keep AutoDrive's current value. |
+
+:::tip
+Leave a field **empty** to leave that setting unchanged — the workflow will use whatever value is already configured in AutoDrive for that vehicle.
+:::
+
+Settings are stored inside the workflow definition and persist across sessions. They are re-applied each time the workflow starts a new AutoDrive step, so AutoDrive's own route-start logic cannot overwrite them.
+
 ## Keyboard Shortcuts
 
 ### Global (work anywhere)

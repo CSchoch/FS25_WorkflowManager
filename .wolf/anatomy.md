@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-05T12:13:27.301Z
-> Files: 15 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-05T12:20:19.487Z
+> Files: 18 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -9,7 +9,7 @@
 
 ## ./
 
-- `CLAUDE.md` — FS25 Workflow Manager (~5577 tok)
+- `CLAUDE.md` — FS25 Workflow Manager (~5713 tok)
 
 ## .claude/
 
@@ -104,12 +104,15 @@
 
 ## website/docs/api/
 
+- `xml-format.md` — XML Format (~2193 tok)
 
 ## website/docs/ui/
 
+- `main-dialog.md` — Main Dialog (~1077 tok)
 
 ## website/docs/workflows/
 
+- `creating-workflows.md` — Creating Workflows (~1889 tok)
 
 ## website/src/components/HomepageFeatures/
 

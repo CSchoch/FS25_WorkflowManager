@@ -50,6 +50,31 @@ The file is created automatically when you save your first workflow.
 | `id` | string | Unique identifier (auto-generated, do not change) |
 | `name` | string | Display name shown in the Workflow Manager |
 
+### AD Settings Element (optional)
+
+A workflow can optionally contain an `<adSettings>` element with AutoDrive overrides. All attributes are optional — omit any that should keep AutoDrive's own value.
+
+```xml
+<workflow id="wf_001" name="Combine Harvest">
+    <adSettings unloadFillLevel="0.9" pipeOffset="0.5" preCallLevel="0.8"/>
+    <!-- steps … -->
+</workflow>
+```
+
+#### adSettings Attributes
+
+| Attribute | Type | Range | Description |
+|-----------|------|-------|-------------|
+| `unloadFillLevel` | float | 0.0 – 1.0 | Fill fraction at which the unloader is called (0.9 = 90 %). |
+| `pipeOffset` | float | –5.0 – 5.0 | Horizontal pipe position offset in metres. |
+| `preCallLevel` | float | 0.0 – 1.0 | Fill fraction at which AutoDrive pre-calls the unloader (0.8 = 80 %). |
+
+:::note
+All three values are stored as fractions (0.0–1.0). The in-game dialog shows and accepts them as percentages (0–100) and converts automatically.
+:::
+
+The `<adSettings>` element is omitted entirely when no overrides are set.
+
 ### Step Element
 
 Main steps are direct children of `<workflow>`. Steps that have support sub-steps contain nested `<support>` child elements.
@@ -112,6 +137,7 @@ Support sub-steps are nested inside the main steps they belong to. Drive-to step
 <WorkflowManager>
     <workflows>
         <workflow id="wf_001" name="Combine Harvest">
+            <adSettings unloadFillLevel="0.9" pipeOffset="0.5" preCallLevel="0.8"/>
             <step type="autodrive" target="Route_Field1" action="drive"/>
             <step type="courseplay" target="Field1_Harvest" action="fieldwork">
                 <support type="autodrive" target="Field1" action="unload" unloadTarget="Silo"/>

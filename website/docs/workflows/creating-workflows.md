@@ -164,6 +164,23 @@ Step 4: Courseplay → Field2_Wheat_Harvest     Field Work
   4.2: AutoDrive → Silo                      Deliver
 ```
 
+## Per-Workflow AutoDrive Settings
+
+Each workflow can store AutoDrive overrides that apply automatically on every start. This is useful when different workflows require different unload thresholds or pipe positions without you having to reconfigure AutoDrive manually each time.
+
+Access the settings from the **main dialog**:
+1. Select a workflow
+2. Click **AD/CP Settings**
+3. Fill in any values you want to override and click **OK**
+
+| Field | Description |
+|-------|-------------|
+| **Unload Fill Level** (%) | Minimum fill % before the unloader is called |
+| **Pipe Offset** (m) | Horizontal pipe position override |
+| **Pre-Call Level** (%) | Fill % at which AutoDrive pre-calls the unloader |
+
+Leave any field empty to keep AutoDrive's existing value for that setting. Settings are applied every time the workflow starts an AutoDrive step.
+
 ## Saving Workflows
 
 Workflows are saved automatically when you:

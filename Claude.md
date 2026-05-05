@@ -380,13 +380,14 @@ FS25_WorkflowManager/
 
 Screenshots for the Docusaurus documentation site (`website/static/img/screenshots/`). Take these in-game and save them at the listed paths:
 
-| File                         | What to show                                                                                                                | Used in                                                                        |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `main-dialog.png`            | Main Workflow Manager dialog open, showing a list of at least 2–3 workflows with their step counts                          | `ui/main-dialog.md`, `workflows/creating-workflows.md`                         |
-| `editor-dialog.png`          | Editor dialog open for a workflow with 3–5 steps visible, including a mix of AutoDrive and Courseplay rows                  | `ui/editor-dialog.md`                                                          |
-| `step-dialog-autodrive.png`  | Step dialog open with **AutoDrive** selected, showing Target, Action, Unload Target, and Fill Type fields                   | `ui/editor-dialog.md`, `workflows/step-types.md`                               |
-| `step-dialog-courseplay.png` | Step dialog open with **Courseplay** selected, showing the course dropdown and Action field                                 | `ui/editor-dialog.md`, `workflows/step-types.md`                               |
-| `hud-running.png`            | In-vehicle HUD overlay while a workflow is actively running, showing workflow name, step counter, and the 4 control buttons | `ui/hud-controls.md`, `workflows/executing-workflows.md`, `getting-started.md` |
+| File                         | What to show                                                                                                                | Used in                                                                        | Status                              |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ----------------------------------- |
+| `main-dialog.png`            | Main dialog (1100px wide) showing button row with **AD/CP Settings** button and 2–3 workflows in the list                  | `ui/main-dialog.md`, `workflows/creating-workflows.md`                         | **Retake needed** (dialog resized)  |
+| `ad-settings-dialog.png`     | AD/CP Settings dialog open with example values in all three fields (Unload Fill Level, Pipe Offset, Pre-Call Level)         | `ui/main-dialog.md`                                                            | **New — not yet taken**             |
+| `editor-dialog.png`          | Editor dialog open for a workflow with 3–5 steps visible, including a mix of AutoDrive and Courseplay rows                  | `ui/editor-dialog.md`                                                          | Exists                              |
+| `step-dialog-autodrive.png`  | Step dialog open with **AutoDrive** selected, showing Target, Action, Unload Target, and Fill Type fields                   | `ui/editor-dialog.md`, `workflows/step-types.md`                               | Exists                              |
+| `step-dialog-courseplay.png` | Step dialog open with **Courseplay** selected, showing the course dropdown and Action field                                 | `ui/editor-dialog.md`, `workflows/step-types.md`                               | Exists                              |
+| `hud-running.png`            | In-vehicle HUD overlay while a workflow is actively running, showing workflow name, step counter, and the 4 control buttons | `ui/hud-controls.md`, `workflows/executing-workflows.md`, `getting-started.md` | Exists                              |
 
 ## Todo
 

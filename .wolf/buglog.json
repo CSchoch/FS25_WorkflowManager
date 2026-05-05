@@ -1303,6 +1303,22 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-05-05T12:12:53.575Z"
+    },
+    {
+      "id": "bug-081",
+      "timestamp": "2026-05-05T12:20:19.518Z",
+      "error_message": "Significant refactor of ",
+      "file": "CLAUDE.md",
+      "root_cause": "7 lines replaced/restructured",
+      "fix": "Rewrote 7→8 lines (7 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-05T12:20:19.518Z"
     }
   ]
 }
