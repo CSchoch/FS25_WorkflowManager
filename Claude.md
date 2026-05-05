@@ -80,7 +80,7 @@ Workflow **definitions** (hierarchical support sub-steps):
 <WorkflowManager>
     <workflows>
         <workflow id="wf_001" name="Combine Harvest">
-            <adSettings unloadFillLevel="0.9" pipeOffset="0.5" preCallLevel="80"/>
+            <adSettings unloadFillLevel="0.9" pipeOffset="0.5" preCallLevel="0.8"/>
             <step type="autodrive" target="Route_Field1" action="drive"/>
             <step type="courseplay" target="Field1_Harvest" action="fieldwork">
                 <support type="autodrive" target="Field1" action="unload" unloadTarget="Silo"/>
@@ -120,7 +120,7 @@ On `onPostLoad`, this state is restored as `status = "paused"` with a 10-second 
 
 **Milestones 1–7:** Core (WorkflowManager, Executor, XML storage), GUI (main dialog, editor, HUD, ESC menu), Vehicle selection, AD/CP integration, Searchable dropdowns
 
-**Recent:** Multi-field workflows, hierarchical support steps, per-vehicle runtime state with savegame persistence, auto-resume after load, draggable HUD, reactive HUD show/hide, HUD badges/tooltips, step editor UX (selected-value rows, auto-select), support vehicle dummy AD hold to prevent staling, `justStoppedAD` fix for idle transitions
+**Recent:** Multi-field workflows, hierarchical support steps, per-vehicle runtime state with savegame persistence, auto-resume after load, draggable HUD, reactive HUD show/hide, HUD badges/tooltips, step editor UX (selected-value rows, auto-select), support vehicle dummy AD hold to prevent staling, `justStoppedAD` fix for idle transitions, per-workflow AD settings (unloadFillLevel, pipeOffset, preCallLevel) accessible from main dialog via "AD/CP Einstellungen" button, fixed pcall arg-order bug in `applyWorkflowSettings`, fixed preCallLevel unit mismatch (now stored as 0.0–1.0 fraction), settings re-applied after `StartDriving`
 
 **Other:** Courseplay resume at nearest waypoint, release build support (DevConfig stub), DDS textures, old linked-workflow migration, multiple simultaneous support vehicles, sub-step editor numbering (N.M format), mode dialog vehicle reference fix
 
@@ -162,8 +162,10 @@ Key functions from `ExternalInterface.lua`, `Specialization.lua` and `GraphManag
 
 **Per-workflow settings** (`ADIntegration:applyWorkflowSettings(vehicle, adSettings)`):
 - Reads `vehicle.ad.settings[name].values` to find the nearest valid index, then calls `AD.setSettingState(name, idx, vehicle)`
-- Called in `WMExecutor:startWorkflow()` and on auto-resume after savegame load
+- `AutoDrive.setSettingState` is a **static function** (dot notation, not colon) — pcall must be `pcall(AD.setSettingState, settingName, idx, vehicle)`. Passing `AD` as the first arg shifts all parameters and silently does nothing.
+- Called in `WMExecutor:startWorkflow()`, again inside `startAutoDriveStep()` after `StartDriving` succeeds (AD's route-start can overwrite settings), and on auto-resume after savegame load
 - Settings: `unloadFillLevel` (0.0–1.0), `pipeOffset` (-5.0–5.0 m), `preCallLevel` (0.0–1.0 fraction; UI shows 0–100%, stored ÷100)
+- All three settings are fractions 0.0–1.0 internally — AD's `.values` arrays confirm this
 - Nil fields are skipped — AD keeps its own value
 
 **AD -> CP Handoff**:
@@ -252,7 +254,7 @@ FS25_WorkflowManager/
 │   └── package.json                   # Dependencies
 └── xml/gui/
     ├── guiProfiles.xml                # Custom GUI profiles
-    ├── WMMainDialog.xml               # Main dialog layout (2 columns: name + steps)
+    ├── WMMainDialog.xml               # Main dialog layout (1100px wide, 2 columns: name + steps, AD Settings button)
     ├── WMEditorDialog.xml             # Editor dialog layout
     ├── WMStepDialog.xml               # Step dialog layout
     ├── WMModeSelectDialog.xml         # Role selection dialog layout (Main/Support)
@@ -371,8 +373,8 @@ FS25_WorkflowManager/
 
 ---
 
-**Status**: Phases 1-4 IN PROGRESS — Core, executor, GUI layer all functional. Recent: per-workflow AD/CP settings (unloadFillLevel, pipeOffset, preCallLevel) via dedicated dialog in editor. Milestone 8 items (F1 overlay, hint relocation, X button) remain open.
-**Last updated**: 2026-05-02
+**Status**: Phases 1-4 IN PROGRESS — Core, executor, GUI layer all functional. Recent: AD/CP Settings button on main dialog, fixed AD settings not applying (pcall arg order + preCallLevel unit mismatch + re-apply after StartDriving). Milestone 8 items (F1 overlay, hint relocation, X button) remain open.
+**Last updated**: 2026-05-05
 
 ## Screenshots Needed
 

@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-05T11:31:51.485Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-05T12:13:27.301Z
 > Files: 15 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
@@ -9,7 +9,7 @@
 
 ## ./
 
-- `CLAUDE.md` — FS25 Workflow Manager (~5376 tok)
+- `CLAUDE.md` — FS25 Workflow Manager (~5577 tok)
 
 ## .claude/
 

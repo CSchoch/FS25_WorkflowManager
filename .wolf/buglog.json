@@ -1287,6 +1287,22 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-05-05T10:36:16.226Z"
+    },
+    {
+      "id": "bug-080",
+      "timestamp": "2026-05-05T12:12:53.575Z",
+      "error_message": "Incorrect value in code",
+      "file": "CLAUDE.md",
+      "root_cause": "Had \"80\"",
+      "fix": "Changed to \"0.8\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-05T12:12:53.575Z"
     }
   ]
 }
