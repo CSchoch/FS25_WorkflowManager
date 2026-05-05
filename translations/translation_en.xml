@@ -145,6 +145,16 @@
         <text name="wm_button_run_as_main" text="Main Vehicle"/>
         <text name="wm_button_run_as_support" text="Support Vehicle"/>
 
+        <!-- AD/CP Settings Dialog -->
+        <text name="wm_button_ad_settings"          text="AD/CP Settings"/>
+        <text name="wm_adsettings_title"            text="AD / CP Settings"/>
+        <text name="wm_adsettings_ad_section"       text="AutoDrive Settings"/>
+        <text name="wm_adsettings_cp_section"       text="Courseplay Settings"/>
+        <text name="wm_adsettings_unload_fill"      text="Unload Fill Level"/>
+        <text name="wm_adsettings_pipe_offset"      text="Pipe Offset"/>
+        <text name="wm_adsettings_pre_call"         text="Pre-Call Level"/>
+        <text name="wm_adsettings_cp_placeholder"   text="No Courseplay settings yet."/>
+
         <!-- Support Steps Editor -->
         <text name="wm_editor_sup_short" text="Sup"/>
         <text name="wm_button_add_support" text="Add Support Step"/>

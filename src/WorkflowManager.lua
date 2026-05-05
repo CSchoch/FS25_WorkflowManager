@@ -67,6 +67,7 @@ source(Utils.getFilename("src/gui/WMMainDialog.lua", g_currentModDirectory))
 source(Utils.getFilename("src/gui/WMEditorDialog.lua", g_currentModDirectory))
 source(Utils.getFilename("src/gui/WMStepDialog.lua", g_currentModDirectory))
 source(Utils.getFilename("src/gui/WMModeSelectDialog.lua", g_currentModDirectory))
+source(Utils.getFilename("src/gui/WMADSettingsDialog.lua", g_currentModDirectory))
 
 -- 7. In-vehicle HUD
 source(Utils.getFilename("src/gui/WMHudElements.lua", g_currentModDirectory))
@@ -236,6 +237,19 @@ function WorkflowManager:loadDialogs()
         WMLogger:warning("Failed to load mode select dialog: %s", tostring(result))
         self.modeSelectDialog = nil
     end
+
+    -- Load AD/CP Settings Dialog
+    self.adSettingsDialog = WMADSettingsDialog.new()
+    xmlPath = Utils.getFilename("xml/gui/WMADSettingsDialog.xml", self.modDirectory)
+    success, result = pcall(function()
+        g_gui:loadGui(xmlPath, "WMADSettingsDialog", self.adSettingsDialog)
+    end)
+    if success then
+        WMLogger:info("AD settings dialog loaded successfully")
+    else
+        WMLogger:warning("Failed to load AD settings dialog: %s", tostring(result))
+        self.adSettingsDialog = nil
+    end
 end
 
 ---Show the text input dialog
@@ -257,6 +271,18 @@ function WorkflowManager:showTextInputDialog(title, text, callback, target)
     self.textInputDialog:setCallback(callback, target)
 
     g_gui:showDialog("WMTextInputDialog")
+end
+
+---Show the AD/CP settings dialog
+---@param adSettings table|nil  Current workflow.adSettings
+---@param callback   function   Called with settings table on OK, nil on cancel
+function WorkflowManager:showADSettingsDialog(adSettings, callback)
+    if self.adSettingsDialog == nil then
+        WMLogger:warning("AD settings dialog not available")
+        return
+    end
+    self.adSettingsDialog:setSettings(adSettings, callback)
+    g_gui:showDialog("WMADSettingsDialog")
 end
 
 ---Setup InGameMenu integration
@@ -1123,6 +1149,9 @@ function WorkflowManager:deleteMap()
         end
         if self.modeSelectDialog ~= nil then
             self.modeSelectDialog = nil
+        end
+        if self.adSettingsDialog ~= nil then
+            self.adSettingsDialog = nil
         end
     end)
 

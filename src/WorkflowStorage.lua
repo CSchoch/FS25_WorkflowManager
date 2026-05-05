@@ -66,6 +66,15 @@ function WMStorage:saveWorkflows(workflows)
         xmlFile:setString(workflowKey .. "#id", workflow.id)
         xmlFile:setString(workflowKey .. "#name", workflow.name)
 
+        -- Save per-workflow AD settings (only write fields that are set)
+        local s = workflow.adSettings
+        if s and (s.unloadFillLevel ~= nil or s.pipeOffset ~= nil or s.preCallLevel ~= nil) then
+            local sk = workflowKey .. ".adSettings"
+            if s.unloadFillLevel ~= nil then xmlFile:setFloat(sk .. "#unloadFillLevel", s.unloadFillLevel) end
+            if s.pipeOffset      ~= nil then xmlFile:setFloat(sk .. "#pipeOffset",      s.pipeOffset)      end
+            if s.preCallLevel    ~= nil then xmlFile:setFloat(sk .. "#preCallLevel",     s.preCallLevel)    end
+        end
+
         -- Save steps (with nested support sub-steps)
         for j, step in ipairs(workflow.steps) do
             local stepKey = string.format("%s.step(%d)", workflowKey, j - 1)
@@ -236,6 +245,7 @@ function WMStorage:loadWorkflows()
             break
         end
 
+        local sk = workflowKey .. ".adSettings"
         local workflow = {
             id   = workflowId,
             name = xmlFile:getString(workflowKey .. "#name", "Unnamed Workflow"),
@@ -244,6 +254,12 @@ function WMStorage:loadWorkflows()
             -- Legacy fields read for migration only (cleared after migrateOldLinkedWorkflows)
             linkedWorkflowId = xmlFile:getString(workflowKey .. "#linkedWorkflowId"),
             linkRole         = xmlFile:getString(workflowKey .. "#linkRole"),
+            -- Per-workflow AD settings (nil fields = use AD's own default)
+            adSettings = {
+                unloadFillLevel = xmlFile:getFloat(sk .. "#unloadFillLevel"),
+                pipeOffset      = xmlFile:getFloat(sk .. "#pipeOffset"),
+                preCallLevel    = xmlFile:getFloat(sk .. "#preCallLevel"),
+            },
         }
 
         -- Load steps

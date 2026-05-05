@@ -161,7 +161,9 @@ function WMMainDialog:updateButtons()
         -- Stop only available when this workflow is actively running on current vehicle
         self.stopButton:setDisabled(not hasSelection or not isThisWorkflow)
     end
-
+    if self.adSettingsButton then
+        self.adSettingsButton:setDisabled(not hasSelection)
+    end
 end
 
 ---Called when list selection changes
@@ -255,6 +257,19 @@ function WMMainDialog:onClickStop()
             string.format(g_i18n:getText("wm_workflow_stopped") or "Workflow stopped: %s", workflow.name))
         self:refreshWorkflowList()
     end
+end
+
+---Called when AD/CP Settings button is clicked
+function WMMainDialog:onClickADSettings()
+    WMLogger:debug("WMMainDialog:onClickADSettings")
+    if self.selectedWorkflowIndex < 1 or self.selectedWorkflowIndex > #self.workflows then return end
+    local workflow = self.workflows[self.selectedWorkflowIndex]
+    WorkflowManager:showADSettingsDialog(workflow.adSettings, function(settings)
+        if settings ~= nil then
+            workflow.adSettings = settings
+            WorkflowManager:saveWorkflows()
+        end
+    end)
 end
 
 ---Called when Close button is clicked

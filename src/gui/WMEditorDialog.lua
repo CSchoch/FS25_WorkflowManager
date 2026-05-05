@@ -418,6 +418,16 @@ function WMEditorDialog:onClickMoveDown()
     self:refreshStepList()
 end
 
+---Open the AD/CP settings dialog for the current workflow.
+function WMEditorDialog:onClickADSettings()
+    if self.workflow == nil then return end
+    WorkflowManager:showADSettingsDialog(self.workflow.adSettings, function(settings)
+        if settings ~= nil and self.workflow then
+            self.workflow.adSettings = settings
+        end
+    end)
+end
+
 ---Add a support sub-step to the currently selected main step.
 function WMEditorDialog:onClickAddSupportStep()
     local item = self:getSelectedItem()

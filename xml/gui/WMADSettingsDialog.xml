@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<GUI inputContext="DIALOG_WMADSettingsDialog" onOpen="onOpen" onClose="onClose" onCreate="onCreate">
+    <GuiElement profile="newLayer"/>
+    <Bitmap profile="dialogFullscreenBg"/>
+    <GuiElement profile="fs25_dialogBg" size="660px 500px">
+        <ThreePartBitmap profile="fs25_dialogBgMiddleSmall"/>
+        <ThreePartBitmap profile="fs25_dialogBgTopSmall"/>
+        <ThreePartBitmap profile="fs25_dialogBgBottom"/>
+
+        <BoxLayout profile="wm_dialogContentContainer">
+            <!-- Title -->
+            <Text profile="wm_dialogTitle" text="$l10n_wm_adsettings_title"/>
+            <ThreePartBitmap profile="wm_dialogTitleLineSeparator"/>
+
+            <!-- AutoDrive Settings section -->
+            <BoxLayout profile="wm_hBox" size="600px 30px">
+                <Text profile="wm_sectionLabel" text="$l10n_wm_adsettings_ad_section" size="600px 30px"/>
+            </BoxLayout>
+
+            <!-- Unload Fill Level -->
+            <BoxLayout profile="wm_hBox" size="600px 45px">
+                <Text profile="wm_dialogText" text="$l10n_wm_adsettings_unload_fill" size="240px 40px"/>
+                <TextInput profile="fs25_dialogTextInput" id="unloadFillInput" size="160px 40px" maxCharacters="5">
+                    <ThreePartBitmap profile="fs25_textInputBg"/>
+                </TextInput>
+                <Text profile="wm_dialogText" text="%" size="30px 40px"/>
+            </BoxLayout>
+
+            <!-- Pipe Offset -->
+            <BoxLayout profile="wm_hBox" size="600px 45px">
+                <Text profile="wm_dialogText" text="$l10n_wm_adsettings_pipe_offset" size="240px 40px"/>
+                <TextInput profile="fs25_dialogTextInput" id="pipeOffsetInput" size="160px 40px" maxCharacters="8">
+                    <ThreePartBitmap profile="fs25_textInputBg"/>
+                </TextInput>
+                <Text profile="wm_dialogText" text="m" size="30px 40px"/>
+            </BoxLayout>
+
+            <!-- Pre-Call Level -->
+            <BoxLayout profile="wm_hBox" size="600px 45px">
+                <Text profile="wm_dialogText" text="$l10n_wm_adsettings_pre_call" size="240px 40px"/>
+                <TextInput profile="fs25_dialogTextInput" id="preCallInput" size="160px 40px" maxCharacters="5">
+                    <ThreePartBitmap profile="fs25_textInputBg"/>
+                </TextInput>
+                <Text profile="wm_dialogText" text="%" size="30px 40px"/>
+            </BoxLayout>
+
+            <!-- Courseplay Settings section -->
+            <BoxLayout profile="wm_hBox" size="600px 30px">
+                <Text profile="wm_sectionLabel" text="$l10n_wm_adsettings_cp_section" size="600px 30px"/>
+            </BoxLayout>
+
+            <!-- CP placeholder -->
+            <BoxLayout profile="wm_hBox" size="600px 35px">
+                <Text profile="wm_infoText" text="$l10n_wm_adsettings_cp_placeholder" size="600px 35px"/>
+            </BoxLayout>
+
+        </BoxLayout>
+
+        <!-- Bottom Buttons -->
+        <BoxLayout profile="wm_dialogButtonBoxBottom">
+            <Button profile="buttonOK" id="confirmButton" text="$l10n_button_ok" onClick="onClickConfirm" focusId="confirmBtn"/>
+            <Bitmap profile="fs25_dialogButtonBoxSeparator"/>
+            <Button profile="buttonBack" id="cancelButton" text="$l10n_button_back" onClick="onClickCancel" focusId="cancelBtn"/>
+        </BoxLayout>
+    </GuiElement>
+</GUI>

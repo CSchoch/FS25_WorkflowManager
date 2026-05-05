@@ -6,6 +6,8 @@
 
 This project uses OpenWolf for context management. Read and follow .wolf/OPENWOLF.md every session. Check .wolf/cerebrum.md before generating code. Check .wolf/anatomy.md before reading files.
 
+**Do NOT edit `.wolf/anatomy.md` manually.** It is maintained automatically by OpenWolf hooks. Attempting to edit it will error.
+
 ## Project Overview
 
 A mod for Farming Simulator 25 that combines AutoDrive and Courseplay to create automated workflows. The mod allows multiple fields to be processed sequentially by using AutoDrive for transport between fields and Courseplay for the actual field work.
@@ -38,7 +40,8 @@ After every code change:
 ### Data Structure
 
 **Workflow definition** (immutable template, stored in XML):
-- `id`, `name`, `createdAt`, `steps[]` array only — no runtime state
+- `id`, `name`, `createdAt`, `steps[]` array — no runtime state
+- Optional `adSettings = {unloadFillLevel?, pipeOffset?, preCallLevel?}` — per-workflow AD overrides (nil = keep AD's own value); applied to vehicle on workflow start and auto-resume
 - Each step: `{type="autodrive"|"courseplay", target, action, unloadTarget?, fillType?, support[]?}`
 - Support array contains sub-steps with same structure (no nesting deeper)
 
@@ -77,6 +80,7 @@ Workflow **definitions** (hierarchical support sub-steps):
 <WorkflowManager>
     <workflows>
         <workflow id="wf_001" name="Combine Harvest">
+            <adSettings unloadFillLevel="0.9" pipeOffset="0.5" preCallLevel="80"/>
             <step type="autodrive" target="Route_Field1" action="drive"/>
             <step type="courseplay" target="Field1_Harvest" action="fieldwork">
                 <support type="autodrive" target="Field1" action="unload" unloadTarget="Silo"/>
@@ -91,6 +95,8 @@ Workflow **definitions** (hierarchical support sub-steps):
     </workflows>
 </WorkflowManager>
 ```
+
+`<adSettings>` is optional — omitted entirely when all three fields are nil.
 
 Old savegames with `linkRole`/`linkedWorkflowId`/`syncGroup` are migrated transparently on first load.
 
@@ -154,6 +160,12 @@ Key functions from `ExternalInterface.lua`, `Specialization.lua` and `GraphManag
 - **Check active**: `vehicle.ad.stateModule:isActive()`
 - **Mode constants**: `MODE_DRIVETO=1`, `MODE_PICKUPANDDELIVER=2`, `MODE_DELIVERTO=3`, etc.
 
+**Per-workflow settings** (`ADIntegration:applyWorkflowSettings(vehicle, adSettings)`):
+- Reads `vehicle.ad.settings[name].values` to find the nearest valid index, then calls `AD.setSettingState(name, idx, vehicle)`
+- Called in `WMExecutor:startWorkflow()` and on auto-resume after savegame load
+- Settings: `unloadFillLevel` (0.0–1.0), `pipeOffset` (-5.0–5.0 m), `preCallLevel` (0.0–1.0 fraction; UI shows 0–100%, stored ÷100)
+- Nil fields are skipped — AD keeps its own value
+
 **AD -> CP Handoff**:
 
 - `vehicle.ad.stateModule:setStartHelper(true)` - tells AD to start helper on completion
@@ -200,6 +212,7 @@ FS25_WorkflowManager/
 │   │   ├── WMStepDialog.lua           # Step add/edit dialog with searchable lists
 │   │   ├── WMTextInputDialog.lua      # Text input overlay dialog
 │   │   ├── WMModeSelectDialog.lua     # Role selection dialog (Main/Support) when starting a workflow with support steps
+│   │   ├── WMADSettingsDialog.lua     # Per-workflow AD/CP settings dialog (unloadFillLevel, pipeOffset, preCallLevel)
 │   │   ├── WMHud.lua                  # In-vehicle HUD with icon buttons (draggable)
 │   │   ├── WMHudElements.lua          # HUD element classes
 │   │   ├── WorkflowManagerGUI.lua     # GUI manager / controller
@@ -243,6 +256,7 @@ FS25_WorkflowManager/
     ├── WMEditorDialog.xml             # Editor dialog layout
     ├── WMStepDialog.xml               # Step dialog layout
     ├── WMModeSelectDialog.xml         # Role selection dialog layout (Main/Support)
+    ├── WMADSettingsDialog.xml         # AD/CP settings dialog layout (660×440px)
     ├── TextInputDialog.xml            # Text input dialog layout
     ├── WorkflowManagerGUI.xml         # Main GUI layout
     ├── WorkflowEditorGUI.xml          # Editor GUI layout
@@ -264,7 +278,7 @@ FS25_WorkflowManager/
 - All mutable execution state lives on `vehicle.spec_workflowManagerSpec.wmExecution` (`activeData`)
 - `WMExecutor.activeVehicles` is `{[vehicle]=true}` — a lightweight set for update-loop iteration
 - GUI components query `WorkflowManager:getVehicleWorkflowState(vehicle)` for current vehicle's state
-- Workflow definitions only contain `id`, `name`, `steps`, `createdAt`, `linkedWorkflowId`, `linkRole` — never `status` or `currentStep`
+- Workflow definitions only contain `id`, `name`, `steps`, `createdAt`, `adSettings` — never `status` or `currentStep`
 
 ### Vehicle Savegame Persistence
 
@@ -357,8 +371,8 @@ FS25_WorkflowManager/
 
 ---
 
-**Status**: Phases 1-4 IN PROGRESS — Core, executor, GUI layer all functional. Recent: support vehicle dummy AD hold to prevent staling, `justStoppedAD` fix for idle-to-work transitions. Milestone 8 items (F1 overlay, hint relocation, X button) remain open.
-**Last updated**: 2026-04-11
+**Status**: Phases 1-4 IN PROGRESS — Core, executor, GUI layer all functional. Recent: per-workflow AD/CP settings (unloadFillLevel, pipeOffset, preCallLevel) via dedicated dialog in editor. Milestone 8 items (F1 overlay, hint relocation, X button) remain open.
+**Last updated**: 2026-05-02
 
 ## Screenshots Needed
 

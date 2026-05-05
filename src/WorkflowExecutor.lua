@@ -146,6 +146,9 @@ function WMExecutor:startWorkflow(workflow, vehicle, isMain)
     WMLogger:info("Starting workflow: %s with vehicle: %s (Step %d/%d)",
         workflow.name, vehicleName, activeData.currentStep, #workflow.steps)
 
+    -- Apply per-workflow AD settings to the vehicle before the first step runs
+    ADIntegration:applyWorkflowSettings(vehicle, workflow.adSettings)
+
     -- Fire event
     WMEventHandler:fireEvent(WMEventHandler.EVENT_WORKFLOW_STARTED, {
         workflowId = workflow.id,
@@ -632,6 +635,8 @@ function WMExecutor:startAutoDriveStep(activeData, vehicle, step)
         activeData.pendingADStartRetries = nil
         activeData.justStoppedAD = nil  -- Clear the flag now that AD has started
         activeData.lastADTarget = step.target  -- Remember for dummy parking when idle
+        -- Apply after StartDriving so AD's own route-start logic can't overwrite them
+        ADIntegration:applyWorkflowSettings(vehicle, workflow.adSettings)
         WMLogger:info("AutoDrive step started successfully, waiting for completion (handoffToCP=%s)",
             tostring(willHandoffToCP))
     else
@@ -927,6 +932,9 @@ function WMExecutor:update(dt)
 
                 if adRunning or cpRunning then
                     activeData.autoResumeUntil = nil  -- found - stop polling
+
+                    -- Re-apply AD settings after savegame restore (AD may have reset them on load)
+                    ADIntegration:applyWorkflowSettings(vehicle, workflow.adSettings)
 
                     WMLogger:info("Auto-resuming workflow '%s' at step %d - %s running after load",
                         workflow.name, activeData.currentStep,

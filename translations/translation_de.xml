@@ -162,6 +162,16 @@
         <text name="wm_button_run_as_main" text="Hauptfahrzeug"/>
         <text name="wm_button_run_as_support" text="Hilfsfahrzeug"/>
 
+        <!-- AD/CP-Einstellungen-Dialog -->
+        <text name="wm_button_ad_settings"          text="AD/CP Einstellungen"/>
+        <text name="wm_adsettings_title"            text="AD / CP Einstellungen"/>
+        <text name="wm_adsettings_ad_section"       text="AutoDrive Einstellungen"/>
+        <text name="wm_adsettings_cp_section"       text="Courseplay Einstellungen"/>
+        <text name="wm_adsettings_unload_fill"      text="Abladen ab Level"/>
+        <text name="wm_adsettings_pipe_offset"      text="Offset Rohr"/>
+        <text name="wm_adsettings_pre_call"         text="Frueher rufen ab"/>
+        <text name="wm_adsettings_cp_placeholder"   text="Noch keine Courseplay-Einstellungen."/>
+
         <!-- Unterstuetzungsschritte -->
         <text name="wm_editor_sup_short" text="Unt"/>
         <text name="wm_button_add_support" text="Unterstuetzungsschritt hinzufuegen"/>

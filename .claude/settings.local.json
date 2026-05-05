@@ -17,7 +17,13 @@
       "Bash(C:\\\\Program Files \\(x86\\)\\\\Lua\\\\5.1\\\\lua.exe:*)",
       "Bash(\"C:/Program Files \\(x86\\)/Lua/5.1/lua.exe\" \"C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/run_executor_spec.lua\")",
       "Bash(\"C:\\\\Program Files \\(x86\\)\\\\Lua\\\\5.1\\\\lua.exe\" \"C:\\\\Users\\\\Chef\\\\Documents\\\\My Games\\\\FarmingSimulator2025\\\\mods\\\\FS25_WorkflowManager\\\\tests\\\\run_tests.lua\")",
-      "Bash(\"C:\\\\Program Files \\(x86\\)\\\\Lua\\\\5.1\\\\lua.exe\" \"C:\\\\Users\\\\Chef\\\\Documents\\\\My Games\\\\FarmingSimulator2025\\\\mods\\\\FS25_WorkflowManager\\\\tests\\\\run_executor_spec.lua\")"
+      "Bash(\"C:\\\\Program Files \\(x86\\)\\\\Lua\\\\5.1\\\\lua.exe\" \"C:\\\\Users\\\\Chef\\\\Documents\\\\My Games\\\\FarmingSimulator2025\\\\mods\\\\FS25_WorkflowManager\\\\tests\\\\run_executor_spec.lua\")",
+      "Bash(echo \"EXIT: $?\")",
+      "Read(//tmp/**)",
+      "Bash(\"C:\\\\Program Files \\(x86\\)\\\\Lua\\\\5.1\\\\lua.exe\" \"C:\\\\Users\\\\Chef\\\\Documents\\\\My Games\\\\FarmingSimulator2025\\\\mods\\\\FS25_WorkflowManager\\\\tests\\\\run_storage_spec.lua\")",
+      "Bash(\"C:\\\\Program Files \\(x86\\)\\\\Lua\\\\5.1\\\\lua.exe\" \"c:\\\\Users\\\\Chef\\\\Documents\\\\My Games\\\\FarmingSimulator2025\\\\mods\\\\FS25_WorkflowManager\\\\tests\\\\run_tests.lua\")",
+      "Bash(Select-String -Pattern \"FAIL|ERROR|passed|failed|✗\")",
+      "Bash(Select-Object -Last 20)"
     ]
   }
 }

@@ -252,7 +252,8 @@ _G.ADIntegration = {
     resumeRoute = function(self, vehicle) end,
     setStartCPOnCompletion = function(self, vehicle, enabled) end,
     clearCPHandoff = function(self, vehicle) end,
-    getDestinations = function() return {} end
+    getDestinations = function() return {} end,
+    applyWorkflowSettings = function(self, vehicle, settings) end,
 }
 
 _G.CPIntegration = {

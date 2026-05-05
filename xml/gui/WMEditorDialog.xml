@@ -16,7 +16,7 @@
             <!-- Workflow Name Row -->
             <BoxLayout profile="wm_hBox" size="1260px 50px">
                 <Text profile="wm_dialogText" text="$l10n_wm_editor_name" size="80px 40px" textAutoWidth="true"/>
-                <TextInput profile="fs25_dialogTextInput" id="nameInput" onEnterPressed="onNameEnterPressed" maxCharacters="50" size="900px 40px" focusId="nameInput">
+                <TextInput profile="fs25_dialogTextInput" id="nameInput" onEnterPressed="onNameEnterPressed" maxCharacters="50" size="780px 40px" focusId="nameInput">
                     <ThreePartBitmap profile="fs25_textInputBg"/>
                     <Bitmap profile="fs25_textInputIconBox">
                         <Bitmap profile="fs25_textInputIcon"/>

@@ -907,3 +907,35 @@ function ADIntegration:clearCPHandoff(vehicle)
         end
     end
 end
+
+---Apply per-workflow AD settings overrides to a vehicle.
+---Only fields that are non-nil in `settings` are written; nil = keep AD's own value.
+---@param vehicle   table      Vehicle to configure
+---@param settings  table|nil  workflow.adSettings table (may be nil)
+function ADIntegration:applyWorkflowSettings(vehicle, settings)
+    if not settings or not vehicle or not vehicle.ad then return end
+
+    local AD = FS25_AutoDrive and FS25_AutoDrive.AutoDrive
+    if not AD or not AD.setSettingState then return end
+
+    local function applyNearest(settingName, value)
+        if value == nil then return end
+        local vs = vehicle.ad.settings and vehicle.ad.settings[settingName]
+        if not vs or not vs.values then return end
+        local bestIdx, bestDist = 1, math.huge
+        for i, v in ipairs(vs.values) do
+            local d = math.abs(v - value)
+            if d < bestDist then bestIdx, bestDist = i, d end
+        end
+        local ok, err = pcall(AD.setSettingState, settingName, bestIdx, vehicle)
+        if ok then
+            WMLogger:debug("Applied AD setting '%s' = %s (index %d)", settingName, tostring(value), bestIdx)
+        else
+            WMLogger:warning("Failed to apply AD setting '%s': %s", settingName, tostring(err))
+        end
+    end
+
+    applyNearest("unloadFillLevel", settings.unloadFillLevel)
+    applyNearest("pipeOffset",      settings.pipeOffset)
+    applyNearest("preCallLevel",    settings.preCallLevel)
+end

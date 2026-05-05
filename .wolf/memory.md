@@ -509,3 +509,124 @@
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+
+## Session: 2026-04-30 23:24
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 23:51 | Created ../../../../../.claude/plans/id-like-to-set-refactored-plum.md | — | ~1783 |
+| 23:59 | Created ../../../../../.claude/plans/id-like-to-set-refactored-plum.md | — | ~1900 |
+| 07:04 | Created src/gui/WMADSettingsDialog.lua | — | ~616 |
+| 07:04 | Created xml/gui/WMADSettingsDialog.xml | — | ~854 |
+| 07:05 | Edited src/WorkflowStorage.lua | expanded (+9 lines) | ~211 |
+| 07:05 | Edited src/WorkflowStorage.lua | 8→8 lines | ~162 |
+| 07:05 | Edited src/WorkflowStorage.lua | expanded (+7 lines) | ~242 |
+| 07:06 | Edited src/integration/AutoDriveIntegration.lua | modified ADIntegration() | ~505 |
+| 07:06 | Edited src/WorkflowExecutor.lua | 10→13 lines | ~119 |
+| 07:06 | Edited src/WorkflowExecutor.lua | 4→7 lines | ~110 |
+| 07:06 | Edited src/WorkflowManager.lua | 5→6 lines | ~120 |
+| 07:06 | Edited src/WorkflowManager.lua | expanded (+13 lines) | ~276 |
+| 07:06 | Edited src/WorkflowManager.lua | modified Called() | ~135 |
+| 07:07 | Edited src/WorkflowManager.lua | 3→6 lines | ~52 |
+| 07:07 | Edited src/gui/WMEditorDialog.lua | modified WMEditorDialog() | ~125 |
+| 07:07 | Edited xml/gui/WMEditorDialog.xml | 10→11 lines | ~370 |
+| 07:07 | Edited translations/translation_en.xml | expanded (+10 lines) | ~211 |
+| 07:07 | Edited translations/translation_de.xml | expanded (+10 lines) | ~222 |
+| 23:16 | Edited tests/mocks/game_globals.lua | 2→3 lines | ~31 |
+| 23:17 | Added per-workflow AD/CP settings feature | WMADSettingsDialog.lua, WMADSettingsDialog.xml, WorkflowStorage.lua, AutoDriveIntegration.lua, WorkflowExecutor.lua, WorkflowManager.lua, WMEditorDialog.lua, WMEditorDialog.xml, translations | 192/192 tests pass | ~3500 |
+| 23:18 | Session end: 19 writes across 12 files (id-like-to-set-refactored-plum.md, WMADSettingsDialog.lua, WMADSettingsDialog.xml, WorkflowStorage.lua, AutoDriveIntegration.lua) | 20 reads | ~8620 tok |
+| 23:19 | Session end: 19 writes across 12 files (id-like-to-set-refactored-plum.md, WMADSettingsDialog.lua, WMADSettingsDialog.xml, WorkflowStorage.lua, AutoDriveIntegration.lua) | 20 reads | ~8620 tok |
+| 23:21 | Session end: 19 writes across 12 files (id-like-to-set-refactored-plum.md, WMADSettingsDialog.lua, WMADSettingsDialog.xml, WorkflowStorage.lua, AutoDriveIntegration.lua) | 20 reads | ~8620 tok |
+| 23:23 | Edited CLAUDE.md | 5→7 lines | ~95 |
+| 23:23 | Edited CLAUDE.md | 4→5 lines | ~129 |
+| 23:24 | Edited CLAUDE.md | 17→20 lines | ~285 |
+| 23:24 | Edited CLAUDE.md | 2→3 lines | ~88 |
+| 23:24 | Edited CLAUDE.md | 2→3 lines | ~62 |
+| 23:24 | Edited CLAUDE.md | expanded (+6 lines) | ~123 |
+| 23:24 | Edited CLAUDE.md | inline fix | ~32 |
+| 23:24 | Edited CLAUDE.md | 2→2 lines | ~78 |
+| 23:24 | Session end: 27 writes across 13 files (id-like-to-set-refactored-plum.md, WMADSettingsDialog.lua, WMADSettingsDialog.xml, WorkflowStorage.lua, AutoDriveIntegration.lua) | 21 reads | ~14742 tok |
+
+## Session: 2026-05-02 23:25
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-05-04 21:24
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 21:33 | Edited src/gui/WMADSettingsDialog.lua | 11→13 lines | ~146 |
+| 21:33 | Edited src/gui/WMADSettingsDialog.lua | 5→7 lines | ~87 |
+| 21:34 | Created xml/gui/WMADSettingsDialog.xml | — | ~913 |
+| 21:34 | Edited translations/translation_en.xml | 3→3 lines | ~61 |
+| 21:34 | Edited translations/translation_de.xml | 3→3 lines | ~61 |
+| 21:40 | Session end: 5 writes across 4 files (WMADSettingsDialog.lua, WMADSettingsDialog.xml, translation_en.xml, translation_de.xml) | 2 reads | ~2828 tok |
+
+## Session: 2026-05-04 21:47
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-05-05
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| session | Moved AD/CP Settings button to WMMainDialog; added onClickADSettings handler with save; disabled when no selection | WMMainDialog.xml, WMMainDialog.lua | 192/192 tests pass | ~2000 |
+| session | Fixed AD settings not applied on workflow start: apply after StartDriving in startAutoDriveStep | WorkflowExecutor.lua | bug fix | ~500 |
+| 21:50 | Edited xml/gui/WMEditorDialog.xml | 22→22 lines | ~544 |
+| 21:50 | Session end: 1 writes across 1 files (WMEditorDialog.xml) | 1 reads | ~2025 tok |
+
+## Session: 2026-05-05 10:22
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-05-05 10:22
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 10:27 | Edited xml/gui/WMEditorDialog.xml | inline fix | ~16 |
+| 10:27 | Edited xml/gui/WMEditorDialog.xml | expanded (+19 lines) | ~540 |
+| 10:27 | Edited xml/gui/WMEditorDialog.xml | 6→6 lines | ~99 |
+| 10:27 | Edited src/gui/WMEditorDialog.lua | modified WMEditorDialog() | ~180 |
+| 10:27 | Edited src/gui/WMEditorDialog.lua | modified WMEditorDialog() | ~281 |
+| 10:28 | Edited src/gui/WMEditorDialog.lua | removed 11 lines | ~7 |
+| 10:28 | Edited src/WorkflowManager.lua | 2→1 lines | ~22 |
+| 10:28 | Edited src/WorkflowManager.lua | removed 13 lines | ~1 |
+| 10:28 | Edited src/WorkflowManager.lua | removed 13 lines | ~9 |
+| 10:28 | Edited src/WorkflowManager.lua | 7→4 lines | ~28 |
+| 10:28 | Edited src/WorkflowExecutor.lua | 10→12 lines | ~208 |
+| 10:37 | Edited xml/gui/WMEditorDialog.xml | reduced (-20 lines) | ~175 |
+| 10:37 | Edited xml/gui/WMEditorDialog.xml | inline fix | ~16 |
+| 10:37 | Edited xml/gui/WMEditorDialog.xml | 6→6 lines | ~99 |
+| 10:37 | Edited src/gui/WMEditorDialog.lua | modified WMEditorDialog() | ~52 |
+| 10:37 | Edited src/gui/WMEditorDialog.lua | modified WMEditorDialog() | ~61 |
+| 10:37 | Edited src/gui/WMEditorDialog.lua | modified WMEditorDialog() | ~112 |
+| 10:37 | Edited src/WorkflowManager.lua | 1→2 lines | ~44 |
+| 10:38 | Edited src/WorkflowManager.lua | expanded (+12 lines) | ~174 |
+| 10:38 | Edited src/WorkflowManager.lua | modified Called() | ~135 |
+| 10:38 | Edited src/WorkflowManager.lua | 4→7 lines | ~54 |
+| 10:38 | Edited xml/gui/WMMainDialog.xml | 8→9 lines | ~286 |
+| 10:39 | Edited src/gui/WMMainDialog.lua | modified WMMainDialog() | ~163 |
+| 10:39 | Edited src/gui/WMMainDialog.lua | 6→8 lines | ~82 |
+| 11:05 | Session end: 24 writes across 6 files (WMEditorDialog.xml, WMEditorDialog.lua, WorkflowManager.lua, WorkflowExecutor.lua, WMMainDialog.xml) | 13 reads | ~51335 tok |
+| 11:41 | Edited src/integration/AutoDriveIntegration.lua | inline fix | ~22 |
+| 11:41 | Edited src/gui/WMADSettingsDialog.lua | 3→4 lines | ~43 |
+| 11:41 | Edited src/gui/WMADSettingsDialog.lua | 7→8 lines | ~112 |
+| 11:52 | Edited CLAUDE.md | inline fix | ~35 |
+| 11:52 | Session end: 28 writes across 9 files (WMEditorDialog.xml, WMEditorDialog.lua, WorkflowManager.lua, WorkflowExecutor.lua, WMMainDialog.xml) | 16 reads | ~56928 tok |
+
+## Session: 2026-05-05 12:00
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 12:04 | Edited translations/translation_de.xml | inline fix | ~21 |
+| 12:04 | Edited xml/gui/WMMainDialog.xml | inline fix | ~48 |
+| 12:04 | Session end: 2 writes across 2 files (translation_de.xml, WMMainDialog.xml) | 3 reads | ~3854 tok |
+| 12:36 | Edited translations/translation_de.xml | inline fix | ~22 |
+| 12:36 | Edited xml/gui/WMMainDialog.xml | inline fix | ~16 |
+| 12:36 | Edited xml/gui/WMMainDialog.xml | 32→32 lines | ~653 |
+| 12:36 | Session end: 5 writes across 2 files (translation_de.xml, WMMainDialog.xml) | 3 reads | ~4595 tok |
+| 13:31 | Created xml/gui/WMMainDialog.xml | — | ~987 |
+| 13:31 | Session end: 6 writes across 2 files (translation_de.xml, WMMainDialog.xml) | 3 reads | ~5652 tok |

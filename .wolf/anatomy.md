@@ -1,16 +1,15 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-29T20:27:24.032Z
-> Files: 27 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-05T11:31:51.485Z
+> Files: 15 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
-- `sprightly-jingling-frog.md` — UI Improvement Plan — FS25 WorkflowManager (~1954 tok)
+- `id-like-to-set-refactored-plum.md` — Plan: Per-Workflow AD/CP Settings Dialog (~1781 tok)
 
 ## ./
 
-- `CLAUDE.md` — FS25 Workflow Manager (~5088 tok)
-- `modDesc.xml` (~2012 tok)
+- `CLAUDE.md` — FS25 Workflow Manager (~5376 tok)
 
 ## .claude/
 
@@ -26,28 +25,25 @@
 
 ## docs/
 
-- `SCREENSHOTS.md` — Screenshot Guide (Developer Reference) (~1249 tok)
 
 ## src/
 
-- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~17688 tok)
-- `WorkflowManager.lua` — init, loadDialogs, Callback, showTextInputDialog, setupInGameMenu (~12654 tok)
-- `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~4432 tok)
+- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~17823 tok)
+- `WorkflowManager.lua` — init, loadDialogs, Callback, showTextInputDialog, Called (~12975 tok)
+- `WorkflowStorage.lua` — deepCopySupportStep, init, getXmlPath, saveWorkflows, migrateOldLinkedWorkflows (~3452 tok)
 
 ## src/gui/
 
-- `WMEditorDialog.lua` — new, onCreate, onOpen, onClose, setWorkflow (~5203 tok)
-- `WMHud.lua` — ensureOverlays, createIconOverlays, updateOverlayPositions, init, show (~7393 tok)
-- `WMMainDialog.lua` — new, onCreate, onOpen, onClose, refreshWorkflowList (~3180 tok)
-- `WMStepDialog.lua` — new, onCreate, onOpen, onClose, Callback (~6851 tok)
+- `WMADSettingsDialog.lua` — new, onCreate, onOpen, onClose, Called (~712 tok)
+- `WMEditorDialog.lua` — new, onCreate, onOpen, onClose, setWorkflow (~5302 tok)
+- `WMMainDialog.lua` — new, onCreate, onOpen, onClose, refreshWorkflowList (~3354 tok)
 
 ## src/integration/
 
-- `AutoDriveIntegration.lua` — init, completeInitialization, update, checkAvailability, getDestinations (~8798 tok)
+- `AutoDriveIntegration.lua` — init, completeInitialization, update, checkAvailability, getDestinations (~9196 tok)
 
 ## src/network/
 
-- `WMNetworkEvents.lua` — emptyNew, new, writeStream, readStream, run (~2152 tok)
 
 ## src/utils/
 
@@ -63,10 +59,10 @@
 
 ## tests/mocks/
 
+- `game_globals.lua` — getDate, addModEventListener (~2681 tok)
 
 ## tests/specs/
 
-- `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport (~13204 tok)
 
 ## textures/
 
@@ -76,8 +72,8 @@
 
 ## translations/
 
-- `translation_de.xml` (~2588 tok)
-- `translation_en.xml` (~2163 tok)
+- `translation_de.xml` (~2780 tok)
+- `translation_en.xml` (~2344 tok)
 
 ## website/
 
@@ -105,22 +101,15 @@
 
 ## website/docs/
 
-- `faq.md` — Frequently Asked Questions (~1197 tok)
-- `intro.md` — FS25 Workflow Manager (~675 tok)
-- `troubleshooting.md` — Troubleshooting (~1562 tok)
 
 ## website/docs/api/
 
 
 ## website/docs/ui/
 
-- `editor-dialog.md` — Editor Dialog (~1090 tok)
-- `hud-controls.md` — HUD Controls (~1359 tok)
-- `main-dialog.md` — Main Dialog (~675 tok)
 
 ## website/docs/workflows/
 
-- `linked-workflows.md` — Multi-Vehicle Workflows (~1612 tok)
 
 ## website/src/components/HomepageFeatures/
 
@@ -136,7 +125,6 @@
 
 ## xml/gui/
 
-- `guiProfiles.xml` (~1073 tok)
+- `WMADSettingsDialog.xml` (~913 tok)
 - `WMEditorDialog.xml` (~1394 tok)
-- `WMMainDialog.xml` (~953 tok)
-- `WMStepDialog.xml` — dropdown: Section (~2421 tok)
+- `WMMainDialog.xml` (~987 tok)
