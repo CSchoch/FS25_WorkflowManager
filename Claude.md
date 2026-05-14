@@ -199,8 +199,18 @@ Full API documentation: `docs/API_Analysis.md`
 ```
 FS25_WorkflowManager/
 ├── modDesc.xml
-├── modIcon.dds                        # Mod icon (256x256)
+├── icon_WorkflowManager.dds           # Mod icon (256x256 DDS, BC1_UNORM)
 ├── CLAUDE.md
+├── _art/                              # Source art assets (not shipped in release)
+│   ├── icon_WorkflowManager.png       # Mod icon source PNG
+│   ├── icon_WorkflowManagerLarge.png  # High-res mod icon source
+│   └── textures/                      # HUD button source PNGs → regenerate DDS with tools/png_to_dds.py
+│       ├── white.png
+│       ├── icon_prev.png
+│       ├── icon_pause.png
+│       ├── icon_play.png
+│       ├── icon_stop.png
+│       └── icon_next.png
 ├── .vscode/                           # VS Code workspace config
 ├── src/
 │   ├── DevConfig.lua                  # Development configuration
@@ -233,20 +243,14 @@ FS25_WorkflowManager/
 │   ├── translation_en.xml
 │   └── translation_de.xml
 ├── textures/
-│   ├── white.png                      # 4x4 white pixel source → BC1_UNORM DDS (minimum size for block compression)
 │   ├── white.dds                      # generated DDS; used by createImageOverlay overlays
-│   ├── icon_prev.png                  # HUD button source PNG (kept as _art/ source)
 │   ├── icon_prev.dds                  # HUD button: Previous step (<<) — BC3+mips, used at runtime
-│   ├── icon_pause.png                 # HUD button source PNG
 │   ├── icon_pause.dds                 # HUD button: Pause (||)
-│   ├── icon_play.png                  # HUD button source PNG
 │   ├── icon_play.dds                  # HUD button: Resume (>)
-│   ├── icon_stop.png                  # HUD button source PNG
 │   ├── icon_stop.dds                  # HUD button: Stop ([])
-│   ├── icon_next.png                  # HUD button source PNG
 │   └── icon_next.dds                  # HUD button: Next step (>>)
 ├── tools/
-│   └── png_to_dds.py                  # Converts textures/*.png + modIcon.png to DDS
+│   └── png_to_dds.py                  # Converts _art/textures/*.png + _art/*.png to DDS
 ├── testdata/
 │   └── sample_workflows.xml           # Test workflow data
 ├── docs/
@@ -267,7 +271,6 @@ FS25_WorkflowManager/
     ├── WMADSettingsDialog.xml         # AD/CP settings dialog layout (660×440px)
     ├── TextInputDialog.xml            # Text input dialog layout
     ├── WorkflowManagerGUI.xml         # Main GUI layout
-    ├── WorkflowEditorGUI.xml          # Editor GUI layout
     └── WorkflowManagerMenuFrame.xml   # ESC menu integration
 ```
 

@@ -743,3 +743,15 @@
 | 02:09 | Edited CLAUDE.md | source() → DDS() | ~56 |
 | 02:09 | Session end: 8 writes across 4 files (WorkflowEditorGUI.lua, WorkflowManagerGUI.lua, WMHud.lua, CLAUDE.md) | 6 reads | ~39629 tok |
 | 02:12 | Session end: 8 writes across 4 files (WorkflowEditorGUI.lua, WorkflowManagerGUI.lua, WMHud.lua, CLAUDE.md) | 6 reads | ~39629 tok |
+
+## Session: 2026-05-14 02:18
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 02:20 | Edited CLAUDE.md | expanded (+10 lines) | ~149 |
+| 02:20 | Edited CLAUDE.md | reduced (-6 lines) | ~124 |
+| 02:20 | Edited CLAUDE.md | inline fix | ~24 |
+| 02:20 | Edited CLAUDE.md | 2→1 lines | ~17 |
+| 02:20 | Updated CLAUDE.md + anatomy.md file paths after last commit: modIcon.dds→icon_WorkflowManager.dds, textures PNGs→_art/textures/, removed WorkflowEditorGUI.xml | CLAUDE.md, .wolf/anatomy.md | done | ~200 |
+| 02:21 | Session end: 4 writes across 1 files (CLAUDE.md) | 2 reads | ~6251 tok |
+| 02:21 | Session end: 4 writes across 1 files (CLAUDE.md) | 2 reads | ~6251 tok |

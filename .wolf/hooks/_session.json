@@ -1,97 +1,50 @@
 {
-  "session_id": "session-2026-05-13-0138",
-  "started": "2026-05-13T23:38:07.489Z",
+  "session_id": "session-2026-05-14-0218",
+  "started": "2026-05-14T00:18:53.087Z",
   "files_read": {
-    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WorkflowEditorGUI.lua": {
-      "count": 1,
-      "tokens": 17435,
-      "first_read": "2026-05-13T23:46:20.615Z"
-    },
-    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WorkflowManagerGUI.lua": {
-      "count": 1,
-      "tokens": 7020,
-      "first_read": "2026-05-13T23:46:21.314Z"
-    },
-    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMHud.lua": {
-      "count": 3,
-      "tokens": 7408,
-      "first_read": "2026-05-13T23:52:51.913Z"
-    },
-    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tools/png_to_dds.py": {
+    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.wolf/anatomy.md": {
       "count": 2,
-      "tokens": 1108,
-      "first_read": "2026-05-13T23:52:52.489Z"
+      "tokens": 0,
+      "first_read": "2026-05-14T00:19:50.507Z"
     },
     "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md": {
-      "count": 5,
-      "tokens": 5878,
-      "first_read": "2026-05-13T23:58:36.775Z"
-    },
-    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.wolf/cerebrum.md": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-05-14T00:06:22.762Z"
+      "count": 2,
+      "tokens": 5914,
+      "first_read": "2026-05-14T00:19:50.669Z"
     }
   },
   "files_written": [
     {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WorkflowEditorGUI.lua",
+      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md",
       "action": "edit",
-      "tokens": 122,
-      "at": "2026-05-13T23:46:26.481Z"
-    },
-    {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WorkflowEditorGUI.lua",
-      "action": "edit",
-      "tokens": 73,
-      "at": "2026-05-13T23:46:28.392Z"
-    },
-    {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WorkflowManagerGUI.lua",
-      "action": "edit",
-      "tokens": 28,
-      "at": "2026-05-13T23:46:29.830Z"
-    },
-    {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMHud.lua",
-      "action": "edit",
-      "tokens": 105,
-      "at": "2026-05-13T23:58:33.211Z"
+      "tokens": 160,
+      "at": "2026-05-14T00:20:17.226Z"
     },
     {
       "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md",
       "action": "edit",
-      "tokens": 186,
-      "at": "2026-05-13T23:58:50.493Z"
+      "tokens": 133,
+      "at": "2026-05-14T00:20:24.994Z"
     },
     {
       "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md",
       "action": "edit",
-      "tokens": 74,
-      "at": "2026-05-13T23:58:57.382Z"
+      "tokens": 26,
+      "at": "2026-05-14T00:20:29.205Z"
     },
     {
       "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md",
       "action": "edit",
-      "tokens": 132,
-      "at": "2026-05-13T23:59:19.687Z"
-    },
-    {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md",
-      "action": "edit",
-      "tokens": 60,
-      "at": "2026-05-14T00:09:12.509Z"
+      "tokens": 18,
+      "at": "2026-05-14T00:20:33.234Z"
     }
   ],
   "edit_counts": {
-    "src/gui/WorkflowEditorGUI.lua": 2,
-    "src/gui/WorkflowManagerGUI.lua": 1,
-    "src/gui/WMHud.lua": 1,
     "CLAUDE.md": 4
   },
-  "anatomy_hits": 5,
+  "anatomy_hits": 1,
   "anatomy_misses": 1,
-  "repeated_reads_warned": 7,
+  "repeated_reads_warned": 2,
   "cerebrum_warnings": 0,
-  "stop_count": 6
+  "stop_count": 2
 }
