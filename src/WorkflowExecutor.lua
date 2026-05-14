@@ -178,7 +178,6 @@ function WMExecutor:stopWorkflow(vehicle)
     end
 
     local workflow = activeData.workflow
-    local isMain = activeData.isMainVehicle ~= false
 
     -- Stop current step
     self:stopCurrentStep(activeData)
@@ -188,15 +187,6 @@ function WMExecutor:stopWorkflow(vehicle)
     self.activeVehicles[vehicle] = nil
 
     WMLogger:info("Stopped workflow: %s (reset to step 1)", workflow.name)
-
-    -- If this is the main vehicle, also stop all support vehicles
-    if isMain then
-        local supportDataList = self:getSupportActiveDataListForWorkflow(workflow.id)
-        for _, supportActiveData in ipairs(supportDataList) do
-            WMLogger:info("Main workflow stopped - stopping support vehicle")
-            self:stopWorkflow(supportActiveData.vehicle)
-        end
-    end
 
     -- Broadcast cleared state (isActive=false) to all clients
     WorkflowManager:broadcastState(vehicle)
@@ -605,7 +595,7 @@ function WMExecutor:startAutoDriveStep(activeData, vehicle, step)
         WMLogger:info("Next step is Courseplay - configuring AD->CP handoff")
 
         -- Pre-load the Courseplay course onto the vehicle
-        if not CPIntegration:hasCourse(vehicle) or true then  -- Always try to load correct course
+        if not CPIntegration:hasCourse(vehicle) then
             WMLogger:info("Pre-loading Courseplay course for handoff: %s", nextStep.target or "nil")
             local loadSuccess = CPIntegration:loadCourse(vehicle, nextStep.target)
             if loadSuccess then
@@ -866,15 +856,6 @@ function WMExecutor:onWorkflowCompleted(activeData)
         workflowId = workflow.id,
         workflowName = workflow.name
     })
-
-    -- If this is a main workflow, stop all support vehicles
-    if activeData.isMainVehicle ~= false then
-        local supportDataList = self:getSupportActiveDataListForWorkflow(workflow.id)
-        for _, supportActiveData in ipairs(supportDataList) do
-            WMLogger:info("Main workflow completed - stopping support vehicle")
-            self:stopWorkflow(supportActiveData.vehicle)
-        end
-    end
 end
 
 ---Handle step error

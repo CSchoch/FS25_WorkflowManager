@@ -918,10 +918,10 @@ describe("WMExecutor (real)", function()
     end)
 
     -- =========================================================================
-    -- Main completion stops support vehicles
+    -- Main completion does NOT stop support vehicles (they run independently)
     -- =========================================================================
     describe("main workflow completion stops support", function()
-        it("onWorkflowCompleted stops all support vehicles", function()
+        it("onWorkflowCompleted does NOT stop support vehicles", function()
             local wf = makeWorkflowWithSupport("wf_comp")
             local vm  = makeVehicle("Main")
             local vs1 = makeVehicle("S1")
@@ -931,8 +931,8 @@ describe("WMExecutor (real)", function()
             WMExecutor:startWorkflow(wf, vs2, false)
             WMExecutor:onWorkflowCompleted(activeData(vm))
             assert.is_nil(activeData(vm))
-            assert.is_nil(activeData(vs1))
-            assert.is_nil(activeData(vs2))
+            assert.is_not_nil(activeData(vs1))
+            assert.is_not_nil(activeData(vs2))
         end)
 
         it("stopping support alone does NOT stop main", function()

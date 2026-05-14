@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-14T00:51:58.161Z
-> Files: 25 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-14T00:59:21.139Z
+> Files: 26 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -9,7 +9,7 @@
 
 ## ./
 
-- `CLAUDE.md` — FS25 Workflow Manager (~6171 tok)
+- `CLAUDE.md` — FS25 Workflow Manager (~6160 tok)
 - `create_release.ps1` (~262 tok)
 - `modDesc.xml` (~2044 tok)
 
@@ -36,7 +36,7 @@
 
 ## src/
 
-- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~17823 tok)
+- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~17577 tok)
 - `WorkflowManager.lua` — init, loadDialogs, Callback, showTextInputDialog, Called (~12975 tok)
 - `WorkflowStorage.lua` — deepCopySupportStep, init, getXmlPath, saveWorkflows, migrateOldLinkedWorkflows (~3452 tok)
 
@@ -74,6 +74,7 @@
 
 ## tests/specs/
 
+- `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport (~13216 tok)
 
 ## textures/
 

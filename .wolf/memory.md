@@ -789,3 +789,16 @@
 | 02:51 | Edited CLAUDE.md | modified Host() | ~234 |
 | 02:53 | Cleaned up CLAUDE.md: added network file, fixed support-pause note, removed completed todos, added multiplayer section, updated status/date | CLAUDE.md | done | ~800 |
 | 02:53 | Session end: 6 writes across 1 files (CLAUDE.md) | 4 reads | ~24655 tok |
+
+## Session: 2026-05-14 02:54
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 02:56 | Edited src/WorkflowExecutor.lua | reduced (-10 lines) | ~98 |
+| 02:56 | Edited src/WorkflowExecutor.lua | reduced (-9 lines) | ~78 |
+| 02:56 | Edited src/WorkflowExecutor.lua | inline fix | ~14 |
+| 02:57 | Edited CLAUDE.md | inline fix | ~39 |
+| 02:57 | Edited CLAUDE.md | inline fix | ~43 |
+| 02:59 | Edited tests/specs/WorkflowExecutor_spec.lua | 17→17 lines | ~250 |
+| 02:59 | Removed stop propagation from main→support in stopWorkflow/onWorkflowCompleted; removed 'or true' dead code in startAutoDriveStep:608 | WorkflowExecutor.lua, tests/specs/WorkflowExecutor_spec.lua, CLAUDE.md | All 109 tests pass | ~350 |
+| 02:59 | Session end: 6 writes across 3 files (WorkflowExecutor.lua, CLAUDE.md, WorkflowExecutor_spec.lua) | 6 reads | ~24551 tok |

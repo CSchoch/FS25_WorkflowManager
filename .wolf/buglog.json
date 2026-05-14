@@ -144,6 +144,22 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-05-14T00:51:38.899Z"
+    },
+    {
+      "id": "bug-010",
+      "timestamp": "2026-05-14T00:56:45.284Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "9 lines replaced/restructured",
+      "fix": "Rewrote 22→12 lines (9 removed) | Also: -- If this is a main workflow, stop all support ve; if activeData.isMainVehicle ~= false then",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-05-14T00:56:52.989Z"
     }
   ]
 }

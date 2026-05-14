@@ -1,72 +1,84 @@
 {
-  "session_id": "session-2026-05-14-0249",
-  "started": "2026-05-14T00:49:37.218Z",
+  "session_id": "session-2026-05-14-0254",
+  "started": "2026-05-14T00:54:09.753Z",
   "files_read": {
+    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.wolf/anatomy.md": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-05-14T00:55:52.615Z"
+    },
     "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.wolf/cerebrum.md": {
       "count": 1,
       "tokens": 0,
-      "first_read": "2026-05-14T00:49:53.406Z"
+      "first_read": "2026-05-14T00:55:52.960Z"
+    },
+    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowExecutor.lua": {
+      "count": 1,
+      "tokens": 17823,
+      "first_read": "2026-05-14T00:55:58.122Z"
     },
     "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md": {
       "count": 1,
-      "tokens": 5908,
-      "first_read": "2026-05-14T00:49:53.617Z"
+      "tokens": 6171,
+      "first_read": "2026-05-14T00:57:15.198Z"
+    },
+    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/WorkflowExecutor_spec.lua": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-05-14T00:59:07.975Z"
     },
     "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.wolf/memory.md": {
       "count": 1,
       "tokens": 0,
-      "first_read": "2026-05-14T00:49:58.930Z"
-    },
-    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowExecutor.lua": {
-      "count": 2,
-      "tokens": 17823,
-      "first_read": "2026-05-14T00:50:39.281Z"
+      "first_read": "2026-05-14T00:59:38.952Z"
     }
   },
   "files_written": [
     {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md",
+      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowExecutor.lua",
       "action": "edit",
-      "tokens": 348,
-      "at": "2026-05-14T00:51:16.298Z"
+      "tokens": 104,
+      "at": "2026-05-14T00:56:45.281Z"
+    },
+    {
+      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowExecutor.lua",
+      "action": "edit",
+      "tokens": 83,
+      "at": "2026-05-14T00:56:52.985Z"
+    },
+    {
+      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowExecutor.lua",
+      "action": "edit",
+      "tokens": 15,
+      "at": "2026-05-14T00:56:57.950Z"
     },
     {
       "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md",
       "action": "edit",
-      "tokens": 124,
-      "at": "2026-05-14T00:51:23.702Z"
+      "tokens": 42,
+      "at": "2026-05-14T00:57:19.184Z"
     },
     {
       "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md",
       "action": "edit",
-      "tokens": 54,
-      "at": "2026-05-14T00:51:28.837Z"
+      "tokens": 46,
+      "at": "2026-05-14T00:57:30.835Z"
     },
     {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md",
+      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/WorkflowExecutor_spec.lua",
       "action": "edit",
-      "tokens": 54,
-      "at": "2026-05-14T00:51:38.896Z"
-    },
-    {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md",
-      "action": "edit",
-      "tokens": 94,
-      "at": "2026-05-14T00:51:47.796Z"
-    },
-    {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md",
-      "action": "edit",
-      "tokens": 250,
-      "at": "2026-05-14T00:51:58.177Z"
+      "tokens": 267,
+      "at": "2026-05-14T00:59:21.158Z"
     }
   ],
   "edit_counts": {
-    "CLAUDE.md": 6
+    "src/WorkflowExecutor.lua": 3,
+    "CLAUDE.md": 2,
+    "tests/specs/WorkflowExecutor_spec.lua": 1
   },
   "anatomy_hits": 2,
-  "anatomy_misses": 2,
-  "repeated_reads_warned": 1,
+  "anatomy_misses": 4,
+  "repeated_reads_warned": 0,
   "cerebrum_warnings": 0,
   "stop_count": 1
 }
