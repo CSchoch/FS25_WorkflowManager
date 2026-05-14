@@ -2,14 +2,14 @@
   "version": 1,
   "created_at": "2026-04-05T21:01:47.995Z",
   "lifetime": {
-    "total_tokens_estimated": 2087390,
-    "total_reads": 811,
-    "total_writes": 1800,
-    "total_sessions": 38,
-    "anatomy_hits": 226,
-    "anatomy_misses": 583,
-    "repeated_reads_blocked": 722,
-    "estimated_savings_vs_bare_cli": 4961099
+    "total_tokens_estimated": 2112045,
+    "total_reads": 815,
+    "total_writes": 1806,
+    "total_sessions": 39,
+    "anatomy_hits": 228,
+    "anatomy_misses": 585,
+    "repeated_reads_blocked": 723,
+    "estimated_savings_vs_bare_cli": 4979322
   },
   "sessions": [
     {
@@ -15880,6 +15880,77 @@
         "writes_count": 4,
         "repeated_reads_blocked": 0,
         "anatomy_lookups": 6
+      }
+    },
+    {
+      "id": "session-2026-05-14-0249",
+      "started": "2026-05-14T00:49:37.218Z",
+      "ended": "2026-05-14T00:53:35.563Z",
+      "reads": [
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.wolf/cerebrum.md",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md",
+          "tokens_estimated": 5908,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.wolf/memory.md",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowExecutor.lua",
+          "tokens_estimated": 17823,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md",
+          "tokens_estimated": 348,
+          "action": "edit"
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md",
+          "tokens_estimated": 124,
+          "action": "edit"
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md",
+          "tokens_estimated": 54,
+          "action": "edit"
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md",
+          "tokens_estimated": 54,
+          "action": "edit"
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md",
+          "tokens_estimated": 94,
+          "action": "edit"
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md",
+          "tokens_estimated": 250,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 23731,
+        "output_tokens_estimated": 924,
+        "reads_count": 4,
+        "writes_count": 6,
+        "repeated_reads_blocked": 1,
+        "anatomy_lookups": 2
       }
     }
   ],

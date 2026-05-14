@@ -120,7 +120,7 @@ On `onPostLoad`, this state is restored as `status = "paused"` with a 10-second 
 
 **Milestones 1–7:** Core (WorkflowManager, Executor, XML storage), GUI (main dialog, editor, HUD, ESC menu), Vehicle selection, AD/CP integration, Searchable dropdowns
 
-**Recent:** Multi-field workflows, hierarchical support steps, per-vehicle runtime state with savegame persistence, auto-resume after load, draggable HUD, reactive HUD show/hide, HUD badges/tooltips, step editor UX (selected-value rows, auto-select), support vehicle dummy AD hold to prevent staling, `justStoppedAD` fix for idle transitions, per-workflow AD settings (unloadFillLevel, pipeOffset, preCallLevel) accessible from main dialog via "AD/CP Einstellungen" button, fixed pcall arg-order bug in `applyWorkflowSettings`, fixed preCallLevel unit mismatch (now stored as 0.0–1.0 fraction), settings re-applied after `StartDriving`
+**Recent:** Multi-field workflows, hierarchical support steps, per-vehicle runtime state with savegame persistence, auto-resume after load, draggable HUD, reactive HUD show/hide, HUD badges/tooltips, step editor UX (selected-value rows, auto-select), support vehicle dummy AD hold to prevent staling, `justStoppedAD` fix for idle transitions, per-workflow AD settings (unloadFillLevel, pipeOffset, preCallLevel) accessible from main dialog via "AD/CP Einstellungen" button, fixed pcall arg-order bug in `applyWorkflowSettings`, fixed preCallLevel unit mismatch (now stored as 0.0–1.0 fraction), settings re-applied after `StartDriving`, multiplayer sync (WMCommandEvent/WMStateSyncEvent, server-authoritative executor, mid-session join via onReadStream/onWriteStream), support vehicles no longer paused when main pauses (run independently), fixed duplicate KEY_d binding (WM_GUI_DELETE → KEY_r), removed unused WM_START_WORKFLOW/WM_STOP_WORKFLOW action declarations
 
 **Other:** Courseplay resume at nearest waypoint, release build support (DevConfig stub), DDS textures, old linked-workflow migration, multiple simultaneous support vehicles, sub-step editor numbering (N.M format), mode dialog vehicle reference fix
 
@@ -230,6 +230,8 @@ FS25_WorkflowManager/
 │   │   ├── WorkflowManagerGUI.lua     # GUI manager / controller
 │   │   ├── WorkflowEditorGUI.lua      # Editor GUI controller
 │   │   └── WorkflowManagerMenuFrame.lua # ESC menu integration
+│   ├── network/
+│   │   └── WMNetworkEvents.lua        # Multiplayer events (WMCommandEvent client→server, WMStateSyncEvent server→all)
 │   ├── integration/
 │   │   ├── AutoDriveIntegration.lua   # AD API wrapper
 │   │   ├── CourseplayIntegration.lua  # CP API wrapper (startAtNearest support)
@@ -327,8 +329,19 @@ FS25_WorkflowManager/
 - `isMainVehicle` bool determines execution path; support vehicles use `currentSupportStep` (1-based index in current main's support array)
 - Support loops sub-steps; when main advances, `onMainStepChanged` resets support to sub-step 1
 - No sub-steps? Support enters `waitingForMainStep`, calls `startDummyADHold()` which sets `vehicle.ad.stateModule:setActive(true)` directly (pcall-guarded, no real route) to keep AD's subsystem alive. Deactivated with `setActive(false)` on pause or when real work starts. **Never use `startRoute + HoldDriving` as a dummy** — `ADDrivePathModule.PAUSE_TIMEOUT = 3000ms` causes it to auto-resume and drive.
-- Pause/stop from main propagates to all support via `getSupportActiveDataListForWorkflow`
+- **Stop** from main propagates to all support via `getSupportActiveDataListForWorkflow`; **pause does NOT propagate** — support vehicles continue running independently when main is paused
 - Helpers: `getMainActiveDataForWorkflow()`, `getSupportActiveDataListForWorkflow()`, `getCurrentStep(activeData)`
+
+### Multiplayer Sync
+
+- **Server-authoritative**: `WMExecutor.update()` is guarded with `if g_server == nil then return end`
+- All user commands route through `WorkflowManager:sendCommand(vehicle, cmd, workflowId)`:
+  - Host (`g_server ~= nil`): calls `executeNetworkCommand()` directly then broadcasts
+  - Client (`g_client`): sends `WMCommandEvent` to server; server executes and broadcasts back
+- **WMCommandEvent** (Client→Server): carries start/stop/pause/resume/next_step/prev_step
+- **WMStateSyncEvent** (Server→All Clients): broadcasts current step+status after state changes
+- **Mid-session join**: `onWriteStream` (server) sends current `wmExecution` to new clients; `onReadStream` (client) rebuilds state mirror and shows HUD if vehicle is controlled
+- `g_server ~= nil` = singleplayer or MP host; `g_client ~= nil` = MP client; both set = host
 
 ### Draggable HUD
 
@@ -385,8 +398,8 @@ FS25_WorkflowManager/
 
 ---
 
-**Status**: Phases 1-4 IN PROGRESS — Core, executor, GUI layer all functional. Recent: AD/CP Settings button on main dialog, fixed AD settings not applying (pcall arg order + preCallLevel unit mismatch + re-apply after StartDriving). Milestone 8 items (F1 overlay, hint relocation, X button) remain open.
-**Last updated**: 2026-05-05
+**Status**: Phases 1-4 IN PROGRESS — Core, executor, GUI layer, multiplayer sync all functional. Recent: multiplayer (WMCommandEvent/WMStateSyncEvent), support-vehicle pause independence, KEY_d fix, DDS textures, AD/CP settings. Milestone 8 items (F1 overlay, hint relocation, X button) remain open.
+**Last updated**: 2026-05-14
 
 ## Screenshots Needed
 
@@ -403,11 +416,6 @@ Screenshots for the Docusaurus documentation site (`website/static/img/screensho
 
 ## Todo
 
-### Critical (Ship Blockers)
-
-- [ ] **Fix duplicate `KEY_d` binding** in `modDesc.xml:67-81` — both `WM_GUI_DELETE` and `WM_GUI_MOVE_DOWN` are bound to `KEY_d`, causing both actions to fire simultaneously
-
 ### Low Priority
 
-- [ ] **Remove `or true` dead code** in `WorkflowExecutor.lua` — `if not CPIntegration:hasCourse(vehicle) or true then` makes the CP check permanently dead
-- [ ] **Remove unused action declarations** in `modDesc.xml` — `WM_START_WORKFLOW` and `WM_STOP_WORKFLOW` are declared but have no bindings and no references in source code
+- [ ] **Remove `or true` dead code** in `WorkflowExecutor.lua:608` — `if not CPIntegration:hasCourse(vehicle) or true then` makes the CP check permanently dead
