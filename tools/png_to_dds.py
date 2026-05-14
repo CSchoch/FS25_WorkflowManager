@@ -2,17 +2,25 @@
 """
 PNG to DDS converter for FS25 mod textures.
 
-Converts all PNG files in the textures/ folder to DDS format.
-- If texconv.exe is on PATH, uses it to produce DXT5-compressed DDS with mipmaps (RGBA)
-  or DXT1-compressed DDS (RGB, no alpha).
-- Otherwise falls back to Pillow for uncompressed DDS (works fine for small icons).
+Source PNGs live in _art/ and mirror the output structure:
+  _art/textures/white.png       -> textures/white.dds  (DXT1, +mipmaps)
+  _art/icon_WorkflowManager.png -> icon_WorkflowManager.dds (DXT1, no mipmaps)
+
+FS25 rules:
+  - Images with alpha      -> BC3_UNORM (DXT5)
+  - Fully opaque           -> BC1_UNORM (DXT1)
+  - Smaller than 4x4       -> R8G8B8A8_UNORM (DX10 uncompressed; block compression needs 4x4)
+  - Root-level (mod icons) -> no mipmaps
+  - textures/              -> full mip chain
+
+Getting texconv (required):
+  Download from https://github.com/microsoft/DirectXTex/releases
+  Place texconv.exe in this tools/ folder or anywhere on PATH.
 
 Usage:
     python tools/png_to_dds.py
-    python tools/png_to_dds.py --clean   # delete converted PNGs after conversion
 """
 
-import argparse
 import shutil
 import subprocess
 import sys
@@ -24,86 +32,98 @@ except ImportError:
     print("ERROR: Pillow not installed. Run: pip install Pillow")
     sys.exit(1)
 
-TEXTURES_DIR = Path(__file__).parent.parent / "textures"
+MOD_ROOT  = Path(__file__).parent.parent
+ART_DIR   = MOD_ROOT / "_art"
+TOOLS_DIR = Path(__file__).parent
+
+TEXCONV_SEARCH_PATHS = [
+    TOOLS_DIR / "texconv.exe",
+    TOOLS_DIR / "texconv" / "texconv.exe",
+    Path("C:/texconv/texconv.exe"),
+]
 
 
-def has_alpha(img: Image.Image) -> bool:
-    if img.mode == "RGBA":
-        return img.getextrema()[3][0] < 255  # any non-fully-opaque pixel
-    return img.mode in ("LA", "PA")
+def find_texconv() -> str | None:
+    found = shutil.which("texconv")
+    if found:
+        return found
+    for p in TEXCONV_SEARCH_PATHS:
+        if p.exists():
+            return str(p)
+    return None
 
 
-def convert_with_texconv(png_path: Path) -> bool:
-    """Try DXT5/DXT1 via texconv.exe. Returns True on success."""
-    texconv = shutil.which("texconv")
-    if texconv is None:
-        return False
-
+def dds_format(png_path: Path) -> str:
+    """Choose the right DXGI format string for texconv."""
     img = Image.open(png_path)
-    fmt = "BC3_UNORM" if has_alpha(img) else "BC1_UNORM"  # DXT5 / DXT1
+    if img.width < 4 or img.height < 4:
+        return "R8G8B8A8_UNORM"  # block compression needs 4x4 minimum
+    has_alpha = img.mode == "RGBA" and img.getextrema()[3][0] < 255
+    return "BC3_UNORM" if has_alpha else "BC1_UNORM"
 
+
+def convert(png_path: Path, out_path: Path, texconv: str, mipmaps: bool) -> bool:
+    fmt = dds_format(png_path)
+    mip_count = "0" if mipmaps else "1"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     result = subprocess.run(
-        [
-            texconv,
-            "-f", fmt,
-            "-y",           # overwrite
-            "-m", "0",      # generate all mip levels
-            "-o", str(png_path.parent),
-            str(png_path),
-        ],
+        [texconv, "-f", fmt, "-y", "-m", mip_count, "-o", str(out_path.parent), str(png_path)],
         capture_output=True,
         text=True,
     )
     if result.returncode != 0:
         print(f"  texconv failed: {result.stderr.strip()}")
         return False
+    # texconv names the output after the input; rename if needed
+    texconv_out = out_path.parent / (png_path.stem + ".dds")
+    if texconv_out != out_path:
+        texconv_out.rename(out_path)
     return True
 
 
-def convert_with_pillow(png_path: Path) -> None:
-    """Fallback: uncompressed RGBA DDS via Pillow."""
-    img = Image.open(png_path).convert("RGBA")
-    out = png_path.with_suffix(".dds")
-    img.save(out, format="DDS")
-
-
 def main():
-    parser = argparse.ArgumentParser(description="Convert PNG textures to DDS")
-    parser.add_argument("--clean", action="store_true", help="Delete source PNGs after conversion")
-    args = parser.parse_args()
-
-    if not TEXTURES_DIR.exists():
-        print(f"ERROR: textures directory not found: {TEXTURES_DIR}")
+    if not ART_DIR.exists():
+        print(f"ERROR: _art/ directory not found: {ART_DIR}")
         sys.exit(1)
 
-    mod_root = TEXTURES_DIR.parent
-    pngs = sorted(TEXTURES_DIR.glob("*.png")) + sorted(mod_root.glob("modIcon.png"))
+    texconv = find_texconv()
+    if not texconv:
+        print("ERROR: texconv.exe not found.")
+        print()
+        print("  Download from: https://github.com/microsoft/DirectXTex/releases")
+        print(f"  Then place texconv.exe in: {TOOLS_DIR}")
+        sys.exit(1)
+
+    print(f"texconv: {texconv}\n")
+
+    pngs = sorted(ART_DIR.rglob("*.png"))
     if not pngs:
-        print("No PNG files found in textures/")
+        print("No PNG files found in _art/")
         return
 
-    use_texconv = shutil.which("texconv") is not None
-    method = "texconv (DXT5/DXT1 + mipmaps)" if use_texconv else "Pillow (uncompressed RGBA)"
-    print(f"Converting {len(pngs)} file(s) using {method}\n")
-
+    failed = []
     for png in pngs:
-        dds = png.with_suffix(".dds")
-        print(f"  {png.name} -> {dds.name}", end=" ... ")
+        rel   = png.relative_to(ART_DIR)           # e.g. textures/white.png
+        out   = (MOD_ROOT / rel).with_suffix(".dds") # e.g. textures/white.dds
+        # Root-level art = mod icons: no mipmaps. Subdirs: full mip chain.
+        mipmaps = png.parent != ART_DIR
 
-        ok = False
-        if use_texconv:
-            ok = convert_with_texconv(png)
-        if not ok:
-            convert_with_pillow(png)
-            ok = True
+        fmt   = dds_format(png)
+        mips  = "+mips" if mipmaps else "no mips"
+        print(f"  {rel} -> {out.relative_to(MOD_ROOT)} [{fmt} {mips}]", end=" ... ", flush=True)
 
-        print("ok")
+        if convert(png, out, texconv, mipmaps):
+            print("ok")
+        else:
+            print("FAILED")
+            failed.append(str(rel))
 
-        if ok and args.clean:
-            png.unlink()
-            print(f"    (deleted {png.name})")
-
-    print("\nDone.")
+    print()
+    if failed:
+        print(f"FAILED ({len(failed)}): {', '.join(failed)}")
+        sys.exit(1)
+    else:
+        print("Done.")
 
 
 if __name__ == "__main__":

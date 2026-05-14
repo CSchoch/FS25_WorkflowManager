@@ -94,7 +94,6 @@ function WMHud:createIconOverlays()
     -- Get mod directory for icon paths
     local modDir = WorkflowManager.modDirectory or g_currentModDirectory or ""
 
-    -- Icon file paths
     local iconPrev = Utils.getFilename("textures/icon_prev.dds", modDir)
     local iconPause = Utils.getFilename("textures/icon_pause.dds", modDir)
     local iconPlay = Utils.getFilename("textures/icon_play.dds", modDir)

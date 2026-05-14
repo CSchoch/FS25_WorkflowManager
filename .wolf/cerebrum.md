@@ -37,6 +37,10 @@
 
 [2026-04-07] Support idle poll must check if main step CHANGED, not just if it has sub-steps. The poll for `waitingForMainStep` ran every update cycle and would immediately restart support on the same main step because it didn't track which step triggered the idle. Fix: use `waitingForMainStepIndex` to record which step was active when idle was entered; only resume when `mainActiveData.currentStep ~= waitingForMainStepIndex`.
 
+[2026-05-14] FS25 DDS compression rules: images with alpha → BC3_UNORM (DXT5); fully opaque images → BC1_UNORM (DXT1). Uncompressed RGBA (Pillow default) is rejected as "unknown" compression. BC1/DXT1 on alpha-channel textures corrupts transparency.
+
+[2026-05-14] FS25 `Overlay.new()` and `createImageOverlay()` DO accept DDS for GUI overlays. BC3_UNORM 32×32 icon DDS files work correctly with `Overlay.new`; R8G8B8A8_UNORM DDS works with `createImageOverlay` for the white background texture. Use properly-formed DDS (BC3_UNORM for alpha textures ≥4×4, BC1_UNORM for opaque ≥4×4. Keep all source PNGs at least 4×4 to enable block compression) — eliminates "raw format" and CPU mip-generation warnings. Source PNGs live in `_art/textures/`; generate DDS with `tools/png_to_dds.py`.
+
 ## Decision Log
 
 <!-- Significant technical decisions with rationale. Why X was chosen over Y. -->

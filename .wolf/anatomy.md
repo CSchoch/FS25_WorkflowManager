@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-05T12:20:19.487Z
-> Files: 18 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-14T00:09:12.491Z
+> Files: 24 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -9,7 +9,9 @@
 
 ## ./
 
-- `CLAUDE.md` — FS25 Workflow Manager (~5713 tok)
+- `CLAUDE.md` — FS25 Workflow Manager (~5914 tok)
+- `create_release.ps1` (~262 tok)
+- `modDesc.xml` (~2044 tok)
 
 ## .claude/
 
@@ -36,7 +38,10 @@
 
 - `WMADSettingsDialog.lua` — new, onCreate, onOpen, onClose, Called (~712 tok)
 - `WMEditorDialog.lua` — new, onCreate, onOpen, onClose, setWorkflow (~5302 tok)
+- `WMHud.lua` — ensureOverlays, createIconOverlays, updateOverlayPositions, init, show (~7387 tok)
 - `WMMainDialog.lua` — new, onCreate, onOpen, onClose, refreshWorkflowList (~3354 tok)
+- `WorkflowEditorGUI.lua` — init, openWorkflow, close, saveAndClose, cancelAndClose (~17444 tok)
+- `WorkflowManagerGUI.lua` — init, loadXmlGui, show, hide, toggle (~7025 tok)
 
 ## src/integration/
 
@@ -69,6 +74,7 @@
 
 ## tools/
 
+- `png_to_dds.py` — find_texconv, dds_format, convert, main (~1108 tok)
 
 ## translations/
 

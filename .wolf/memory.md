@@ -655,3 +655,91 @@
 | 14:19 | Edited website/docs/ui/main-dialog.md | 5→7 lines | ~97 |
 | 14:20 | Edited CLAUDE.md | 7→8 lines | ~593 |
 | 14:20 | Session end: 7 writes across 4 files (main-dialog.md, creating-workflows.md, xml-format.md, CLAUDE.md) | 6 reads | ~7585 tok |
+
+## Session: 2026-05-13 23:29
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-05-13 23:29
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 23:30 | Edited create_release.ps1 | inline fix | ~19 |
+| 23:30 | Session end: 1 writes across 1 files (create_release.ps1) | 0 reads | ~20 tok |
+| 23:51 | Edited modDesc.xml | 4→3 lines | ~16 |
+| 23:51 | Session end: 2 writes across 2 files (create_release.ps1, modDesc.xml) | 1 reads | ~37 tok |
+| 23:53 | Edited create_release.ps1 | inline fix | ~12 |
+| 23:54 | Session end: 3 writes across 2 files (create_release.ps1, modDesc.xml) | 2 reads | ~310 tok |
+
+## Session: 2026-05-13 00:24
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-05-13 00:24
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 00:27 | Edited tools/png_to_dds.py | 2→1 lines | ~23 |
+| 00:27 | Edited tools/png_to_dds.py | 2→2 lines | ~44 |
+| 00:27 | Edited tools/png_to_dds.py | "texconv (DXT5/DXT1 + mipm" → "texconv (BC3/DXT5 + mipma" | ~27 |
+| 00:27 | Edited tools/png_to_dds.py | removed 7 lines | ~7 |
+| 00:28 | Edited CLAUDE.md | icons() → DXT5() | ~65 |
+| 00:28 | Session end: 5 writes across 2 files (png_to_dds.py, CLAUDE.md) | 4 reads | ~5883 tok |
+| 00:31 | Created tools/png_to_dds.py | — | ~1084 |
+| 00:31 | Edited tools/png_to_dds.py | removed 7 lines | ~1 |
+| 00:31 | Session end: 7 writes across 2 files (png_to_dds.py, CLAUDE.md) | 4 reads | ~6968 tok |
+| 00:36 | Created tools/png_to_dds.py | — | ~1038 |
+| 00:36 | Edited CLAUDE.md | inline fix | ~27 |
+| 00:36 | Session end: 9 writes across 2 files (png_to_dds.py, CLAUDE.md) | 4 reads | ~9081 tok |
+| 00:40 | Created tools/png_to_dds.py | — | ~1435 |
+| 00:41 | Session end: 10 writes across 2 files (png_to_dds.py, CLAUDE.md) | 4 reads | ~10516 tok |
+| 00:47 | Edited src/gui/WMHud.lua | 6→6 lines | ~119 |
+| 00:47 | Edited CLAUDE.md | 1→2 lines | ~46 |
+| 00:47 | Session end: 12 writes across 3 files (png_to_dds.py, CLAUDE.md, WMHud.lua) | 6 reads | ~10692 tok |
+| 00:49 | Session end: 12 writes across 3 files (png_to_dds.py, CLAUDE.md, WMHud.lua) | 6 reads | ~10692 tok |
+| 00:51 | Session end: 12 writes across 3 files (png_to_dds.py, CLAUDE.md, WMHud.lua) | 6 reads | ~10692 tok |
+| 00:53 | Edited create_release.ps1 | inline fix | ~9 |
+| 00:53 | Edited tools/png_to_dds.py | inline fix | ~28 |
+| 00:53 | Session end: 14 writes across 4 files (png_to_dds.py, CLAUDE.md, WMHud.lua, create_release.ps1) | 6 reads | ~10730 tok |
+| 00:58 | Edited create_release.ps1 | added 2 condition(s) | ~156 |
+| 00:59 | Session end: 15 writes across 4 files (png_to_dds.py, CLAUDE.md, WMHud.lua, create_release.ps1) | 8 reads | ~11159 tok |
+| 01:03 | Edited tools/png_to_dds.py | modified convert_texconv() | ~133 |
+| 01:03 | Edited tools/png_to_dds.py | 2→5 lines | ~83 |
+| 01:03 | Edited tools/png_to_dds.py | 20→22 lines | ~197 |
+| 01:03 | Session end: 18 writes across 4 files (png_to_dds.py, CLAUDE.md, WMHud.lua, create_release.ps1) | 8 reads | ~12073 tok |
+| 01:07 | Edited tools/png_to_dds.py | 3→4 lines | ~93 |
+| 01:07 | Session end: 19 writes across 4 files (png_to_dds.py, CLAUDE.md, WMHud.lua, create_release.ps1) | 8 reads | ~12166 tok |
+| 01:15 | Session end: 19 writes across 4 files (png_to_dds.py, CLAUDE.md, WMHud.lua, create_release.ps1) | 8 reads | ~12166 tok |
+| 01:20 | Created tools/png_to_dds.py | — | ~1108 |
+| 01:21 | Session end: 20 writes across 4 files (png_to_dds.py, CLAUDE.md, WMHud.lua, create_release.ps1) | 8 reads | ~13274 tok |
+
+## Session: 2026-05-13 01:23
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 01:34 | Edited src/WorkflowManager.lua | "textures/white.dds" → "textures/white.png" | ~23 |
+| 01:34 | Edited src/gui/WorkflowEditorGUI.lua | inline fix | ~5 |
+| 01:34 | Edited src/gui/WorkflowManagerGUI.lua | "textures/white.dds" → "textures/white.png" | ~20 |
+| 01:36 | Edited create_release.ps1 | modified if() | ~48 |
+| 01:37 | Edited CLAUDE.md | 7→8 lines | ~143 |
+| 01:37 | Session end: 5 writes across 5 files (WorkflowManager.lua, WorkflowEditorGUI.lua, WorkflowManagerGUI.lua, create_release.ps1, CLAUDE.md) | 9 reads | ~19315 tok |
+
+## Session: 2026-05-13 01:38
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 01:46 | Edited src/gui/WorkflowEditorGUI.lua | 6→6 lines | ~114 |
+| 01:46 | Edited src/gui/WorkflowEditorGUI.lua | 3→3 lines | ~68 |
+| 01:46 | Edited src/gui/WorkflowManagerGUI.lua | inline fix | ~27 |
+| 01:46 | Session end: 3 writes across 2 files (WorkflowEditorGUI.lua, WorkflowManagerGUI.lua) | 2 reads | ~24678 tok |
+| 01:58 | Edited src/gui/WMHud.lua | 6→5 lines | ~98 |
+| 01:58 | Edited CLAUDE.md | 5→8 lines | ~174 |
+| 01:58 | Edited CLAUDE.md | 2→4 lines | ~69 |
+| 01:59 | Edited CLAUDE.md | 4→5 lines | ~124 |
+| 01:59 | Session end: 7 writes across 4 files (WorkflowEditorGUI.lua, WorkflowManagerGUI.lua, WMHud.lua, CLAUDE.md) | 5 reads | ~39569 tok |
+| 02:06 | Session end: 7 writes across 4 files (WorkflowEditorGUI.lua, WorkflowManagerGUI.lua, WMHud.lua, CLAUDE.md) | 6 reads | ~39569 tok |
+| 02:09 | Edited CLAUDE.md | source() → DDS() | ~56 |
+| 02:09 | Session end: 8 writes across 4 files (WorkflowEditorGUI.lua, WorkflowManagerGUI.lua, WMHud.lua, CLAUDE.md) | 6 reads | ~39629 tok |
+| 02:12 | Session end: 8 writes across 4 files (WorkflowEditorGUI.lua, WorkflowManagerGUI.lua, WMHud.lua, CLAUDE.md) | 6 reads | ~39629 tok |

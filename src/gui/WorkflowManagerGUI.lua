@@ -51,11 +51,11 @@ function WMManagerGUI:init()
     self.lastClickIndex = 0
 
     -- Create overlay for rendering solid colors
-    -- Use our mod's white.png texture (1x1 white pixel that can be tinted)
+    -- Use our mod's white.dds texture (1x1 white pixel that can be tinted)
     self.overlayId = nil
 
     if WorkflowManager.modDirectory ~= nil then
-        local whiteTexture = WorkflowManager.modDirectory .. "textures/white.dds"
+        local whiteTexture = Utils.getFilename("textures/white.dds", WorkflowManager.modDirectory)
         self.overlayId = createImageOverlay(whiteTexture)
         if self.overlayId ~= nil and self.overlayId ~= 0 then
             WMLogger:debug("Created overlay from mod texture: %s (ID: %s)", whiteTexture, tostring(self.overlayId))

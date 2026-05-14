@@ -92,11 +92,11 @@ function WMEditorGUI:init()
     -- Milestone 4: vehicleDropdownPos removed
     self.dialogDropdowns = {}
 
-    -- Create own overlay from white.png texture
+    -- Create own overlay from white.dds texture
     self.overlayId = nil
 
     if WorkflowManager.modDirectory ~= nil then
-        local whiteTexture = WorkflowManager.modDirectory .. "textures/white.dds"
+        local whiteTexture = Utils.getFilename("textures/white.dds", WorkflowManager.modDirectory)
         self.overlayId = createImageOverlay(whiteTexture)
         if self.overlayId ~= nil and self.overlayId ~= 0 then
             WMLogger:debug("Editor created overlay from: %s (ID: %s)", whiteTexture, tostring(self.overlayId))
@@ -123,7 +123,7 @@ function WMEditorGUI:openWorkflow(workflow)
     -- Check if overlay exists, recreate if needed
     if self.overlayId == nil or self.overlayId == 0 then
         if WorkflowManager.modDirectory ~= nil then
-            local whiteTexture = WorkflowManager.modDirectory .. "textures/white.dds"
+            local whiteTexture = Utils.getFilename("textures/white.dds", WorkflowManager.modDirectory)
             self.overlayId = createImageOverlay(whiteTexture)
             WMLogger:debug("Editor recreated overlay (ID: %s)", tostring(self.overlayId))
         end

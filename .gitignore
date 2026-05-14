@@ -11,3 +11,4 @@ website/.docusaurus/
 # OS
 .DS_Store
 Thumbs.db
+tools/texconv.exe

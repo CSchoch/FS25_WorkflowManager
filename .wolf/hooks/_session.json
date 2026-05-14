@@ -1,91 +1,97 @@
 {
-  "session_id": "session-2026-05-05-1416",
-  "started": "2026-05-05T12:16:29.146Z",
+  "session_id": "session-2026-05-13-0138",
+  "started": "2026-05-13T23:38:07.489Z",
   "files_read": {
-    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/website/docs/ui/main-dialog.md": {
+    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WorkflowEditorGUI.lua": {
       "count": 1,
-      "tokens": 0,
-      "first_read": "2026-05-05T12:17:22.078Z"
+      "tokens": 17435,
+      "first_read": "2026-05-13T23:46:20.615Z"
     },
-    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/website/docs/workflows/creating-workflows.md": {
+    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WorkflowManagerGUI.lua": {
       "count": 1,
-      "tokens": 0,
-      "first_read": "2026-05-05T12:17:22.993Z"
+      "tokens": 7020,
+      "first_read": "2026-05-13T23:46:21.314Z"
     },
-    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/website/docs/workflows/executing-workflows.md": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-05-05T12:17:23.192Z"
+    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMHud.lua": {
+      "count": 3,
+      "tokens": 7408,
+      "first_read": "2026-05-13T23:52:51.913Z"
     },
-    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/website/docs/api/xml-format.md": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-05-05T12:17:26.693Z"
-    },
-    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/website/docs/troubleshooting.md": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-05-05T12:17:27.158Z"
+    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tools/png_to_dds.py": {
+      "count": 2,
+      "tokens": 1108,
+      "first_read": "2026-05-13T23:52:52.489Z"
     },
     "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md": {
+      "count": 5,
+      "tokens": 5878,
+      "first_read": "2026-05-13T23:58:36.775Z"
+    },
+    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.wolf/cerebrum.md": {
       "count": 1,
-      "tokens": 5577,
-      "first_read": "2026-05-05T12:20:08.249Z"
+      "tokens": 0,
+      "first_read": "2026-05-14T00:06:22.762Z"
     }
   },
   "files_written": [
     {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/website/docs/ui/main-dialog.md",
+      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WorkflowEditorGUI.lua",
       "action": "edit",
-      "tokens": 144,
-      "at": "2026-05-05T12:17:44.511Z"
+      "tokens": 122,
+      "at": "2026-05-13T23:46:26.481Z"
     },
     {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/website/docs/ui/main-dialog.md",
+      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WorkflowEditorGUI.lua",
       "action": "edit",
-      "tokens": 340,
-      "at": "2026-05-05T12:17:53.436Z"
+      "tokens": 73,
+      "at": "2026-05-13T23:46:28.392Z"
     },
     {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/website/docs/workflows/creating-workflows.md",
+      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WorkflowManagerGUI.lua",
       "action": "edit",
-      "tokens": 248,
-      "at": "2026-05-05T12:18:01.386Z"
+      "tokens": 28,
+      "at": "2026-05-13T23:46:29.830Z"
     },
     {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/website/docs/api/xml-format.md",
+      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMHud.lua",
       "action": "edit",
-      "tokens": 295,
-      "at": "2026-05-05T12:18:11.735Z"
-    },
-    {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/website/docs/api/xml-format.md",
-      "action": "edit",
-      "tokens": 242,
-      "at": "2026-05-05T12:18:20.990Z"
-    },
-    {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/website/docs/ui/main-dialog.md",
-      "action": "edit",
-      "tokens": 104,
-      "at": "2026-05-05T12:19:51.867Z"
+      "tokens": 105,
+      "at": "2026-05-13T23:58:33.211Z"
     },
     {
       "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md",
       "action": "edit",
-      "tokens": 635,
-      "at": "2026-05-05T12:20:19.513Z"
+      "tokens": 186,
+      "at": "2026-05-13T23:58:50.493Z"
+    },
+    {
+      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md",
+      "action": "edit",
+      "tokens": 74,
+      "at": "2026-05-13T23:58:57.382Z"
+    },
+    {
+      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md",
+      "action": "edit",
+      "tokens": 132,
+      "at": "2026-05-13T23:59:19.687Z"
+    },
+    {
+      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md",
+      "action": "edit",
+      "tokens": 60,
+      "at": "2026-05-14T00:09:12.509Z"
     }
   ],
   "edit_counts": {
-    "website/docs/ui/main-dialog.md": 3,
-    "website/docs/workflows/creating-workflows.md": 1,
-    "website/docs/api/xml-format.md": 2,
-    "CLAUDE.md": 1
+    "src/gui/WorkflowEditorGUI.lua": 2,
+    "src/gui/WorkflowManagerGUI.lua": 1,
+    "src/gui/WMHud.lua": 1,
+    "CLAUDE.md": 4
   },
-  "anatomy_hits": 1,
-  "anatomy_misses": 5,
-  "repeated_reads_warned": 0,
+  "anatomy_hits": 5,
+  "anatomy_misses": 1,
+  "repeated_reads_warned": 7,
   "cerebrum_warnings": 0,
-  "stop_count": 2
+  "stop_count": 6
 }

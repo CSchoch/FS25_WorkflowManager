@@ -404,7 +404,7 @@ function WorkflowManager:addPageToInGameMenu()
         inGameMenu:registerPage(self.menuFrame, pageIndex, alwaysAvailable)
 
         -- Add a tab for the page with icon
-        -- Use our white.png texture as a placeholder icon
+        -- Use our white.dds texture as a placeholder icon
         local iconPath = Utils.getFilename("textures/white.dds", self.modDirectory)
         local uvs = GuiUtils.getUVs({0, 0, 1, 1})
         inGameMenu:addPageTab(self.menuFrame, iconPath, uvs)

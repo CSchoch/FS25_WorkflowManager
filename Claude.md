@@ -233,11 +233,17 @@ FS25_WorkflowManager/
 │   ├── translation_en.xml
 │   └── translation_de.xml
 ├── textures/
-│   ├── white.dds                      # 1x1 white pixel for GUI backgrounds
-│   ├── icon_prev.dds                  # HUD button: Previous step (<<)
+│   ├── white.png                      # 4x4 white pixel source → BC1_UNORM DDS (minimum size for block compression)
+│   ├── white.dds                      # generated DDS; used by createImageOverlay overlays
+│   ├── icon_prev.png                  # HUD button source PNG (kept as _art/ source)
+│   ├── icon_prev.dds                  # HUD button: Previous step (<<) — BC3+mips, used at runtime
+│   ├── icon_pause.png                 # HUD button source PNG
 │   ├── icon_pause.dds                 # HUD button: Pause (||)
+│   ├── icon_play.png                  # HUD button source PNG
 │   ├── icon_play.dds                  # HUD button: Resume (>)
+│   ├── icon_stop.png                  # HUD button source PNG
 │   ├── icon_stop.dds                  # HUD button: Stop ([])
+│   ├── icon_next.png                  # HUD button source PNG
 │   └── icon_next.dds                  # HUD button: Next step (>>)
 ├── tools/
 │   └── png_to_dds.py                  # Converts textures/*.png + modIcon.png to DDS
@@ -346,8 +352,11 @@ FS25_WorkflowManager/
 
 ### HUD Icons
 
-- 32x32 DDS icons (uncompressed RGBA) with white shapes on transparent background
-- Source PNGs kept in `textures/` alongside DDS; regenerate with `tools/png_to_dds.py`
+- 32x32 DDS icons (BC3_UNORM + full mip chain) with white shapes on transparent background
+- HUD icon overlays use DDS — eliminates "raw format" / CPU mip-generation warnings at load time
+- `createImageOverlay` overlays also use DDS; `white.dds` is R8G8B8A8_UNORM (1×1 too small for block compression)
+- World/model textures use DDS: with alpha → BC3/DXT5; fully opaque → BC1/DXT1
+- Source PNGs live in `_art/textures/`; regenerate DDS with `tools/png_to_dds.py`
 - Color-tinted at runtime: normal (white), hover (cyan), disabled (gray), active (green)
 - Hover tracking for visual feedback on mouse-over
 
