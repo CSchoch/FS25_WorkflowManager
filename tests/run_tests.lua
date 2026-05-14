@@ -199,8 +199,10 @@ print(string.rep("=", 60))
 local testFiles = {
     "tests/specs/EventHandler_spec.lua",
     "tests/specs/Logger_spec.lua",
+    "tests/specs/WorkflowStorage_spec.lua",
     "tests/specs/WorkflowManager_spec.lua",
     "tests/specs/WorkflowExecutor_spec.lua",
+    "tests/specs/WorkflowManagerSpec_spec.lua",
     "tests/specs/WMHud_spec.lua"
 }
 
@@ -211,9 +213,20 @@ for _, testFile in ipairs(testFiles) do
 
     currentBeforeEach = nil  -- Reset before each file
 
+    -- Save globals that individual specs may clobber as a side-effect
+    -- (e.g. Logger_spec replaces _G.WMLogger with the real module and overrides print)
+    local savedPrint    = _G.print
+    local savedWMLogger = _G.WMLogger
+
     local success, err = pcall(function()
         dofile(testFile)
     end)
+
+    -- Restore globals unconditionally so later specs see the mocks
+    _G.print = savedPrint
+    if savedWMLogger ~= nil then
+        _G.WMLogger = savedWMLogger
+    end
 
     if not success then
         print("ERROR loading " .. testFile .. ": " .. tostring(err))

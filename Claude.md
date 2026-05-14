@@ -378,16 +378,40 @@ FS25_WorkflowManager/
 
 ## Running Tests
 
-```bash
-"C:\Program Files (x86)\Lua\5.1\lua.exe" tests/run_executor_spec.lua  # Executor spec
-"C:\Program Files (x86)\Lua\5.1\lua.exe" tests/run_storage_spec.lua   # Storage spec
-"C:\Program Files (x86)\Lua\5.1\lua.exe" tests/run_wm_spec.lua        # WorkflowManager spec
-"C:\Program Files (x86)\Lua\5.1\lua.exe" tests/run_tests.lua          # All tests
+**Preferred — run everything at once (PowerShell):**
+```powershell
+& "C:\Program Files (x86)\Lua\5.1\lua.exe" tests\run_tests.lua
 ```
 
-- `tests/mocks/` — game globals, XMLFile, vehicle factory stubs
+Individual runners exist as fallbacks (useful when debugging a single module):
+```powershell
+& "C:\Program Files (x86)\Lua\5.1\lua.exe" tests\run_executor_spec.lua  # Executor spec
+& "C:\Program Files (x86)\Lua\5.1\lua.exe" tests\run_storage_spec.lua   # Storage spec
+& "C:\Program Files (x86)\Lua\5.1\lua.exe" tests\run_wm_spec.lua        # WorkflowManager spec
+```
+
+Note: use `&` (call operator) in PowerShell when passing arguments to an executable.
+
+### Test structure
+
+| Spec file | Covers | Tests |
+| --- | --- | --- |
+| `EventHandler_spec.lua` | WMEventHandler (subscribe, fire, remove) | 23 |
+| `Logger_spec.lua` | WMLogger (levels, formatting, api/event/state helpers) | 30 |
+| `WorkflowStorage_spec.lua` | WMStorage save/load, adSettings, old-format migration | 31 |
+| `WorkflowManager_spec.lua` | CRUD, vehicle validation, network command dispatch | 58 |
+| `WorkflowExecutor_spec.lua` | Full state machine: start/stop/pause/resume/step nav, support vehicles, MP roles | 109 |
+| `WorkflowManagerSpec_spec.lua` | Vehicle spec: onLoad, onPostLoad (savegame restore), saveToXMLFile, onWriteStream/onReadStream (MP join), onDelete | 30 |
+| `WMHud_spec.lua` | HUD button handlers, vehicle targeting | 15 |
+| **Total** | | **296** |
+
+- `tests/mocks/` — game globals, XMLFile, vehicle factory, CP/AD integration stubs
 - `tests/specs/` — one spec per module
 - `tests/fixtures/` — shared workflow test data
+
+### Test framework notes
+
+`run_tests.lua` saves and restores `_G.print` and `_G.WMLogger` around every spec file. This prevents `Logger_spec` (which loads the real `WMLogger` and overrides `print`) from polluting the mock state used by subsequent specs. Do NOT add `_G.print = ...` side-effects to `before_each` blocks without a matching restore, and do NOT load real module files in `setup()` without resetting them in the runner.
 
 ## Resources
 
@@ -398,7 +422,7 @@ FS25_WorkflowManager/
 
 ---
 
-**Status**: Phases 1-4 IN PROGRESS — Core, executor, GUI layer, multiplayer sync all functional. Recent: multiplayer (WMCommandEvent/WMStateSyncEvent), support-vehicle pause independence, KEY_d fix, DDS textures, AD/CP settings. Milestone 8 items (F1 overlay, hint relocation, X button) remain open.
+**Status**: Phases 1-4 IN PROGRESS — Core, executor, GUI layer, multiplayer sync all functional. Recent: multiplayer (WMCommandEvent/WMStateSyncEvent), support-vehicle pause independence, KEY_d fix, DDS textures, AD/CP settings, test suite overhaul (296 tests, full coverage of WorkflowManagerSpec savegame persistence and MP stream sync). Milestone 8 items (F1 overlay, hint relocation, X button) remain open.
 **Last updated**: 2026-05-14
 
 ## Screenshots Needed

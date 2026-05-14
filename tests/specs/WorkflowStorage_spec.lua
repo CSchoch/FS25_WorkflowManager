@@ -219,6 +219,70 @@ describe("WMStorage", function()
             assert.are.equal(0.75, _G.WMHud.x)
             assert.are.equal(0.25, _G.WMHud.y)
         end)
+
+        it("persists adSettings when all three fields are set", function()
+            local wf = {
+                id = "wf_ads_001", name = "AD Settings Test",
+                steps = { { type = "autodrive", target = "A", action = "drive", support = {} } },
+                adSettings = { unloadFillLevel = 0.9, pipeOffset = 0.5, preCallLevel = 0.8 },
+            }
+            WMStorage:saveWorkflows({ wf })
+
+            _G.fileExists = function() return true end
+            local loaded = WMStorage:loadWorkflows()
+            assert.is_not_nil(loaded[1].adSettings)
+            assert.are.equal(0.9, loaded[1].adSettings.unloadFillLevel)
+            assert.are.equal(0.5, loaded[1].adSettings.pipeOffset)
+            assert.are.equal(0.8, loaded[1].adSettings.preCallLevel)
+        end)
+
+        it("persists adSettings when only some fields are set (others remain nil)", function()
+            local wf = {
+                id = "wf_ads_002", name = "Partial AD Settings",
+                steps = { { type = "autodrive", target = "A", action = "drive", support = {} } },
+                adSettings = { unloadFillLevel = 0.75, pipeOffset = nil, preCallLevel = nil },
+            }
+            WMStorage:saveWorkflows({ wf })
+
+            _G.fileExists = function() return true end
+            local loaded = WMStorage:loadWorkflows()
+            assert.are.equal(0.75, loaded[1].adSettings.unloadFillLevel)
+            assert.is_nil(loaded[1].adSettings.pipeOffset)
+            assert.is_nil(loaded[1].adSettings.preCallLevel)
+        end)
+
+        it("does NOT write adSettings element when adSettings is nil", function()
+            local wf = {
+                id = "wf_ads_003", name = "No AD Settings",
+                steps = { { type = "autodrive", target = "A", action = "drive", support = {} } },
+                adSettings = nil,
+            }
+            WMStorage:saveWorkflows({ wf })
+
+            _G.fileExists = function() return true end
+            local loaded = WMStorage:loadWorkflows()
+            -- adSettings table is always created on load; all fields should be nil
+            local ads = loaded[1].adSettings
+            assert.is_nil(ads.unloadFillLevel)
+            assert.is_nil(ads.pipeOffset)
+            assert.is_nil(ads.preCallLevel)
+        end)
+
+        it("does NOT write adSettings element when all fields are nil", function()
+            local wf = {
+                id = "wf_ads_004", name = "All Nil AD Settings",
+                steps = { { type = "autodrive", target = "A", action = "drive", support = {} } },
+                adSettings = { unloadFillLevel = nil, pipeOffset = nil, preCallLevel = nil },
+            }
+            WMStorage:saveWorkflows({ wf })
+
+            _G.fileExists = function() return true end
+            local loaded = WMStorage:loadWorkflows()
+            local ads = loaded[1].adSettings
+            assert.is_nil(ads.unloadFillLevel)
+            assert.is_nil(ads.pipeOffset)
+            assert.is_nil(ads.preCallLevel)
+        end)
     end)
 
     -- =========================================================================
@@ -531,6 +595,33 @@ describe("WMStorage", function()
             assert.are.equal("unload",  support[1].action)
             assert.are.equal("Silo",    support[1].unloadTarget)
             assert.are.equal("deliver", support[2].action)
+        end)
+
+        it("preserves adSettings end-to-end alongside steps", function()
+            local workflows = {
+                {
+                    id = "wf_rt_ads", name = "Route With AD Settings",
+                    adSettings = { unloadFillLevel = 0.85, pipeOffset = -1.5, preCallLevel = 0.6 },
+                    steps = {
+                        { type = "autodrive",  target = "Farm",   action = "drive",     support = {} },
+                        { type = "courseplay", target = "Field1", action = "fieldwork", support = {} },
+                    }
+                }
+            }
+
+            WMStorage:saveWorkflows(workflows)
+            _G.fileExists = function() return true end
+            local loaded = WMStorage:loadWorkflows()
+
+            assert.are.equal(1,                    #loaded)
+            assert.are.equal("Route With AD Settings", loaded[1].name)
+            assert.are.equal(2,                    #loaded[1].steps)
+
+            local ads = loaded[1].adSettings
+            assert.is_not_nil(ads)
+            assert.are.equal(0.85, ads.unloadFillLevel)
+            assert.are.equal(-1.5, ads.pipeOffset)
+            assert.are.equal(0.6,  ads.preCallLevel)
         end)
     end)
 end)

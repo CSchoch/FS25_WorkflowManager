@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-14T00:59:21.139Z
-> Files: 26 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-14T01:20:08.881Z
+> Files: 29 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -9,7 +9,7 @@
 
 ## ./
 
-- `CLAUDE.md` — FS25 Workflow Manager (~6160 tok)
+- `CLAUDE.md` — FS25 Workflow Manager (~6560 tok)
 - `create_release.ps1` (~262 tok)
 - `modDesc.xml` (~2044 tok)
 
@@ -64,6 +64,7 @@
 
 ## tests/
 
+- `run_tests.lua` — local, assert, describe, it, before_each (~2108 tok)
 
 ## tests/fixtures/
 
@@ -75,6 +76,8 @@
 ## tests/specs/
 
 - `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport (~13216 tok)
+- `WorkflowManagerSpec_spec.lua` — makeVehicle, makeSavegameXML (~6990 tok)
+- `WorkflowStorage_spec.lua` (~7652 tok)
 
 ## textures/
 

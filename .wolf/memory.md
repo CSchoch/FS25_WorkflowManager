@@ -802,3 +802,22 @@
 | 02:59 | Edited tests/specs/WorkflowExecutor_spec.lua | 17→17 lines | ~250 |
 | 02:59 | Removed stop propagation from main→support in stopWorkflow/onWorkflowCompleted; removed 'or true' dead code in startAutoDriveStep:608 | WorkflowExecutor.lua, tests/specs/WorkflowExecutor_spec.lua, CLAUDE.md | All 109 tests pass | ~350 |
 | 02:59 | Session end: 6 writes across 3 files (WorkflowExecutor.lua, CLAUDE.md, WorkflowExecutor_spec.lua) | 6 reads | ~24551 tok |
+
+## Session: 2026-05-14 03:00
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 03:09 | Edited tests/run_tests.lua | expanded (+12 lines) | ~338 |
+| 03:10 | Edited tests/specs/WorkflowStorage_spec.lua | expanded (+64 lines) | ~935 |
+| 03:10 | Edited tests/specs/WorkflowStorage_spec.lua | expanded (+27 lines) | ~415 |
+
+| 01:10 | Fixed run_tests.lua global isolation bug (Logger_spec was overriding print+WMLogger); added WorkflowStorage_spec to full runner; added 5 adSettings tests; 266/266 pass | run_tests.lua, WorkflowStorage_spec.lua | all tests green |
+| 03:11 | Session end: 3 writes across 2 files (run_tests.lua, WorkflowStorage_spec.lua) | 14 reads | ~35870 tok |
+| 03:12 | Session end: 3 writes across 2 files (run_tests.lua, WorkflowStorage_spec.lua) | 14 reads | ~35870 tok |
+| 03:13 | Session end: 3 writes across 2 files (run_tests.lua, WorkflowStorage_spec.lua) | 14 reads | ~35870 tok |
+| 03:18 | Created tests/specs/WorkflowManagerSpec_spec.lua | — | ~6990 |
+| 03:18 | Edited tests/run_tests.lua | 9→10 lines | ~88 |
+| 03:18 | Session end: 5 writes across 3 files (run_tests.lua, WorkflowStorage_spec.lua, WorkflowManagerSpec_spec.lua) | 15 reads | ~43453 tok |
+| 03:20 | Edited CLAUDE.md | modified once() | ~532 |
+| 03:20 | Edited CLAUDE.md | 2→2 lines | ~118 |
+| 03:20 | Session end: 7 writes across 4 files (run_tests.lua, WorkflowStorage_spec.lua, WorkflowManagerSpec_spec.lua, CLAUDE.md) | 16 reads | ~50309 tok |
