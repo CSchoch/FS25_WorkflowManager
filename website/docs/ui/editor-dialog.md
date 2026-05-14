@@ -122,9 +122,9 @@ Fields shown depend on step type and action:
 
 | Key | Action |
 |-----|--------|
-| **Backspace** | Delete selected step |
-| **+** | Move step up |
-| **-** | Move step down |
+| **R** | Delete selected step |
+| **U** | Move step up |
+| **D** | Move step down |
 
 ## Workflow Name
 

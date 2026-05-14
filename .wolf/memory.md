@@ -3,6 +3,8 @@
 > Chronological action log. Hooks and AI append to this file automatically.
 > Old sessions are consolidated by the daemon weekly.
 
+| 02:40 | Fixed Docusaurus build — installed @docusaurus/faster | website/package.json | success | ~200 |
+
 | 2026-04-10 | Added dummy AD hold for support vehicle idle state + fixed justStoppedAD not cleared in resetStepTrackingState | WorkflowExecutor.lua | 106/106 tests pass |
 | 2026-04-29 | Support vehicle no longer paused/resumed when main pauses/resumes — support runs independently | WorkflowExecutor.lua, WorkflowExecutor_spec.lua | 109/109 tests pass |
 
@@ -755,3 +757,22 @@
 | 02:20 | Updated CLAUDE.md + anatomy.md file paths after last commit: modIcon.dds→icon_WorkflowManager.dds, textures PNGs→_art/textures/, removed WorkflowEditorGUI.xml | CLAUDE.md, .wolf/anatomy.md | done | ~200 |
 | 02:21 | Session end: 4 writes across 1 files (CLAUDE.md) | 2 reads | ~6251 tok |
 | 02:21 | Session end: 4 writes across 1 files (CLAUDE.md) | 2 reads | ~6251 tok |
+
+## Session: 2026-05-14 02:38
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-05-14 02:42
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 02:47 | Edited website/docs/ui/main-dialog.md | 8→13 lines | ~104 |
+| 02:47 | Edited website/docs/ui/editor-dialog.md | 7→7 lines | ~38 |
+| 02:47 | Edited website/docs/workflows/creating-workflows.md | inline fix | ~18 |
+| 02:47 | Edited website/docs/workflows/creating-workflows.md | inline fix | ~10 |
+
+|  | Fixed outdated keyboard shortcuts in Docusaurus UI docs | website/docs/ui/main-dialog.md, editor-dialog.md, workflows/creating-workflows.md | Corrected: Delete key was 'D'→Delete/R, editor shortcuts Backspace/+/- → R/U/D per modDesc.xml bindings | ~200 tok |
+
+| 14:30 | Fixed outdated keyboard shortcuts in Docusaurus UI docs | website/docs/ui/main-dialog.md, editor-dialog.md, workflows/creating-workflows.md | Corrected: delete key was D→Delete, editor shortcuts Backspace/+/- → R/U/D per modDesc.xml bindings | ~200 tok |
+| 02:48 | Session end: 4 writes across 3 files (main-dialog.md, editor-dialog.md, creating-workflows.md) | 14 reads | ~15548 tok |

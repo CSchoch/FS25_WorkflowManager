@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-14T00:20:33.218Z
-> Files: 24 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-14T00:47:56.626Z
+> Files: 25 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -11,22 +11,7 @@
 
 - `CLAUDE.md` — FS25 Workflow Manager (~5908 tok)
 - `create_release.ps1` (~262 tok)
-- `icon_WorkflowManager.dds` — Mod icon DDS (BC1_UNORM, 256x256)
 - `modDesc.xml` (~2044 tok)
-
-## _art/
-
-- `icon_WorkflowManager.png` — Mod icon source PNG
-- `icon_WorkflowManagerLarge.png` — High-res mod icon source PNG
-
-## _art/textures/
-
-- `white.png` — 4x4 white pixel source for white.dds
-- `icon_prev.png` — HUD button source PNG (Previous step)
-- `icon_pause.png` — HUD button source PNG (Pause)
-- `icon_play.png` — HUD button source PNG (Resume)
-- `icon_stop.png` — HUD button source PNG (Stop)
-- `icon_next.png` — HUD button source PNG (Next step)
 
 ## .claude/
 
@@ -38,6 +23,12 @@
 
 
 ## .github/workflows/
+
+
+## _art/
+
+
+## _art/textures/
 
 
 ## docs/
@@ -129,11 +120,12 @@
 
 ## website/docs/ui/
 
-- `main-dialog.md` — Main Dialog (~1077 tok)
+- `editor-dialog.md` — Editor Dialog (~1088 tok)
+- `main-dialog.md` — Main Dialog (~1128 tok)
 
 ## website/docs/workflows/
 
-- `creating-workflows.md` — Creating Workflows (~1889 tok)
+- `creating-workflows.md` — Creating Workflows (~1887 tok)
 
 ## website/src/components/HomepageFeatures/
 

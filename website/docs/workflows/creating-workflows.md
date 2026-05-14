@@ -111,7 +111,7 @@ See [Multi-Vehicle Workflows](linked-workflows) for full details on how the supp
 ### Reordering Steps
 
 - Select a step and use **Move Up** / **Move Down** buttons
-- Or use keyboard shortcuts: **+** to move up, **-** to move down
+- Or use keyboard shortcuts: **U** to move up, **D** to move down
 - Support sub-steps are reordered within their parent step only
 
 ### Modifying a Step
@@ -123,7 +123,7 @@ See [Multi-Vehicle Workflows](linked-workflows) for full details on how the supp
 ### Deleting Steps
 
 1. Select the step
-2. Click **Delete** or press **Backspace**
+2. Click **Delete** or press **R**
 
 Deleting a main step also removes all of its support sub-steps.
 

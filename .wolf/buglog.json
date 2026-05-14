@@ -112,6 +112,22 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-05-14T00:20:24.996Z"
+    },
+    {
+      "id": "bug-008",
+      "timestamp": "2026-05-14T00:47:56.644Z",
+      "error_message": "Wrong reference: Backspace should be R",
+      "file": "website/docs/workflows/creating-workflows.md",
+      "root_cause": "Used \"Backspace\" instead of \"R\"",
+      "fix": "Changed Backspace → R",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-14T00:47:56.644Z"
     }
   ]
 }

@@ -119,9 +119,14 @@ Settings are stored inside the workflow definition and persist across sessions. 
 
 | Key | Action |
 |-----|--------|
+| **N** | New workflow |
 | **S** | Start selected workflow |
 | **X** | Stop selected workflow |
-| **D** | Delete selected workflow |
+| **P** | Pause / Resume workflow |
+| **Delete** | Delete selected workflow |
+| **Enter** | Edit selected workflow |
+| **↑ / ↓** | Navigate the workflow list |
+| **1–9** | Quick-select workflow by position |
 | Double-click | Edit workflow |
 
 ## Resume After Save
