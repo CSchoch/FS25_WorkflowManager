@@ -49,6 +49,9 @@ v1.1.0 (2026-04-12)
 - Pausing now works correctly when the main vehicle moves to a new step
 - HUD can be dragged to any position on screen
 - Multiplayer improvements: all vehicles stay in sync across all players
+- Support vehicles continue running when the main vehicle is paused
+- Per-workflow AutoDrive settings: set Unload Fill Level, Pipe Offset, and Pre-Call Level individually for each workflow via the new AD/CP Settings button
+
 
 v1.0.0 (2026-03-11)
 - Initial release
@@ -98,6 +101,9 @@ v1.1.0 (2026-04-12)
 - Pause funktioniert jetzt korrekt, wenn das Hauptfahrzeug zum nächsten Schritt wechselt
 - HUD lässt sich frei auf dem Bildschirm verschieben
 - Multiplayer verbessert: alle Fahrzeuge bleiben bei allen Spielern synchron
+- Hilfsfahrzeuge laufen weiter, wenn das Hauptfahrzeug pausiert wird
+- Workflow-spezifische AutoDrive-Einstellungen: Entlade-Füllstand, Rohrversatz und Vorabruf-Schwelle können jetzt pro Workflow über den neuen Knopf „AD/CP Einstellungen" konfiguriert werden
+
 
 v1.0.0 (2026-03-11)
 - Erstveröffentlichung
@@ -124,6 +130,7 @@ v1.0.0 (2026-03-11)
         <action name="WM_GUI_STOP" />
         <action name="WM_GUI_MOVE_UP" />
         <action name="WM_GUI_MOVE_DOWN" />
+        <action name="WM_GUI_AD_SETTINGS" />
     </actions>
 
     <inputBinding>
@@ -147,6 +154,9 @@ v1.0.0 (2026-03-11)
         </actionBinding>
         <actionBinding action="WM_GUI_MOVE_DOWN">
             <binding device="KB_MOUSE_DEFAULT" input="KEY_d" />
+        </actionBinding>
+        <actionBinding action="WM_GUI_AD_SETTINGS">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_b" />
         </actionBinding>
     </inputBinding>
 </modDesc>

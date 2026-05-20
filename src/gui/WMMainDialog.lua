@@ -16,6 +16,7 @@ function WMMainDialog.new(target)
     self.selectedWorkflowIndex = 0
     self.workflows = {}
     self.inputEventIds = {}
+    self.adSettingsButton = nil
     return self
 end
 
@@ -163,6 +164,7 @@ function WMMainDialog:updateButtons()
     end
     if self.adSettingsButton then
         self.adSettingsButton:setDisabled(not hasSelection)
+        self.adSettingsButton:setInputAction("WM_GUI_AD_SETTINGS")
     end
 end
 
@@ -310,6 +312,14 @@ function WMMainDialog:registerInputEvents()
         g_inputBinding:setActionEventTextPriority(eventId, GS_PRIO_VERY_LOW)
         g_inputBinding:setActionEventTextVisibility(eventId, false)
     end
+
+    -- AD/CP Settings: B key
+    _, eventId = g_inputBinding:registerActionEvent(InputAction.WM_GUI_AD_SETTINGS, self, self.onInputADSettings, false, true, false, true)
+    if eventId ~= nil then
+        table.insert(self.inputEventIds, eventId)
+        g_inputBinding:setActionEventTextPriority(eventId, GS_PRIO_VERY_LOW)
+        g_inputBinding:setActionEventTextVisibility(eventId, false)
+    end
 end
 
 ---Unregister custom input events
@@ -340,5 +350,12 @@ end
 function WMMainDialog:onInputStop(actionName, inputValue)
     if self.stopButton and not self.stopButton.disabled then
         self:onClickStop()
+    end
+end
+
+---Input handler for AD/CP Settings key (B)
+function WMMainDialog:onInputADSettings(actionName, inputValue)
+    if self.adSettingsButton and not self.adSettingsButton.disabled then
+        self:onClickADSettings()
     end
 end

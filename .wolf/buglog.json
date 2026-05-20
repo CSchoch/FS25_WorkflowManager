@@ -176,6 +176,22 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-05-14T01:20:02.252Z"
+    },
+    {
+      "id": "bug-012",
+      "timestamp": "2026-05-20T11:34:09.033Z",
+      "error_message": "Wrong reference: actions should be action",
+      "file": "modDesc.xml",
+      "root_cause": "Used \"actions\" instead of \"action\"",
+      "fix": "Changed actions → action",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-20T11:34:09.033Z"
     }
   ]
 }

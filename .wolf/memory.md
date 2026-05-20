@@ -821,3 +821,45 @@
 | 03:20 | Edited CLAUDE.md | modified once() | ~532 |
 | 03:20 | Edited CLAUDE.md | 2→2 lines | ~118 |
 | 03:20 | Session end: 7 writes across 4 files (run_tests.lua, WorkflowStorage_spec.lua, WorkflowManagerSpec_spec.lua, CLAUDE.md) | 16 reads | ~50309 tok |
+
+## Session: 2026-05-14 03:20
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 22:15 | Edited modDesc.xml | 11→15 lines | ~203 |
+| 22:15 | Edited modDesc.xml | 11→15 lines | ~226 |
+| 22:15 | Edited modDesc.xml | 1.1 → 1.2 | ~8 |
+| 22:15 | Updated modDesc changelog to v1.2.0: support vehicles run independently when main pauses, per-workflow AD/CP settings | modDesc.xml | done | ~100 |
+| 22:15 | Session end: 3 writes across 1 files (modDesc.xml) | 3 reads | ~2512 tok |
+
+## Session: 2026-05-20 13:28
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-05-20 13:28
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-05-20 13:30
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 13:34 | Edited modDesc.xml | 2→3 lines | ~28 |
+| 13:34 | Edited modDesc.xml | 4→7 lines | ~80 |
+| 13:34 | Edited src/gui/WMMainDialog.lua | 3→4 lines | ~45 |
+| 13:34 | Edited src/gui/WMMainDialog.lua | expanded (+8 lines) | ~210 |
+| 13:34 | Edited src/gui/WMMainDialog.lua | modified WMMainDialog() | ~114 |
+| 13:35 | Edited src/gui/WMMainDialog.lua | modified WMMainDialog() | ~62 |
+| 13:35 | Session end: 6 writes across 2 files (modDesc.xml, WMMainDialog.lua) | 4 reads | ~6118 tok |
+
+## Session: 2026-05-20 14:35
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-05-20 14:35
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
