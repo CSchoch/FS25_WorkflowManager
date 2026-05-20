@@ -42,7 +42,7 @@ WHILE YOU PLAY:
 REQUIREMENTS: AutoDrive, Courseplay
 
 CHANGELOG:
-v1.1.0 (2026-04-12)
+v1.1.0 (2026-05-20)
 - Support vehicles that work alongside the main vehicle (e.g. a grain cart following a combine)
 - Choose your role (Main or Support) when starting a workflow that has support tasks
 - Workflow progress for support vehicles is saved and restored correctly
