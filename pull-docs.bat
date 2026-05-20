@@ -1,3 +1,0 @@
-@echo off
-echo Pulling website/ subtree from FS25_WorkflowManager-docs...
-git subtree pull --prefix=website "../FS25_WorkflowManager-docs" main --squash

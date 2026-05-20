@@ -1,3 +1,0 @@
-@echo off
-echo Pushing website/ subtree to FS25_WorkflowManager-docs...
-git subtree push --prefix=website "../FS25_WorkflowManager-docs" main
