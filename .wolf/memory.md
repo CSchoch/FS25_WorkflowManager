@@ -902,3 +902,23 @@
 | 21:49 | Edited translations/translation_en.xml | 3→5 lines | ~92 |
 | 21:49 | Edited translations/translation_de.xml | 3→5 lines | ~97 |
 | 21:49 | Session end: 2 writes across 2 files (translation_en.xml, translation_de.xml) | 3 reads | ~203 tok |
+
+## Session: 2026-05-20 22:29
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 22:29 | Edited website/build.bat | 4→5 lines | ~32 |
+| 22:29 | Session end: 1 writes across 1 files (build.bat) | 2 reads | ~85 tok |
+| 22:32 | Session end: 1 writes across 1 files (build.bat) | 2 reads | ~85 tok |
+| 22:33 | Session end: 1 writes across 1 files (build.bat) | 3 reads | ~85 tok |
+| 22:42 | Created CLAUDE.md | — | ~899 |
+| 22:42 | Created Development.md | — | ~992 |
+| 22:42 | Session end: 3 writes across 3 files (build.bat, CLAUDE.md, Development.md) | 5 reads | ~2111 tok |
+
+## Session: 2026-05-20 22:51
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 22:52 | Edited modDesc.xml | 1→3 lines | ~28 |
+| 22:52 | Edited modDesc.xml | 1→3 lines | ~29 |
+| 22:53 | Session end: 2 writes across 1 files (modDesc.xml) | 2 reads | ~61 tok |

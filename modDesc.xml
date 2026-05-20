@@ -39,6 +39,8 @@ WHILE YOU PLAY:
 - Workflows are saved with your savegame and automatically resume after loading
 - Works in multiplayer — all players see the correct state on their screens
 
+DOCUMENTATION: https://cschoch.github.io/FS25_WorkflowManagerDocs/
+
 REQUIREMENTS: AutoDrive, Courseplay
 
 CHANGELOG:
@@ -90,6 +92,8 @@ WÄHREND DES SPIELENS:
 - Manuell zu jedem Schritt vor- oder zurückspringen, wenn etwas Aufmerksamkeit braucht
 - Workflows werden mit dem Spielstand gespeichert und nach dem Laden automatisch fortgesetzt
 - Multiplayer-fähig — alle Spieler sehen den korrekten Zustand auf ihrem Bildschirm
+
+DOKUMENTATION: https://cschoch.github.io/FS25_WorkflowManagerDocs/
 
 VORAUSSETZUNGEN: AutoDrive, Courseplay
 

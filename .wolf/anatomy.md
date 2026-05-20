@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-20T19:49:21.899Z
-> Files: 10 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-20T20:52:59.388Z
+> Files: 13 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -12,6 +12,9 @@
 
 ## ./
 
+- `CLAUDE.md` — FS25 Workflow Manager (~842 tok)
+- `Development.md` — FS25 Workflow Manager — Development (~930 tok)
+- `modDesc.xml` (~2263 tok)
 - `pull-docs.bat` (~41 tok)
 - `push-docs.bat` (~38 tok)
 
@@ -79,7 +82,7 @@
 
 ## website/
 
-- `build.bat` (~51 tok)
+- `build.bat` (~33 tok)
 - `start.bat` (~50 tok)
 
 ## website/.docusaurus/
