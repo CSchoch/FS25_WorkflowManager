@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-20T20:52:59.388Z
-> Files: 13 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-20T22:40:55.114Z
+> Files: 19 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -135,3 +135,9 @@
 
 ## xml/gui/
 
+- `TextInputDialog.xml` (~436 tok)
+- `WMADSettingsDialog.xml` (~925 tok)
+- `WMEditorDialog.xml` (~1390 tok)
+- `WMMainDialog.xml` (~999 tok)
+- `WMModeSelectDialog.xml` (~429 tok)
+- `WMStepDialog.xml` — dropdown: Section (~2457 tok)

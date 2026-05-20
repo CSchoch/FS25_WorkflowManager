@@ -208,6 +208,114 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-05-20T15:44:17.628Z"
+    },
+    {
+      "id": "bug-014",
+      "timestamp": "2026-05-20T22:40:38.369Z",
+      "error_message": "Incorrect value in code",
+      "file": "xml/gui/WMEditorDialog.xml",
+      "root_cause": "Had \"DIALOG_WMEditorDialog\"",
+      "fix": "Changed to \"MENU\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-20T22:40:38.369Z"
+    },
+    {
+      "id": "bug-015",
+      "timestamp": "2026-05-20T22:40:39.572Z",
+      "error_message": "Incorrect value in code",
+      "file": "xml/gui/WMMainDialog.xml",
+      "root_cause": "Had \"DIALOG_WMMainDialog\"",
+      "fix": "Changed to \"MENU\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-20T22:40:39.572Z"
+    },
+    {
+      "id": "bug-016",
+      "timestamp": "2026-05-20T22:40:51.469Z",
+      "error_message": "Incorrect value in code",
+      "file": "xml/gui/WMStepDialog.xml",
+      "root_cause": "Had \"DIALOG_WMStepDialog\"",
+      "fix": "Changed to \"MENU\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-20T22:40:51.469Z"
+    },
+    {
+      "id": "bug-017",
+      "timestamp": "2026-05-20T22:40:52.705Z",
+      "error_message": "Incorrect value in code",
+      "file": "xml/gui/WMADSettingsDialog.xml",
+      "root_cause": "Had \"DIALOG_WMADSettingsDialog\"",
+      "fix": "Changed to \"MENU\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-20T22:40:52.705Z"
+    },
+    {
+      "id": "bug-018",
+      "timestamp": "2026-05-20T22:40:53.915Z",
+      "error_message": "Incorrect value in code",
+      "file": "xml/gui/TextInputDialog.xml",
+      "root_cause": "Had \"DIALOG_WMTextInputDialog\"",
+      "fix": "Changed to \"MENU\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-20T22:40:53.915Z"
+    },
+    {
+      "id": "bug-019",
+      "timestamp": "2026-05-20T22:40:55.132Z",
+      "error_message": "Incorrect value in code",
+      "file": "xml/gui/WMModeSelectDialog.xml",
+      "root_cause": "Had \"DIALOG_WMModeSelectDialog\"",
+      "fix": "Changed to \"MENU\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-20T22:40:55.132Z"
+    },
+    {
+      "id": "bug-020",
+      "timestamp": "2026-05-21T00:00:00.000Z",
+      "error_message": "Tried reverting to input context [] which is not defined. Current context [TEXT_INPUT] — inputs dead after closing UI",
+      "file": "xml/gui/WMEditorDialog.xml, WMMainDialog.xml, WMStepDialog.xml, WMADSettingsDialog.xml, TextInputDialog.xml, WMModeSelectDialog.xml",
+      "root_cause": "All dialogs used custom inputContext names (e.g. DIALOG_WMEditorDialog) not registered with FS25 InputBinding. When TextInputElement gained focus it pushed TEXT_INPUT with previous context = '' (empty string). On focus-leave it tried revertContext to '' which is undefined, corrupting the input stack so no inputs worked after dialog close.",
+      "fix": "Changed inputContext attribute to 'MENU' in all 6 dialog XML files. MENU is a standard registered FS25 context, so TextInputElement can revert to it cleanly.",
+      "tags": ["input-context", "text-input", "dialog", "xml", "input-freeze"],
+      "related_bugs": ["bug-019"],
+      "occurrences": 1,
+      "last_seen": "2026-05-21T00:00:00.000Z"
     }
   ]
 }

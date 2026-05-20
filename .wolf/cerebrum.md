@@ -41,6 +41,8 @@
 
 [2026-05-14] FS25 `Overlay.new()` and `createImageOverlay()` DO accept DDS for GUI overlays. BC3_UNORM 32×32 icon DDS files work correctly with `Overlay.new`; R8G8B8A8_UNORM DDS works with `createImageOverlay` for the white background texture. Use properly-formed DDS (BC3_UNORM for alpha textures ≥4×4, BC1_UNORM for opaque ≥4×4. Keep all source PNGs at least 4×4 to enable block compression) — eliminates "raw format" and CPU mip-generation warnings. Source PNGs live in `_art/textures/`; generate DDS with `tools/png_to_dds.py`.
 
+[2026-05-21] All WM dialog XML files must use `inputContext="MENU"` (a standard registered FS25 context), NOT custom names like `inputContext="DIALOG_WMEditorDialog"`. Unregistered context names silently fail to activate, leaving the current context as `""`. TextInputElement then pushes TEXT_INPUT with `""` as the saved previous context. On focus-leave (e.g. clicking a SmoothList) it tries to revert to `""` which is undefined → warning + input system corruption → no inputs recognized after dialog closes.
+
 ## Decision Log
 
 <!-- Significant technical decisions with rationale. Why X was chosen over Y. -->

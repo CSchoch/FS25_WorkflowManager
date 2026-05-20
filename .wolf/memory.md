@@ -922,3 +922,15 @@
 | 22:52 | Edited modDesc.xml | 1→3 lines | ~28 |
 | 22:52 | Edited modDesc.xml | 1→3 lines | ~29 |
 | 22:53 | Session end: 2 writes across 1 files (modDesc.xml) | 2 reads | ~61 tok |
+
+## Session: 2026-05-20 00:36
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 00:40 | Edited xml/gui/WMEditorDialog.xml | "DIALOG_WMEditorDialog" → "MENU" | ~7 |
+| 00:40 | Edited xml/gui/WMMainDialog.xml | "DIALOG_WMMainDialog" → "MENU" | ~7 |
+| 00:40 | Edited xml/gui/WMStepDialog.xml | "DIALOG_WMStepDialog" → "MENU" | ~7 |
+| 00:40 | Edited xml/gui/WMADSettingsDialog.xml | "DIALOG_WMADSettingsDialog" → "MENU" | ~7 |
+| 00:40 | Edited xml/gui/TextInputDialog.xml | "DIALOG_WMTextInputDialog" → "MENU" | ~7 |
+| 00:40 | Edited xml/gui/WMModeSelectDialog.xml | "DIALOG_WMModeSelectDialog" → "MENU" | ~7 |
+| 00:41 | Session end: 6 writes across 6 files (WMEditorDialog.xml, WMMainDialog.xml, WMStepDialog.xml, WMADSettingsDialog.xml, TextInputDialog.xml) | 13 reads | ~42 tok |

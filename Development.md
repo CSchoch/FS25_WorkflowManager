@@ -10,12 +10,6 @@
 
 **Other:** Courseplay resume at nearest waypoint, release build support (DevConfig stub), DDS textures, old linked-workflow migration, multiple simultaneous support vehicles, sub-step editor numbering (N.M format), mode dialog vehicle reference fix
 
-### Milestone 8: GUI Refinement
-
-- [ ] F1 ingame help menu overlays the GUI
-- [ ] Relocate double-click-to-edit hint to the bottom
-- [ ] Editor dialog X button to close in top right corner
-
 ### Milestone 9: Folder View
 
 - [ ] Show folders in dropdowns (collapsed by default)
@@ -32,6 +26,7 @@
 - [ ] Queue system for multiple vehicles
 - [ ] Advanced conditions
 - [ ] Add further CP settings for multiple vehicle courses
+- [ ] Add Multiple fill type selection for AD
 
 ---
 
