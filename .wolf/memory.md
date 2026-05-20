@@ -863,3 +863,10 @@
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+| 17:44 | Edited website/docs/workflows/linked-workflows.md | 9→11 lines | ~118 |
+| 17:44 | Edited website/docs/ui/hud-controls.md | 5→5 lines | ~52 |
+| 17:44 | Edited website/docs/ui/hud-controls.md | 5→5 lines | ~41 |
+| 17:44 | Edited website/docs/faq.md | 3→3 lines | ~52 |
+
+| 2026-05-20 | Fixed docs: pause/stop propagation documented as opposite of actual behavior — corrected in linked-workflows.md, hud-controls.md, faq.md | website/docs | 3 files updated |
+| 17:44 | Session end: 4 writes across 3 files (linked-workflows.md, hud-controls.md, faq.md) | 16 reads | ~282 tok |

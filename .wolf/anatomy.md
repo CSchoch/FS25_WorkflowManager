@@ -1,17 +1,13 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-20T11:35:19.158Z
-> Files: 29 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-20T15:44:35.015Z
+> Files: 3 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
-- `id-like-to-set-refactored-plum.md` — Plan: Per-Workflow AD/CP Settings Dialog (~1781 tok)
 
 ## ./
 
-- `CLAUDE.md` — FS25 Workflow Manager (~6560 tok)
-- `create_release.ps1` (~262 tok)
-- `modDesc.xml` (~2225 tok)
 
 ## .claude/
 
@@ -36,22 +32,12 @@
 
 ## src/
 
-- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~17577 tok)
-- `WorkflowManager.lua` — init, loadDialogs, Callback, showTextInputDialog, Called (~12975 tok)
-- `WorkflowStorage.lua` — deepCopySupportStep, init, getXmlPath, saveWorkflows, migrateOldLinkedWorkflows (~3452 tok)
 
 ## src/gui/
 
-- `WMADSettingsDialog.lua` — new, onCreate, onOpen, onClose, Called (~712 tok)
-- `WMEditorDialog.lua` — new, onCreate, onOpen, onClose, setWorkflow (~5302 tok)
-- `WMHud.lua` — ensureOverlays, createIconOverlays, updateOverlayPositions, init, show (~7387 tok)
-- `WMMainDialog.lua` — new, onCreate, onOpen, onClose, refreshWorkflowList (~3552 tok)
-- `WorkflowEditorGUI.lua` — init, openWorkflow, close, saveAndClose, cancelAndClose (~17444 tok)
-- `WorkflowManagerGUI.lua` — init, loadXmlGui, show, hide, toggle (~7025 tok)
 
 ## src/integration/
 
-- `AutoDriveIntegration.lua` — init, completeInitialization, update, checkAvailability, getDestinations (~9196 tok)
 
 ## src/network/
 
@@ -64,32 +50,24 @@
 
 ## tests/
 
-- `run_tests.lua` — local, assert, describe, it, before_each (~2108 tok)
 
 ## tests/fixtures/
 
 
 ## tests/mocks/
 
-- `game_globals.lua` — getDate, addModEventListener (~2681 tok)
 
 ## tests/specs/
 
-- `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport (~13216 tok)
-- `WorkflowManagerSpec_spec.lua` — makeVehicle, makeSavegameXML (~6990 tok)
-- `WorkflowStorage_spec.lua` (~7652 tok)
 
 ## textures/
 
 
 ## tools/
 
-- `png_to_dds.py` — find_texconv, dds_format, convert, main (~1108 tok)
 
 ## translations/
 
-- `translation_de.xml` (~2780 tok)
-- `translation_en.xml` (~2344 tok)
 
 ## website/
 
@@ -117,19 +95,18 @@
 
 ## website/docs/
 
+- `faq.md` — Frequently Asked Questions (~1199 tok)
 
 ## website/docs/api/
 
-- `xml-format.md` — XML Format (~2193 tok)
 
 ## website/docs/ui/
 
-- `editor-dialog.md` — Editor Dialog (~1088 tok)
-- `main-dialog.md` — Main Dialog (~1128 tok)
+- `hud-controls.md` — HUD Controls (~1351 tok)
 
 ## website/docs/workflows/
 
-- `creating-workflows.md` — Creating Workflows (~1887 tok)
+- `linked-workflows.md` — Multi-Vehicle Workflows (~1640 tok)
 
 ## website/src/components/HomepageFeatures/
 
@@ -145,6 +122,3 @@
 
 ## xml/gui/
 
-- `WMADSettingsDialog.xml` (~913 tok)
-- `WMEditorDialog.xml` (~1394 tok)
-- `WMMainDialog.xml` (~987 tok)

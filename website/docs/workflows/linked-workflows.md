@@ -99,13 +99,15 @@ When the main vehicle moves to the next step, the support immediately starts sub
 
 ### Pause / Resume / Stop Propagation
 
+Support vehicles run **independently** — pausing or stopping the main vehicle does not affect them.
+
 | Action on Main | Effect on Support |
 |---------------|------------------|
-| Pause | Support is also paused |
-| Resume | Support is also resumed |
-| Stop | Support is also stopped |
+| Pause | Support keeps running |
+| Resume | No effect (support was never paused) |
+| Stop | Support keeps running |
 
-The support vehicle can also be paused/stopped independently from its own HUD without affecting the main.
+You can pause or stop the support vehicle at any time from its own HUD without affecting the main vehicle.
 
 ### Late Start
 

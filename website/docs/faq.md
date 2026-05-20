@@ -105,7 +105,7 @@ No. There is a single workflow. Both vehicles start it from the Workflow Manager
 
 ### Does pausing the main also pause the support?
 
-Yes. Pause, resume, and stop actions from the main vehicle automatically propagate to all support vehicles running the same workflow.
+No. Support vehicles run independently — pausing or stopping the main vehicle does not affect them. Each vehicle is controlled from its own HUD.
 
 ### Can I manually control the support vehicle's steps?
 

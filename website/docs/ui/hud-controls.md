@@ -78,7 +78,7 @@ Displays the target destination or course name for the current step (e.g., `Fiel
 - Suspends the current step
 - AutoDrive pauses navigation
 - Courseplay pauses field work
-- If you are the main vehicle, all support vehicles pause too
+- Support vehicles continue running independently
 
 **Resume (`▶`)** — shown while the workflow is paused:
 - Continues from where it stopped
@@ -96,7 +96,7 @@ Displays the target destination or course name for the current step (e.g., `Fiel
 - Resets workflow to step 1
 - Sets status to Ready
 - Stops any running AD/CP jobs
-- If you are the main vehicle, all support vehicles are stopped too
+- Support vehicles continue running independently
 
 **When to use**:
 - Abort the workflow
