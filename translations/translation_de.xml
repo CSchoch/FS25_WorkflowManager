@@ -18,6 +18,8 @@
         <text name="input_WM_GUI_STOP" text="Stoppen"/>
         <text name="input_WM_GUI_MOVE_UP" text="Nach oben"/>
         <text name="input_WM_GUI_MOVE_DOWN" text="Nach unten"/>
+        <text name="action_WM_GUI_AD_SETTINGS" text="AD/CP Einstellungen"/>
+        <text name="input_WM_GUI_AD_SETTINGS" text="AD/CP Einstellungen"/>
         <text name="action_WM_TOGGLE_HUD" text="Workflow-HUD umschalten"/>
         <text name="input_WM_TOGGLE_HUD" text="Workflow-HUD umschalten"/>
 
