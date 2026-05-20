@@ -7,6 +7,7 @@
 
 | 2026-04-10 | Added dummy AD hold for support vehicle idle state + fixed justStoppedAD not cleared in resetStepTrackingState | WorkflowExecutor.lua | 106/106 tests pass |
 | 2026-04-29 | Support vehicle no longer paused/resumed when main pauses/resumes — support runs independently | WorkflowExecutor.lua, WorkflowExecutor_spec.lua | 109/109 tests pass |
+| 2026-05-20 | Extracted website/ into sibling git repo FS25_WorkflowManager-docs; re-added as git subtree --squash | website/ (subtree), ../FS25_WorkflowManager-docs | 296/296 tests pass |
 
 ## Session: 2026-04-05 23:05
 
@@ -870,3 +871,26 @@
 
 | 2026-05-20 | Fixed docs: pause/stop propagation documented as opposite of actual behavior — corrected in linked-workflows.md, hud-controls.md, faq.md | website/docs | 3 files updated |
 | 17:44 | Session end: 4 writes across 3 files (linked-workflows.md, hud-controls.md, faq.md) | 16 reads | ~282 tok |
+
+## Session: 2026-05-20 17:45
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 21:08 | Edited website/build.bat | 4→8 lines | ~49 |
+| 21:08 | Edited website/start.bat | 4→8 lines | ~48 |
+| 21:08 | Session end: 2 writes across 2 files (build.bat, start.bat) | 6 reads | ~103 tok |
+| 21:20 | Session end: 2 writes across 2 files (build.bat, start.bat) | 6 reads | ~103 tok |
+| 21:27 | Created ../FS25_WorkflowManager-docs/.github/workflows/deploy-docs.yml | — | ~484 |
+| 21:27 | Created push-docs.bat | — | ~38 |
+| 21:27 | Created pull-docs.bat | — | ~41 |
+| 21:42 | Session end: 5 writes across 5 files (build.bat, start.bat, deploy-docs.yml, push-docs.bat, pull-docs.bat) | 7 reads | ~672 tok |
+
+## Session: 2026-05-20 21:46
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-05-20 21:46
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|

@@ -1,13 +1,19 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-20T15:44:35.015Z
-> Files: 3 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-20T19:27:53.963Z
+> Files: 8 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
 
+## ../FS25_WorkflowManager-docs/.github/workflows/
+
+- `deploy-docs.yml` — CI: Deploy Documentation to GitHub Pages (~484 tok)
+
 ## ./
 
+- `pull-docs.bat` (~41 tok)
+- `push-docs.bat` (~38 tok)
 
 ## .claude/
 
@@ -71,6 +77,8 @@
 
 ## website/
 
+- `build.bat` (~51 tok)
+- `start.bat` (~50 tok)
 
 ## website/.docusaurus/
 

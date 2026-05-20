@@ -2,12 +2,12 @@
   "version": 1,
   "created_at": "2026-04-05T21:01:47.995Z",
   "lifetime": {
-    "total_tokens_estimated": 2346880,
-    "total_reads": 932,
-    "total_writes": 1846,
-    "total_sessions": 46,
+    "total_tokens_estimated": 2347758,
+    "total_reads": 954,
+    "total_writes": 1855,
+    "total_sessions": 49,
     "anatomy_hits": 254,
-    "anatomy_misses": 676,
+    "anatomy_misses": 698,
     "repeated_reads_blocked": 754,
     "estimated_savings_vs_bare_cli": 5174427
   },
@@ -17020,6 +17020,250 @@
         "output_tokens_estimated": 282,
         "reads_count": 16,
         "writes_count": 4,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-05-20-1745",
+      "started": "2026-05-20T15:45:35.442Z",
+      "ended": "2026-05-20T16:08:49.406Z",
+      "reads": [
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.wolf/anatomy.md",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.wolf/cerebrum.md",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.wolf/memory.md",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 0,
+        "reads_count": 3,
+        "writes_count": 0,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-05-20-1745",
+      "started": "2026-05-20T15:45:35.442Z",
+      "ended": "2026-05-20T19:08:26.892Z",
+      "reads": [
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.wolf/anatomy.md",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.wolf/cerebrum.md",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.wolf/memory.md",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/website/package.json",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/website/start.bat",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/website/build.bat",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/website/build.bat",
+          "tokens_estimated": 52,
+          "action": "edit"
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/website/start.bat",
+          "tokens_estimated": 51,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 103,
+        "reads_count": 6,
+        "writes_count": 2,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-05-20-1745",
+      "started": "2026-05-20T15:45:35.442Z",
+      "ended": "2026-05-20T19:20:27.752Z",
+      "reads": [
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.wolf/anatomy.md",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.wolf/cerebrum.md",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.wolf/memory.md",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/website/package.json",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/website/start.bat",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/website/build.bat",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/website/build.bat",
+          "tokens_estimated": 52,
+          "action": "edit"
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/website/start.bat",
+          "tokens_estimated": 51,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 103,
+        "reads_count": 6,
+        "writes_count": 2,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-05-20-1745",
+      "started": "2026-05-20T15:45:35.442Z",
+      "ended": "2026-05-20T19:42:40.861Z",
+      "reads": [
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.wolf/anatomy.md",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.wolf/cerebrum.md",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.wolf/memory.md",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/website/package.json",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/website/start.bat",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/website/build.bat",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.github/workflows/deploy-docs.yml",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/website/build.bat",
+          "tokens_estimated": 52,
+          "action": "edit"
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/website/start.bat",
+          "tokens_estimated": 51,
+          "action": "edit"
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager-docs/.github/workflows/deploy-docs.yml",
+          "tokens_estimated": 484,
+          "action": "create"
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/push-docs.bat",
+          "tokens_estimated": 41,
+          "action": "create"
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/pull-docs.bat",
+          "tokens_estimated": 44,
+          "action": "create"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 672,
+        "reads_count": 7,
+        "writes_count": 5,
         "repeated_reads_blocked": 0,
         "anatomy_lookups": 0
       }
