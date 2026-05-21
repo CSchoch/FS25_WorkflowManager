@@ -130,13 +130,13 @@ describe("WMStorage", function()
             assert.are.equal("fieldwork",  loaded[1].steps[2].action)
         end)
 
-        it("persists optional step fields (unloadTarget, fillType)", function()
+        it("persists optional step fields (unloadTarget, fillTypes)", function()
             local wf = {
                 id = "wf_opts_001", name = "Opts Workflow",
                 steps = {
                     {
                         type = "autodrive", target = "Silo", action = "pickup_deliver",
-                        unloadTarget = "BGA", fillType = "WHEAT", support = {}
+                        unloadTarget = "BGA", fillTypes = {"WHEAT"}, support = {}
                     }
                 }
             }
@@ -146,7 +146,9 @@ describe("WMStorage", function()
             local loaded = WMStorage:loadWorkflows()
             local step = loaded[1].steps[1]
             assert.are.equal("BGA",   step.unloadTarget)
-            assert.are.equal("WHEAT", step.fillType)
+            assert.is_table(step.fillTypes)
+            assert.are.equal(1,       #step.fillTypes)
+            assert.are.equal("WHEAT", step.fillTypes[1])
             -- syncGroup is no longer persisted
             assert.is_nil(step.syncGroup)
         end)
@@ -283,6 +285,66 @@ describe("WMStorage", function()
             assert.is_nil(ads.pipeOffset)
             assert.is_nil(ads.preCallLevel)
         end)
+
+        it("saves and loads multiple fillTypes (WHEAT and BARLEY)", function()
+            local wf = {
+                id = "wf_multi_ft", name = "Multi FillType",
+                steps = {
+                    {
+                        type = "autodrive", target = "Silo", action = "pickup_deliver",
+                        fillTypes = {"WHEAT", "BARLEY"}, support = {}
+                    }
+                }
+            }
+            WMStorage:saveWorkflows({ wf })
+
+            _G.fileExists = function() return true end
+            local loaded = WMStorage:loadWorkflows()
+            local step = loaded[1].steps[1]
+            assert.is_table(step.fillTypes)
+            assert.are.equal(2,        #step.fillTypes)
+            assert.are.equal("WHEAT",  step.fillTypes[1])
+            assert.are.equal("BARLEY", step.fillTypes[2])
+        end)
+
+        it("saves no fillTypes attribute when fillTypes is nil", function()
+            local wf = {
+                id = "wf_nil_ft", name = "No FillType",
+                steps = {
+                    { type = "autodrive", target = "Farm", action = "drive", fillTypes = nil, support = {} }
+                }
+            }
+            WMStorage:saveWorkflows({ wf })
+
+            _G.fileExists = function() return true end
+            local loaded = WMStorage:loadWorkflows()
+            assert.is_nil(loaded[1].steps[1].fillTypes)
+        end)
+
+        it("saves and loads support sub-step fillTypes", function()
+            local wf = {
+                id = "wf_sup_ft", name = "Support FillType",
+                steps = {
+                    {
+                        type = "courseplay", target = "Field1", action = "fieldwork",
+                        support = {
+                            { type = "autodrive", target = "Silo", action = "unload",
+                              fillTypes = {"WHEAT", "BARLEY"} },
+                        }
+                    }
+                }
+            }
+            WMStorage:saveWorkflows({ wf })
+
+            _G.fileExists = function() return true end
+            local loaded = WMStorage:loadWorkflows()
+            local support = loaded[1].steps[1].support
+            assert.are.equal(1, #support)
+            assert.is_table(support[1].fillTypes)
+            assert.are.equal(2,        #support[1].fillTypes)
+            assert.are.equal("WHEAT",  support[1].fillTypes[1])
+            assert.are.equal("BARLEY", support[1].fillTypes[2])
+        end)
     end)
 
     -- =========================================================================
@@ -359,6 +421,27 @@ describe("WMStorage", function()
             local loaded = WMStorage:loadWorkflows()
             assert.is_nil(loaded[1].linkedWorkflowId)
             assert.is_nil(loaded[1].linkRole)
+        end)
+
+        it("migrates legacy #fillType attribute to fillTypes array", function()
+            -- Inject old-format XML with fillType (singular) directly
+            local xmlPath = WMStorage:getXmlPath()
+            local f = XMLFile.create("wm_legacy_ft", xmlPath, "WorkflowManager")
+            f:setString("WorkflowManager.workflows.workflow(0)#id",              "wf_legacy_ft")
+            f:setString("WorkflowManager.workflows.workflow(0)#name",            "Legacy FillType")
+            f:setString("WorkflowManager.workflows.workflow(0).step(0)#type",    "autodrive")
+            f:setString("WorkflowManager.workflows.workflow(0).step(0)#target",  "Silo")
+            f:setString("WorkflowManager.workflows.workflow(0).step(0)#action",  "pickup_deliver")
+            f:setString("WorkflowManager.workflows.workflow(0).step(0)#fillType", "WHEAT")
+            f:save()
+            f:delete()
+            _G.fileExists = function() return true end
+
+            local loaded = WMStorage:loadWorkflows()
+            local step = loaded[1].steps[1]
+            assert.is_table(step.fillTypes)
+            assert.are.equal(1,       #step.fillTypes)
+            assert.are.equal("WHEAT", step.fillTypes[1])
         end)
     end)
 
@@ -574,7 +657,7 @@ describe("WMStorage", function()
                           }
                         },
                         { type = "autodrive",  target = "Silo",           action = "pickup_deliver",
-                          unloadTarget = "BGA", fillType = "WHEAT",        support = {} },
+                          unloadTarget = "BGA", fillTypes = {"WHEAT"},     support = {} },
                     }
                 }
             }
@@ -587,7 +670,9 @@ describe("WMStorage", function()
             assert.are.equal("Harvest Route", loaded[1].name)
             assert.are.equal(3,               #loaded[1].steps)
             assert.are.equal("BGA",           loaded[1].steps[3].unloadTarget)
-            assert.are.equal("WHEAT",         loaded[1].steps[3].fillType)
+            local step3 = loaded[1].steps[3]
+            assert.is_table(step3.fillTypes)
+            assert.are.equal("WHEAT",         step3.fillTypes[1])
 
             -- Support sub-steps round-trip
             local support = loaded[1].steps[2].support

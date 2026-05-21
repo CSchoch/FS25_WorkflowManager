@@ -158,6 +158,11 @@
         <text name="wm_button_change" text="Aendern"/>
         <text name="wm_link_no_candidates" text="Keine anderen Workflows zum Verknuepfen verfuegbar"/>
 
+        <!-- Fuehrerfahrzeug-Dialog -->
+        <text name="wm_leader_select_title" text="Fuehrerfahrzeug waehlen"/>
+        <text name="wm_button_select"       text="Auswaehlen"/>
+        <text name="wm_button_no_leader"    text="Kein Fuehrer"/>
+
         <!-- Rollenwahl-Dialog -->
         <text name="wm_mode_select_title" text="Rolle waehlen"/>
         <text name="wm_mode_select_description" text="Dieser Workflow hat Unterstuetzungsschritte. Rolle waehlen:"/>

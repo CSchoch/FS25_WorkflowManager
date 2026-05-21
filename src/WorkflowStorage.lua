@@ -18,8 +18,18 @@ local function deepCopySupportStep(step)
         target       = step.target,
         action       = step.action,
         unloadTarget = step.unloadTarget,
-        fillType     = step.fillType,
+        fillTypes    = step.fillTypes and {unpack(step.fillTypes)} or nil,
     }
+end
+
+--- Parse a comma-separated fill types string into an array. Returns nil if empty.
+local function parseFillTypes(str)
+    if str == nil or str == "" then return nil end
+    local result = {}
+    for part in string.gmatch(str, "([^,]+)") do
+        table.insert(result, part)
+    end
+    return #result > 0 and result or nil
 end
 
 ---Initialize the storage system
@@ -86,8 +96,8 @@ function WMStorage:saveWorkflows(workflows)
             if step.unloadTarget ~= nil and step.unloadTarget ~= "" then
                 xmlFile:setString(stepKey .. "#unloadTarget", step.unloadTarget)
             end
-            if step.fillType ~= nil and step.fillType ~= "" then
-                xmlFile:setString(stepKey .. "#fillType", step.fillType)
+            if step.fillTypes ~= nil and #step.fillTypes > 0 then
+                xmlFile:setString(stepKey .. "#fillTypes", table.concat(step.fillTypes, ","))
             end
 
             -- Nested support sub-steps
@@ -101,8 +111,8 @@ function WMStorage:saveWorkflows(workflows)
                 if supportStep.unloadTarget ~= nil and supportStep.unloadTarget ~= "" then
                     xmlFile:setString(supportKey .. "#unloadTarget", supportStep.unloadTarget)
                 end
-                if supportStep.fillType ~= nil and supportStep.fillType ~= "" then
-                    xmlFile:setString(supportKey .. "#fillType", supportStep.fillType)
+                if supportStep.fillTypes ~= nil and #supportStep.fillTypes > 0 then
+                    xmlFile:setString(supportKey .. "#fillTypes", table.concat(supportStep.fillTypes, ","))
                 end
             end
         end
@@ -277,7 +287,8 @@ function WMStorage:loadWorkflows()
                 target       = xmlFile:getString(stepKey .. "#target", ""),
                 action       = xmlFile:getString(stepKey .. "#action", "default"),
                 unloadTarget = xmlFile:getString(stepKey .. "#unloadTarget"),
-                fillType     = xmlFile:getString(stepKey .. "#fillType"),
+                fillTypes    = parseFillTypes(xmlFile:getString(stepKey .. "#fillTypes"))
+                               or parseFillTypes(xmlFile:getString(stepKey .. "#fillType")),
                 -- Legacy syncGroup read for migration only
                 syncGroup    = xmlFile:getInt(stepKey .. "#syncGroup"),
                 support      = {},
@@ -297,7 +308,8 @@ function WMStorage:loadWorkflows()
                     target       = xmlFile:getString(supportKey .. "#target", ""),
                     action       = xmlFile:getString(supportKey .. "#action", "default"),
                     unloadTarget = xmlFile:getString(supportKey .. "#unloadTarget"),
-                    fillType     = xmlFile:getString(supportKey .. "#fillType"),
+                    fillTypes    = parseFillTypes(xmlFile:getString(supportKey .. "#fillTypes"))
+                                   or parseFillTypes(xmlFile:getString(supportKey .. "#fillType")),
                 }
                 table.insert(step.support, supportStep)
                 supportIndex = supportIndex + 1

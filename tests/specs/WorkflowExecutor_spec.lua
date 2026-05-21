@@ -23,14 +23,15 @@ describe("WMExecutor (real)", function()
 
         -- WorkflowManager constants + stub methods called by executor
         _G.WorkflowManager = {
-            STATUS_READY     = "ready",
-            STATUS_RUNNING   = "running",
-            STATUS_PAUSED    = "paused",
-            STATUS_COMPLETED = "completed",
-            STATUS_ERROR     = "error",
-            STEP_AUTODRIVE   = "autodrive",
-            STEP_COURSEPLAY  = "courseplay",
-            broadcastState   = function() end,
+            STATUS_READY              = "ready",
+            STATUS_RUNNING            = "running",
+            STATUS_PAUSED             = "paused",
+            STATUS_COMPLETED          = "completed",
+            STATUS_ERROR              = "error",
+            STATUS_WAITING_FOR_LEADER = "waiting_for_leader",
+            STEP_AUTODRIVE            = "autodrive",
+            STEP_COURSEPLAY           = "courseplay",
+            broadcastState            = function() end,
         }
 
         -- Executor runs server-side only; make tests act as the server
@@ -1172,6 +1173,73 @@ describe("WMExecutor (real)", function()
             local result = WMExecutor:getActiveVehiclesForWorkflow("wf_a")
             assert.are.equal(1, #result)
             assert.are.equal(activeData(vA), result[1])
+        end)
+    end)
+
+    -- =========================================================================
+    -- Leader-follower synchronization
+    -- =========================================================================
+    describe("leader-follower synchronization", function()
+        it("startWorkflow stores leaderVehicle on activeData", function()
+            local wf      = makeWorkflow("wf_ldr_store")
+            local leader  = makeVehicle("Leader")
+            local follower = makeVehicle("Follower")
+            WMExecutor:startWorkflow(wf, leader)
+            WMExecutor:startWorkflow(wf, follower, true, leader)
+            assert.are.equal(leader, activeData(follower).leaderVehicle)
+        end)
+
+        it("enters waiting_for_leader when leader is on the same step", function()
+            local wf      = makeWorkflow("wf_ldr_wait")
+            local leader  = makeVehicle("Leader")
+            local follower = makeVehicle("Follower")
+            WMExecutor:startWorkflow(wf, leader)
+            -- leader at step 1, follower also starts at step 1 → must wait
+            WMExecutor:startWorkflow(wf, follower, true, leader)
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, activeData(follower).status)
+        end)
+
+        it("does not enter waiting_for_leader when no leader is set", function()
+            local wf = makeWorkflow("wf_no_leader")
+            local v  = makeVehicle("Solo")
+            WMExecutor:startWorkflow(wf, v, true, nil)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(v).status)
+            assert.is_nil(activeData(v).leaderVehicle)
+        end)
+
+        it("resumes follower when leader advances past its step", function()
+            local wf      = makeWorkflow("wf_ldr_advance")
+            local leader  = makeVehicle("Leader")
+            local follower = makeVehicle("Follower")
+            WMExecutor:startWorkflow(wf, leader)
+            WMExecutor:startWorkflow(wf, follower, true, leader)
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, activeData(follower).status)
+
+            -- Advance leader past follower's current step
+            activeData(leader).currentStep = 2
+
+            WMExecutor.updateTimer = 0
+            WMExecutor:update(500)
+
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
+        end)
+
+        it("frees follower and resumes when leader stops", function()
+            local wf      = makeWorkflow("wf_ldr_stop")
+            local leader  = makeVehicle("Leader")
+            local follower = makeVehicle("Follower")
+            WMExecutor:startWorkflow(wf, leader)
+            WMExecutor:startWorkflow(wf, follower, true, leader)
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, activeData(follower).status)
+
+            -- Leader stops (wmExecution cleared)
+            WMExecutor:stopWorkflow(leader)
+
+            WMExecutor.updateTimer = 0
+            WMExecutor:update(500)
+
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
+            assert.is_nil(activeData(follower).leaderVehicle)
         end)
     end)
 

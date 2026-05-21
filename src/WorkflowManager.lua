@@ -68,6 +68,7 @@ source(Utils.getFilename("src/gui/WMEditorDialog.lua", g_currentModDirectory))
 source(Utils.getFilename("src/gui/WMStepDialog.lua", g_currentModDirectory))
 source(Utils.getFilename("src/gui/WMModeSelectDialog.lua", g_currentModDirectory))
 source(Utils.getFilename("src/gui/WMADSettingsDialog.lua", g_currentModDirectory))
+source(Utils.getFilename("src/gui/WMLeaderVehicleSelectDialog.lua", g_currentModDirectory))
 
 -- 7. In-vehicle HUD
 source(Utils.getFilename("src/gui/WMHudElements.lua", g_currentModDirectory))
@@ -88,6 +89,7 @@ WorkflowManager.STATUS_RUNNING = "running"
 WorkflowManager.STATUS_PAUSED = "paused"
 WorkflowManager.STATUS_COMPLETED = "completed"
 WorkflowManager.STATUS_ERROR = "error"
+WorkflowManager.STATUS_WAITING_FOR_LEADER = "waiting_for_leader"
 
 -- Step type constants
 WorkflowManager.STEP_AUTODRIVE = "autodrive"
@@ -249,6 +251,19 @@ function WorkflowManager:loadDialogs()
     else
         WMLogger:warning("Failed to load AD settings dialog: %s", tostring(result))
         self.adSettingsDialog = nil
+    end
+
+    -- Load Leader Vehicle Select Dialog
+    self.leaderSelectDialog = WMLeaderVehicleSelectDialog.new()
+    xmlPath = Utils.getFilename("xml/gui/WMLeaderVehicleSelectDialog.xml", self.modDirectory)
+    success, result = pcall(function()
+        g_gui:loadGui(xmlPath, "WMLeaderVehicleSelectDialog", self.leaderSelectDialog)
+    end)
+    if success then
+        WMLogger:info("Leader select dialog loaded successfully")
+    else
+        WMLogger:warning("Failed to load leader select dialog: %s", tostring(result))
+        self.leaderSelectDialog = nil
     end
 end
 
@@ -841,25 +856,48 @@ function WorkflowManager:startWorkflow(workflowId)
         workflow.name,
         currentVehicle.getName and currentVehicle:getName() or "unknown")
 
-    -- If the workflow has support steps, ask the player which role to start as
-    if self:hasSupportSteps(workflow.id) and self.modeSelectDialog ~= nil then
-        self:showModeSelectDialog(workflow.id, currentVehicle)
-        return true
+    -- Show leader select dialog first (server/SP only; pure clients skip this feature)
+    local function continueWithLeader(leaderVehicle)
+        -- If the workflow has support steps, ask the player which role to start as
+        if self:hasSupportSteps(workflow.id) and self.modeSelectDialog ~= nil then
+            self:showModeSelectDialog(workflow.id, currentVehicle, leaderVehicle)
+            return
+        end
+        -- No support steps — start as main directly
+        self:sendCommand(currentVehicle, "start", workflow.id, true, leaderVehicle)
     end
 
-    -- No support steps (or dialog not loaded yet) — start as main directly
-    self:sendCommand(currentVehicle, "start", workflow.id, true)
+    if g_server ~= nil and self.leaderSelectDialog ~= nil then
+        self:showLeaderSelectDialog(currentVehicle, continueWithLeader)
+    else
+        continueWithLeader(nil)
+    end
 
     return true
 end
 
+---Show the leader vehicle selection dialog.
+---Calls callback(leaderVehicle) where leaderVehicle may be nil (no leader chosen or cancelled=false).
+---If no other vehicles are running workflows, calls callback(nil) immediately.
+---@param currentVehicle table The vehicle that will run the follower workflow
+---@param callback function callback(leaderVehicle|nil)
+function WorkflowManager:showLeaderSelectDialog(currentVehicle, callback)
+    if self.leaderSelectDialog == nil then
+        callback(nil)
+        return
+    end
+    self.leaderSelectDialog:setData(currentVehicle, callback)
+    g_gui:showDialog("WMLeaderVehicleSelectDialog")
+end
+
 ---Show the mode selection dialog (Main / Support / Cancel)
----@param workflowId   string  Workflow to start
----@param vehicle      table   The vehicle that will run the workflow
-function WorkflowManager:showModeSelectDialog(workflowId, vehicle)
+---@param workflowId   string      Workflow to start
+---@param vehicle      table       The vehicle that will run the workflow
+---@param leaderVehicle table|nil  Optional leader vehicle for follower sync
+function WorkflowManager:showModeSelectDialog(workflowId, vehicle, leaderVehicle)
     if self.modeSelectDialog == nil then
         -- Fallback: no dialog available — start as main
-        self:sendCommand(vehicle, "start", workflowId, true)
+        self:sendCommand(vehicle, "start", workflowId, true, leaderVehicle)
         return
     end
     self.modeSelectDialog:setWorkflow(workflowId, vehicle, function(isMain)
@@ -868,7 +906,7 @@ function WorkflowManager:showModeSelectDialog(workflowId, vehicle)
             return
         end
         -- Use the vehicle that was validated before the dialog opened
-        self:sendCommand(vehicle, "start", workflowId, isMain)
+        self:sendCommand(vehicle, "start", workflowId, isMain, leaderVehicle)
     end)
     g_gui:showDialog("WMModeSelectDialog")
 end
@@ -882,20 +920,21 @@ end
 ---      executes immediately and broadcasts state to clients.
 ---  • On a pure client:
 ---      sends a WMCommandEvent to the server.
----@param vehicle     table       Target vehicle
----@param commandType string      "start"|"stop"|"pause"|"resume"|"next_step"|"prev_step"
----@param workflowId  string|nil  Only required for "start"
----@param isMain      boolean|nil true = main role, false = support role (only for "start")
-function WorkflowManager:sendCommand(vehicle, commandType, workflowId, isMain)
+---@param vehicle       table       Target vehicle
+---@param commandType   string      "start"|"stop"|"pause"|"resume"|"next_step"|"prev_step"
+---@param workflowId    string|nil  Only required for "start"
+---@param isMain        boolean|nil true = main role, false = support role (only for "start")
+---@param leaderVehicle table|nil   Optional leader vehicle for follower sync (server/SP only)
+function WorkflowManager:sendCommand(vehicle, commandType, workflowId, isMain, leaderVehicle)
     if vehicle == nil then
         WMLogger:warning("sendCommand: vehicle is nil (cmd=%s)", commandType)
         return
     end
     if g_server ~= nil then
         -- Singleplayer or multiplayer host – execute directly
-        self:executeNetworkCommand(commandType, vehicle, workflowId, isMain)
+        self:executeNetworkCommand(commandType, vehicle, workflowId, isMain, leaderVehicle)
     else
-        -- Pure multiplayer client – send to server
+        -- Pure multiplayer client – send to server (leaderVehicle not serialized; client path skips leader dialog)
         if g_client ~= nil then
             g_client:sendEvent(WMCommandEvent.new(commandType, vehicle, workflowId, isMain))
         else
@@ -905,11 +944,12 @@ function WorkflowManager:sendCommand(vehicle, commandType, workflowId, isMain)
 end
 
 ---Execute a workflow command and broadcast state.  Called on the server only.
----@param commandType string
----@param vehicle     table
----@param workflowId  string|nil
----@param isMain      boolean|nil  true = main role, false = support role (only for "start")
-function WorkflowManager:executeNetworkCommand(commandType, vehicle, workflowId, isMain)
+---@param commandType   string
+---@param vehicle       table
+---@param workflowId    string|nil
+---@param isMain        boolean|nil  true = main role, false = support role (only for "start")
+---@param leaderVehicle table|nil    Optional leader vehicle for follower sync
+function WorkflowManager:executeNetworkCommand(commandType, vehicle, workflowId, isMain, leaderVehicle)
     if commandType == "start" then
         local wf = self:getWorkflowById(workflowId)
         if wf == nil then
@@ -917,7 +957,7 @@ function WorkflowManager:executeNetworkCommand(commandType, vehicle, workflowId,
             return
         end
         -- isMain defaults to true when not specified
-        WMExecutor:startWorkflow(wf, vehicle, (isMain ~= false))
+        WMExecutor:startWorkflow(wf, vehicle, (isMain ~= false), leaderVehicle)
     elseif commandType == "stop" then
         WMExecutor:stopWorkflow(vehicle)
     elseif commandType == "pause" then

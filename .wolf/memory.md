@@ -3,11 +3,16 @@
 > Chronological action log. Hooks and AI append to this file automatically.
 > Old sessions are consolidated by the daemon weekly.
 
+| 00:00 | Fixed multi-select fill type in WMStepDialog (selectedFillTypes array, toggle on click, checkmark display) | src/gui/WMStepDialog.lua | 332 tests pass | ~4k |
+| 00:00 | Fixed mouseEvent stack overflow — isFiltering guard around reloadData() in onFillTypeListSelectionChanged | src/gui/WMStepDialog.lua | crash resolved | ~1k |
+| 00:00 | Click=single-select, Ctrl+click=multi-select, green text highlight for selected fill types | src/gui/WMStepDialog.lua | 332 tests pass | ~2k |
+
 | 02:40 | Fixed Docusaurus build — installed @docusaurus/faster | website/package.json | success | ~200 |
 
 | 2026-04-10 | Added dummy AD hold for support vehicle idle state + fixed justStoppedAD not cleared in resetStepTrackingState | WorkflowExecutor.lua | 106/106 tests pass |
 | 2026-04-29 | Support vehicle no longer paused/resumed when main pauses/resumes — support runs independently | WorkflowExecutor.lua, WorkflowExecutor_spec.lua | 109/109 tests pass |
 | 2026-05-20 | Extracted website/ into sibling git repo FS25_WorkflowManager-docs; re-added as git subtree --squash | website/ (subtree), ../FS25_WorkflowManager-docs | 296/296 tests pass |
+| 2026-05-21 | Fixed 2 failing fillType→fillTypes tests; added 4 fillTypes tests (multi, nil, support sub-step, legacy migration) + 5 leader/follower executor tests | WorkflowStorage_spec.lua, WorkflowExecutor_spec.lua | 332/332 tests pass |
 
 ## Session: 2026-04-05 23:05
 
@@ -934,3 +939,90 @@
 | 00:40 | Edited xml/gui/TextInputDialog.xml | "DIALOG_WMTextInputDialog" → "MENU" | ~7 |
 | 00:40 | Edited xml/gui/WMModeSelectDialog.xml | "DIALOG_WMModeSelectDialog" → "MENU" | ~7 |
 | 00:41 | Session end: 6 writes across 6 files (WMEditorDialog.xml, WMMainDialog.xml, WMStepDialog.xml, WMADSettingsDialog.xml, TextInputDialog.xml) | 13 reads | ~42 tok |
+| 01:14 | Created ../../../../../.claude/plans/implement-milestone-11-tender-blum.md | — | ~2710 |
+| 01:17 | Edited ../../../../../.claude/plans/implement-milestone-11-tender-blum.md | modified tests() | ~590 |
+| 01:18 | Edited tests/fixtures/workflows.lua | 4→4 lines | ~116 |
+| 01:18 | Edited tests/fixtures/workflows.lua | modified TestFixtures() | ~148 |
+| 01:18 | Edited src/WorkflowStorage.lua | modified deepCopySupportStep() | ~184 |
+| 01:19 | Edited src/WorkflowStorage.lua | inline fix | ~20 |
+| 01:19 | Edited src/WorkflowStorage.lua | 23→23 lines | ~350 |
+| 01:19 | Edited src/WorkflowStorage.lua | 10→11 lines | ~179 |
+| 01:19 | Edited src/WorkflowStorage.lua | 7→8 lines | ~149 |
+| 01:19 | Edited src/integration/AutoDriveIntegration.lua | modified ADIntegration() | ~234 |
+| 01:20 | Edited src/integration/AutoDriveIntegration.lua | expanded (+7 lines) | ~275 |
+| 01:20 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~85 |
+| 01:20 | Edited src/WorkflowExecutor.lua | 7→8 lines | ~80 |
+| 01:20 | Edited src/WorkflowExecutor.lua | 8→8 lines | ~147 |
+| 01:20 | Edited src/WorkflowExecutor.lua | 7→7 lines | ~43 |
+| 01:21 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~328 |
+| 01:21 | Edited src/WorkflowManager.lua | 5→6 lines | ~73 |
+| 01:21 | Edited src/WorkflowExecutor.lua | expanded (+19 lines) | ~380 |
+| 01:22 | Edited src/WorkflowManager.lua | modified continueWithLeader() | ~420 |
+
+## Session: 2026-05-20 01:24
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 01:25 | Edited src/WorkflowManager.lua | expanded (+13 lines) | ~289 |
+| 01:25 | Edited src/WorkflowManager.lua | modified WorkflowManager() | ~244 |
+| 01:25 | Edited src/WorkflowManager.lua | modified WorkflowManager() | ~600 |
+| 01:25 | Session end: 3 writes across 1 files (WorkflowManager.lua) | 3 reads | ~14481 tok |
+
+## Session: 2026-05-21 14:17
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 14:19 | Edited src/WorkflowManager.lua | 12→14 lines | ~184 |
+| 14:22 | Created src/gui/WMLeaderVehicleSelectDialog.lua | — | ~1134 |
+| 14:23 | Created xml/gui/WMLeaderVehicleSelectDialog.xml | — | ~779 |
+| 14:23 | Edited translations/translation_en.xml | 2→7 lines | ~92 |
+| 14:23 | Edited translations/translation_de.xml | 2→7 lines | ~93 |
+| 14:23 | Edited src/WorkflowManager.lua | 2→3 lines | ~69 |
+| 14:23 | Edited src/WorkflowManager.lua | 14→12 lines | ~150 |
+
+| 14:25 | Implemented WMLeaderVehicleSelectDialog (Lua + XML) to fix loadSharedI3DFileFinished crash at WM.lua:256; class was referenced but missing | src/gui/WMLeaderVehicleSelectDialog.lua, xml/gui/WMLeaderVehicleSelectDialog.xml, WorkflowManager.lua | 294/296 tests pass | ~200 tok |
+| 14:25 | Session end: 7 writes across 5 files (WorkflowManager.lua, WMLeaderVehicleSelectDialog.lua, WMLeaderVehicleSelectDialog.xml, translation_en.xml, translation_de.xml) | 13 reads | ~25146 tok |
+| 15:20 | Created tests/specs/WMLeaderVehicleSelectDialog_spec.lua | — | ~2797 |
+| 15:20 | Edited tests/run_tests.lua | 2→3 lines | ~24 |
+| 15:34 | Edited tests/specs/WMLeaderVehicleSelectDialog_spec.lua | 18→22 lines | ~195 |
+| 15:42 | Session end: 10 writes across 7 files (WorkflowManager.lua, WMLeaderVehicleSelectDialog.lua, WMLeaderVehicleSelectDialog.xml, translation_en.xml, translation_de.xml) | 17 reads | ~28376 tok |
+
+## Session: 2026-05-21 21:26
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 21:36 | Edited tests/specs/WorkflowStorage_spec.lua | 20→22 lines | ~254 |
+| 21:36 | Edited tests/specs/WorkflowStorage_spec.lua | 2→2 lines | ~51 |
+| 21:36 | Edited tests/specs/WorkflowStorage_spec.lua | 2→4 lines | ~63 |
+| 21:36 | Edited tests/specs/WorkflowStorage_spec.lua | expanded (+60 lines) | ~851 |
+| 21:37 | Edited tests/specs/WorkflowStorage_spec.lua | expanded (+21 lines) | ~442 |
+| 21:37 | Edited tests/specs/WorkflowExecutor_spec.lua | 10→11 lines | ~138 |
+| 21:38 | Edited tests/specs/WorkflowExecutor_spec.lua | expanded (+67 lines) | ~987 |
+| 21:39 | Session end: 7 writes across 2 files (WorkflowStorage_spec.lua, WorkflowExecutor_spec.lua) | 13 reads | ~31307 tok |
+
+## Session: 2026-05-21 21:40
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 21:43 | Edited src/gui/WMStepDialog.lua | 19→18 lines | ~134 |
+| 21:43 | Edited src/gui/WMStepDialog.lua | 15→15 lines | ~143 |
+| 21:43 | Edited src/gui/WMStepDialog.lua | 4→3 lines | ~39 |
+| 21:43 | Edited src/gui/WMStepDialog.lua | reduced (-13 lines) | ~54 |
+| 21:44 | Edited src/gui/WMStepDialog.lua | 9→13 lines | ~147 |
+| 21:44 | Edited src/gui/WMStepDialog.lua | modified WMStepDialog() | ~270 |
+| 21:44 | Edited src/gui/WMStepDialog.lua | modified WMStepDialog() | ~35 |
+| 21:44 | Edited src/gui/WMStepDialog.lua | modified WMStepDialog() | ~199 |
+| 21:44 | Edited src/gui/WMStepDialog.lua | reduced (-9 lines) | ~37 |
+| 21:45 | Edited src/gui/WMStepDialog.lua | 7→7 lines | ~68 |
+| 21:45 | Edited src/gui/WMStepDialog.lua | 7→7 lines | ~72 |
+| 21:45 | Edited src/gui/WMStepDialog.lua | 3→3 lines | ~40 |
+| 21:47 | Session end: 12 writes across 1 files (WMStepDialog.lua) | 7 reads | ~3781 tok |
+| 22:26 | Edited src/gui/WMStepDialog.lua | 4→6 lines | ~40 |
+| 22:34 | Session end: 13 writes across 1 files (WMStepDialog.lua) | 7 reads | ~3824 tok |
+| 22:37 | Session end: 13 writes across 1 files (WMStepDialog.lua) | 7 reads | ~3824 tok |
+| 22:46 | Edited src/gui/WMStepDialog.lua | 1→2 lines | ~28 |
+| 22:47 | Edited src/gui/WMStepDialog.lua | modified WMStepDialog() | ~112 |
+| 22:47 | Edited src/gui/WMStepDialog.lua | modified WMStepDialog() | ~268 |
+| 22:47 | Edited src/gui/WMStepDialog.lua | 13→18 lines | ~199 |
+| 22:54 | Session end: 17 writes across 1 files (WMStepDialog.lua) | 7 reads | ~4475 tok |
+| 23:13 | Session end: 17 writes across 1 files (WMStepDialog.lua) | 7 reads | ~4475 tok |

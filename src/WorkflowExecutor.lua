@@ -83,8 +83,9 @@ end
 ---@param workflow table Workflow definition (immutable template)
 ---@param vehicle table Vehicle to use for this workflow execution
 ---@param isMain boolean|nil true = main role, false = support role (default true)
+---@param leaderVehicle table|nil Vehicle to follow (follower waits at each step until leader advances)
 ---@return boolean success True if started successfully
-function WMExecutor:startWorkflow(workflow, vehicle, isMain)
+function WMExecutor:startWorkflow(workflow, vehicle, isMain, leaderVehicle)
     if workflow == nil then
         WMLogger:error("Cannot start nil workflow")
         return false
@@ -127,6 +128,7 @@ function WMExecutor:startWorkflow(workflow, vehicle, isMain)
         waitingForCompletion = false,
         isMainVehicle = isMainVehicle,
         currentSupportStep = not isMainVehicle and 1 or nil,
+        leaderVehicle = leaderVehicle,
     }
     self.activeVehicles[vehicle] = true
 
@@ -347,6 +349,23 @@ function WMExecutor:executeCurrentStep(activeData)
     local workflow = activeData.workflow
     local vehicle = activeData.vehicle
 
+    -- ===== Leader-follower synchronization (main vehicle only) =====
+    if activeData.isMainVehicle ~= false and activeData.leaderVehicle ~= nil then
+        local leaderSpec = activeData.leaderVehicle.spec_workflowManagerSpec
+        local leaderExec = leaderSpec and leaderSpec.wmExecution
+        if leaderExec == nil then
+            -- Leader finished or stopped — free the follower
+            WMLogger:info("Leader workflow finished — follower continuing freely")
+            activeData.leaderVehicle = nil
+        elseif leaderExec.currentStep <= activeData.currentStep then
+            -- Leader hasn't moved past our current step yet — wait
+            WMLogger:debug("Waiting for leader: leader step %d, follower step %d",
+                leaderExec.currentStep, activeData.currentStep)
+            activeData.status = WorkflowManager.STATUS_WAITING_FOR_LEADER
+            return
+        end
+    end
+
     -- ===== Support vehicle path =====
     if activeData.isMainVehicle == false then
         local mainActiveData = self:getMainActiveDataForWorkflow(workflow.id)
@@ -436,13 +455,13 @@ function WMExecutor:executeCurrentStep(activeData)
     -- Execute based on step type
     if step.type == WorkflowManager.STEP_AUTODRIVE then
         -- AutoDrive: Use startRoute which internally uses StartDriving with callback
-        -- Pass all step parameters including unloadTarget and fillType
-        WMLogger:info("Starting AutoDrive step - vehicle: %s, target: %s, action: %s, unloadTarget: %s, fillType: %s",
+        -- Pass all step parameters including unloadTarget and fillTypes
+        WMLogger:info("Starting AutoDrive step - vehicle: %s, target: %s, action: %s, unloadTarget: %s, fillTypes: %s",
             vehicle and (vehicle.getName and vehicle:getName() or "unknown") or "nil",
             step.target or "nil",
             step.action or "nil",
             step.unloadTarget or "nil",
-            step.fillType or "nil")
+            step.fillTypes and table.concat(step.fillTypes, ",") or "nil")
 
         -- If AutoDrive was just stopped (e.g., manual PREV/NEXT from another AD step),
         -- we must wait for AD to fully reset before starting a new route.
@@ -615,7 +634,7 @@ function WMExecutor:startAutoDriveStep(activeData, vehicle, step)
         step.target,
         step.action,
         step.unloadTarget,
-        step.fillType
+        step.fillTypes
     )
     if success then
         activeData.waitingForCompletion = true
@@ -956,6 +975,25 @@ function WMExecutor:update(dt)
                             mainActiveData.currentStep)
                         self:onMainStepChanged(activeData, mainActiveData.currentStep)
                     end
+                end
+            end
+
+            -- Leader-follower poll: check if leader has advanced past our current step
+            if activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER then
+                local leaderSpec = activeData.leaderVehicle and activeData.leaderVehicle.spec_workflowManagerSpec
+                local leaderExec = leaderSpec and leaderSpec.wmExecution
+                if leaderExec == nil then
+                    -- Leader finished or stopped — free the follower
+                    WMLogger:info("Leader stopped — follower resuming freely at step %d", activeData.currentStep)
+                    activeData.leaderVehicle = nil
+                    activeData.status = WorkflowManager.STATUS_RUNNING
+                    self:executeCurrentStep(activeData)
+                elseif leaderExec.currentStep > activeData.currentStep then
+                    -- Leader has moved past our step — start
+                    WMLogger:info("Leader advanced to step %d — follower starting step %d",
+                        leaderExec.currentStep, activeData.currentStep)
+                    activeData.status = WorkflowManager.STATUS_RUNNING
+                    self:executeCurrentStep(activeData)
                 end
             end
 

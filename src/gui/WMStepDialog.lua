@@ -22,7 +22,8 @@ function WMStepDialog.new(target)
     self.stepAction = "drive"
     self.stepTarget = ""
     self.stepUnloadTarget = ""
-    self.stepFillType = ""
+    self.selectedFillTypes = {}  -- array of selected fill type name strings
+    self.ctrlPressed = false
 
     -- List data
     self.targetItems = {}
@@ -35,7 +36,6 @@ function WMStepDialog.new(target)
 
     self.fillTypeItems = {}
     self.filteredFillTypeItems = {}
-    self.selectedFillTypeIndex = 0
 
     -- Flag to prevent selection callbacks during filtering
     self.isFiltering = false
@@ -111,6 +111,14 @@ end
 function WMStepDialog:onClose()
     WMStepDialog:superClass().onClose(self)
     WMLogger:debug("WMStepDialog:onClose")
+    self.ctrlPressed = false
+end
+
+function WMStepDialog:keyEvent(unicode, sym, mod, isDown, isUp, ...)
+    if sym == Input.KEY_lctrl or sym == Input.KEY_rctrl then
+        self.ctrlPressed = isDown
+    end
+    return WMStepDialog:superClass().keyEvent(self, unicode, sym, mod, isDown, isUp, ...)
 end
 
 ---Set the step to edit (nil for new step)
@@ -126,14 +134,14 @@ function WMStepDialog:setStep(step, callback)
         self.stepAction = step.action or "drive"
         self.stepTarget = step.target or ""
         self.stepUnloadTarget = step.unloadTarget or ""
-        self.stepFillType = step.fillType or ""
+        self.selectedFillTypes = step.fillTypes and {unpack(step.fillTypes)} or {}
     else
         self.step = nil
         self.stepType = "autodrive"
         self.stepAction = "drive"
         self.stepTarget = ""
         self.stepUnloadTarget = ""
-        self.stepFillType = ""
+        self.selectedFillTypes = {}
     end
 end
 
@@ -147,7 +155,6 @@ function WMStepDialog:loadAvailableData()
 
     -- Load fill types (name = internal ID like "WHEAT", display = localized title like "Wheat")
     self.fillTypeItems = {}
-    table.insert(self.fillTypeItems, {name = "", display = g_i18n:getText("wm_none") or "(None)"})
     if editor then
         local fillTypes = editor:getFillTypes()
         for _, ft in ipairs(fillTypes) do
@@ -339,7 +346,16 @@ function WMStepDialog:populateCellForItemInSection(list, section, index, cell)
         if item then
             local textElement = cell:getDescendantByName("fillTypeText")
             if textElement then
-                textElement:setText(item.display)
+                local isSelected = false
+                for _, name in ipairs(self.selectedFillTypes) do
+                    if name == item.name then isSelected = true; break end
+                end
+                textElement:setText((isSelected and "✓ " or "  ") .. item.display)
+                if isSelected then
+                    textElement:setTextColor(0.0, 0.85, 0.17, 1)
+                else
+                    textElement:setTextColor(1, 1, 1, 1)
+                end
             end
         end
     end
@@ -388,23 +404,10 @@ function WMStepDialog:refreshTargetDisplay()
         end
     end
 
-    -- Refresh fill type list
+    -- Refresh fill type list (multi-select: checkmarks in populateCellForItemInSection)
     if self.fillTypeList then
         self.fillTypeList:reloadData()
-
-        -- Select current fill type
-        self.selectedFillTypeIndex = 0
-        for i, item in ipairs(self.filteredFillTypeItems) do
-            if item.name == self.stepFillType then
-                self.selectedFillTypeIndex = i
-                self.fillTypeList:setSelectedIndex(i)
-                self:updateSelectedLabel("fillType", item.display)
-                break
-            end
-        end
-        if self.selectedFillTypeIndex == 0 then
-            self:updateSelectedLabel("fillType", nil)
-        end
+        self:updateFillTypeLabel()
     end
 
     -- Clear filtering flag
@@ -556,27 +559,17 @@ function WMStepDialog:filterFillTypes(searchText)
         end
     end
 
-    -- Reload list
     self.isFiltering = true
     if self.fillTypeList then
         self.fillTypeList:reloadData()
     end
     self.isFiltering = false
-
-    -- Auto-select when exactly one result matches
-    if #self.filteredFillTypeItems == 1 then
-        self.selectedFillTypeIndex = 1
-        self.stepFillType = self.filteredFillTypeItems[1].name
-        if self.fillTypeList then self.fillTypeList:setSelectedIndex(1) end
-        self:updateSelectedLabel("fillType", self.filteredFillTypeItems[1].display)
-    end
 end
 
 ---Update the "Selected: ..." label for a given field
 ---@param field string "target", "unloadTarget", or "fillType"
 ---@param displayName string|nil The selected item's display name, or nil to clear
 function WMStepDialog:updateSelectedLabel(field, displayName)
-    local none = g_i18n:getText("wm_none") or "(None)"
     local prefix = g_i18n:getText("wm_step_selected") or "Selected"
     local text = displayName and (prefix .. ": " .. displayName) or ""
 
@@ -584,9 +577,33 @@ function WMStepDialog:updateSelectedLabel(field, displayName)
         self.selectedTargetLabel:setText(text)
     elseif field == "unloadTarget" and self.selectedUnloadTargetLabel then
         self.selectedUnloadTargetLabel:setText(text)
-    elseif field == "fillType" and self.selectedFillTypeLabel then
-        self.selectedFillTypeLabel:setText(displayName and (prefix .. ": " .. displayName) or ("(" .. none .. ")"))
     end
+end
+
+---Update the "Selected: ..." label for fill types from self.selectedFillTypes
+function WMStepDialog:updateFillTypeLabel()
+    if not self.selectedFillTypeLabel then return end
+    local prefix = g_i18n:getText("wm_step_selected") or "Selected"
+    local none = g_i18n:getText("wm_none") or "(None)"
+    if #self.selectedFillTypes == 0 then
+        self.selectedFillTypeLabel:setText("(" .. none .. ")")
+        return
+    end
+    local displayNames = {}
+    for _, name in ipairs(self.selectedFillTypes) do
+        local displayName = name
+        for _, item in ipairs(self.fillTypeItems) do
+            if item.name == name then displayName = item.display; break end
+        end
+        table.insert(displayNames, displayName)
+    end
+    local text
+    if #displayNames <= 2 then
+        text = prefix .. ": " .. table.concat(displayNames, ", ")
+    else
+        text = prefix .. ": " .. #displayNames .. " selected"
+    end
+    self.selectedFillTypeLabel:setText(text)
 end
 
 
@@ -621,7 +638,7 @@ function WMStepDialog:onTypeChanged(element, state)
             end
 
             -- Clear fill type (not applicable for courseplay)
-            self.stepFillType = ""
+            self.selectedFillTypes = {}
             if self.fillTypeSearchInput then
                 self.fillTypeSearchInput:setText("")
             end
@@ -655,7 +672,7 @@ function WMStepDialog:onActionChanged(element, state)
 
         -- Clear fill type if new action doesn't need it
         if not self:actionNeedsFillType() then
-            self.stepFillType = ""
+            self.selectedFillTypes = {}
             if self.fillTypeSearchInput then
                 self.fillTypeSearchInput:setText("")
             end
@@ -707,12 +724,30 @@ function WMStepDialog:onFillTypeSearchChanged()
 end
 
 ---Called when fill type list selection changes
+---Plain click = single-select; Ctrl+click = toggle (add/remove)
 function WMStepDialog:onFillTypeListSelectionChanged(list, section, index)
-    self.selectedFillTypeIndex = index
+    if self.isFiltering then return end
     if index > 0 and index <= #self.filteredFillTypeItems then
         local item = self.filteredFillTypeItems[index]
-        self.stepFillType = item.name
-        self:updateSelectedLabel("fillType", item.display)
+        if self.ctrlPressed then
+            local found = false
+            for i, name in ipairs(self.selectedFillTypes) do
+                if name == item.name then
+                    table.remove(self.selectedFillTypes, i)
+                    found = true
+                    break
+                end
+            end
+            if not found then
+                table.insert(self.selectedFillTypes, item.name)
+            end
+        else
+            self.selectedFillTypes = {item.name}
+        end
+        self.isFiltering = true
+        self.fillTypeList:reloadData()
+        self.isFiltering = false
+        self:updateFillTypeLabel()
     end
 end
 
@@ -735,8 +770,8 @@ function WMStepDialog:onClickConfirm()
         if self:actionNeedsUnloadTarget() and self.stepUnloadTarget ~= "" then
             step.unloadTarget = self.stepUnloadTarget
         end
-        if self:actionNeedsFillType() and self.stepFillType ~= "" then
-            step.fillType = self.stepFillType
+        if self:actionNeedsFillType() and #self.selectedFillTypes > 0 then
+            step.fillTypes = {unpack(self.selectedFillTypes)}
         end
     end
 

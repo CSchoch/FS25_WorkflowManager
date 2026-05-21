@@ -312,8 +312,186 @@
       "file": "xml/gui/WMEditorDialog.xml, WMMainDialog.xml, WMStepDialog.xml, WMADSettingsDialog.xml, TextInputDialog.xml, WMModeSelectDialog.xml",
       "root_cause": "All dialogs used custom inputContext names (e.g. DIALOG_WMEditorDialog) not registered with FS25 InputBinding. When TextInputElement gained focus it pushed TEXT_INPUT with previous context = '' (empty string). On focus-leave it tried revertContext to '' which is undefined, corrupting the input stack so no inputs worked after dialog close.",
       "fix": "Changed inputContext attribute to 'MENU' in all 6 dialog XML files. MENU is a standard registered FS25 context, so TextInputElement can revert to it cleanly.",
-      "tags": ["input-context", "text-input", "dialog", "xml", "input-freeze"],
-      "related_bugs": ["bug-019"],
+      "tags": [
+        "input-context",
+        "text-input",
+        "dialog",
+        "xml",
+        "input-freeze"
+      ],
+      "related_bugs": [
+        "bug-019"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-05-21T00:00:00.000Z"
+    },
+    {
+      "id": "bug-021",
+      "timestamp": "2026-05-20T23:17:16.938Z",
+      "error_message": "Significant refactor of ",
+      "file": "../../../../../.claude/plans/implement-milestone-11-tender-blum.md",
+      "root_cause": "10 lines replaced/restructured",
+      "fix": "Rewrote 12→33 lines (10 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-20T23:17:16.938Z"
+    },
+    {
+      "id": "bug-022",
+      "timestamp": "2026-05-20T23:20:00.348Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/integration/AutoDriveIntegration.lua",
+      "root_cause": "8 lines replaced/restructured",
+      "fix": "Rewrote 11→18 lines (8 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-20T23:20:00.348Z"
+    },
+    {
+      "id": "bug-023",
+      "timestamp": "2026-05-20T23:22:46.365Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowManager.lua",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 15→37 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-20T23:22:46.365Z"
+    },
+    {
+      "id": "bug-024",
+      "timestamp": "2026-05-21T14:15:37.000Z",
+      "error_message": "Running LUA method 'loadSharedI3DFileFinished'. WorkflowManager.lua:256: attempt to index nil with 'new'",
+      "file": "src/WorkflowManager.lua, src/gui/WMLeaderVehicleSelectDialog.lua (new), xml/gui/WMLeaderVehicleSelectDialog.xml (new)",
+      "root_cause": "WMLeaderVehicleSelectDialog was referenced in loadDialogs() and showLeaderSelectDialog() but the class Lua file and XML file did not exist. loadSharedI3DFileFinished calls loadDialogs, which crashed trying to call .new() on a nil global.",
+      "fix": "Implemented WMLeaderVehicleSelectDialog Lua class and XML dialog. Added source() call in WorkflowManager.lua. Added translation strings for wm_leader_select_title, wm_button_select, wm_button_no_leader.",
+      "tags": [
+        "nil-class",
+        "missing-implementation",
+        "dialog",
+        "lua",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-21T14:15:37.000Z"
+    },
+    {
+      "id": "bug-025",
+      "timestamp": "2026-05-21T13:34:12.106Z",
+      "error_message": "Significant refactor of ",
+      "file": "tests/specs/WMLeaderVehicleSelectDialog_spec.lua",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 18→22 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-21T13:34:12.106Z"
+    },
+    {
+      "id": "bug-026",
+      "timestamp": "2026-05-21T19:36:26.127Z",
+      "error_message": "Wrong reference: fillType should be fillTypes",
+      "file": "tests/specs/WorkflowStorage_spec.lua",
+      "root_cause": "Used \"fillType\" instead of \"fillTypes\"",
+      "fix": "Changed fillType → fillTypes",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-21T19:36:26.127Z"
+    },
+    {
+      "id": "bug-027",
+      "timestamp": "2026-05-21T19:37:30.858Z",
+      "error_message": "Significant refactor of ",
+      "file": "tests/specs/WorkflowExecutor_spec.lua",
+      "root_cause": "8 lines replaced/restructured",
+      "fix": "Rewrote 10→11 lines (8 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-21T19:37:30.858Z"
+    },
+    {
+      "id": "bug-028",
+      "timestamp": "2026-05-21T19:43:56.174Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/gui/WMStepDialog.lua",
+      "root_cause": "11 lines replaced/restructured",
+      "fix": "Rewrote 18→5 lines (11 removed) | Also: elseif field == \"fillType\" and self.selectedFillTy; self.selectedFillTypeLabel:setText(displayName and | Also: ---Called when fill type list selection changes; self.selectedFillTypeIndex = index | Also: -- Reload list; -- Auto-select when exactly one result matches",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 4,
+      "last_seen": "2026-05-21T19:44:49.650Z"
+    },
+    {
+      "id": "bug-029",
+      "timestamp": "2026-05-21T19:44:32.399Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/gui/WMStepDialog.lua",
+      "root_cause": "Had \"wm_none\"",
+      "fix": "Changed to \"wm_step_selected\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-21T19:44:32.399Z"
+    },
+    {
+      "id": "bug-030",
+      "timestamp": "2026-05-21T00:00:00.000Z",
+      "error_message": "Cannot select multiple fill types in the step editor UI",
+      "file": "src/gui/WMStepDialog.lua",
+      "root_cause": "WMStepDialog used a single string field (stepFillType) and single-selection list logic. Backend (WorkflowStorage, AutoDriveIntegration, WorkflowExecutor) already stored fillTypes as an array, but the dialog did not read or write arrays.",
+      "fix": "Replaced stepFillType/selectedFillTypeIndex with selectedFillTypes (array). onFillTypeListSelectionChanged now toggles items in/out. populateCellForItemInSection prefixes selected items with checkmark. Added updateFillTypeLabel(). onClickConfirm writes step.fillTypes array. Removed auto-select from filterFillTypes.",
+      "tags": ["ui", "multi-select", "fill-type", "WMStepDialog"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-21T00:00:00.000Z"
+    },
+    {
+      "id": "bug-031",
+      "timestamp": "2026-05-21T00:00:00.000Z",
+      "error_message": "Running LUA method 'mouseEvent'. GuiElement.lua:1198: stack overflow — crash when WMStepDialog fill type list is hovered",
+      "file": "src/gui/WMStepDialog.lua",
+      "root_cause": "onFillTypeListSelectionChanged called fillTypeList:reloadData() without the isFiltering guard. FS25 SmoothList fires onSelectionChanged during mouseEvent processing; reloadData() triggered another onSelectionChanged → reloadData() → infinite recursion → stack overflow.",
+      "fix": "Set self.isFiltering = true before fillTypeList:reloadData() and false after, matching the pattern used in filterFillTypes.",
+      "tags": ["crash", "stack-overflow", "mouseEvent", "SmoothList", "reloadData", "WMStepDialog"],
+      "related_bugs": ["bug-030"],
       "occurrences": 1,
       "last_seen": "2026-05-21T00:00:00.000Z"
     }

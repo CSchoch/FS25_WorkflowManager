@@ -29,10 +29,10 @@ function TestFixtures.createHarvestWorkflow()
         steps = {
             { type = "autodrive", target = "Field1_Entry", action = "drive" },
             { type = "courseplay", target = "Field1_Harvest", action = "fieldwork" },
-            { type = "autodrive", target = "Farm/Silo", action = "pickup_deliver", unloadTarget = "Sell/BGA", fillType = "WHEAT" },
+            { type = "autodrive", target = "Farm/Silo", action = "pickup_deliver", unloadTarget = "Sell/BGA", fillTypes = {"WHEAT"} },
             { type = "autodrive", target = "Field2_Entry", action = "drive" },
             { type = "courseplay", target = "Field2_Harvest", action = "fieldwork" },
-            { type = "autodrive", target = "Farm/Silo", action = "pickup_deliver", unloadTarget = "Sell/BGA", fillType = "WHEAT" }
+            { type = "autodrive", target = "Farm/Silo", action = "pickup_deliver", unloadTarget = "Sell/BGA", fillTypes = {"WHEAT"} }
         },
         currentStep = 1,
         status = "ready",
@@ -123,15 +123,15 @@ end
 ---@param target string Target destination
 ---@param action string|nil Action (default: "drive")
 ---@param unloadTarget string|nil Second destination for pickup_deliver
----@param fillType string|nil Fill type filter
+---@param fillTypes table|nil Fill type filter (array of fill type name strings)
 ---@return table step
-function TestFixtures.createADStep(target, action, unloadTarget, fillType)
+function TestFixtures.createADStep(target, action, unloadTarget, fillTypes)
     return {
         type = "autodrive",
         target = target,
         action = action or "drive",
         unloadTarget = unloadTarget,
-        fillType = fillType
+        fillTypes = fillTypes
     }
 end
 

@@ -449,11 +449,12 @@ end
 ---@param targetName string Target destination name
 ---@param action string|nil Action type: "drive", "pickup_deliver", "deliver", "load", "unload"
 ---@param unloadTargetName string|nil Second destination for pickup_deliver mode
----@param fillType string|nil Fill type name for filtering (optional)
+---@param fillTypes table|nil Array of fill type name strings (optional, e.g. {"WHEAT","BARLEY"})
 ---@return boolean success True if route started successfully
-function ADIntegration:startRoute(vehicle, targetName, action, unloadTargetName, fillType)
-    WMLogger:debug("ADIntegration:startRoute called - target: %s, action: %s, unloadTarget: %s, fillType: %s",
-        tostring(targetName), tostring(action), tostring(unloadTargetName), tostring(fillType))
+function ADIntegration:startRoute(vehicle, targetName, action, unloadTargetName, fillTypes)
+    WMLogger:debug("ADIntegration:startRoute called - target: %s, action: %s, unloadTarget: %s, fillTypes: %s",
+        tostring(targetName), tostring(action), tostring(unloadTargetName),
+        fillTypes and table.concat(fillTypes, ",") or "nil")
 
     if not self.isAvailable then
         WMLogger:error("Cannot start AutoDrive route - AutoDrive not available")
@@ -545,14 +546,21 @@ function ADIntegration:startRoute(vehicle, targetName, action, unloadTargetName,
                 end
             end
 
-            -- Set fill type if provided (for selective loading)
-            if fillType ~= nil and fillType ~= "" then
-                if vehicle.ad.stateModule.setFillType then
-                    -- Find fill type index
-                    local fillTypeIndex = g_fillTypeManager:getFillTypeIndexByName(fillType)
-                    if fillTypeIndex ~= nil then
-                        vehicle.ad.stateModule:setFillType(fillTypeIndex)
-                        WMLogger:debug("Set fill type to %s (index: %d)", fillType, fillTypeIndex)
+            -- Set fill types if provided (for selective loading)
+            if fillTypes ~= nil and #fillTypes > 0 then
+                local sm = vehicle.ad.stateModule
+                if sm.setFillType then
+                    local primaryIdx = g_fillTypeManager:getFillTypeIndexByName(fillTypes[1])
+                    if primaryIdx ~= nil then
+                        sm:setFillType(primaryIdx)  -- resets selectedFillTypes to {primaryIdx}
+                        WMLogger:debug("Set primary fill type: %s (index: %d)", fillTypes[1], primaryIdx)
+                    end
+                    for i = 2, #fillTypes do
+                        local idx = g_fillTypeManager:getFillTypeIndexByName(fillTypes[i])
+                        if idx ~= nil and sm.toggleFillTypeSelection then
+                            sm:toggleFillTypeSelection(idx)
+                            WMLogger:debug("Added fill type: %s (index: %d)", fillTypes[i], idx)
+                        end
                     end
                 end
             end

@@ -23,10 +23,10 @@
 
 ### Milestone 11: Phase 2 Features
 
-- [ ] Queue system for multiple vehicles
+- [x] Queue system for multiple vehicles
 - [ ] Advanced conditions
 - [ ] Add further CP settings for multiple vehicle courses
-- [ ] Add Multiple fill type selection for AD
+- [x] Add Multiple fill type selection for AD
 
 ---
 

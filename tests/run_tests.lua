@@ -203,7 +203,8 @@ local testFiles = {
     "tests/specs/WorkflowManager_spec.lua",
     "tests/specs/WorkflowExecutor_spec.lua",
     "tests/specs/WorkflowManagerSpec_spec.lua",
-    "tests/specs/WMHud_spec.lua"
+    "tests/specs/WMHud_spec.lua",
+    "tests/specs/WMLeaderVehicleSelectDialog_spec.lua"
 }
 
 for _, testFile in ipairs(testFiles) do

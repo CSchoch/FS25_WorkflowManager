@@ -18,6 +18,10 @@
 
 ## Do-Not-Repeat
 
+[2026-05-21] Calling `SmoothList:reloadData()` inside `onSelectionChanged` (or any callback that fires during `mouseEvent` processing) without an `isFiltering` guard causes infinite recursion → `GuiElement.lua:1198: stack overflow`. Always wrap any `reloadData()` call inside a selection callback with `self.isFiltering = true` / `false`.
+
+[2026-05-21] In FS25, `SmoothList.onSelectionChanged` fires during `mouseEvent`. If `reloadData()` is called inside that callback, the engine re-enters `mouseEvent` → `onSelectionChanged` → `reloadData()` → infinite loop. This applies to ALL SmoothList selection callbacks, not just multi-select ones.
+
 [2026-04-10] When deactivating a dummy helper on pause, always call `setActive(false)` AND skip `pauseCurrentStep` entirely (`wasDummy` guard). `pauseCurrentStep` falls back to `currentStepType` from the last real sub-step, which calls `HoldDriving` and blocks player control even after `setActive(false)`.
 
 [2026-04-10] `justStoppedAD` was not cleared in `resetStepTrackingState`. This caused a spurious `pendingADStart` deferral whenever `onMainStepChanged` fired on an idle support vehicle, making the first real sub-step appear to not start. Fix: always clear `justStoppedAD` (and `dummyHelperActive`) in `resetStepTrackingState`.

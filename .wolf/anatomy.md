@@ -1,10 +1,11 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-20T22:40:55.114Z
-> Files: 19 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-21T20:47:26.870Z
+> Files: 32 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
+- `implement-milestone-11-tender-blum.md` — Milestone 11 — Multiple Fill Types & Synchronized Follower (~2937 tok)
 
 ## ../FS25_WorkflowManager-docs/.github/workflows/
 
@@ -41,12 +42,18 @@
 
 ## src/
 
+- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~18212 tok)
+- `WorkflowManager.lua` — init, loadDialogs, Callback, showTextInputDialog, Called (~13563 tok)
+- `WorkflowStorage.lua` — deepCopySupportStep, parseFillTypes, init, getXmlPath, saveWorkflows (~3624 tok)
 
 ## src/gui/
 
+- `WMLeaderVehicleSelectDialog.lua` — new, onCreate, onOpen, onClose, callback (~1134 tok)
+- `WMStepDialog.lua` — new, onCreate, onOpen, onClose, keyEvent (~7204 tok)
 
 ## src/integration/
 
+- `AutoDriveIntegration.lua` — init, completeInitialization, update, checkAvailability, getDestinations (~9333 tok)
 
 ## src/network/
 
@@ -59,15 +66,20 @@
 
 ## tests/
 
+- `run_tests.lua` — local, assert, describe, it, before_each (~2123 tok)
 
 ## tests/fixtures/
 
+- `workflows.lua` — createSimpleWorkflow, createHarvestWorkflow, createBaleWorkflow, createEmptyWorkflow, createRunningW (~1504 tok)
 
 ## tests/mocks/
 
 
 ## tests/specs/
 
+- `WMLeaderVehicleSelectDialog_spec.lua` — makeVehicle, makeList, makeButton (~2858 tok)
+- `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport (~14111 tok)
+- `WorkflowStorage_spec.lua` (~8706 tok)
 
 ## textures/
 
@@ -77,8 +89,8 @@
 
 ## translations/
 
-- `translation_de.xml` (~2820 tok)
-- `translation_en.xml` (~2383 tok)
+- `translation_de.xml` (~2888 tok)
+- `translation_en.xml` (~2449 tok)
 
 ## website/
 
@@ -138,6 +150,7 @@
 - `TextInputDialog.xml` (~436 tok)
 - `WMADSettingsDialog.xml` (~925 tok)
 - `WMEditorDialog.xml` (~1390 tok)
+- `WMLeaderVehicleSelectDialog.xml` — SmoothList of active vehicles (name + workflow); Select / No Leader / Cancel buttons (~80 tok)
 - `WMMainDialog.xml` (~999 tok)
 - `WMModeSelectDialog.xml` (~429 tok)
 - `WMStepDialog.xml` — dropdown: Section (~2457 tok)
