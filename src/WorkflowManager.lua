@@ -888,6 +888,12 @@ function WorkflowManager:showLeaderSelectDialog(currentVehicle, callback)
         return
     end
     self.leaderSelectDialog:setData(currentVehicle, callback)
+    -- If no other vehicle is running a workflow, skip the dialog entirely.
+    -- Opening then closing it inside onOpen() corrupts the GUI input-context stack.
+    if self.leaderSelectDialog:buildVehicleList() == 0 then
+        callback(nil)
+        return
+    end
     g_gui:showDialog("WMLeaderVehicleSelectDialog")
 end
 

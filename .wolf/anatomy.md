@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-21T21:40:45.194Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-26T19:37:13.156Z
 > Files: 36 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
@@ -43,13 +43,13 @@
 ## src/
 
 - `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~18267 tok)
-- `WorkflowManager.lua` — init, loadDialogs, Callback, showTextInputDialog, Called (~13585 tok)
+- `WorkflowManager.lua` — init, loadDialogs, Callback, showTextInputDialog, Called (~13657 tok)
 - `WorkflowStorage.lua` — deepCopySupportStep, parseFillTypes, init, getXmlPath, saveWorkflows (~3624 tok)
 
 ## src/gui/
 
 - `WMHud.lua` — ensureOverlays, createIconOverlays, updateOverlayPositions, init, show (~7447 tok)
-- `WMLeaderVehicleSelectDialog.lua` — new, onCreate, onOpen, onClose, callback (~1151 tok)
+- `WMLeaderVehicleSelectDialog.lua` — new, onCreate, buildVehicleList, onOpen, onClose (~1149 tok)
 - `WMStepDialog.lua` — new, onCreate, onOpen, onClose, keyEvent (~7204 tok)
 
 ## src/integration/
@@ -78,7 +78,7 @@
 
 ## tests/specs/
 
-- `WMLeaderVehicleSelectDialog_spec.lua` — makeVehicle, makeList, makeButton (~2867 tok)
+- `WMLeaderVehicleSelectDialog_spec.lua` — makeVehicle, makeList, makeButton (~2996 tok)
 - `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport (~14111 tok)
 - `WorkflowStorage_spec.lua` (~8706 tok)
 

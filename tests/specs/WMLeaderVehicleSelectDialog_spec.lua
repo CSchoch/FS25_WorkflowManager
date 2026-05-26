@@ -100,23 +100,33 @@ describe("WMLeaderVehicleSelectDialog", function()
     end)
 
     -- =========================================================================
-    -- onOpen — vehicle list population
+    -- buildVehicleList — vehicle list population (called before showing)
     -- =========================================================================
-    describe("onOpen", function()
+    describe("buildVehicleList", function()
         it("excludes currentVehicle from the list", function()
-            dialog:onOpen()
+            dialog:buildVehicleList()
             for _, entry in ipairs(dialog.vehicles) do
                 assert.are_not.equal(v3, entry.vehicle)
             end
         end)
 
         it("includes other active vehicles", function()
-            dialog:onOpen()
+            dialog:buildVehicleList()
             assert.are.equal(2, #dialog.vehicles)
         end)
 
+        it("returns the number of candidate vehicles", function()
+            assert.are.equal(2, dialog:buildVehicleList())
+        end)
+
+        it("returns 0 when only the currentVehicle is active", function()
+            _G.WMExecutor.activeVehicles = { [v3] = true }
+            assert.are.equal(0, dialog:buildVehicleList())
+            assert.are.equal(0, #dialog.vehicles)
+        end)
+
         it("stores vehicle name and workflow name per entry", function()
-            dialog:onOpen()
+            dialog:buildVehicleList()
             local names = {}
             local wfNames = {}
             for _, entry in ipairs(dialog.vehicles) do
@@ -128,8 +138,14 @@ describe("WMLeaderVehicleSelectDialog", function()
             assert.is_true(wfNames["Harvest North"])
             assert.is_true(wfNames["Harvest South"])
         end)
+    end)
 
+    -- =========================================================================
+    -- onOpen — wires up the list (list already built by buildVehicleList)
+    -- =========================================================================
+    describe("onOpen", function()
         it("wires up vehicleList and selects first item", function()
+            dialog:buildVehicleList()
             dialog:onOpen()
             assert.are.equal(dialog, dialog.vehicleList._dataSource)
             assert.is_true(dialog.vehicleList._reloaded)
@@ -137,20 +153,9 @@ describe("WMLeaderVehicleSelectDialog", function()
         end)
 
         it("sets selectedIndex to 1", function()
+            dialog:buildVehicleList()
             dialog:onOpen()
             assert.are.equal(1, dialog.selectedIndex)
-        end)
-
-        it("closes immediately and calls callback(nil) when no other vehicles are active", function()
-            _G.WMExecutor.activeVehicles = { [v3] = true }  -- only currentVehicle
-            dialog:onOpen()
-            assert.is_true(closeCalled)
-            assert.is_nil(callbackResult)
-        end)
-
-        it("does not close when other vehicles are present", function()
-            dialog:onOpen()
-            assert.is_false(closeCalled)
         end)
     end)
 
@@ -159,18 +164,18 @@ describe("WMLeaderVehicleSelectDialog", function()
     -- =========================================================================
     describe("getNumberOfItemsInSection", function()
         it("returns count of loaded vehicles", function()
-            dialog:onOpen()
+            dialog:buildVehicleList()
             assert.are.equal(2, dialog:getNumberOfItemsInSection(nil, nil))
         end)
 
-        it("returns 0 before onOpen", function()
+        it("returns 0 before the list is built", function()
             assert.are.equal(0, dialog:getNumberOfItemsInSection(nil, nil))
         end)
     end)
 
     describe("populateCellForItemInSection", function()
         it("sets leaderVehicleName and leaderWorkflowName on the cell", function()
-            dialog:onOpen()
+            dialog:buildVehicleList()
 
             local nameSet, wfSet
             local cell = {
@@ -191,7 +196,7 @@ describe("WMLeaderVehicleSelectDialog", function()
         end)
 
         it("does nothing when index is out of range", function()
-            dialog:onOpen()
+            dialog:buildVehicleList()
             assert.has_no.errors(function()
                 dialog:populateCellForItemInSection(nil, nil, 99, {
                     getDescendantByName = function() return nil end
@@ -205,19 +210,19 @@ describe("WMLeaderVehicleSelectDialog", function()
     -- =========================================================================
     describe("onListSelectionChanged", function()
         it("updates selectedIndex", function()
-            dialog:onOpen()
+            dialog:buildVehicleList()
             dialog:onListSelectionChanged(nil, nil, 2)
             assert.are.equal(2, dialog.selectedIndex)
         end)
 
         it("enables selectButton when index is valid", function()
-            dialog:onOpen()
+            dialog:buildVehicleList()
             dialog:onListSelectionChanged(nil, nil, 1)
             assert.is_false(dialog.selectButton._disabled)
         end)
 
         it("disables selectButton when index is 0", function()
-            dialog:onOpen()
+            dialog:buildVehicleList()
             dialog:onListSelectionChanged(nil, nil, 0)
             assert.is_true(dialog.selectButton._disabled)
         end)
@@ -225,7 +230,7 @@ describe("WMLeaderVehicleSelectDialog", function()
 
     describe("onListDoubleClick", function()
         it("selects the item and fires onClickSelect", function()
-            dialog:onOpen()
+            dialog:buildVehicleList()
             local vehicle = dialog.vehicles[1].vehicle
             dialog:onListDoubleClick(nil, nil, 1)
             assert.is_true(closeCalled)
@@ -241,7 +246,7 @@ describe("WMLeaderVehicleSelectDialog", function()
         end)
 
         it("enables selectButton when selectedIndex is valid", function()
-            dialog:onOpen()
+            dialog:buildVehicleList()
             dialog.selectedIndex = 1
             dialog:updateButtons()
             assert.is_false(dialog.selectButton._disabled)
@@ -253,7 +258,7 @@ describe("WMLeaderVehicleSelectDialog", function()
     -- =========================================================================
     describe("onClickSelect", function()
         it("calls callback with the selected vehicle", function()
-            dialog:onOpen()
+            dialog:buildVehicleList()
             local expected = dialog.vehicles[1].vehicle
             dialog.selectedIndex = 1
             dialog:onClickSelect()
@@ -261,13 +266,13 @@ describe("WMLeaderVehicleSelectDialog", function()
         end)
 
         it("closes the dialog", function()
-            dialog:onOpen()
+            dialog:buildVehicleList()
             dialog:onClickSelect()
             assert.is_true(closeCalled)
         end)
 
         it("calls callback(nil) when selectedIndex points to nothing", function()
-            dialog:onOpen()
+            dialog:buildVehicleList()
             dialog.selectedIndex = 99
             dialog:onClickSelect()
             assert.is_nil(callbackResult)

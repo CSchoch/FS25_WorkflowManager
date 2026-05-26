@@ -1066,3 +1066,23 @@
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+
+## Session: 2026-05-26 14:26
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 21:34 | Edited src/gui/WMLeaderVehicleSelectDialog.lua | modified WMLeaderVehicleSelectDialog() | ~271 |
+| 21:34 | Edited src/WorkflowManager.lua | expanded (+6 lines) | ~102 |
+| 21:35 | Edited tests/specs/WMLeaderVehicleSelectDialog_spec.lua | 54→59 lines | ~649 |
+| 21:36 | Edited tests/specs/WMLeaderVehicleSelectDialog_spec.lua | onOpen() → buildVehicleList() | ~66 |
+| 21:36 | Edited tests/specs/WMLeaderVehicleSelectDialog_spec.lua | onOpen() → buildVehicleList() | ~33 |
+| 21:36 | Edited tests/specs/WMLeaderVehicleSelectDialog_spec.lua | onOpen() → buildVehicleList() | ~28 |
+| 21:36 | Edited tests/specs/WMLeaderVehicleSelectDialog_spec.lua | onOpen() → buildVehicleList() | ~38 |
+| 21:36 | Edited tests/specs/WMLeaderVehicleSelectDialog_spec.lua | onOpen() → buildVehicleList() | ~43 |
+| 21:36 | Edited tests/specs/WMLeaderVehicleSelectDialog_spec.lua | onOpen() → buildVehicleList() | ~42 |
+| 21:36 | Edited tests/specs/WMLeaderVehicleSelectDialog_spec.lua | onOpen() → buildVehicleList() | ~38 |
+| 21:37 | Edited tests/specs/WMLeaderVehicleSelectDialog_spec.lua | onOpen() → buildVehicleList() | ~49 |
+| 21:37 | Edited tests/specs/WMLeaderVehicleSelectDialog_spec.lua | onOpen() → buildVehicleList() | ~43 |
+| 21:37 | Edited tests/specs/WMLeaderVehicleSelectDialog_spec.lua | onOpen() → buildVehicleList() | ~88 |
+| 21:38 | fix: leader dialog opened+closed in onOpen broke inputs; pre-check via buildVehicleList before showDialog | WMLeaderVehicleSelectDialog.lua, WorkflowManager.lua, spec | 332 tests pass | ~6k |
+| 21:38 | Session end: 13 writes across 3 files (WMLeaderVehicleSelectDialog.lua, WorkflowManager.lua, WMLeaderVehicleSelectDialog_spec.lua) | 6 reads | ~19294 tok |

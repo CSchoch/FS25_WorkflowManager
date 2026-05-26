@@ -33,7 +33,9 @@
       "Read(//c/Users/Chef/.claude/plans/**)",
       "PowerShell(& \"C:\\\\Program Files \\(x86\\)\\\\Lua\\\\5.1\\\\lua.exe\" \"C:\\\\Users\\\\Chef\\\\Documents\\\\My Games\\\\FarmingSimulator2025\\\\mods\\\\FS25_WorkflowManager\\\\tests\\\\run_tests.lua\" 2>&1)",
       "Bash(gh pr *)",
-      "PowerShell(& \"C:\\\\Program Files \\(x86\\)\\\\Lua\\\\5.1\\\\lua.exe\" \"C:\\\\Users\\\\Chef\\\\Documents\\\\My Games\\\\FarmingSimulator2025\\\\mods\\\\FS25_WorkflowManager\\\\tests\\\\run_tests.lua\")"
+      "PowerShell(& \"C:\\\\Program Files \\(x86\\)\\\\Lua\\\\5.1\\\\lua.exe\" \"C:\\\\Users\\\\Chef\\\\Documents\\\\My Games\\\\FarmingSimulator2025\\\\mods\\\\FS25_WorkflowManager\\\\tests\\\\run_tests.lua\")",
+      "Bash(\"C:\\\\Program Files \\(x86\\)\\\\Lua\\\\5.1\\\\lua.exe\" tests\\\\run_tests.lua)",
+      "Bash(\"C:\\\\Program Files \\(x86\\)\\\\Lua\\\\5.1\\\\lua.exe\" \"tests/run_tests.lua\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\Chef\\Documents\\My Games\\FarmingSimulator2025\\mods\\FS25_WorkflowManager-docs\\.github\\workflows"

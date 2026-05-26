@@ -588,6 +588,34 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-05-21T21:40:45.214Z"
+    },
+    {
+      "id": "bug-037",
+      "timestamp": "2026-05-26T19:36:30.244Z",
+      "error_message": "Wrong reference: onOpen should be buildVehicleList",
+      "file": "tests/specs/WMLeaderVehicleSelectDialog_spec.lua",
+      "root_cause": "Used \"onOpen\" instead of \"buildVehicleList\"",
+      "fix": "Changed onOpen → buildVehicleList",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 7,
+      "last_seen": "2026-05-26T19:37:07.192Z"
+    },
+    {
+      "id": "bug-038",
+      "timestamp": "2026-05-26T00:00:00.000Z",
+      "error_message": "Starting a single-AutoDrive-step workflow with no other active vehicles leaves the game with no working inputs — WorkflowManager dialog cannot be closed, no keys registered",
+      "file": "src/gui/WMLeaderVehicleSelectDialog.lua, src/WorkflowManager.lua",
+      "root_cause": "WMLeaderVehicleSelectDialog:onOpen() built the vehicle list and, when no other vehicles were active, called self:close() synchronously inside onOpen(). Closing a dialog mid-open (before g_gui finishes the open transition / input-context push) corrupts the FS25 GUI input-context stack, leaving no active context so no inputs are recognized. Log showed onOpen immediately followed by onClose.",
+      "fix": "Extracted list-building into WMLeaderVehicleSelectDialog:buildVehicleList() (returns candidate count, safe to call before showing). WorkflowManager:showLeaderSelectDialog now calls buildVehicleList() first and, if it returns 0, invokes callback(nil) and returns WITHOUT g_gui:showDialog — so the dialog is never opened-then-closed. Removed the close-in-onOpen path.",
+      "tags": ["gui", "input-context", "dialog", "leader-select", "lua", "fs25"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-26T00:00:00.000Z"
     }
   ]
 }

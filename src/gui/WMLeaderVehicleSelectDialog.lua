@@ -22,11 +22,9 @@ function WMLeaderVehicleSelectDialog:onCreate()
     WMLogger:debug("WMLeaderVehicleSelectDialog:onCreate")
 end
 
-function WMLeaderVehicleSelectDialog:onOpen()
-    WMLeaderVehicleSelectDialog:superClass().onOpen(self)
-    WMLogger:debug("WMLeaderVehicleSelectDialog:onOpen")
-
-    -- Build vehicle list: active vehicles excluding currentVehicle
+---Build the list of selectable leader vehicles (active vehicles excluding currentVehicle).
+---Safe to call before the dialog is shown. Returns the number of candidates.
+function WMLeaderVehicleSelectDialog:buildVehicleList()
     self.vehicles = {}
     for vehicle, _ in pairs(WMExecutor.activeVehicles) do
         if vehicle ~= self.currentVehicle then
@@ -36,13 +34,12 @@ function WMLeaderVehicleSelectDialog:onOpen()
             table.insert(self.vehicles, { vehicle = vehicle, name = vehicleName, workflowName = workflowName })
         end
     end
+    return #self.vehicles
+end
 
-    -- If no other vehicle is running, skip the dialog entirely
-    if #self.vehicles == 0 then
-        self:close()
-        if self.callback then self.callback(nil) end
-        return
-    end
+function WMLeaderVehicleSelectDialog:onOpen()
+    WMLeaderVehicleSelectDialog:superClass().onOpen(self)
+    WMLogger:debug("WMLeaderVehicleSelectDialog:onOpen")
 
     if self.vehicleList then
         self.vehicleList:setDataSource(self)
