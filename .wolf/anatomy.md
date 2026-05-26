@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-21T20:47:26.870Z
-> Files: 32 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-21T21:40:45.194Z
+> Files: 36 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -14,7 +14,7 @@
 ## ./
 
 - `CLAUDE.md` — FS25 Workflow Manager (~842 tok)
-- `Development.md` — FS25 Workflow Manager — Development (~930 tok)
+- `Development.md` — FS25 Workflow Manager — Development (~1171 tok)
 - `modDesc.xml` (~2263 tok)
 - `pull-docs.bat` (~41 tok)
 - `push-docs.bat` (~38 tok)
@@ -42,18 +42,19 @@
 
 ## src/
 
-- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~18212 tok)
-- `WorkflowManager.lua` — init, loadDialogs, Callback, showTextInputDialog, Called (~13563 tok)
+- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~18267 tok)
+- `WorkflowManager.lua` — init, loadDialogs, Callback, showTextInputDialog, Called (~13585 tok)
 - `WorkflowStorage.lua` — deepCopySupportStep, parseFillTypes, init, getXmlPath, saveWorkflows (~3624 tok)
 
 ## src/gui/
 
-- `WMLeaderVehicleSelectDialog.lua` — new, onCreate, onOpen, onClose, callback (~1134 tok)
+- `WMHud.lua` — ensureOverlays, createIconOverlays, updateOverlayPositions, init, show (~7447 tok)
+- `WMLeaderVehicleSelectDialog.lua` — new, onCreate, onOpen, onClose, callback (~1151 tok)
 - `WMStepDialog.lua` — new, onCreate, onOpen, onClose, keyEvent (~7204 tok)
 
 ## src/integration/
 
-- `AutoDriveIntegration.lua` — init, completeInitialization, update, checkAvailability, getDestinations (~9333 tok)
+- `AutoDriveIntegration.lua` — init, completeInitialization, update, checkAvailability, getDestinations (~9398 tok)
 
 ## src/network/
 
@@ -77,7 +78,7 @@
 
 ## tests/specs/
 
-- `WMLeaderVehicleSelectDialog_spec.lua` — makeVehicle, makeList, makeButton (~2858 tok)
+- `WMLeaderVehicleSelectDialog_spec.lua` — makeVehicle, makeList, makeButton (~2867 tok)
 - `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport (~14111 tok)
 - `WorkflowStorage_spec.lua` (~8706 tok)
 
@@ -89,12 +90,13 @@
 
 ## translations/
 
-- `translation_de.xml` (~2888 tok)
-- `translation_en.xml` (~2449 tok)
+- `translation_de.xml` (~2908 tok)
+- `translation_en.xml` (~2470 tok)
 
 ## website/
 
 - `build.bat` (~33 tok)
+- `sidebars.ts` — Declares sidebars (~257 tok)
 - `start.bat` (~50 tok)
 
 ## website/.docusaurus/
@@ -120,7 +122,7 @@
 
 ## website/docs/
 
-- `faq.md` — Frequently Asked Questions (~1199 tok)
+- `faq.md` — Frequently Asked Questions (~1357 tok)
 
 ## website/docs/api/
 
@@ -132,6 +134,8 @@
 ## website/docs/workflows/
 
 - `linked-workflows.md` — Multi-Vehicle Workflows (~1640 tok)
+- `queue-system.md` — Queue System (~896 tok)
+- `step-types.md` — Step Types (~1214 tok)
 
 ## website/src/components/HomepageFeatures/
 

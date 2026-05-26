@@ -362,6 +362,7 @@ function WMExecutor:executeCurrentStep(activeData)
             WMLogger:debug("Waiting for leader: leader step %d, follower step %d",
                 leaderExec.currentStep, activeData.currentStep)
             activeData.status = WorkflowManager.STATUS_WAITING_FOR_LEADER
+            WorkflowManager:broadcastState(activeData.vehicle)
             return
         end
     end
@@ -988,12 +989,14 @@ function WMExecutor:update(dt)
                     activeData.leaderVehicle = nil
                     activeData.status = WorkflowManager.STATUS_RUNNING
                     self:executeCurrentStep(activeData)
+                    WorkflowManager:broadcastState(activeData.vehicle)
                 elseif leaderExec.currentStep > activeData.currentStep then
                     -- Leader has moved past our step — start
                     WMLogger:info("Leader advanced to step %d — follower starting step %d",
                         leaderExec.currentStep, activeData.currentStep)
                     activeData.status = WorkflowManager.STATUS_RUNNING
                     self:executeCurrentStep(activeData)
+                    WorkflowManager:broadcastState(activeData.vehicle)
                 end
             end
 

@@ -858,6 +858,7 @@ function WorkflowManager:startWorkflow(workflowId)
 
     -- Show leader select dialog first (server/SP only; pure clients skip this feature)
     local function continueWithLeader(leaderVehicle)
+        if leaderVehicle == false then return end  -- user cancelled the dialog
         -- If the workflow has support steps, ask the player which role to start as
         if self:hasSupportSteps(workflow.id) and self.modeSelectDialog ~= nil then
             self:showModeSelectDialog(workflow.id, currentVehicle, leaderVehicle)

@@ -557,9 +557,13 @@ function ADIntegration:startRoute(vehicle, targetName, action, unloadTargetName,
                     end
                     for i = 2, #fillTypes do
                         local idx = g_fillTypeManager:getFillTypeIndexByName(fillTypes[i])
-                        if idx ~= nil and sm.toggleFillTypeSelection then
-                            sm:toggleFillTypeSelection(idx)
-                            WMLogger:debug("Added fill type: %s (index: %d)", fillTypes[i], idx)
+                        if idx ~= nil then
+                            if sm.toggleFillTypeSelection then
+                                sm:toggleFillTypeSelection(idx)
+                                WMLogger:debug("Added fill type: %s (index: %d)", fillTypes[i], idx)
+                            else
+                                WMLogger:warning("AD: toggleFillTypeSelection not available — fill type '%s' skipped", fillTypes[i])
+                            end
                         end
                     end
                 end

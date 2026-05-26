@@ -1026,3 +1026,43 @@
 | 22:47 | Edited src/gui/WMStepDialog.lua | 13→18 lines | ~199 |
 | 22:54 | Session end: 17 writes across 1 files (WMStepDialog.lua) | 7 reads | ~4475 tok |
 | 23:13 | Session end: 17 writes across 1 files (WMStepDialog.lua) | 7 reads | ~4475 tok |
+
+## Session: 2026-05-21 23:13
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 23:16 | Created website/docs/workflows/queue-system.md | — | ~837 |
+| 23:16 | Edited website/docs/workflows/step-types.md | 5→9 lines | ~165 |
+| 23:16 | Edited website/docs/workflows/step-types.md | 8→8 lines | ~53 |
+| 23:17 | Edited website/docs/faq.md | expanded (+9 lines) | ~253 |
+| 23:17 | Edited website/sidebars.ts | 4→5 lines | ~53 |
+| 23:17 | Docusaurus docs: added queue-system.md, updated step-types.md (multi-fill), faq.md, sidebars.ts | website/docs/workflows/, website/sidebars.ts | done | ~3k |
+| 23:18 | Session end: 5 writes across 4 files (queue-system.md, step-types.md, faq.md, sidebars.ts) | 11 reads | ~14992 tok |
+| 23:20 | Edited website/docs/workflows/queue-system.md | modified cycle() | ~334 |
+| 23:20 | Session end: 6 writes across 4 files (queue-system.md, step-types.md, faq.md, sidebars.ts) | 11 reads | ~15350 tok |
+| 23:21 | Edited website/docs/workflows/queue-system.md | 15→17 lines | ~253 |
+| 23:21 | Session end: 7 writes across 4 files (queue-system.md, step-types.md, faq.md, sidebars.ts) | 11 reads | ~15621 tok |
+| 23:23 | Edited Development.md | 3→4 lines | ~320 |
+| 23:24 | Session end: 8 writes across 5 files (queue-system.md, step-types.md, faq.md, sidebars.ts, Development.md) | 11 reads | ~15963 tok |
+
+## Session: 2026-05-21 23:24
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 23:38 | Edited src/gui/WMLeaderVehicleSelectDialog.lua | modified callback() | ~90 |
+| 23:38 | Edited src/gui/WMLeaderVehicleSelectDialog.lua | modified WMLeaderVehicleSelectDialog() | ~34 |
+| 23:38 | Edited src/WorkflowManager.lua | modified continueWithLeader() | ~80 |
+| 23:39 | Edited tests/specs/WMLeaderVehicleSelectDialog_spec.lua | 19→19 lines | ~157 |
+| 23:39 | Edited src/WorkflowExecutor.lua | 7→8 lines | ~121 |
+| 23:39 | Edited src/WorkflowExecutor.lua | 13→15 lines | ~266 |
+| 23:39 | Edited src/integration/AutoDriveIntegration.lua | 7→11 lines | ~175 |
+| 23:40 | Edited src/gui/WMHud.lua | 7→10 lines | ~153 |
+| 23:40 | Edited translations/translation_en.xml | 2→3 lines | ~46 |
+| 23:40 | Edited translations/translation_de.xml | 2→3 lines | ~48 |
+| 07:54 | Fixed 4 review issues from QueueSystem branch: cancel-aborts-start, broadcastState on leader-wait enter/exit, toggleFillTypeSelection warning, HUD waiting_for_leader indicator | WMLeaderVehicleSelectDialog.lua, WorkflowManager.lua, WorkflowExecutor.lua, AutoDriveIntegration.lua, WMHud.lua, translations | 332/332 pass |
+| 07:54 | Session end: 10 writes across 8 files (WMLeaderVehicleSelectDialog.lua, WorkflowManager.lua, WMLeaderVehicleSelectDialog_spec.lua, WorkflowExecutor.lua, AutoDriveIntegration.lua) | 11 reads | ~51689 tok |
+
+## Session: 2026-05-26 14:07
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|

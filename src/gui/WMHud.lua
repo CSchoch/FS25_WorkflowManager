@@ -440,6 +440,9 @@ function WMHud:draw()
         elseif activeData.status == WorkflowManager.STATUS_PAUSED then
             setTextColor(1, 0.6, 0, 1)
             renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_paused"))
+        elseif activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER then
+            setTextColor(1, 0.85, 0, 1)
+            renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_waiting_for_leader"))
         else
             setTextColor(0.6, 0.6, 0.6, 1)
             renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_idle"))

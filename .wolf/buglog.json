@@ -478,7 +478,12 @@
       "file": "src/gui/WMStepDialog.lua",
       "root_cause": "WMStepDialog used a single string field (stepFillType) and single-selection list logic. Backend (WorkflowStorage, AutoDriveIntegration, WorkflowExecutor) already stored fillTypes as an array, but the dialog did not read or write arrays.",
       "fix": "Replaced stepFillType/selectedFillTypeIndex with selectedFillTypes (array). onFillTypeListSelectionChanged now toggles items in/out. populateCellForItemInSection prefixes selected items with checkmark. Added updateFillTypeLabel(). onClickConfirm writes step.fillTypes array. Removed auto-select from filterFillTypes.",
-      "tags": ["ui", "multi-select", "fill-type", "WMStepDialog"],
+      "tags": [
+        "ui",
+        "multi-select",
+        "fill-type",
+        "WMStepDialog"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-05-21T00:00:00.000Z"
@@ -490,10 +495,99 @@
       "file": "src/gui/WMStepDialog.lua",
       "root_cause": "onFillTypeListSelectionChanged called fillTypeList:reloadData() without the isFiltering guard. FS25 SmoothList fires onSelectionChanged during mouseEvent processing; reloadData() triggered another onSelectionChanged → reloadData() → infinite recursion → stack overflow.",
       "fix": "Set self.isFiltering = true before fillTypeList:reloadData() and false after, matching the pattern used in filterFillTypes.",
-      "tags": ["crash", "stack-overflow", "mouseEvent", "SmoothList", "reloadData", "WMStepDialog"],
-      "related_bugs": ["bug-030"],
+      "tags": [
+        "crash",
+        "stack-overflow",
+        "mouseEvent",
+        "SmoothList",
+        "reloadData",
+        "WMStepDialog"
+      ],
+      "related_bugs": [
+        "bug-030"
+      ],
       "occurrences": 1,
       "last_seen": "2026-05-21T00:00:00.000Z"
+    },
+    {
+      "id": "bug-032",
+      "timestamp": "2026-05-21T21:16:45.612Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/docs/workflows/step-types.md",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 5→9 lines (4 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-21T21:16:45.612Z"
+    },
+    {
+      "id": "bug-033",
+      "timestamp": "2026-05-21T21:17:30.270Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/docs/faq.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 13→22 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-21T21:17:30.270Z"
+    },
+    {
+      "id": "bug-034",
+      "timestamp": "2026-05-21T21:20:28.460Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/docs/workflows/queue-system.md",
+      "root_cause": "9 lines replaced/restructured",
+      "fix": "Rewrote 23→24 lines (9 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-21T21:20:28.460Z"
+    },
+    {
+      "id": "bug-035",
+      "timestamp": "2026-05-21T21:40:28.527Z",
+      "error_message": "Incorrect value in code",
+      "file": "translations/translation_en.xml",
+      "root_cause": "Had \"wm_hud_idle\"",
+      "fix": "Changed to \"wm_hud_waiting_for_leader\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-21T21:40:28.527Z"
+    },
+    {
+      "id": "bug-036",
+      "timestamp": "2026-05-21T21:40:45.214Z",
+      "error_message": "Incorrect value in code",
+      "file": "translations/translation_de.xml",
+      "root_cause": "Had \"wm_hud_idle\"",
+      "fix": "Changed to \"wm_hud_waiting_for_leader\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-21T21:40:45.214Z"
     }
   ]
 }

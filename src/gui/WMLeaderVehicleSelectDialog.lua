@@ -61,7 +61,7 @@ end
 
 ---Configure the dialog before showing it.
 ---@param currentVehicle table  The vehicle that will run the follower workflow (excluded from list)
----@param callback function     callback(leaderVehicle|nil)
+---@param callback function     callback(leaderVehicle|nil|false): vehicle=leader chosen, nil=no leader, false=cancelled
 function WMLeaderVehicleSelectDialog:setData(currentVehicle, callback)
     self.currentVehicle = currentVehicle
     self.callback       = callback
@@ -115,7 +115,7 @@ end
 
 function WMLeaderVehicleSelectDialog:onClickCancel()
     self:close()
-    if self.callback then self.callback(nil) end
+    if self.callback then self.callback(false) end
 end
 
 function WMLeaderVehicleSelectDialog:onEscPressed()
