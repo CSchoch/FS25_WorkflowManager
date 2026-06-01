@@ -1086,3 +1086,9 @@
 | 21:37 | Edited tests/specs/WMLeaderVehicleSelectDialog_spec.lua | onOpen() → buildVehicleList() | ~88 |
 | 21:38 | fix: leader dialog opened+closed in onOpen broke inputs; pre-check via buildVehicleList before showDialog | WMLeaderVehicleSelectDialog.lua, WorkflowManager.lua, spec | 332 tests pass | ~6k |
 | 21:38 | Session end: 13 writes across 3 files (WMLeaderVehicleSelectDialog.lua, WorkflowManager.lua, WMLeaderVehicleSelectDialog_spec.lua) | 6 reads | ~19294 tok |
+| 22:42 | Edited tests/specs/WMLeaderVehicleSelectDialog_spec.lua | modified Regression() | ~191 |
+| 22:42 | Edited tests/specs/WorkflowManager_spec.lua | expanded (+15 lines) | ~234 |
+| 22:43 | Edited tests/specs/WorkflowManager_spec.lua | modified Regression() | ~606 |
+| 22:43 | Edited tests/specs/WorkflowManager_spec.lua | inline fix | ~22 |
+| 22:43 | test: regression tests for bug-038 (leader dialog open+close broke inputs) | WMLeaderVehicleSelectDialog_spec.lua, WorkflowManager_spec.lua | 336 tests pass | ~3k |
+| 22:43 | Session end: 17 writes across 4 files (WMLeaderVehicleSelectDialog.lua, WorkflowManager.lua, WMLeaderVehicleSelectDialog_spec.lua, WorkflowManager_spec.lua) | 7 reads | ~20421 tok |

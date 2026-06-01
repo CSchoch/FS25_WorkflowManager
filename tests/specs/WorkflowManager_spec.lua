@@ -218,6 +218,21 @@ describe("WorkflowManager", function()
         -- hasSupportSteps / addSupportStep / removeSupportStep already defined above
         -- (also needed by startWorkflow stub, so define before it)
         WorkflowManager.modeSelectDialog = nil  -- not loaded in tests
+
+        -- showLeaderSelectDialog (mirrors src/WorkflowManager.lua) — must NOT open
+        -- the dialog when there are no candidate vehicles (bug-038).
+        WorkflowManager.showLeaderSelectDialog = function(self, currentVehicle, callback)
+            if self.leaderSelectDialog == nil then
+                callback(nil)
+                return
+            end
+            self.leaderSelectDialog:setData(currentVehicle, callback)
+            if self.leaderSelectDialog:buildVehicleList() == 0 then
+                callback(nil)
+                return
+            end
+            g_gui:showDialog("WMLeaderVehicleSelectDialog")
+        end
     end)
 
     -- Reset state before each test
@@ -749,6 +764,51 @@ describe("WorkflowManager", function()
         it("should have step type constants defined", function()
             assert.are.equal("autodrive", WorkflowManager.STEP_AUTODRIVE)
             assert.are.equal("courseplay", WorkflowManager.STEP_COURSEPLAY)
+        end)
+    end)
+
+    -- Regression (bug-038): starting a workflow with no other active vehicles
+    -- left the game with no working inputs because the leader dialog was opened
+    -- then closed inside onOpen(). The fix pre-checks buildVehicleList() and must
+    -- skip g_gui:showDialog entirely (calling callback(nil) directly) when empty.
+    describe("showLeaderSelectDialog", function()
+        local shownDialog
+        local callbackResult
+
+        before_each(function()
+            shownDialog = "NOT_SHOWN"
+            callbackResult = "NOT_CALLED"
+            _G.g_gui = { showDialog = function(_, name) shownDialog = name end }
+        end)
+
+        it("does NOT show the dialog and calls callback(nil) when no candidate vehicles", function()
+            WorkflowManager.leaderSelectDialog = {
+                setData = function() end,
+                buildVehicleList = function() return 0 end,
+            }
+            WorkflowManager:showLeaderSelectDialog({}, function(r) callbackResult = r end)
+
+            assert.are.equal("NOT_SHOWN", shownDialog)  -- dialog never opened
+            assert.is_nil(callbackResult)               -- started with no leader
+        end)
+
+        it("shows the dialog when candidate vehicles exist", function()
+            WorkflowManager.leaderSelectDialog = {
+                setData = function() end,
+                buildVehicleList = function() return 2 end,
+            }
+            WorkflowManager:showLeaderSelectDialog({}, function(r) callbackResult = r end)
+
+            assert.are.equal("WMLeaderVehicleSelectDialog", shownDialog)
+            assert.are.equal("NOT_CALLED", callbackResult)  -- waits for user choice
+        end)
+
+        it("calls callback(nil) when no dialog is loaded (pure client)", function()
+            WorkflowManager.leaderSelectDialog = nil
+            WorkflowManager:showLeaderSelectDialog({}, function(r) callbackResult = r end)
+
+            assert.are.equal("NOT_SHOWN", shownDialog)
+            assert.is_nil(callbackResult)
         end)
     end)
 end)

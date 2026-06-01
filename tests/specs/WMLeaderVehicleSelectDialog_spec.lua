@@ -157,6 +157,16 @@ describe("WMLeaderVehicleSelectDialog", function()
             dialog:onOpen()
             assert.are.equal(1, dialog.selectedIndex)
         end)
+
+        -- Regression (bug-038): onOpen must NEVER call close() synchronously.
+        -- Closing a dialog mid-open corrupts the FS25 input-context stack,
+        -- leaving no inputs registered (HUD/menu can't be closed afterward).
+        it("does not call close() even when no other vehicles are active", function()
+            _G.WMExecutor.activeVehicles = { [v3] = true }  -- only currentVehicle
+            dialog:buildVehicleList()
+            dialog:onOpen()
+            assert.is_false(closeCalled)
+        end)
     end)
 
     -- =========================================================================
