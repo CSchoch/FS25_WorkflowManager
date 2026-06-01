@@ -1,156 +1,84 @@
 {
-  "session_id": "session-2026-05-26-1426",
-  "started": "2026-05-26T12:26:35.299Z",
+  "session_id": "session-2026-06-01-2206",
+  "started": "2026-06-01T20:06:44.415Z",
   "files_read": {
     "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.wolf/anatomy.md": {
       "count": 1,
       "tokens": 0,
-      "first_read": "2026-05-26T19:29:56.914Z"
+      "first_read": "2026-06-01T20:10:22.358Z"
     },
     "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.wolf/cerebrum.md": {
       "count": 1,
       "tokens": 0,
-      "first_read": "2026-05-26T19:29:57.146Z"
+      "first_read": "2026-06-01T20:10:22.830Z"
+    },
+    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManager.lua": {
+      "count": 2,
+      "tokens": 13657,
+      "first_read": "2026-06-01T20:10:29.277Z"
+    },
+    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManagerSpec.lua": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-06-01T20:10:35.413Z"
     },
     "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMLeaderVehicleSelectDialog.lua": {
       "count": 1,
-      "tokens": 1151,
-      "first_read": "2026-05-26T19:30:01.132Z"
+      "tokens": 1149,
+      "first_read": "2026-06-01T20:11:50.092Z"
     },
-    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManager.lua": {
+    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMModeSelectDialog.lua": {
       "count": 1,
-      "tokens": 13585,
-      "first_read": "2026-05-26T19:30:13.474Z"
-    },
-    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/WMLeaderVehicleSelectDialog_spec.lua": {
-      "count": 2,
-      "tokens": 2963,
-      "first_read": "2026-05-26T19:35:21.449Z"
-    },
-    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.wolf/buglog.json": {
-      "count": 2,
       "tokens": 0,
-      "first_read": "2026-05-26T19:37:20.586Z"
-    },
-    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/WorkflowManager_spec.lua": {
-      "count": 3,
-      "tokens": 0,
-      "first_read": "2026-05-26T20:41:55.743Z"
+      "first_read": "2026-06-01T20:11:50.383Z"
     }
   },
   "files_written": [
     {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMLeaderVehicleSelectDialog.lua",
+      "file": "C:/Users/Chef/.claude/plans/foamy-crafting-oasis.md",
+      "action": "create",
+      "tokens": 1256,
+      "at": "2026-06-01T20:13:42.676Z"
+    },
+    {
+      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManagerSpec.lua",
       "action": "edit",
-      "tokens": 290,
-      "at": "2026-05-26T19:34:26.452Z"
+      "tokens": 103,
+      "at": "2026-06-01T20:24:06.389Z"
+    },
+    {
+      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManagerSpec.lua",
+      "action": "edit",
+      "tokens": 171,
+      "at": "2026-06-01T20:24:16.205Z"
+    },
+    {
+      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManagerSpec.lua",
+      "action": "edit",
+      "tokens": 291,
+      "at": "2026-06-01T20:24:28.917Z"
     },
     {
       "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManager.lua",
       "action": "edit",
-      "tokens": 109,
-      "at": "2026-05-26T19:34:32.587Z"
+      "tokens": 310,
+      "at": "2026-06-01T20:24:41.735Z"
     },
     {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/WMLeaderVehicleSelectDialog_spec.lua",
+      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManager.lua",
       "action": "edit",
-      "tokens": 696,
-      "at": "2026-05-26T19:35:55.475Z"
-    },
-    {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/WMLeaderVehicleSelectDialog_spec.lua",
-      "action": "edit",
-      "tokens": 70,
-      "at": "2026-05-26T19:36:25.204Z"
-    },
-    {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/WMLeaderVehicleSelectDialog_spec.lua",
-      "action": "edit",
-      "tokens": 35,
-      "at": "2026-05-26T19:36:30.238Z"
-    },
-    {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/WMLeaderVehicleSelectDialog_spec.lua",
-      "action": "edit",
-      "tokens": 30,
-      "at": "2026-05-26T19:36:34.836Z"
-    },
-    {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/WMLeaderVehicleSelectDialog_spec.lua",
-      "action": "edit",
-      "tokens": 40,
-      "at": "2026-05-26T19:36:39.942Z"
-    },
-    {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/WMLeaderVehicleSelectDialog_spec.lua",
-      "action": "edit",
-      "tokens": 46,
-      "at": "2026-05-26T19:36:44.981Z"
-    },
-    {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/WMLeaderVehicleSelectDialog_spec.lua",
-      "action": "edit",
-      "tokens": 45,
-      "at": "2026-05-26T19:36:50.092Z"
-    },
-    {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/WMLeaderVehicleSelectDialog_spec.lua",
-      "action": "edit",
-      "tokens": 41,
-      "at": "2026-05-26T19:36:56.217Z"
-    },
-    {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/WMLeaderVehicleSelectDialog_spec.lua",
-      "action": "edit",
-      "tokens": 53,
-      "at": "2026-05-26T19:37:02.034Z"
-    },
-    {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/WMLeaderVehicleSelectDialog_spec.lua",
-      "action": "edit",
-      "tokens": 46,
-      "at": "2026-05-26T19:37:07.187Z"
-    },
-    {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/WMLeaderVehicleSelectDialog_spec.lua",
-      "action": "edit",
-      "tokens": 94,
-      "at": "2026-05-26T19:37:13.182Z"
-    },
-    {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/WMLeaderVehicleSelectDialog_spec.lua",
-      "action": "edit",
-      "tokens": 204,
-      "at": "2026-05-26T20:42:15.108Z"
-    },
-    {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/WorkflowManager_spec.lua",
-      "action": "edit",
-      "tokens": 251,
-      "at": "2026-05-26T20:42:48.174Z"
-    },
-    {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/WorkflowManager_spec.lua",
-      "action": "edit",
-      "tokens": 649,
-      "at": "2026-05-26T20:43:01.122Z"
-    },
-    {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/WorkflowManager_spec.lua",
-      "action": "edit",
-      "tokens": 23,
-      "at": "2026-05-26T20:43:06.891Z"
+      "tokens": 164,
+      "at": "2026-06-01T20:25:00.432Z"
     }
   ],
   "edit_counts": {
-    "src/gui/WMLeaderVehicleSelectDialog.lua": 1,
-    "src/WorkflowManager.lua": 1,
-    "tests/specs/WMLeaderVehicleSelectDialog_spec.lua": 12,
-    "tests/specs/WorkflowManager_spec.lua": 3
+    "../../../../../.claude/plans/foamy-crafting-oasis.md": 1,
+    "src/WorkflowManagerSpec.lua": 3,
+    "src/WorkflowManager.lua": 2
   },
-  "anatomy_hits": 3,
-  "anatomy_misses": 3,
-  "repeated_reads_warned": 4,
+  "anatomy_hits": 2,
+  "anatomy_misses": 4,
+  "repeated_reads_warned": 1,
   "cerebrum_warnings": 0,
-  "stop_count": 2
+  "stop_count": 1
 }

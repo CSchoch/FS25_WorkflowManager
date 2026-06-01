@@ -856,22 +856,30 @@ function WorkflowManager:startWorkflow(workflowId)
         workflow.name,
         currentVehicle.getName and currentVehicle:getName() or "unknown")
 
-    -- Show leader select dialog first (server/SP only; pure clients skip this feature)
-    local function continueWithLeader(leaderVehicle)
-        if leaderVehicle == false then return end  -- user cancelled the dialog
-        -- If the workflow has support steps, ask the player which role to start as
-        if self:hasSupportSteps(workflow.id) and self.modeSelectDialog ~= nil then
-            self:showModeSelectDialog(workflow.id, currentVehicle, leaderVehicle)
-            return
+    local function startAsMain()
+        if g_server ~= nil and self.leaderSelectDialog ~= nil then
+            self:showLeaderSelectDialog(currentVehicle, function(leaderVehicle)
+                if leaderVehicle == false then return end  -- user cancelled
+                self:sendCommand(currentVehicle, "start", workflow.id, true, leaderVehicle)
+            end)
+        else
+            self:sendCommand(currentVehicle, "start", workflow.id, true, nil)
         end
-        -- No support steps — start as main directly
-        self:sendCommand(currentVehicle, "start", workflow.id, true, leaderVehicle)
     end
 
-    if g_server ~= nil and self.leaderSelectDialog ~= nil then
-        self:showLeaderSelectDialog(currentVehicle, continueWithLeader)
+    if self:hasSupportSteps(workflow.id) and self.modeSelectDialog ~= nil then
+        -- Mode select first; leader dialog only shown when main role is chosen
+        self:showModeSelectDialog(workflow.id, currentVehicle, function(isMain)
+            if isMain == nil then return end  -- user cancelled
+            if isMain then
+                startAsMain()
+            else
+                self:sendCommand(currentVehicle, "start", workflow.id, false, nil)
+            end
+        end)
     else
-        continueWithLeader(nil)
+        -- No support steps: go straight to leader select then start as main
+        startAsMain()
     end
 
     return true
@@ -898,23 +906,15 @@ function WorkflowManager:showLeaderSelectDialog(currentVehicle, callback)
 end
 
 ---Show the mode selection dialog (Main / Support / Cancel)
----@param workflowId   string      Workflow to start
----@param vehicle      table       The vehicle that will run the workflow
----@param leaderVehicle table|nil  Optional leader vehicle for follower sync
-function WorkflowManager:showModeSelectDialog(workflowId, vehicle, leaderVehicle)
+---@param workflowId string    Workflow to start
+---@param vehicle    table     The vehicle that will run the workflow
+---@param callback   function  Called with true (main), false (support), or nil (cancel)
+function WorkflowManager:showModeSelectDialog(workflowId, vehicle, callback)
     if self.modeSelectDialog == nil then
-        -- Fallback: no dialog available — start as main
-        self:sendCommand(vehicle, "start", workflowId, true, leaderVehicle)
+        callback(true)  -- fallback: main role
         return
     end
-    self.modeSelectDialog:setWorkflow(workflowId, vehicle, function(isMain)
-        if isMain == nil then
-            -- User cancelled
-            return
-        end
-        -- Use the vehicle that was validated before the dialog opened
-        self:sendCommand(vehicle, "start", workflowId, isMain, leaderVehicle)
-    end)
+    self.modeSelectDialog:setWorkflow(workflowId, vehicle, callback)
     g_gui:showDialog("WMModeSelectDialog")
 end
 

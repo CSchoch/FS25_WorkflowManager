@@ -70,6 +70,13 @@ function WorkflowManagerSpec:onPostLoad(savegame)
                 currentSupportStep = savegame.xmlFile:getValue(key .. "#currentSupportStep") or 1
             end
 
+            local leaderIdx = savegame.xmlFile:getValue(key .. "#leaderVehicleIndex")
+            local leaderVehicle = nil
+            if leaderIdx and leaderIdx > 0 then
+                local vehicles = g_currentMission and g_currentMission.vehicles
+                leaderVehicle = vehicles and vehicles[leaderIdx]
+            end
+
             self.spec_workflowManagerSpec.wmExecution = {
                 workflow             = workflow,
                 vehicle              = self,
@@ -79,6 +86,7 @@ function WorkflowManagerSpec:onPostLoad(savegame)
                 waitingForCompletion = false,
                 isMainVehicle        = isMainVehicle,
                 currentSupportStep   = currentSupportStep,
+                leaderVehicle        = leaderVehicle,
                 autoResumeUntil      = g_currentMission.time + 10000
             }
             WMExecutor.activeVehicles[self] = true
@@ -109,6 +117,17 @@ function WorkflowManagerSpec:saveToXMLFile(xmlFile, key, usedModNames)
     xmlFile:setValue(key .. "#isMainVehicle", activeData.isMainVehicle ~= false)
     if activeData.isMainVehicle == false then
         xmlFile:setValue(key .. "#currentSupportStep", activeData.currentSupportStep or 1)
+    end
+    if activeData.leaderVehicle then
+        local vehicles = g_currentMission and g_currentMission.vehicles
+        if vehicles then
+            for i, v in ipairs(vehicles) do
+                if v == activeData.leaderVehicle then
+                    xmlFile:setValue(key .. "#leaderVehicleIndex", i)
+                    break
+                end
+            end
+        end
     end
 
     WMLogger:info("Saved workflow state: id=%s step=%d isMain=%s",
@@ -378,6 +397,8 @@ function WorkflowManagerSpec.initSpecialization()
         "true = main role, false = support role")
     schema:register(XMLValueType.INT,  key .. "#currentSupportStep",
         "Current support sub-step index (support vehicles only)")
+    schema:register(XMLValueType.INT,  key .. "#leaderVehicleIndex",
+        "1-based index of leader vehicle in g_currentMission.vehicles (absent = no leader)")
     print("[WorkflowManager] Registered savegame XML schema")
 end
 

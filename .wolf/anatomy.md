@@ -1,10 +1,11 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-26T20:43:06.857Z
-> Files: 37 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-06-01T20:25:00.401Z
+> Files: 39 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
+- `foamy-crafting-oasis.md` — Plan: Leader Vehicle — Save Persistence, MP Sync, Dialog Order (~1099 tok)
 - `implement-milestone-11-tender-blum.md` — Milestone 11 — Multiple Fill Types & Synchronized Follower (~2937 tok)
 
 ## ../FS25_WorkflowManager-docs/.github/workflows/
@@ -43,7 +44,8 @@
 ## src/
 
 - `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~18267 tok)
-- `WorkflowManager.lua` — init, loadDialogs, Callback, showTextInputDialog, Called (~13657 tok)
+- `WorkflowManager.lua` — init, loadDialogs, Callback, showTextInputDialog, Called (~13633 tok)
+- `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~4687 tok)
 - `WorkflowStorage.lua` — deepCopySupportStep, parseFillTypes, init, getXmlPath, saveWorkflows (~3624 tok)
 
 ## src/gui/

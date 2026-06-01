@@ -1092,3 +1092,16 @@
 | 22:43 | Edited tests/specs/WorkflowManager_spec.lua | inline fix | ~22 |
 | 22:43 | test: regression tests for bug-038 (leader dialog open+close broke inputs) | WMLeaderVehicleSelectDialog_spec.lua, WorkflowManager_spec.lua | 336 tests pass | ~3k |
 | 22:43 | Session end: 17 writes across 4 files (WMLeaderVehicleSelectDialog.lua, WorkflowManager.lua, WMLeaderVehicleSelectDialog_spec.lua, WorkflowManager_spec.lua) | 7 reads | ~20421 tok |
+
+## Session: 2026-06-01 22:06
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 22:13 | Created ../../../../../.claude/plans/foamy-crafting-oasis.md | — | ~1172 |
+| 22:24 | Edited src/WorkflowManagerSpec.lua | 3→5 lines | ~96 |
+| 22:24 | Edited src/WorkflowManagerSpec.lua | expanded (+11 lines) | ~159 |
+| 22:24 | Edited src/WorkflowManagerSpec.lua | expanded (+8 lines) | ~271 |
+| 22:24 | Edited src/WorkflowManager.lua | modified startAsMain() | ~289 |
+| 22:25 | Edited src/WorkflowManager.lua | modified Called() | ~153 |
+| 22:25 | Save/restore leaderVehicle, fix dialog order (mode select first) | WorkflowManagerSpec.lua, WorkflowManager.lua | All 336 tests pass | ~3k |
+| 22:25 | Session end: 6 writes across 3 files (foamy-crafting-oasis.md, WorkflowManagerSpec.lua, WorkflowManager.lua) | 6 reads | ~17101 tok |

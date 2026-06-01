@@ -2,14 +2,14 @@
   "version": 1,
   "created_at": "2026-04-05T21:01:47.995Z",
   "lifetime": {
-    "total_tokens_estimated": 2623449,
-    "total_reads": 1134,
-    "total_writes": 2036,
-    "total_sessions": 61,
-    "anatomy_hits": 322,
-    "anatomy_misses": 808,
-    "repeated_reads_blocked": 822,
-    "estimated_savings_vs_bare_cli": 5465742
+    "total_tokens_estimated": 2640550,
+    "total_reads": 1140,
+    "total_writes": 2042,
+    "total_sessions": 62,
+    "anatomy_hits": 324,
+    "anatomy_misses": 812,
+    "repeated_reads_blocked": 823,
+    "estimated_savings_vs_bare_cli": 5479799
   },
   "sessions": [
     {
@@ -19658,6 +19658,89 @@
         "writes_count": 17,
         "repeated_reads_blocked": 4,
         "anatomy_lookups": 3
+      }
+    },
+    {
+      "id": "session-2026-06-01-2206",
+      "started": "2026-06-01T20:06:44.415Z",
+      "ended": "2026-06-01T20:25:47.342Z",
+      "reads": [
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.wolf/anatomy.md",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.wolf/cerebrum.md",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManager.lua",
+          "tokens_estimated": 13657,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManagerSpec.lua",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMLeaderVehicleSelectDialog.lua",
+          "tokens_estimated": 1149,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMModeSelectDialog.lua",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "C:/Users/Chef/.claude/plans/foamy-crafting-oasis.md",
+          "tokens_estimated": 1256,
+          "action": "create"
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManagerSpec.lua",
+          "tokens_estimated": 103,
+          "action": "edit"
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManagerSpec.lua",
+          "tokens_estimated": 171,
+          "action": "edit"
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManagerSpec.lua",
+          "tokens_estimated": 291,
+          "action": "edit"
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManager.lua",
+          "tokens_estimated": 310,
+          "action": "edit"
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowManager.lua",
+          "tokens_estimated": 164,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 14806,
+        "output_tokens_estimated": 2295,
+        "reads_count": 6,
+        "writes_count": 6,
+        "repeated_reads_blocked": 1,
+        "anatomy_lookups": 2
       }
     }
   ],
