@@ -1105,3 +1105,5 @@
 | 22:25 | Edited src/WorkflowManager.lua | modified Called() | ~153 |
 | 22:25 | Save/restore leaderVehicle, fix dialog order (mode select first) | WorkflowManagerSpec.lua, WorkflowManager.lua | All 336 tests pass | ~3k |
 | 22:25 | Session end: 6 writes across 3 files (foamy-crafting-oasis.md, WorkflowManagerSpec.lua, WorkflowManager.lua) | 6 reads | ~17101 tok |
+| 22:28 | Edited tests/specs/WorkflowManagerSpec_spec.lua | expanded (+69 lines) | ~1119 |
+| 22:29 | Session end: 7 writes across 4 files (foamy-crafting-oasis.md, WorkflowManagerSpec.lua, WorkflowManager.lua, WorkflowManagerSpec_spec.lua) | 7 reads | ~18299 tok |

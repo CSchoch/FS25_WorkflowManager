@@ -394,6 +394,75 @@ describe("WorkflowManagerSpec", function()
             assert.are.equal(2,     d.currentSupportStep)
             assert.are.equal("paused", d.status)
         end)
+
+        it("saves leaderVehicleIndex when leaderVehicle is set", function()
+            local wf = { id = "wf_lv_save", name = "LV Save", steps = {} }
+            local leaderV = makeVehicle("Leader")
+            local followerV = makeVehicle("Follower")
+            _G.g_currentMission.vehicles = { leaderV, followerV }
+            WorkflowManagerSpec.onLoad(followerV, nil)
+            followerV.spec_workflowManagerSpec.wmExecution = {
+                workflow      = wf,
+                currentStep   = 1,
+                isMainVehicle = true,
+                leaderVehicle = leaderV,
+            }
+
+            local xml = makeSavegameXML()
+            WorkflowManagerSpec.saveToXMLFile(followerV, xml, BASE_KEY, {})
+
+            assert.are.equal(1, xml._data[BASE_KEY .. "#leaderVehicleIndex"])
+        end)
+
+        it("save/restore round-trip preserves leaderVehicle", function()
+            local wf = { id = "wf_lv_rt", name = "LV Round-Trip", steps = {} }
+            _G.WorkflowManager.workflows = { wf }
+            local leaderV = makeVehicle("Leader")
+            local followerV = makeVehicle("Follower")
+            _G.g_currentMission.vehicles = { leaderV, followerV }
+
+            WorkflowManagerSpec.onLoad(followerV, nil)
+            followerV.spec_workflowManagerSpec.wmExecution = {
+                workflow      = wf,
+                currentStep   = 2,
+                isMainVehicle = true,
+                leaderVehicle = leaderV,
+            }
+
+            local xml = makeSavegameXML()
+            WorkflowManagerSpec.saveToXMLFile(followerV, xml, BASE_KEY, {})
+
+            local v2 = makeVehicle("Reader")
+            WorkflowManagerSpec.onLoad(v2, nil)
+            local sg = { key = "vehicles.vehicle(0)", resetVehicles = false, xmlFile = xml }
+            WorkflowManagerSpec.onPostLoad(v2, sg)
+
+            local d = v2.spec_workflowManagerSpec.wmExecution
+            assert.are.equal(leaderV, d.leaderVehicle)
+            assert.are.equal(2, d.currentStep)
+        end)
+
+        it("restores nil leaderVehicle when index is absent", function()
+            local wf = { id = "wf_lv_nil", name = "LV Nil", steps = {} }
+            _G.WorkflowManager.workflows = { wf }
+            local v1 = makeVehicle("Writer")
+            WorkflowManagerSpec.onLoad(v1, nil)
+            v1.spec_workflowManagerSpec.wmExecution = {
+                workflow      = wf,
+                currentStep   = 1,
+                isMainVehicle = true,
+            }
+
+            local xml = makeSavegameXML()
+            WorkflowManagerSpec.saveToXMLFile(v1, xml, BASE_KEY, {})
+
+            local v2 = makeVehicle("Reader")
+            WorkflowManagerSpec.onLoad(v2, nil)
+            local sg = { key = "vehicles.vehicle(0)", resetVehicles = false, xmlFile = xml }
+            WorkflowManagerSpec.onPostLoad(v2, sg)
+
+            assert.is_nil(v2.spec_workflowManagerSpec.wmExecution.leaderVehicle)
+        end)
     end)
 
     -- =========================================================================

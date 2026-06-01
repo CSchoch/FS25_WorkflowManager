@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-06-01T20:25:00.401Z
-> Files: 39 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-06-01T20:28:15.062Z
+> Files: 40 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -83,6 +83,7 @@
 - `WMLeaderVehicleSelectDialog_spec.lua` — makeVehicle, makeList, makeButton (~3135 tok)
 - `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport (~14111 tok)
 - `WorkflowManager_spec.lua` — Declares constants (~9079 tok)
+- `WorkflowManagerSpec_spec.lua` — makeVehicle, makeSavegameXML (~7958 tok)
 - `WorkflowStorage_spec.lua` (~8706 tok)
 
 ## textures/
