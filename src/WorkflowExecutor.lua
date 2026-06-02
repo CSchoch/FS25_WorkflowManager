@@ -129,6 +129,7 @@ function WMExecutor:startWorkflow(workflow, vehicle, isMain, leaderVehicle)
         isMainVehicle = isMainVehicle,
         currentSupportStep = not isMainVehicle and 1 or nil,
         leaderVehicle = leaderVehicle,
+        linkedLeaderExecution = leaderVehicle and leaderVehicle.spec_workflowManagerSpec and leaderVehicle.spec_workflowManagerSpec.wmExecution,
     }
     self.activeVehicles[vehicle] = true
 
@@ -353,10 +354,15 @@ function WMExecutor:executeCurrentStep(activeData)
     if activeData.isMainVehicle ~= false and activeData.leaderVehicle ~= nil then
         local leaderSpec = activeData.leaderVehicle.spec_workflowManagerSpec
         local leaderExec = leaderSpec and leaderSpec.wmExecution
-        if leaderExec == nil then
-            -- Leader finished or stopped — free the follower
-            WMLogger:info("Leader workflow finished — follower continuing freely")
+        -- Snap execution reference on first check (covers save/load restore ordering)
+        if activeData.linkedLeaderExecution == nil and leaderExec ~= nil then
+            activeData.linkedLeaderExecution = leaderExec
+        end
+        if leaderExec == nil or (activeData.linkedLeaderExecution ~= nil and leaderExec ~= activeData.linkedLeaderExecution) then
+            -- Leader finished, stopped, or restarted — free the follower
+            WMLogger:info("Leader workflow finished or restarted — follower continuing freely")
             activeData.leaderVehicle = nil
+            activeData.linkedLeaderExecution = nil
         elseif leaderExec.currentStep <= activeData.currentStep then
             -- Leader hasn't moved past our current step yet — wait
             WMLogger:debug("Waiting for leader: leader step %d, follower step %d",
@@ -983,10 +989,15 @@ function WMExecutor:update(dt)
             if activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER then
                 local leaderSpec = activeData.leaderVehicle and activeData.leaderVehicle.spec_workflowManagerSpec
                 local leaderExec = leaderSpec and leaderSpec.wmExecution
-                if leaderExec == nil then
-                    -- Leader finished or stopped — free the follower
-                    WMLogger:info("Leader stopped — follower resuming freely at step %d", activeData.currentStep)
+                -- Snap execution reference on first check (covers save/load restore ordering)
+                if activeData.linkedLeaderExecution == nil and leaderExec ~= nil then
+                    activeData.linkedLeaderExecution = leaderExec
+                end
+                if leaderExec == nil or (activeData.linkedLeaderExecution ~= nil and leaderExec ~= activeData.linkedLeaderExecution) then
+                    -- Leader finished, stopped, or restarted a new execution — free the follower
+                    WMLogger:info("Leader stopped or restarted — follower resuming freely at step %d", activeData.currentStep)
                     activeData.leaderVehicle = nil
+                    activeData.linkedLeaderExecution = nil
                     activeData.status = WorkflowManager.STATUS_RUNNING
                     self:executeCurrentStep(activeData)
                     WorkflowManager:broadcastState(activeData.vehicle)

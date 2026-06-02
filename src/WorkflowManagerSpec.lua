@@ -77,17 +77,21 @@ function WorkflowManagerSpec:onPostLoad(savegame)
                 leaderVehicle = vehicles and vehicles[leaderIdx]
             end
 
+            local linkedLeaderExecution = leaderVehicle and
+                leaderVehicle.spec_workflowManagerSpec and
+                leaderVehicle.spec_workflowManagerSpec.wmExecution
             self.spec_workflowManagerSpec.wmExecution = {
-                workflow             = workflow,
-                vehicle              = self,
-                status               = WorkflowManager.STATUS_PAUSED,
-                currentStep          = currentStep,
-                startTime            = g_currentMission.time,
-                waitingForCompletion = false,
-                isMainVehicle        = isMainVehicle,
-                currentSupportStep   = currentSupportStep,
-                leaderVehicle        = leaderVehicle,
-                autoResumeUntil      = g_currentMission.time + 10000
+                workflow              = workflow,
+                vehicle               = self,
+                status                = WorkflowManager.STATUS_PAUSED,
+                currentStep           = currentStep,
+                startTime             = g_currentMission.time,
+                waitingForCompletion  = false,
+                isMainVehicle         = isMainVehicle,
+                currentSupportStep    = currentSupportStep,
+                leaderVehicle         = leaderVehicle,
+                linkedLeaderExecution = linkedLeaderExecution,
+                autoResumeUntil       = g_currentMission.time + 10000
             }
             WMExecutor.activeVehicles[self] = true
             WMHud:show(self)

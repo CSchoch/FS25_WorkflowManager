@@ -1241,6 +1241,27 @@ describe("WMExecutor (real)", function()
             assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
             assert.is_nil(activeData(follower).leaderVehicle)
         end)
+
+        it("frees follower when leader restarts the same workflow (step check alone would miss this)", function()
+            local wf      = makeWorkflow("wf_ldr_restart")
+            local leader  = makeVehicle("Leader")
+            local follower = makeVehicle("Follower")
+            WMExecutor:startWorkflow(wf, leader)
+            WMExecutor:startWorkflow(wf, follower, true, leader)
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, activeData(follower).status)
+
+            -- Leader stops and immediately restarts — new wmExecution table, same workflow id, step=1
+            WMExecutor:stopWorkflow(leader)
+            WMExecutor:startWorkflow(wf, leader)
+
+            WMExecutor.updateTimer = 0
+            WMExecutor:update(500)
+
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
+            assert.is_nil(activeData(follower).leaderVehicle)
+            assert.is_nil(activeData(follower).linkedLeaderExecution)
+        end)
+
     end)
 
 end)
