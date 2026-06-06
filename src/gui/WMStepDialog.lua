@@ -39,8 +39,8 @@ function WMStepDialog.new(target)
     self.fillTypeItems = {}
     self.filteredFillTypeItems = {}
 
-    -- Flag to prevent selection callbacks during filtering
-    self.isFiltering = false
+    -- Flag to suppress list-callback recursion (set before any reloadData inside a callback)
+    self.suppressListCallbacks = false
 
     return self
 end
@@ -411,7 +411,7 @@ end
 ---Refresh target list display
 function WMStepDialog:refreshTargetDisplay()
     -- Set flag to ignore selection callbacks during refresh
-    self.isFiltering = true
+    self.suppressListCallbacks = true
 
     -- Refresh target list
     if self.targetList then
@@ -458,7 +458,7 @@ function WMStepDialog:refreshTargetDisplay()
     end
 
     -- Clear filtering flag
-    self.isFiltering = false
+    self.suppressListCallbacks = false
 end
 
 ---Set input field values from current step data (called on open for edit mode)
@@ -545,11 +545,11 @@ function WMStepDialog:filterTargets(searchText)
     end
 
     -- Reload list
-    self.isFiltering = true
+    self.suppressListCallbacks = true
     if self.targetList then
         self.targetList:reloadData()
     end
-    self.isFiltering = false
+    self.suppressListCallbacks = false
 
     -- Auto-select when exactly one result matches
     if #self.filteredTargetItems == 1 then
@@ -576,11 +576,11 @@ function WMStepDialog:filterUnloadTargets(searchText)
     end
 
     -- Reload list
-    self.isFiltering = true
+    self.suppressListCallbacks = true
     if self.unloadTargetList then
         self.unloadTargetList:reloadData()
     end
-    self.isFiltering = false
+    self.suppressListCallbacks = false
 
     -- Auto-select when exactly one result matches
     if #self.filteredUnloadTargetItems == 1 then
@@ -606,11 +606,11 @@ function WMStepDialog:filterFillTypes(searchText)
         end
     end
 
-    self.isFiltering = true
+    self.suppressListCallbacks = true
     if self.fillTypeList then
         self.fillTypeList:reloadData()
     end
-    self.isFiltering = false
+    self.suppressListCallbacks = false
 end
 
 ---Update the "Selected: ..." label for a given field
@@ -791,9 +791,9 @@ function WMStepDialog:onFillTypeListSelectionChanged(list, section, index)
         else
             self.selectedFillTypes = {item.name}
         end
-        self.isFiltering = true
+        self.suppressListCallbacks = true
         self.fillTypeList:reloadData()
-        self.isFiltering = false
+        self.suppressListCallbacks = false
         self:updateFillTypeLabel()
     end
 end

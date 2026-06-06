@@ -167,6 +167,13 @@ end
 function WorkflowManagerSpec:onWriteStream(streamId, connection)
     local activeData = self.spec_workflowManagerSpec and self.spec_workflowManagerSpec.wmExecution
     if activeData ~= nil then
+        local leaderWorkflowId = nil
+        if activeData.leaderVehicle then
+            local leaderExec = activeData.leaderVehicle.spec_workflowManagerSpec
+                               and activeData.leaderVehicle.spec_workflowManagerSpec.wmExecution
+            leaderWorkflowId = leaderExec and leaderExec.workflow and leaderExec.workflow.id
+        end
+
         streamWriteBool(streamId, true)
         streamWriteString(streamId, activeData.workflow.id)
         streamWriteInt32(streamId, activeData.currentStep)
@@ -174,9 +181,11 @@ function WorkflowManagerSpec:onWriteStream(streamId, connection)
         streamWriteBool(streamId, activeData.isMainVehicle ~= false)
         streamWriteInt32(streamId, activeData.currentSupportStep or 0)
         streamWriteBool(streamId, activeData.waitingForMainStep == true)
-        WMLogger:debug("onWriteStream: sent wmExecution wf=%s step=%d status=%s isMain=%s",
+        streamWriteBool(streamId, leaderWorkflowId ~= nil)
+        if leaderWorkflowId then streamWriteString(streamId, leaderWorkflowId) end
+        WMLogger:debug("onWriteStream: sent wmExecution wf=%s step=%d status=%s isMain=%s leader=%s",
             activeData.workflow.id, activeData.currentStep, activeData.status,
-            tostring(activeData.isMainVehicle ~= false))
+            tostring(activeData.isMainVehicle ~= false), tostring(leaderWorkflowId))
     else
         streamWriteBool(streamId, false)
     end
@@ -197,6 +206,8 @@ function WorkflowManagerSpec:onReadStream(streamId, connection)
     local currentSupportStep = streamReadInt32(streamId)
     if currentSupportStep == 0 then currentSupportStep = nil end
     local waitingForMainStep = streamReadBool(streamId) or nil
+    local hasLeader          = streamReadBool(streamId)
+    local leaderWorkflowId   = hasLeader and streamReadString(streamId) or nil
 
     -- Resolve workflow definition (loadMap has run by the time vehicles are streamed)
     local workflow = WorkflowManager:getWorkflowById(workflowId)
@@ -205,15 +216,33 @@ function WorkflowManagerSpec:onReadStream(streamId, connection)
         return
     end
 
+    -- Attempt to resolve leader vehicle by workflow ID (vehicles may arrive in any order)
+    local leaderVehicle = nil
+    local pendingLeaderWorkflowId = nil
+    if leaderWorkflowId then
+        for v, _ in pairs(WMExecutor.activeVehicles) do
+            local exec = v.spec_workflowManagerSpec and v.spec_workflowManagerSpec.wmExecution
+            if exec and exec.workflow and exec.workflow.id == leaderWorkflowId then
+                leaderVehicle = v
+                break
+            end
+        end
+        if not leaderVehicle then
+            pendingLeaderWorkflowId = leaderWorkflowId
+        end
+    end
+
     self.spec_workflowManagerSpec.wmExecution = {
-        workflow             = workflow,
-        vehicle              = self,
-        status               = status,
-        currentStep          = currentStep,
-        waitingForCompletion = false,
-        isMainVehicle        = isMainVehicle,
-        currentSupportStep   = currentSupportStep,
-        waitingForMainStep   = waitingForMainStep,
+        workflow                = workflow,
+        vehicle                 = self,
+        status                  = status,
+        currentStep             = currentStep,
+        waitingForCompletion    = false,
+        isMainVehicle           = isMainVehicle,
+        currentSupportStep      = currentSupportStep,
+        waitingForMainStep      = waitingForMainStep,
+        leaderVehicle           = leaderVehicle,
+        pendingLeaderWorkflowId = pendingLeaderWorkflowId,
     }
     WMExecutor.activeVehicles[self] = true
 

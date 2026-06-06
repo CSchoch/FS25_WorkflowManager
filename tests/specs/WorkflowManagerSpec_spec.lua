@@ -519,8 +519,8 @@ describe("WorkflowManagerSpec", function()
 
             WorkflowManagerSpec.onWriteStream(v, 1, nil)
 
-            -- Expected sequence: true, wfId, step, status, isMain, supportStep(0), waitingForMain
-            assert.are.equal(7, #streamBuf)
+            -- Expected sequence: true, wfId, step, status, isMain, supportStep(0), waitingForMain, hasLeader
+            assert.are.equal(8, #streamBuf)
             assert.is_true(  streamBuf[1].v)            -- isActive = true
             assert.are.equal("wf_ws_001", streamBuf[2].v)
             assert.are.equal(3,           streamBuf[3].v)
@@ -528,6 +528,7 @@ describe("WorkflowManagerSpec", function()
             assert.is_true(  streamBuf[5].v)            -- isMainVehicle
             assert.are.equal(0,           streamBuf[6].v)  -- currentSupportStep nil → 0
             assert.is_false( streamBuf[7].v)            -- waitingForMainStep
+            assert.is_false( streamBuf[8].v)            -- hasLeader = false
         end)
 
         it("onReadStream does nothing when isActive=false", function()
@@ -594,7 +595,7 @@ describe("WorkflowManagerSpec", function()
         it("onReadStream logs a warning and skips when workflowId is unknown", function()
             _G.WorkflowManager.workflows = {}  -- no workflows → getWorkflowById returns nil
 
-            -- Build a stream that claims a workflow exists
+            -- Build a stream that claims a workflow exists (with hasLeader=false appended)
             streamBuf = {
                 {t="b", v=true},
                 {t="s", v="wf_ghost"},
@@ -603,6 +604,7 @@ describe("WorkflowManagerSpec", function()
                 {t="b", v=true},
                 {t="i", v=0},
                 {t="b", v=false},
+                {t="b", v=false},  -- hasLeader
             }
 
             local reader = makeVehicle("Reader")
@@ -632,6 +634,7 @@ describe("WorkflowManagerSpec", function()
                 {t="b", v=true},
                 {t="i", v=0},
                 {t="b", v=false},
+                {t="b", v=false},  -- hasLeader
             }
             WorkflowManagerSpec.onReadStream(reader, 1, nil)
 
@@ -657,6 +660,68 @@ describe("WorkflowManagerSpec", function()
             local d = reader.spec_workflowManagerSpec.wmExecution
             assert.are.equal(false, d.isMainVehicle)
             assert.are.equal(2,     d.currentSupportStep)
+        end)
+
+        it("onWriteStream / onReadStream round-trips leader workflow ID", function()
+            local leaderWf   = { id = "wf_leader_stream", name = "Leader", steps = {} }
+            local followerWf = { id = "wf_follower_stream", name = "Follower", steps = {} }
+            _G.WorkflowManager.workflows = { followerWf }
+
+            -- Create a leader vehicle with an active execution
+            local leaderV = makeVehicle("Leader")
+            WorkflowManagerSpec.onLoad(leaderV, nil)
+            leaderV.spec_workflowManagerSpec.wmExecution = {
+                workflow = leaderWf, currentStep = 2, status = "running",
+                isMainVehicle = true, currentSupportStep = nil, waitingForMainStep = false,
+            }
+            _G.WMExecutor.activeVehicles[leaderV] = true
+
+            -- Write follower state (with leader reference) into stream
+            local writer = makeVehicle("FollowerWriter")
+            WorkflowManagerSpec.onLoad(writer, nil)
+            writer.spec_workflowManagerSpec.wmExecution = {
+                workflow = followerWf, currentStep = 1, status = "waiting_for_leader",
+                isMainVehicle = true, currentSupportStep = nil, waitingForMainStep = false,
+                leaderVehicle = leaderV,
+            }
+            WorkflowManagerSpec.onWriteStream(writer, 1, nil)
+
+            -- Read into a fresh vehicle; leader should be resolved from activeVehicles
+            local reader = makeVehicle("FollowerReader")
+            WorkflowManagerSpec.onLoad(reader, nil)
+            WorkflowManagerSpec.onReadStream(reader, 1, nil)
+
+            local d = reader.spec_workflowManagerSpec.wmExecution
+            assert.is_not_nil(d)
+            assert.are.equal(leaderV, d.leaderVehicle)
+            assert.is_nil(d.pendingLeaderWorkflowId)
+        end)
+
+        it("onReadStream sets pendingLeaderWorkflowId when leader vehicle not yet active", function()
+            local followerWf = { id = "wf_pending_stream", name = "Follower", steps = {} }
+            _G.WorkflowManager.workflows = { followerWf }
+
+            -- Stream contains a leader reference but that vehicle is not in activeVehicles yet
+            streamBuf = {
+                {t="b", v=true},              -- isActive
+                {t="s", v="wf_pending_stream"},
+                {t="i", v=1},                 -- currentStep
+                {t="s", v="waiting_for_leader"},
+                {t="b", v=true},              -- isMainVehicle
+                {t="i", v=0},                 -- currentSupportStep
+                {t="b", v=false},             -- waitingForMainStep
+                {t="b", v=true},              -- hasLeader
+                {t="s", v="wf_not_loaded_yet"},  -- leaderWorkflowId (not in activeVehicles)
+            }
+
+            local reader = makeVehicle("Reader")
+            WorkflowManagerSpec.onLoad(reader, nil)
+            WorkflowManagerSpec.onReadStream(reader, 1, nil)
+
+            local d = reader.spec_workflowManagerSpec.wmExecution
+            assert.is_not_nil(d)
+            assert.is_nil(d.leaderVehicle)
+            assert.are.equal("wf_not_loaded_yet", d.pendingLeaderWorkflowId)
         end)
     end)
 

@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-06-06T06:45:58.990Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-06-06T07:16:14.713Z
 > Files: 41 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
@@ -44,16 +44,16 @@
 
 ## src/
 
-- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~20231 tok)
-- `WorkflowManager.lua` — init, loadDialogs, Callback, showTextInputDialog, Called (~13633 tok)
-- `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~5204 tok)
+- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~20336 tok)
+- `WorkflowManager.lua` — init, loadDialogs, Callback, showTextInputDialog, Called (~13674 tok)
+- `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~5593 tok)
 - `WorkflowStorage.lua` — deepCopySupportStep, parseFillTypes, init, getXmlPath, saveWorkflows (~3782 tok)
 
 ## src/gui/
 
 - `WMHud.lua` — ensureOverlays, createIconOverlays, updateOverlayPositions, init, show (~7447 tok)
 - `WMLeaderVehicleSelectDialog.lua` — new, onCreate, buildVehicleList, onOpen, onClose (~1149 tok)
-- `WMStepDialog.lua` — new, onCreate, onOpen, onClose, keyEvent (~7698 tok)
+- `WMStepDialog.lua` — new, onCreate, onOpen, onClose, keyEvent (~7736 tok)
 
 ## src/integration/
 
@@ -84,7 +84,7 @@
 - `WMLeaderVehicleSelectDialog_spec.lua` — makeVehicle, makeList, makeButton (~3135 tok)
 - `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport (~17718 tok)
 - `WorkflowManager_spec.lua` — Declares constants (~9079 tok)
-- `WorkflowManagerSpec_spec.lua` — makeVehicle, makeSavegameXML (~8112 tok)
+- `WorkflowManagerSpec_spec.lua` — makeVehicle, makeSavegameXML (~9030 tok)
 - `WorkflowStorage_spec.lua` — hasKey (~9633 tok)
 
 ## textures/
@@ -127,7 +127,7 @@
 
 ## website/docs/
 
-- `faq.md` — Frequently Asked Questions (~1357 tok)
+- `faq.md` — Frequently Asked Questions (~1508 tok)
 
 ## website/docs/api/
 
@@ -139,8 +139,8 @@
 ## website/docs/workflows/
 
 - `linked-workflows.md` — Multi-Vehicle Workflows (~1640 tok)
-- `queue-system.md` — Queue System (~896 tok)
-- `step-types.md` — Step Types (~1214 tok)
+- `queue-system.md` — Queue System (~1651 tok)
+- `step-types.md` — Step Types (~1391 tok)
 
 ## website/src/components/HomepageFeatures/
 

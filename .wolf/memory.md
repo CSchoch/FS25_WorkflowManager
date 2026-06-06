@@ -3,6 +3,8 @@
 > Chronological action log. Hooks and AI append to this file automatically.
 > Old sessions are consolidated by the daemon weekly.
 | 14:36 | Free follower when leader switches to different workflow | WorkflowExecutor.lua, WorkflowExecutor_spec.lua | 340/340 tests pass | ~200 tok |
+| session | Added per-step sync control (isSyncTarget/isSyncSource): storage, executor, step dialog, XML, translations, 61 new tests → 357/357 pass | WorkflowStorage.lua, WorkflowExecutor.lua, WMStepDialog.lua, WMStepDialog.xml, translation_*.xml, specs | all tests pass | ~4000 tok |
+| session | Updated website docs for per-step sync control | website/docs/workflows/queue-system.md, step-types.md, faq.md | docs updated | ~500 tok |
 
 | 00:00 | Fixed multi-select fill type in WMStepDialog (selectedFillTypes array, toggle on click, checkmark display) | src/gui/WMStepDialog.lua | 332 tests pass | ~4k |
 | 00:00 | Fixed mouseEvent stack overflow — isFiltering guard around reloadData() in onFillTypeListSelectionChanged | src/gui/WMStepDialog.lua | crash resolved | ~1k |
@@ -1195,3 +1197,27 @@
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+
+## Session: 2026-06-06 08:55
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 08:57 | Edited website/docs/workflows/queue-system.md | modified steps() | ~813 |
+| 08:57 | Edited website/docs/workflows/step-types.md | expanded (+11 lines) | ~192 |
+| 08:57 | Edited website/docs/faq.md | 3→7 lines | ~228 |
+| 08:57 | Edited website/docs/faq.md | 3→3 lines | ~72 |
+| 08:57 | Session end: 4 writes across 3 files (queue-system.md, step-types.md, faq.md) | 3 reads | ~4105 tok |
+| 09:01 | Session end: 4 writes across 3 files (queue-system.md, step-types.md, faq.md) | 3 reads | ~4105 tok |
+| 09:14 | Edited src/gui/WMStepDialog.lua | 2→2 lines | ~36 |
+| 09:14 | Edited src/gui/WMStepDialog.lua | inline fix | ~8 |
+| 09:14 | Edited src/WorkflowManagerSpec.lua | expanded (+9 lines) | ~319 |
+| 09:14 | Edited src/WorkflowManagerSpec.lua | expanded (+20 lines) | ~536 |
+| 09:14 | Edited src/WorkflowManager.lua | server() → info() | ~111 |
+| 09:14 | Edited src/WorkflowExecutor.lua | 3→6 lines | ~127 |
+| 09:15 | Edited src/WorkflowExecutor.lua | 1→3 lines | ~74 |
+| 09:15 | Edited tests/specs/WorkflowManagerSpec_spec.lua | 11→12 lines | ~208 |
+| 09:15 | Edited tests/specs/WorkflowManagerSpec_spec.lua | 17→18 lines | ~190 |
+| 09:15 | Edited tests/specs/WorkflowManagerSpec_spec.lua | 12→13 lines | ~118 |
+| 09:16 | Edited tests/specs/WorkflowManagerSpec_spec.lua | expanded (+62 lines) | ~1107 |
+| 09:16 | Fixed 5 review issues: leader workflow ID in onWriteStream/onReadStream (+2 tests), clarified duplicate pendingLeader comments, MP client log, renamed isFiltering→suppressListCallbacks | WorkflowManagerSpec.lua, WorkflowExecutor.lua, WorkflowManager.lua, WMStepDialog.lua, WorkflowManagerSpec_spec.lua | 359/359 pass | ~2k tok |
+| 09:17 | Session end: 15 writes across 8 files (queue-system.md, step-types.md, faq.md, WMStepDialog.lua, WorkflowManagerSpec.lua) | 8 reads | ~62017 tok |

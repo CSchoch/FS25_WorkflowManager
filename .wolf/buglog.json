@@ -815,6 +815,54 @@
       "related_bugs": [],
       "occurrences": 2,
       "last_seen": "2026-06-06T06:45:59.014Z"
+    },
+    {
+      "id": "bug-051",
+      "timestamp": "2026-06-06T07:14:06.857Z",
+      "error_message": "Wrong reference: isFiltering should be suppressListCallbacks",
+      "file": "src/gui/WMStepDialog.lua",
+      "root_cause": "Used \"isFiltering\" instead of \"suppressListCallbacks\"",
+      "fix": "Changed isFiltering → suppressListCallbacks",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-06T07:14:06.857Z"
+    },
+    {
+      "id": "bug-052",
+      "timestamp": "2026-06-06T07:14:17.379Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowManagerSpec.lua",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 10→19 lines (2 removed) | Also: workflow             = workflow,; vehicle              = self,",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-06-06T07:14:30.902Z"
+    },
+    {
+      "id": "bug-053",
+      "timestamp": "2026-06-06T07:15:00.310Z",
+      "error_message": "Wrong reference: runs should be onReadStream",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "Used \"runs\" instead of \"onReadStream\"",
+      "fix": "Changed runs → onReadStream",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-06T07:15:00.310Z"
     }
   ]
 }

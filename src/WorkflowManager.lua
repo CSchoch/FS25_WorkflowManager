@@ -941,7 +941,10 @@ function WorkflowManager:sendCommand(vehicle, commandType, workflowId, isMain, l
         -- Singleplayer or multiplayer host – execute directly
         self:executeNetworkCommand(commandType, vehicle, workflowId, isMain, leaderVehicle)
     else
-        -- Pure multiplayer client – send to server (leaderVehicle not serialized; client path skips leader dialog)
+        -- Pure multiplayer client – leader dialog is server/host-only; client starts without a leader
+        if commandType == "start" then
+            WMLogger:info("sendCommand: client path — leader-follower sync requires being the multiplayer host")
+        end
         if g_client ~= nil then
             g_client:sendEvent(WMCommandEvent.new(commandType, vehicle, workflowId, isMain))
         else

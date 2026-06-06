@@ -392,7 +392,10 @@ function WMExecutor:executeCurrentStep(activeData)
     local vehicle = activeData.vehicle
 
     -- ===== Leader-follower synchronization (main vehicle only) =====
-    -- Resolve pending leader from workflow ID (deferred when leader hadn't loaded yet at onPostLoad)
+    -- Resolve pending leader from workflow ID.
+    -- Safety net for the manual-resume path: update() resolves this each tick, but if the player
+    -- resumes before the first update() tick (or goToNextStep/goToPreviousStep is called early),
+    -- pendingLeaderWorkflowId may still be set when we arrive here.
     if activeData.isMainVehicle ~= false and activeData.pendingLeaderWorkflowId ~= nil then
         for vehicle, _ in pairs(self.activeVehicles) do
             if vehicle ~= activeData.vehicle then
@@ -1056,7 +1059,9 @@ function WMExecutor:update(dt)
                 end
             end
 
-            -- Resolve pending leader workflow ID (retry each tick until leader's onPostLoad runs)
+            -- Resolve pending leader workflow ID (retry each tick until leader's onPostLoad/onReadStream runs).
+            -- This is the primary resolution path; executeCurrentStep has a matching safety-net copy
+            -- for the manual-resume-before-first-tick case.
             if activeData.pendingLeaderWorkflowId ~= nil and activeData.leaderVehicle == nil then
                 for candidate, _ in pairs(self.activeVehicles) do
                     if candidate ~= activeData.vehicle then
