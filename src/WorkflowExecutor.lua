@@ -214,7 +214,7 @@ end
 ---   isSyncSource sequence (nil for steps with isSyncSource==false).
 --- syncTargets         is an ordered list of leader step indices whose steps
 ---   have isSyncTarget~=false.  Follower source ordinal N waits until the
----   leader has moved PAST syncTargets[N].
+---   leader has reached (is on or past) syncTargets[N].
 ---Called at workflow start and whenever the linked leader execution is first snapped.
 ---@param activeData table Follower's active execution state
 function WMExecutor:buildSyncMaps(activeData)
@@ -436,8 +436,8 @@ function WMExecutor:executeCurrentStep(activeData)
                 local ordinal = activeData.syncSourceOrdinals
                                 and activeData.syncSourceOrdinals[activeData.currentStep]
                 local required = ordinal and activeData.syncTargets and activeData.syncTargets[ordinal]
-                if required and leaderExec.currentStep <= required then
-                    WMLogger:debug("Waiting for leader: need leader past step %d (at %d), follower step %d",
+                if required and leaderExec.currentStep < required then
+                    WMLogger:debug("Waiting for leader: need leader at step %d (at %d), follower step %d",
                         required, leaderExec.currentStep, activeData.currentStep)
                     activeData.status = WorkflowManager.STATUS_WAITING_FOR_LEADER
                     WorkflowManager:broadcastState(activeData.vehicle)
@@ -1108,7 +1108,7 @@ function WMExecutor:update(dt)
                     local ordinal = isSyncStep and activeData.syncSourceOrdinals
                                     and activeData.syncSourceOrdinals[activeData.currentStep]
                     local required = ordinal and activeData.syncTargets and activeData.syncTargets[ordinal]
-                    if required == nil or leaderExec.currentStep > required then
+                    if required == nil or leaderExec.currentStep >= required then
                         local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
                         WMLogger:info("Leader '%s' at step %d — sync condition met, follower starting step %d",
                             leaderName, leaderExec.currentStep, activeData.currentStep)

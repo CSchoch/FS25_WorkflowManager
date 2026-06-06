@@ -1189,14 +1189,14 @@ describe("WMExecutor (real)", function()
             assert.are.equal(leader, activeData(follower).leaderVehicle)
         end)
 
-        it("enters waiting_for_leader when leader is on the same step", function()
+        it("follower runs freely when leader is on the same step", function()
             local wf      = makeWorkflow("wf_ldr_wait")
             local leader  = makeVehicle("Leader")
             local follower = makeVehicle("Follower")
             WMExecutor:startWorkflow(wf, leader)
-            -- leader at step 1, follower also starts at step 1 → must wait
+            -- leader at step 1, follower also starts at step 1 → runs freely (leader reached required step)
             WMExecutor:startWorkflow(wf, follower, true, leader)
-            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, activeData(follower).status)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
         end)
 
         it("does not enter waiting_for_leader when no leader is set", function()
@@ -1207,20 +1207,22 @@ describe("WMExecutor (real)", function()
             assert.is_nil(activeData(v).leaderVehicle)
         end)
 
-        it("resumes follower when leader advances past its step", function()
+        it("resumes follower when leader reaches its sync step", function()
             local wf      = makeWorkflow("wf_ldr_advance")
             local leader  = makeVehicle("Leader")
             local follower = makeVehicle("Follower")
             WMExecutor:startWorkflow(wf, leader)
             WMExecutor:startWorkflow(wf, follower, true, leader)
+            -- Advance follower to step 2 while leader is still on step 1 → must wait
+            activeData(follower).currentStep = 2
+            activeData(follower).status = WorkflowManager.STATUS_RUNNING
+            WMExecutor:executeCurrentStep(activeData(follower))
             assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, activeData(follower).status)
 
-            -- Advance leader past follower's current step
+            -- Leader reaches step 2 (follower's required step) → follower resumes
             activeData(leader).currentStep = 2
-
             WMExecutor.updateTimer = 0
             WMExecutor:update(500)
-
             assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
         end)
 
@@ -1230,6 +1232,10 @@ describe("WMExecutor (real)", function()
             local follower = makeVehicle("Follower")
             WMExecutor:startWorkflow(wf, leader)
             WMExecutor:startWorkflow(wf, follower, true, leader)
+            -- Advance follower to step 2 while leader is on step 1 → follower waits
+            activeData(follower).currentStep = 2
+            activeData(follower).status = WorkflowManager.STATUS_RUNNING
+            WMExecutor:executeCurrentStep(activeData(follower))
             assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, activeData(follower).status)
 
             -- Leader stops (wmExecution cleared)
@@ -1248,6 +1254,10 @@ describe("WMExecutor (real)", function()
             local follower = makeVehicle("Follower")
             WMExecutor:startWorkflow(wf, leader)
             WMExecutor:startWorkflow(wf, follower, true, leader)
+            -- Advance follower to step 2 (leader still on step 1) → follower waits
+            activeData(follower).currentStep = 2
+            activeData(follower).status = WorkflowManager.STATUS_RUNNING
+            WMExecutor:executeCurrentStep(activeData(follower))
             assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, activeData(follower).status)
 
             -- Leader stops and immediately restarts — new wmExecution table, same workflow id, step=1
@@ -1356,22 +1366,28 @@ describe("WMExecutor (real)", function()
     -- =========================================================================
     describe("index-based sync conditions", function()
 
-        it("default flags: follower step 1 waits when leader is on step 1 (backwards compat)", function()
+        it("default flags: follower step 1 runs when leader is on step 1", function()
             local wf      = makeWorkflow("wf_ibs_bc")
             local leader  = makeVehicle("L")
             local follower = makeVehicle("F")
             WMExecutor:startWorkflow(wf, leader)
             WMExecutor:startWorkflow(wf, follower, true, leader)
-            -- Both on step 1 — follower must wait
-            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, activeData(follower).status)
+            -- Both on step 1 — follower runs freely (leader has reached required step)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
         end)
 
-        it("default flags: follower step 1 resumes when leader advances to step 2", function()
+        it("default flags: follower step 2 waits when leader is on step 1, resumes when leader reaches step 2", function()
             local wf      = makeWorkflow("wf_ibs_resume")
             local leader  = makeVehicle("L")
             local follower = makeVehicle("F")
             WMExecutor:startWorkflow(wf, leader)
             WMExecutor:startWorkflow(wf, follower, true, leader)
+            -- Advance follower to step 2 while leader is on step 1 → waits
+            activeData(follower).currentStep = 2
+            activeData(follower).status = WorkflowManager.STATUS_RUNNING
+            WMExecutor:executeCurrentStep(activeData(follower))
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, activeData(follower).status)
+            -- Leader reaches step 2 → follower resumes
             activeData(leader).currentStep = 2
             WMExecutor.updateTimer = 0
             WMExecutor:update(500)
@@ -1416,13 +1432,11 @@ describe("WMExecutor (real)", function()
             -- Leader is on step 2, which is <= 3, so follower must wait
             assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, activeData(follower).status)
 
-            -- Now advance leader to step 3 (> required=3 is false; need > 3, i.e. step 4)
-            -- But the wf only has 3 steps. So set currentStep=3 and check still waits
+            -- Leader reaches step 3 (= required) → follower resumes
             activeData(leader).currentStep = 3
             WMExecutor.updateTimer = 0
             WMExecutor:update(500)
-            -- leader.currentStep (3) > required (3)? No, 3 > 3 is false → still waiting
-            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, activeData(follower).status)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
         end)
 
         it("more sources than targets: extra source step runs freely (no 3rd target)", function()
@@ -1438,8 +1452,8 @@ describe("WMExecutor (real)", function()
             local follower = makeVehicle("F")
             WMExecutor:startWorkflow(wf, leader)
             WMExecutor:startWorkflow(wf, follower, true, leader)
-            -- Step 1 waits (1st source, syncTargets[1]=1, leader step=1 which is not > 1)
-            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, activeData(follower).status)
+            -- Step 1 runs freely (1st source, syncTargets[1]=1, leader step=1 which is >= 1)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
 
             -- Advance to step 3: syncSourceOrdinals[3]=2, syncTargets[2]=nil → run freely
             activeData(leader).currentStep = 2

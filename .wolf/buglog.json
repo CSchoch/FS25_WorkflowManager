@@ -879,6 +879,38 @@
       "related_bugs": [],
       "occurrences": 3,
       "last_seen": "2026-06-06T18:09:14.769Z"
+    },
+    {
+      "id": "bug-055",
+      "timestamp": "2026-06-06T19:57:28.125Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "Had \"Waiting for leader: need leader past step %d (at ",
+      "fix": "Changed to \"Waiting for leader: need leader at step %d (at %d",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-06T19:57:28.125Z"
+    },
+    {
+      "id": "bug-056",
+      "timestamp": "2026-06-06T20:02:03.540Z",
+      "error_message": "Significant refactor of ",
+      "file": "tests/specs/WorkflowExecutor_spec.lua",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 16→18 lines (2 removed) | Also: it(\"default flags: follower step 1 waits when lead; -- Both on step 1 — follower must wait | Also: -- Now advance leader to step 3 (> required=3 is f; -- But the wf only has 3 steps. So set currentStep",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-06-06T20:02:39.217Z"
     }
   ]
 }
