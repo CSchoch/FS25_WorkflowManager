@@ -41,6 +41,11 @@
       "count": 5,
       "tokens": 8112,
       "first_read": "2026-06-06T07:15:03.703Z"
+    },
+    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMStepDialog.lua": {
+      "count": 1,
+      "tokens": 7736,
+      "first_read": "2026-06-06T18:06:50.213Z"
     }
   },
   "files_written": [
@@ -133,21 +138,39 @@
       "action": "edit",
       "tokens": 1186,
       "at": "2026-06-06T07:16:14.746Z"
+    },
+    {
+      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMStepDialog.lua",
+      "action": "edit",
+      "tokens": 35,
+      "at": "2026-06-06T18:09:05.073Z"
+    },
+    {
+      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMStepDialog.lua",
+      "action": "edit",
+      "tokens": 7,
+      "at": "2026-06-06T18:09:08.993Z"
+    },
+    {
+      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMStepDialog.lua",
+      "action": "edit",
+      "tokens": 7,
+      "at": "2026-06-06T18:09:14.764Z"
     }
   ],
   "edit_counts": {
     "website/docs/workflows/queue-system.md": 1,
     "website/docs/workflows/step-types.md": 1,
     "website/docs/faq.md": 2,
-    "src/gui/WMStepDialog.lua": 2,
+    "src/gui/WMStepDialog.lua": 5,
     "src/WorkflowManagerSpec.lua": 2,
     "src/WorkflowManager.lua": 1,
     "src/WorkflowExecutor.lua": 2,
     "tests/specs/WorkflowManagerSpec_spec.lua": 4
   },
-  "anatomy_hits": 7,
+  "anatomy_hits": 8,
   "anatomy_misses": 1,
   "repeated_reads_warned": 7,
   "cerebrum_warnings": 0,
-  "stop_count": 3
+  "stop_count": 5
 }

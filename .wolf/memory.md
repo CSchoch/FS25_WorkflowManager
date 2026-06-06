@@ -3,6 +3,7 @@
 > Chronological action log. Hooks and AI append to this file automatically.
 > Old sessions are consolidated by the daemon weekly.
 | 14:36 | Free follower when leader switches to different workflow | WorkflowExecutor.lua, WorkflowExecutor_spec.lua | 340/340 tests pass | ~200 tok |
+| 20:11 | Fix stack overflow in WMStepDialog: suppressListCallbacks → isFiltering (guard/flag mismatch) | WMStepDialog.lua | 359/359 tests pass | ~150 tok |
 | session | Added per-step sync control (isSyncTarget/isSyncSource): storage, executor, step dialog, XML, translations, 61 new tests → 357/357 pass | WorkflowStorage.lua, WorkflowExecutor.lua, WMStepDialog.lua, WMStepDialog.xml, translation_*.xml, specs | all tests pass | ~4000 tok |
 | session | Updated website docs for per-step sync control | website/docs/workflows/queue-system.md, step-types.md, faq.md | docs updated | ~500 tok |
 
@@ -1221,3 +1222,8 @@
 | 09:16 | Edited tests/specs/WorkflowManagerSpec_spec.lua | expanded (+62 lines) | ~1107 |
 | 09:16 | Fixed 5 review issues: leader workflow ID in onWriteStream/onReadStream (+2 tests), clarified duplicate pendingLeader comments, MP client log, renamed isFiltering→suppressListCallbacks | WorkflowManagerSpec.lua, WorkflowExecutor.lua, WorkflowManager.lua, WMStepDialog.lua, WorkflowManagerSpec_spec.lua | 359/359 pass | ~2k tok |
 | 09:17 | Session end: 15 writes across 8 files (queue-system.md, step-types.md, faq.md, WMStepDialog.lua, WorkflowManagerSpec.lua) | 8 reads | ~62017 tok |
+| 20:09 | Edited src/gui/WMStepDialog.lua | 2→2 lines | ~33 |
+| 20:09 | Edited src/gui/WMStepDialog.lua | inline fix | ~7 |
+| 20:09 | Edited src/gui/WMStepDialog.lua | inline fix | ~7 |
+| 20:12 | Session end: 18 writes across 8 files (queue-system.md, step-types.md, faq.md, WMStepDialog.lua, WorkflowManagerSpec.lua) | 9 reads | ~69802 tok |
+| 21:08 | Session end: 18 writes across 8 files (queue-system.md, step-types.md, faq.md, WMStepDialog.lua, WorkflowManagerSpec.lua) | 9 reads | ~69802 tok |
