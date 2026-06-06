@@ -153,6 +153,77 @@ describe("WMStorage", function()
             assert.is_nil(step.syncGroup)
         end)
 
+        it("isSyncTarget=false round-trips correctly", function()
+            local wf = {
+                id = "wf_sync_001", name = "Sync Workflow",
+                steps = {
+                    { type = "autodrive", target = "A", action = "drive", isSyncTarget = false, support = {} },
+                }
+            }
+            WMStorage:saveWorkflows({ wf })
+            _G.fileExists = function() return true end
+            local loaded = WMStorage:loadWorkflows()
+            assert.is_false(loaded[1].steps[1].isSyncTarget)
+        end)
+
+        it("isSyncSource=false round-trips correctly", function()
+            local wf = {
+                id = "wf_sync_002", name = "Sync Workflow 2",
+                steps = {
+                    { type = "autodrive", target = "A", action = "drive", isSyncSource = false, support = {} },
+                }
+            }
+            WMStorage:saveWorkflows({ wf })
+            _G.fileExists = function() return true end
+            local loaded = WMStorage:loadWorkflows()
+            assert.is_false(loaded[1].steps[1].isSyncSource)
+        end)
+
+        it("step with no sync attributes loads with isSyncTarget and isSyncSource both true", function()
+            local wf = {
+                id = "wf_sync_003", name = "Sync Default",
+                steps = {
+                    { type = "autodrive", target = "A", action = "drive", support = {} },
+                }
+            }
+            WMStorage:saveWorkflows({ wf })
+            _G.fileExists = function() return true end
+            local loaded = WMStorage:loadWorkflows()
+            local step = loaded[1].steps[1]
+            assert.is_true(step.isSyncTarget)
+            assert.is_true(step.isSyncSource)
+        end)
+
+        it("step with both flags true produces no sync attributes in XML (clean default)", function()
+            local wf = {
+                id = "wf_sync_004", name = "Sync Clean",
+                steps = {
+                    { type = "autodrive", target = "A", action = "drive", isSyncTarget = true, isSyncSource = true, support = {} },
+                }
+            }
+            WMStorage:saveWorkflows({ wf })
+            -- Reload: if isSyncTarget/isSyncSource are absent from XML they default to true on load.
+            -- The key indicator is that no extra attributes exist — confirm via round-trip.
+            _G.fileExists = function() return true end
+            local loaded = WMStorage:loadWorkflows()
+            -- Values default to true when absent → loaded step should still read as true
+            assert.is_true(loaded[1].steps[1].isSyncTarget)
+            assert.is_true(loaded[1].steps[1].isSyncSource)
+            -- Confirm the raw store does NOT contain explicit false values (only false is ever written)
+            local store = XMLFile._getStorage()
+            -- Find any key containing "isSyncTarget" in the data — there should be none
+            local function hasKey(t, needle)
+                if type(t) ~= "table" then return false end
+                for k, v in pairs(t) do
+                    if type(k) == "string" and k:find(needle, 1, true) then return true end
+                    if hasKey(v, needle) then return true end
+                end
+                return false
+            end
+            assert.is_false(hasKey(store, "isSyncTarget"))
+            assert.is_false(hasKey(store, "isSyncSource"))
+        end)
+
         it("persists support sub-steps nested inside a main step", function()
             local wf = {
                 id = "wf_support_001", name = "Support Workflow",

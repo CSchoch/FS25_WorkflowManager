@@ -1,12 +1,13 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-06-02T23:52:33.059Z
-> Files: 40 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-06-06T06:45:58.990Z
+> Files: 41 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
 - `foamy-crafting-oasis.md` — Plan: Leader Vehicle — Save Persistence, MP Sync, Dialog Order (~1099 tok)
 - `implement-milestone-11-tender-blum.md` — Milestone 11 — Multiple Fill Types & Synchronized Follower (~2937 tok)
+- `what-was-te-idea-hidden-karp.md` — Plan: Per-Step Sync Checkboxes (Index-Based) (~2154 tok)
 
 ## ../FS25_WorkflowManager-docs/.github/workflows/
 
@@ -43,16 +44,16 @@
 
 ## src/
 
-- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~19434 tok)
+- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~20231 tok)
 - `WorkflowManager.lua` — init, loadDialogs, Callback, showTextInputDialog, Called (~13633 tok)
 - `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~5204 tok)
-- `WorkflowStorage.lua` — deepCopySupportStep, parseFillTypes, init, getXmlPath, saveWorkflows (~3624 tok)
+- `WorkflowStorage.lua` — deepCopySupportStep, parseFillTypes, init, getXmlPath, saveWorkflows (~3782 tok)
 
 ## src/gui/
 
 - `WMHud.lua` — ensureOverlays, createIconOverlays, updateOverlayPositions, init, show (~7447 tok)
 - `WMLeaderVehicleSelectDialog.lua` — new, onCreate, buildVehicleList, onOpen, onClose (~1149 tok)
-- `WMStepDialog.lua` — new, onCreate, onOpen, onClose, keyEvent (~7204 tok)
+- `WMStepDialog.lua` — new, onCreate, onOpen, onClose, keyEvent (~7698 tok)
 
 ## src/integration/
 
@@ -81,10 +82,10 @@
 ## tests/specs/
 
 - `WMLeaderVehicleSelectDialog_spec.lua` — makeVehicle, makeList, makeButton (~3135 tok)
-- `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport (~14384 tok)
+- `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport (~17718 tok)
 - `WorkflowManager_spec.lua` — Declares constants (~9079 tok)
 - `WorkflowManagerSpec_spec.lua` — makeVehicle, makeSavegameXML (~8112 tok)
-- `WorkflowStorage_spec.lua` (~8706 tok)
+- `WorkflowStorage_spec.lua` — hasKey (~9633 tok)
 
 ## textures/
 
@@ -94,8 +95,8 @@
 
 ## translations/
 
-- `translation_de.xml` (~2908 tok)
-- `translation_en.xml` (~2470 tok)
+- `translation_de.xml` (~2941 tok)
+- `translation_en.xml` (~2503 tok)
 
 ## website/
 
@@ -161,4 +162,4 @@
 - `WMLeaderVehicleSelectDialog.xml` — SmoothList of active vehicles (name + workflow); Select / No Leader / Cancel buttons (~80 tok)
 - `WMMainDialog.xml` (~999 tok)
 - `WMModeSelectDialog.xml` (~429 tok)
-- `WMStepDialog.xml` — dropdown: Section (~2457 tok)
+- `WMStepDialog.xml` — dropdown: Section (~2639 tok)

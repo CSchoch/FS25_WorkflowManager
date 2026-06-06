@@ -70,6 +70,8 @@
         <text name="wm_editor_return_target" text="Return To"/>
         <text name="wm_editor_fill_type" text="Fill Type"/>
         <text name="wm_editor_no_steps" text="No steps defined. Click + to add a step."/>
+        <text name="wm_step_sync_target" text="Sync Target"/>
+        <text name="wm_step_sync_source" text="Sync Source"/>
 
 
 

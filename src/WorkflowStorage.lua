@@ -100,6 +100,14 @@ function WMStorage:saveWorkflows(workflows)
                 xmlFile:setString(stepKey .. "#fillTypes", table.concat(step.fillTypes, ","))
             end
 
+            -- Sync flags (only write when false; default true is implicit)
+            if step.isSyncTarget == false then
+                xmlFile:setBool(stepKey .. "#isSyncTarget", false)
+            end
+            if step.isSyncSource == false then
+                xmlFile:setBool(stepKey .. "#isSyncSource", false)
+            end
+
             -- Nested support sub-steps
             local supportSteps = step.support or {}
             for k, supportStep in ipairs(supportSteps) do
@@ -291,6 +299,9 @@ function WMStorage:loadWorkflows()
                                or parseFillTypes(xmlFile:getString(stepKey .. "#fillType")),
                 -- Legacy syncGroup read for migration only
                 syncGroup    = xmlFile:getInt(stepKey .. "#syncGroup"),
+                -- Leader-sync flags (default true = all steps sync by default)
+                isSyncTarget = xmlFile:getBool(stepKey .. "#isSyncTarget", true),
+                isSyncSource = xmlFile:getBool(stepKey .. "#isSyncSource", true),
                 support      = {},
             }
 

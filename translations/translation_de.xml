@@ -70,6 +70,8 @@
         <text name="wm_editor_return_target" text="Zurueck zu"/>
         <text name="wm_editor_fill_type" text="Fuelltyp"/>
         <text name="wm_editor_no_steps" text="Keine Schritte definiert. Klicken Sie +, um einen Schritt hinzuzufuegen."/>
+        <text name="wm_step_sync_target" text="Sync Ziel"/>
+        <text name="wm_step_sync_source" text="Sync Quelle"/>
 
         <!-- Tooltips -->
         <text name="wm_tooltip_moveup" text="Schritt nach oben"/>

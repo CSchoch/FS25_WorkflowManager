@@ -2,7 +2,7 @@
 <GUI inputContext="MENU" onOpen="onOpen" onClose="onClose" onCreate="onCreate">
     <GuiElement profile="newLayer"/>
     <Bitmap profile="dialogFullscreenBg"/>
-    <GuiElement profile="fs25_dialogBg" size="900px 900px">
+    <GuiElement profile="fs25_dialogBg" size="900px 990px">
         <ThreePartBitmap profile="fs25_dialogBgMiddleSmall"/>
         <ThreePartBitmap profile="fs25_dialogBgTopSmall"/>
         <ThreePartBitmap profile="fs25_dialogBgBottom"/>
@@ -138,6 +138,18 @@
                         <Slider profile="fs25_listSlider" dataElementId="fillTypeList"/>
                     </ThreePartBitmap>
                 </BoxLayout>
+            </BoxLayout>
+
+            <!-- Sync Target -->
+            <BoxLayout profile="wm_hBox" size="860px 45px">
+                <Text profile="wm_dialogText" text="$l10n_wm_step_sync_target" size="150px 40px"/>
+                <MultiTextOption profile="fs25_settingsMultiTextOption" id="syncTargetDropdown" size="500px 40px"/>
+            </BoxLayout>
+
+            <!-- Sync Source -->
+            <BoxLayout profile="wm_hBox" size="860px 45px">
+                <Text profile="wm_dialogText" text="$l10n_wm_step_sync_source" size="150px 40px"/>
+                <MultiTextOption profile="fs25_settingsMultiTextOption" id="syncSourceDropdown" size="500px 40px"/>
             </BoxLayout>
 
         </BoxLayout>

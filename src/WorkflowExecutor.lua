@@ -152,6 +152,8 @@ function WMExecutor:startWorkflow(workflow, vehicle, isMain, leaderVehicle)
         local leaderName = leaderVehicle.getName and leaderVehicle:getName() or "?"
         WMLogger:debug("Leader sync: following '%s' (execLinked=%s)",
             leaderName, tostring(activeData.linkedLeaderExecution ~= nil))
+        -- Build ordinal-based sync maps for index-based step synchronization
+        self:buildSyncMaps(activeData)
     end
 
     -- Apply per-workflow AD settings to the vehicle before the first step runs
@@ -205,6 +207,40 @@ function WMExecutor:stopWorkflow(vehicle)
     })
 
     return true
+end
+
+---Build the leader-sync lookup tables on a follower's activeData.
+--- syncSourceOrdinals  maps each follower step index to its position in the
+---   isSyncSource sequence (nil for steps with isSyncSource==false).
+--- syncTargets         is an ordered list of leader step indices whose steps
+---   have isSyncTarget~=false.  Follower source ordinal N waits until the
+---   leader has moved PAST syncTargets[N].
+---Called at workflow start and whenever the linked leader execution is first snapped.
+---@param activeData table Follower's active execution state
+function WMExecutor:buildSyncMaps(activeData)
+    -- Source ordinals: scan follower's own workflow (always available)
+    local syncSourceOrdinals = {}
+    local ordinal = 0
+    for i, s in ipairs(activeData.workflow.steps) do
+        if s.isSyncSource ~= false then
+            ordinal = ordinal + 1
+            syncSourceOrdinals[i] = ordinal
+        end
+    end
+    activeData.syncSourceOrdinals = syncSourceOrdinals
+
+    -- Target list: scan leader's workflow (may be nil if not yet linked)
+    local syncTargets = {}
+    local leaderWorkflow = activeData.linkedLeaderExecution
+                           and activeData.linkedLeaderExecution.workflow
+    if leaderWorkflow then
+        for i, s in ipairs(leaderWorkflow.steps) do
+            if s.isSyncTarget ~= false then
+                table.insert(syncTargets, i)
+            end
+        end
+    end
+    activeData.syncTargets = syncTargets
 end
 
 ---Pause a running workflow on a vehicle
@@ -380,6 +416,8 @@ function WMExecutor:executeCurrentStep(activeData)
             activeData.linkedLeaderExecution = leaderExec
             local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
             WMLogger:debug("Leader sync: snapped execution reference for '%s'", leaderName)
+            -- Rebuild sync maps now that we have the leader's workflow
+            self:buildSyncMaps(activeData)
         end
         if leaderExec == nil or (activeData.linkedLeaderExecution ~= nil and leaderExec ~= activeData.linkedLeaderExecution) then
             -- Leader finished, stopped, or restarted — free the follower
@@ -388,13 +426,21 @@ function WMExecutor:executeCurrentStep(activeData)
                 leaderName, leaderExec == nil and "finished/stopped" or "restarted with new execution")
             activeData.leaderVehicle = nil
             activeData.linkedLeaderExecution = nil
-        elseif leaderExec.currentStep <= activeData.currentStep then
-            -- Leader hasn't moved past our current step yet — wait
-            WMLogger:debug("Waiting for leader: leader step %d, follower step %d",
-                leaderExec.currentStep, activeData.currentStep)
-            activeData.status = WorkflowManager.STATUS_WAITING_FOR_LEADER
-            WorkflowManager:broadcastState(activeData.vehicle)
-            return
+        else
+            -- Index-based sync: check if this follower step should wait for a leader sync target
+            local curStep = activeData.workflow.steps[activeData.currentStep]
+            if curStep == nil or curStep.isSyncSource ~= false then
+                local ordinal = activeData.syncSourceOrdinals
+                                and activeData.syncSourceOrdinals[activeData.currentStep]
+                local required = ordinal and activeData.syncTargets and activeData.syncTargets[ordinal]
+                if required and leaderExec.currentStep <= required then
+                    WMLogger:debug("Waiting for leader: need leader past step %d (at %d), follower step %d",
+                        required, leaderExec.currentStep, activeData.currentStep)
+                    activeData.status = WorkflowManager.STATUS_WAITING_FOR_LEADER
+                    WorkflowManager:broadcastState(activeData.vehicle)
+                    return
+                end
+            end
         end
     end
 
@@ -1036,6 +1082,8 @@ function WMExecutor:update(dt)
                     activeData.linkedLeaderExecution = leaderExec
                     local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
                     WMLogger:debug("Leader sync: snapped execution reference for '%s' (poll)", leaderName)
+                    -- Rebuild sync maps now that we have the leader's workflow
+                    self:buildSyncMaps(activeData)
                 end
                 if leaderExec == nil or (activeData.linkedLeaderExecution ~= nil and leaderExec ~= activeData.linkedLeaderExecution) then
                     -- Leader finished, stopped, or restarted a new execution — free the follower
@@ -1048,14 +1096,21 @@ function WMExecutor:update(dt)
                     activeData.status = WorkflowManager.STATUS_RUNNING
                     self:executeCurrentStep(activeData)
                     WorkflowManager:broadcastState(activeData.vehicle)
-                elseif leaderExec.currentStep > activeData.currentStep then
-                    -- Leader has moved past our step — start
-                    local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
-                    WMLogger:info("Leader '%s' advanced to step %d — follower starting step %d",
-                        leaderName, leaderExec.currentStep, activeData.currentStep)
-                    activeData.status = WorkflowManager.STATUS_RUNNING
-                    self:executeCurrentStep(activeData)
-                    WorkflowManager:broadcastState(activeData.vehicle)
+                else
+                    -- Check if the index-based sync condition is now met
+                    local curStep = activeData.workflow.steps[activeData.currentStep]
+                    local isSyncStep = curStep == nil or curStep.isSyncSource ~= false
+                    local ordinal = isSyncStep and activeData.syncSourceOrdinals
+                                    and activeData.syncSourceOrdinals[activeData.currentStep]
+                    local required = ordinal and activeData.syncTargets and activeData.syncTargets[ordinal]
+                    if required == nil or leaderExec.currentStep > required then
+                        local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
+                        WMLogger:info("Leader '%s' at step %d — sync condition met, follower starting step %d",
+                            leaderName, leaderExec.currentStep, activeData.currentStep)
+                        activeData.status = WorkflowManager.STATUS_RUNNING
+                        self:executeCurrentStep(activeData)
+                        WorkflowManager:broadcastState(activeData.vehicle)
+                    end
                 end
             end
 
