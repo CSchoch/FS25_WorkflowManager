@@ -1272,6 +1272,63 @@ describe("WMExecutor (real)", function()
             assert.is_nil(activeData(follower).linkedLeaderExecution)
         end)
 
+        it("follower waiting for leader activates dummy AD hold", function()
+            local wf      = makeWorkflow("wf_ldr_dummy")
+            local leader  = makeVehicle("Leader")
+            local follower = makeVehicle("Follower")
+            WMExecutor:startWorkflow(wf, leader)
+            WMExecutor:startWorkflow(wf, follower, true, leader)
+            -- Advance follower to step 2 while leader is still on step 1 → must wait
+            activeData(follower).currentStep = 2
+            activeData(follower).status = WorkflowManager.STATUS_RUNNING
+            WMExecutor:executeCurrentStep(activeData(follower))
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, activeData(follower).status)
+            assert.is_true(activeData(follower).dummyHelperActive)
+            assert.is_true(follower._isADActive)
+        end)
+
+        it("dummy AD hold is deactivated when leader reaches sync step", function()
+            local wf      = makeWorkflow("wf_ldr_dummy_rel")
+            local leader  = makeVehicle("Leader")
+            local follower = makeVehicle("Follower")
+            WMExecutor:startWorkflow(wf, leader)
+            WMExecutor:startWorkflow(wf, follower, true, leader)
+            -- Advance follower to step 2 while leader is on step 1 → wait + dummy active
+            activeData(follower).currentStep = 2
+            activeData(follower).status = WorkflowManager.STATUS_RUNNING
+            WMExecutor:executeCurrentStep(activeData(follower))
+            assert.is_true(activeData(follower).dummyHelperActive)
+            assert.is_true(follower._isADActive)
+            -- Leader reaches step 2 (= required) → follower unblocked, dummy deactivated
+            activeData(leader).currentStep = 2
+            WMExecutor.updateTimer = 0
+            WMExecutor:update(500)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
+            assert.is_nil(activeData(follower).dummyHelperActive)
+            assert.is_false(follower._isADActive)
+        end)
+
+        it("dummy AD hold is deactivated when leader stops", function()
+            local wf      = makeWorkflow("wf_ldr_dummy_stop")
+            local leader  = makeVehicle("Leader")
+            local follower = makeVehicle("Follower")
+            WMExecutor:startWorkflow(wf, leader)
+            WMExecutor:startWorkflow(wf, follower, true, leader)
+            -- Advance follower to step 2 while leader is on step 1 → wait + dummy active
+            activeData(follower).currentStep = 2
+            activeData(follower).status = WorkflowManager.STATUS_RUNNING
+            WMExecutor:executeCurrentStep(activeData(follower))
+            assert.is_true(activeData(follower).dummyHelperActive)
+            assert.is_true(follower._isADActive)
+            -- Leader stops → follower freed, dummy deactivated
+            WMExecutor:stopWorkflow(leader)
+            WMExecutor.updateTimer = 0
+            WMExecutor:update(500)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
+            assert.is_nil(activeData(follower).dummyHelperActive)
+            assert.is_false(follower._isADActive)
+        end)
+
     end)
 
     -- =========================================================================

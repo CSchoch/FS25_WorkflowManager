@@ -47,6 +47,8 @@
 
 [2026-05-26] Never call `self:close()` synchronously inside a dialog's `onOpen()` in FS25. Closing mid-open (before `g_gui` finishes the open transition / input-context push) corrupts the input-context stack → no inputs recognized afterward (HUD/menu can't be closed). If a dialog might have nothing to show, decide BEFORE `g_gui:showDialog`: build the data first and skip showing the dialog when empty (call the callback directly). WMLeaderVehicleSelectDialog now exposes `buildVehicleList()` for this pre-check.
 
+[2026-06-06] In Lua 5.1, `local vehicle = { ... }` does NOT allow closures inside the table literal to capture `vehicle` as an upvalue — it resolves to a global instead. Always declare the local first (`local vehicle`), then assign (`vehicle = { ... }`). This applies to VehicleMock and any other mock that has methods closing over the object being constructed.
+
 [2026-05-21] All WM dialog XML files must use `inputContext="MENU"` (a standard registered FS25 context), NOT custom names like `inputContext="DIALOG_WMEditorDialog"`. Unregistered context names silently fail to activate, leaving the current context as `""`. TextInputElement then pushes TEXT_INPUT with `""` as the saved previous context. On focus-leave (e.g. clicking a SmoothList) it tries to revert to `""` which is undefined → warning + input system corruption → no inputs recognized after dialog closes.
 
 ## Decision Log

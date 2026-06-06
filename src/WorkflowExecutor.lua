@@ -440,6 +440,7 @@ function WMExecutor:executeCurrentStep(activeData)
                     WMLogger:debug("Waiting for leader: need leader at step %d (at %d), follower step %d",
                         required, leaderExec.currentStep, activeData.currentStep)
                     activeData.status = WorkflowManager.STATUS_WAITING_FOR_LEADER
+                    self:startDummyADHold(activeData, vehicle)
                     WorkflowManager:broadcastState(activeData.vehicle)
                     return
                 end
@@ -662,9 +663,13 @@ end
 function WMExecutor:startDummyADHold(activeData, vehicle)
     if not ADIntegration.isAvailable then return end
     if activeData.dummyHelperActive then return end
-    -- Only relevant for support vehicles with a running workflow
-    if activeData.isMainVehicle ~= false then return end
-    if activeData.status ~= WorkflowManager.STATUS_RUNNING then return end
+    -- Relevant for support vehicles (waiting for main) and follower vehicles (waiting for leader)
+    local isSupport = activeData.isMainVehicle == false
+    local isFollowerWaiting = activeData.leaderVehicle ~= nil
+    if not isSupport and not isFollowerWaiting then return end
+    local okStatus = activeData.status == WorkflowManager.STATUS_RUNNING
+                  or activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER
+    if not okStatus then return end
 
     if vehicle.ad == nil or vehicle.ad.stateModule == nil then
         WMLogger:debug("Support idle: vehicle has no AD stateModule, skipping dummy helper")
@@ -1098,6 +1103,7 @@ function WMExecutor:update(dt)
                         activeData.currentStep)
                     activeData.leaderVehicle = nil
                     activeData.linkedLeaderExecution = nil
+                    self:stopCurrentStep(activeData)
                     activeData.status = WorkflowManager.STATUS_RUNNING
                     self:executeCurrentStep(activeData)
                     WorkflowManager:broadcastState(activeData.vehicle)
@@ -1112,6 +1118,7 @@ function WMExecutor:update(dt)
                         local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
                         WMLogger:info("Leader '%s' at step %d — sync condition met, follower starting step %d",
                             leaderName, leaderExec.currentStep, activeData.currentStep)
+                        self:stopCurrentStep(activeData)
                         activeData.status = WorkflowManager.STATUS_RUNNING
                         self:executeCurrentStep(activeData)
                         WorkflowManager:broadcastState(activeData.vehicle)

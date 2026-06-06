@@ -10,7 +10,8 @@ VehicleMock = {}
 ---@param name string|nil Vehicle name
 ---@return table vehicle Mock vehicle object
 function VehicleMock.createValid(name)
-    local vehicle = {
+    local vehicle  -- declared first so stateModule closures capture it as an upvalue (Lua 5.1)
+    vehicle = {
         _name = name or "TestTractor",
         _isADActive = false,
         _isCPActive = false,
@@ -78,7 +79,8 @@ end
 ---@param name string|nil Vehicle name
 ---@return table vehicle Mock vehicle object
 function VehicleMock.createADOnly(name)
-    local vehicle = {
+    local vehicle  -- declared first so stateModule closures capture it as an upvalue (Lua 5.1)
+    vehicle = {
         _name = name or "ADOnlyTractor",
         _isADActive = false,
 

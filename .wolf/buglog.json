@@ -911,6 +911,22 @@
       "related_bugs": [],
       "occurrences": 3,
       "last_seen": "2026-06-06T20:02:39.217Z"
+    },
+    {
+      "id": "bug-057",
+      "timestamp": "2026-06-06T20:42:39.239Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 5→9 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-06T20:42:39.239Z"
     }
   ]
 }

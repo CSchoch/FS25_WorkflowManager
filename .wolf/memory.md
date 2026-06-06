@@ -7,6 +7,8 @@
 | 20:35 | Change sync condition from > (past) to >= (reached): follower starts when leader is ON its sync step | WorkflowExecutor.lua, WorkflowExecutor_spec.lua | 359/359 tests pass | ~200 tok |
 | session | Added per-step sync control (isSyncTarget/isSyncSource): storage, executor, step dialog, XML, translations, 61 new tests â†’ 357/357 pass | WorkflowStorage.lua, WorkflowExecutor.lua, WMStepDialog.lua, WMStepDialog.xml, translation_*.xml, specs | all tests pass | ~4000 tok |
 | session | Updated website docs for per-step sync control | website/docs/workflows/queue-system.md, step-types.md, faq.md | docs updated | ~500 tok |
+| session | Follower waiting for leader now activates dummy AD hold (same as support waiting for main) | WorkflowExecutor.lua | 359/359 tests pass | ~300 tok |
+| session | Added 3 tests for follower dummy AD hold; fixed VehicleMock Lua 5.1 upvalue bug (local vehicle declared before table) | tests/mocks/vehicle.lua, WorkflowExecutor_spec.lua | 362/362 tests pass | ~400 tok |
 
 | 00:00 | Fixed multi-select fill type in WMStepDialog (selectedFillTypes array, toggle on click, checkmark display) | src/gui/WMStepDialog.lua | 332 tests pass | ~4k |
 | 00:00 | Fixed mouseEvent stack overflow â€” isFiltering guard around reloadData() in onFillTypeListSelectionChanged | src/gui/WMStepDialog.lua | crash resolved | ~1k |
@@ -1244,3 +1246,12 @@
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+| 22:42 | Edited src/WorkflowExecutor.lua | 5→9 lines | ~154 |
+| 22:42 | Edited src/WorkflowExecutor.lua | 7→8 lines | ~140 |
+| 22:42 | Edited src/WorkflowExecutor.lua | 5→6 lines | ~96 |
+| 22:42 | Edited src/WorkflowExecutor.lua | 8→9 lines | ~186 |
+| 22:43 | Session end: 4 writes across 1 files (WorkflowExecutor.lua) | 1 reads | ~20956 tok |
+| 23:14 | Edited tests/specs/WorkflowExecutor_spec.lua | expanded (+57 lines) | ~1190 |
+| 23:30 | Edited tests/mocks/vehicle.lua | modified VehicleMock() | ~51 |
+| 23:30 | Edited tests/mocks/vehicle.lua | modified VehicleMock() | ~52 |
+| 23:32 | Session end: 7 writes across 3 files (WorkflowExecutor.lua, WorkflowExecutor_spec.lua, vehicle.lua) | 4 reads | ~40472 tok |
