@@ -70,28 +70,44 @@ function WorkflowManagerSpec:onPostLoad(savegame)
                 currentSupportStep = savegame.xmlFile:getValue(key .. "#currentSupportStep") or 1
             end
 
-            local leaderIdx = savegame.xmlFile:getValue(key .. "#leaderVehicleIndex")
+            local leaderWorkflowId = savegame.xmlFile:getValue(key .. "#leaderWorkflowId")
             local leaderVehicle = nil
-            if leaderIdx and leaderIdx > 0 then
-                local vehicles = g_currentMission and g_currentMission.vehicles
-                leaderVehicle = vehicles and vehicles[leaderIdx]
+            local linkedLeaderExecution = nil
+            local pendingLeaderWorkflowId = nil
+            if leaderWorkflowId then
+                for vehicle, _ in pairs(WMExecutor.activeVehicles) do
+                    if vehicle ~= self then
+                        local exec = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
+                        if exec and exec.workflow and exec.workflow.id == leaderWorkflowId then
+                            leaderVehicle = vehicle
+                            linkedLeaderExecution = exec
+                            break
+                        end
+                    end
+                end
+                if leaderVehicle then
+                    WMLogger:debug("Restore leader: workflowId='%s' → vehicle='%s' execLinked=%s",
+                        leaderWorkflowId,
+                        leaderVehicle.getName and leaderVehicle:getName() or "?",
+                        tostring(linkedLeaderExecution ~= nil))
+                else
+                    pendingLeaderWorkflowId = leaderWorkflowId
+                    WMLogger:debug("Restore leader: workflowId='%s' → not found yet, deferred", leaderWorkflowId)
+                end
             end
-
-            local linkedLeaderExecution = leaderVehicle and
-                leaderVehicle.spec_workflowManagerSpec and
-                leaderVehicle.spec_workflowManagerSpec.wmExecution
             self.spec_workflowManagerSpec.wmExecution = {
-                workflow              = workflow,
-                vehicle               = self,
-                status                = WorkflowManager.STATUS_PAUSED,
-                currentStep           = currentStep,
-                startTime             = g_currentMission.time,
-                waitingForCompletion  = false,
-                isMainVehicle         = isMainVehicle,
-                currentSupportStep    = currentSupportStep,
-                leaderVehicle         = leaderVehicle,
-                linkedLeaderExecution = linkedLeaderExecution,
-                autoResumeUntil       = g_currentMission.time + 10000
+                workflow                = workflow,
+                vehicle                 = self,
+                status                  = WorkflowManager.STATUS_PAUSED,
+                currentStep             = currentStep,
+                startTime               = g_currentMission.time,
+                waitingForCompletion    = false,
+                isMainVehicle           = isMainVehicle,
+                currentSupportStep      = currentSupportStep,
+                leaderVehicle           = leaderVehicle,
+                linkedLeaderExecution   = linkedLeaderExecution,
+                pendingLeaderWorkflowId = pendingLeaderWorkflowId,
+                autoResumeUntil         = g_currentMission.time + 10000
             }
             WMExecutor.activeVehicles[self] = true
             WMHud:show(self)
@@ -114,6 +130,10 @@ function WorkflowManagerSpec:saveToXMLFile(xmlFile, key, usedModNames)
     if spec == nil or spec.wmExecution == nil then return end
 
     local activeData = spec.wmExecution
+    WMLogger:debug("saveToXMLFile: vehicle='%s' step=%d status=%s leaderVehicle=%s",
+        self.getName and self:getName() or "?",
+        activeData.currentStep, tostring(activeData.status),
+        activeData.leaderVehicle and (activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?") or "nil")
     -- 'key' already contains the full path including our mod/spec namespace
     -- (e.g. "vehicles.vehicle(49).FS25_WorkflowManager.workflowManagerSpec")
     xmlFile:setValue(key .. "#workflowId",    activeData.workflow.id)
@@ -123,14 +143,16 @@ function WorkflowManagerSpec:saveToXMLFile(xmlFile, key, usedModNames)
         xmlFile:setValue(key .. "#currentSupportStep", activeData.currentSupportStep or 1)
     end
     if activeData.leaderVehicle then
-        local vehicles = g_currentMission and g_currentMission.vehicles
-        if vehicles then
-            for i, v in ipairs(vehicles) do
-                if v == activeData.leaderVehicle then
-                    xmlFile:setValue(key .. "#leaderVehicleIndex", i)
-                    break
-                end
-            end
+        local leaderExec = activeData.leaderVehicle.spec_workflowManagerSpec and
+                           activeData.leaderVehicle.spec_workflowManagerSpec.wmExecution
+        local leaderWorkflowId = leaderExec and leaderExec.workflow and leaderExec.workflow.id
+        if leaderWorkflowId then
+            xmlFile:setValue(key .. "#leaderWorkflowId", leaderWorkflowId)
+            WMLogger:debug("Saved leaderWorkflowId='%s' for '%s'", leaderWorkflowId,
+                activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?")
+        else
+            WMLogger:warning("Leader vehicle '%s' has no active workflow — leader not saved",
+                activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?")
         end
     end
 
@@ -401,8 +423,8 @@ function WorkflowManagerSpec.initSpecialization()
         "true = main role, false = support role")
     schema:register(XMLValueType.INT,  key .. "#currentSupportStep",
         "Current support sub-step index (support vehicles only)")
-    schema:register(XMLValueType.INT,  key .. "#leaderVehicleIndex",
-        "1-based index of leader vehicle in g_currentMission.vehicles (absent = no leader)")
+    schema:register(XMLValueType.STRING, key .. "#leaderWorkflowId",
+        "Workflow ID of the leader vehicle (absent = no leader)")
     print("[WorkflowManager] Registered savegame XML schema")
 end
 

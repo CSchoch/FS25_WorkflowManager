@@ -148,6 +148,11 @@ function WMExecutor:startWorkflow(workflow, vehicle, isMain, leaderVehicle)
 
     WMLogger:info("Starting workflow: %s with vehicle: %s (Step %d/%d)",
         workflow.name, vehicleName, activeData.currentStep, #workflow.steps)
+    if leaderVehicle then
+        local leaderName = leaderVehicle.getName and leaderVehicle:getName() or "?"
+        WMLogger:debug("Leader sync: following '%s' (execLinked=%s)",
+            leaderName, tostring(activeData.linkedLeaderExecution ~= nil))
+    end
 
     -- Apply per-workflow AD settings to the vehicle before the first step runs
     ADIntegration:applyWorkflowSettings(vehicle, workflow.adSettings)
@@ -351,16 +356,36 @@ function WMExecutor:executeCurrentStep(activeData)
     local vehicle = activeData.vehicle
 
     -- ===== Leader-follower synchronization (main vehicle only) =====
+    -- Resolve pending leader from workflow ID (deferred when leader hadn't loaded yet at onPostLoad)
+    if activeData.isMainVehicle ~= false and activeData.pendingLeaderWorkflowId ~= nil then
+        for vehicle, _ in pairs(self.activeVehicles) do
+            if vehicle ~= activeData.vehicle then
+                local exec = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
+                if exec and exec.workflow and exec.workflow.id == activeData.pendingLeaderWorkflowId then
+                    activeData.leaderVehicle = vehicle
+                    activeData.linkedLeaderExecution = exec
+                    activeData.pendingLeaderWorkflowId = nil
+                    WMLogger:info("Resolved pending leader '%s' for follower at step %d",
+                        vehicle.getName and vehicle:getName() or "?", activeData.currentStep)
+                    break
+                end
+            end
+        end
+    end
     if activeData.isMainVehicle ~= false and activeData.leaderVehicle ~= nil then
         local leaderSpec = activeData.leaderVehicle.spec_workflowManagerSpec
         local leaderExec = leaderSpec and leaderSpec.wmExecution
         -- Snap execution reference on first check (covers save/load restore ordering)
         if activeData.linkedLeaderExecution == nil and leaderExec ~= nil then
             activeData.linkedLeaderExecution = leaderExec
+            local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
+            WMLogger:debug("Leader sync: snapped execution reference for '%s'", leaderName)
         end
         if leaderExec == nil or (activeData.linkedLeaderExecution ~= nil and leaderExec ~= activeData.linkedLeaderExecution) then
             -- Leader finished, stopped, or restarted — free the follower
-            WMLogger:info("Leader workflow finished or restarted — follower continuing freely")
+            local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
+            WMLogger:info("Leader '%s' %s — follower continuing freely",
+                leaderName, leaderExec == nil and "finished/stopped" or "restarted with new execution")
             activeData.leaderVehicle = nil
             activeData.linkedLeaderExecution = nil
         elseif leaderExec.currentStep <= activeData.currentStep then
@@ -985,6 +1010,23 @@ function WMExecutor:update(dt)
                 end
             end
 
+            -- Resolve pending leader workflow ID (retry each tick until leader's onPostLoad runs)
+            if activeData.pendingLeaderWorkflowId ~= nil and activeData.leaderVehicle == nil then
+                for candidate, _ in pairs(self.activeVehicles) do
+                    if candidate ~= activeData.vehicle then
+                        local exec = candidate.spec_workflowManagerSpec and candidate.spec_workflowManagerSpec.wmExecution
+                        if exec and exec.workflow and exec.workflow.id == activeData.pendingLeaderWorkflowId then
+                            activeData.leaderVehicle = candidate
+                            activeData.linkedLeaderExecution = exec
+                            activeData.pendingLeaderWorkflowId = nil
+                            WMLogger:info("Resolved pending leader '%s' for follower at step %d (poll)",
+                                candidate.getName and candidate:getName() or "?", activeData.currentStep)
+                            break
+                        end
+                    end
+                end
+            end
+
             -- Leader-follower poll: check if leader has advanced past our current step
             if activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER then
                 local leaderSpec = activeData.leaderVehicle and activeData.leaderVehicle.spec_workflowManagerSpec
@@ -992,10 +1034,15 @@ function WMExecutor:update(dt)
                 -- Snap execution reference on first check (covers save/load restore ordering)
                 if activeData.linkedLeaderExecution == nil and leaderExec ~= nil then
                     activeData.linkedLeaderExecution = leaderExec
+                    local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
+                    WMLogger:debug("Leader sync: snapped execution reference for '%s' (poll)", leaderName)
                 end
                 if leaderExec == nil or (activeData.linkedLeaderExecution ~= nil and leaderExec ~= activeData.linkedLeaderExecution) then
                     -- Leader finished, stopped, or restarted a new execution — free the follower
-                    WMLogger:info("Leader stopped or restarted — follower resuming freely at step %d", activeData.currentStep)
+                    local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
+                    WMLogger:info("Leader '%s' %s — follower resuming freely at step %d",
+                        leaderName, leaderExec == nil and "stopped" or "restarted with new execution",
+                        activeData.currentStep)
                     activeData.leaderVehicle = nil
                     activeData.linkedLeaderExecution = nil
                     activeData.status = WorkflowManager.STATUS_RUNNING
@@ -1003,8 +1050,9 @@ function WMExecutor:update(dt)
                     WorkflowManager:broadcastState(activeData.vehicle)
                 elseif leaderExec.currentStep > activeData.currentStep then
                     -- Leader has moved past our step — start
-                    WMLogger:info("Leader advanced to step %d — follower starting step %d",
-                        leaderExec.currentStep, activeData.currentStep)
+                    local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
+                    WMLogger:info("Leader '%s' advanced to step %d — follower starting step %d",
+                        leaderName, leaderExec.currentStep, activeData.currentStep)
                     activeData.status = WorkflowManager.STATUS_RUNNING
                     self:executeCurrentStep(activeData)
                     WorkflowManager:broadcastState(activeData.vehicle)

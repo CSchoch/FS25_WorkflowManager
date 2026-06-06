@@ -2,6 +2,7 @@
 
 > Chronological action log. Hooks and AI append to this file automatically.
 > Old sessions are consolidated by the daemon weekly.
+| 14:36 | Free follower when leader switches to different workflow | WorkflowExecutor.lua, WorkflowExecutor_spec.lua | 340/340 tests pass | ~200 tok |
 
 | 00:00 | Fixed multi-select fill type in WMStepDialog (selectedFillTypes array, toggle on click, checkmark display) | src/gui/WMStepDialog.lua | 332 tests pass | ~4k |
 | 00:00 | Fixed mouseEvent stack overflow — isFiltering guard around reloadData() in onFillTypeListSelectionChanged | src/gui/WMStepDialog.lua | crash resolved | ~1k |
@@ -1107,3 +1108,55 @@
 | 22:25 | Session end: 6 writes across 3 files (foamy-crafting-oasis.md, WorkflowManagerSpec.lua, WorkflowManager.lua) | 6 reads | ~17101 tok |
 | 22:28 | Edited tests/specs/WorkflowManagerSpec_spec.lua | expanded (+69 lines) | ~1119 |
 | 22:29 | Session end: 7 writes across 4 files (foamy-crafting-oasis.md, WorkflowManagerSpec.lua, WorkflowManager.lua, WorkflowManagerSpec_spec.lua) | 7 reads | ~18299 tok |
+
+## Session: 2026-06-02 14:28
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-06-02 14:31
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 14:34 | Edited src/WorkflowExecutor.lua | 5→5 lines | ~104 |
+| 14:34 | Edited src/WorkflowExecutor.lua | 8→8 lines | ~176 |
+| 14:35 | Edited tests/specs/WorkflowExecutor_spec.lua | expanded (+20 lines) | ~453 |
+| 14:36 | Session end: 3 writes across 2 files (WorkflowExecutor.lua, WorkflowExecutor_spec.lua) | 6 reads | ~46795 tok |
+| 15:31 | Session end: 3 writes across 2 files (WorkflowExecutor.lua, WorkflowExecutor_spec.lua) | 6 reads | ~46795 tok |
+| 15:35 | Edited src/WorkflowExecutor.lua | 5→5 lines | ~78 |
+| 15:35 | Edited src/WorkflowExecutor.lua | 8→8 lines | ~147 |
+| 15:35 | Edited tests/specs/WorkflowExecutor_spec.lua | removed 20 lines | ~3 |
+| 15:36 | Session end: 6 writes across 2 files (WorkflowExecutor.lua, WorkflowExecutor_spec.lua) | 6 reads | ~47039 tok |
+| 16:27 | Edited src/WorkflowExecutor.lua | 2→3 lines | ~51 |
+| 16:28 | Edited src/WorkflowExecutor.lua | 17→22 lines | ~369 |
+| 16:28 | Edited src/WorkflowExecutor.lua | 12→17 lines | ~366 |
+| 16:28 | Edited src/WorkflowManagerSpec.lua | 12→16 lines | ~238 |
+| 16:28 | Edited tests/specs/WorkflowExecutor_spec.lua | expanded (+20 lines) | ~314 |
+| 16:29 | Session end: 11 writes across 3 files (WorkflowExecutor.lua, WorkflowExecutor_spec.lua, WorkflowManagerSpec.lua) | 7 reads | ~53160 tok |
+| 16:30 | Session end: 11 writes across 3 files (WorkflowExecutor.lua, WorkflowExecutor_spec.lua, WorkflowManagerSpec.lua) | 7 reads | ~53160 tok |
+
+## Session: 2026-06-02 16:31
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 01:13 | Edited src/WorkflowExecutor.lua | 2→7 lines | ~110 |
+| 01:14 | Edited src/WorkflowExecutor.lua | 17→21 lines | ~393 |
+| 01:14 | Edited src/WorkflowExecutor.lua | expanded (+6 lines) | ~547 |
+| 01:14 | Edited src/WorkflowManagerSpec.lua | expanded (+6 lines) | ~231 |
+| 01:14 | Edited src/WorkflowManagerSpec.lua | expanded (+8 lines) | ~206 |
+| 01:16 | Session end: 5 writes across 2 files (WorkflowExecutor.lua, WorkflowManagerSpec.lua) | 5 reads | ~24892 tok |
+| 01:35 | Edited src/WorkflowManagerSpec.lua | 4→8 lines | ~157 |
+| 01:38 | Session end: 6 writes across 2 files (WorkflowExecutor.lua, WorkflowManagerSpec.lua) | 5 reads | ~25596 tok |
+| 01:50 | Edited src/WorkflowManagerSpec.lua | and() → pairs() | ~575 |
+| 01:50 | Edited src/WorkflowManagerSpec.lua | reduced (-6 lines) | ~217 |
+| 01:50 | Edited src/WorkflowManagerSpec.lua | vehicles() → vehicle() | ~36 |
+| 01:51 | Edited src/WorkflowExecutor.lua | expanded (+16 lines) | ~297 |
+| 01:51 | Edited src/WorkflowExecutor.lua | expanded (+17 lines) | ~334 |
+| 01:51 | Edited src/WorkflowExecutor.lua | 16→16 lines | ~292 |
+| 01:52 | Edited tests/specs/WorkflowManagerSpec_spec.lua | expanded (+10 lines) | ~930 |
+| 01:53 | Session end: 13 writes across 3 files (WorkflowExecutor.lua, WorkflowManagerSpec.lua, WorkflowManagerSpec_spec.lua) | 8 reads | ~37664 tok |
+
+## Session: 2026-06-06 07:34
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|

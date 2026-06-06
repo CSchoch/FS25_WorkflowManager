@@ -395,11 +395,15 @@ describe("WorkflowManagerSpec", function()
             assert.are.equal("paused", d.status)
         end)
 
-        it("saves leaderVehicleIndex when leaderVehicle is set", function()
+        it("saves leaderWorkflowId when leaderVehicle is set", function()
+            local leaderWf = { id = "wf_leader_save", name = "Leader WF", steps = {} }
             local wf = { id = "wf_lv_save", name = "LV Save", steps = {} }
             local leaderV = makeVehicle("Leader")
             local followerV = makeVehicle("Follower")
-            _G.g_currentMission.vehicles = { leaderV, followerV }
+            WorkflowManagerSpec.onLoad(leaderV, nil)
+            leaderV.spec_workflowManagerSpec.wmExecution = {
+                workflow = leaderWf, currentStep = 1, isMainVehicle = true,
+            }
             WorkflowManagerSpec.onLoad(followerV, nil)
             followerV.spec_workflowManagerSpec.wmExecution = {
                 workflow      = wf,
@@ -411,15 +415,21 @@ describe("WorkflowManagerSpec", function()
             local xml = makeSavegameXML()
             WorkflowManagerSpec.saveToXMLFile(followerV, xml, BASE_KEY, {})
 
-            assert.are.equal(1, xml._data[BASE_KEY .. "#leaderVehicleIndex"])
+            assert.are.equal("wf_leader_save", xml._data[BASE_KEY .. "#leaderWorkflowId"])
         end)
 
         it("save/restore round-trip preserves leaderVehicle", function()
+            local leaderWf = { id = "wf_leader_rt", name = "Leader RT", steps = {} }
             local wf = { id = "wf_lv_rt", name = "LV Round-Trip", steps = {} }
             _G.WorkflowManager.workflows = { wf }
             local leaderV = makeVehicle("Leader")
             local followerV = makeVehicle("Follower")
-            _G.g_currentMission.vehicles = { leaderV, followerV }
+
+            WorkflowManagerSpec.onLoad(leaderV, nil)
+            leaderV.spec_workflowManagerSpec.wmExecution = {
+                workflow = leaderWf, currentStep = 1, isMainVehicle = true,
+            }
+            _G.WMExecutor.activeVehicles[leaderV] = true  -- leader is active when follower loads
 
             WorkflowManagerSpec.onLoad(followerV, nil)
             followerV.spec_workflowManagerSpec.wmExecution = {
@@ -442,7 +452,7 @@ describe("WorkflowManagerSpec", function()
             assert.are.equal(2, d.currentStep)
         end)
 
-        it("restores nil leaderVehicle when index is absent", function()
+        it("restores nil leaderVehicle when leaderWorkflowId is absent", function()
             local wf = { id = "wf_lv_nil", name = "LV Nil", steps = {} }
             _G.WorkflowManager.workflows = { wf }
             local v1 = makeVehicle("Writer")
