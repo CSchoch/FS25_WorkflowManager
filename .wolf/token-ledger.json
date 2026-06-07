@@ -2,14 +2,14 @@
   "version": 1,
   "created_at": "2026-04-05T21:01:47.995Z",
   "lifetime": {
-    "total_tokens_estimated": 3386877,
-    "total_reads": 1248,
-    "total_writes": 2205,
-    "total_sessions": 70,
-    "anatomy_hits": 394,
+    "total_tokens_estimated": 3402853,
+    "total_reads": 1250,
+    "total_writes": 2208,
+    "total_sessions": 72,
+    "anatomy_hits": 396,
     "anatomy_misses": 847,
-    "repeated_reads_blocked": 948,
-    "estimated_savings_vs_bare_cli": 7399622
+    "repeated_reads_blocked": 949,
+    "estimated_savings_vs_bare_cli": 7407469
   },
   "sessions": [
     {
@@ -21525,6 +21525,67 @@
         "writes_count": 7,
         "repeated_reads_blocked": 20,
         "anatomy_lookups": 2
+      }
+    },
+    {
+      "id": "session-2026-06-07-2031",
+      "started": "2026-06-07T18:31:12.036Z",
+      "ended": "2026-06-07T20:48:38.860Z",
+      "reads": [
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMHud.lua",
+          "tokens_estimated": 7447,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMHud.lua",
+          "tokens_estimated": 354,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 7447,
+        "output_tokens_estimated": 354,
+        "reads_count": 1,
+        "writes_count": 1,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 1
+      }
+    },
+    {
+      "id": "session-2026-06-07-2031",
+      "started": "2026-06-07T18:31:12.036Z",
+      "ended": "2026-06-07T20:51:50.419Z",
+      "reads": [
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMHud.lua",
+          "tokens_estimated": 7447,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMHud.lua",
+          "tokens_estimated": 354,
+          "action": "edit"
+        },
+        {
+          "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMHud.lua",
+          "tokens_estimated": 374,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 7447,
+        "output_tokens_estimated": 728,
+        "reads_count": 1,
+        "writes_count": 2,
+        "repeated_reads_blocked": 1,
+        "anatomy_lookups": 1
       }
     }
   ],

@@ -355,9 +355,10 @@ function WMHud:draw()
     if workflow and activeData and activeData.isMainVehicle ~= false then
         local supportList = WMExecutor:getSupportActiveDataListForWorkflow(workflow.id)
         if #supportList > 0 then
-            local running, paused = 0, 0
+            local running, paused, waiting = 0, 0, 0
             for _, sd in ipairs(supportList) do
-                if sd.status == WorkflowManager.STATUS_RUNNING then running = running + 1
+                if sd.status == WorkflowManager.STATUS_WAITING_FOR_LEADER then waiting = waiting + 1
+                elseif sd.status == WorkflowManager.STATUS_RUNNING then running = running + 1
                 elseif sd.status == WorkflowManager.STATUS_PAUSED then paused = paused + 1
                 end
             end
@@ -365,15 +366,19 @@ function WMHud:draw()
             renderText(x + mx, lineY, self.textSize, displayName)
             -- Draw support count badge to the right of the name
             local nameW = getTextWidth(self.textSize, displayName)
-            if running > 0 then
+            if waiting > 0 then
+                setTextColor(1, 0.85, 0, 1)
+            elseif running > 0 then
                 setTextColor(0.3, 0.9, 0.3, 1)
             elseif paused > 0 then
                 setTextColor(1, 0.6, 0, 1)
             else
                 setTextColor(0.5, 0.5, 0.5, 1)
             end
-            renderText(x + mx + nameW + mx * 0.5, lineY, self.smallSize,
-                string.format("[%dS]", #supportList))
+            local badgeText = waiting > 0
+                and string.format("[%dS·%dW]", #supportList, waiting)
+                or  string.format("[%dS]", #supportList)
+            renderText(x + mx + nameW + mx * 0.5, lineY, self.smallSize, badgeText)
             setTextColor(1, 1, 1, 1)
         else
             renderText(x + mx, lineY, self.textSize, displayName)
@@ -419,7 +424,10 @@ function WMHud:draw()
         local adRunning = ADIntegration:isRunning(vehicle)
         local cpRunning = CPIntegration:isRunning(vehicle)
 
-        if cpRunning then
+        if activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER then
+            setTextColor(1, 0.85, 0, 1)
+            renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_waiting_for_leader"))
+        elseif cpRunning then
             local progress = nil
             if vehicle.getCpFieldWorkProgress then
                 local ok, p = pcall(vehicle.getCpFieldWorkProgress, vehicle)
@@ -440,9 +448,6 @@ function WMHud:draw()
         elseif activeData.status == WorkflowManager.STATUS_PAUSED then
             setTextColor(1, 0.6, 0, 1)
             renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_paused"))
-        elseif activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER then
-            setTextColor(1, 0.85, 0, 1)
-            renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_waiting_for_leader"))
         else
             setTextColor(0.6, 0.6, 0.6, 1)
             renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_idle"))

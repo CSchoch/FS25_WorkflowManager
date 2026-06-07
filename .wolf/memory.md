@@ -1255,3 +1255,24 @@
 | 23:30 | Edited tests/mocks/vehicle.lua | modified VehicleMock() | ~51 |
 | 23:30 | Edited tests/mocks/vehicle.lua | modified VehicleMock() | ~52 |
 | 23:32 | Session end: 7 writes across 3 files (WorkflowExecutor.lua, WorkflowExecutor_spec.lua, vehicle.lua) | 4 reads | ~40472 tok |
+
+## Session: 2026-06-07 20:28
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-06-07 20:31
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-06-07 20:31
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 22:37 | Edited src/gui/WMHud.lua | 24→24 lines | ~330 |
+| 22:42 | fix HUD status priority: check WAITING_FOR_LEADER before adRunning/cpRunning | src/gui/WMHud.lua | tests pass (362/362) | ~300 |
+| 22:48 | fix HUD status priority: check WAITING_FOR_LEADER before adRunning/cpRunning | src/gui/WMHud.lua | tests pass (362/362) | ~300 |
+| 22:48 | Session end: 1 writes across 1 files (WMHud.lua) | 1 reads | ~7801 tok |
+| 22:50 | Edited src/gui/WMHud.lua | 20→25 lines | ~349 |
+| 22:51 | Session end: 2 writes across 1 files (WMHud.lua) | 1 reads | ~8175 tok |

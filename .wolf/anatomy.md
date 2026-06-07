@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-06-06T21:30:27.726Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-06-07T20:50:24.203Z
 > Files: 42 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
@@ -51,7 +51,7 @@
 
 ## src/gui/
 
-- `WMHud.lua` — ensureOverlays, createIconOverlays, updateOverlayPositions, init, show (~7447 tok)
+- `WMHud.lua` — ensureOverlays, createIconOverlays, updateOverlayPositions, init, show (~7534 tok)
 - `WMLeaderVehicleSelectDialog.lua` — new, onCreate, buildVehicleList, onOpen, onClose (~1149 tok)
 - `WMStepDialog.lua` — new, onCreate, onOpen, onClose, keyEvent (~7707 tok)
 
