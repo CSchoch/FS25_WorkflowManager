@@ -3,6 +3,8 @@
 > Chronological action log. Hooks and AI append to this file automatically.
 > Old sessions are consolidated by the daemon weekly.
 | 14:36 | Free follower when leader switches to different workflow | WorkflowExecutor.lua, WorkflowExecutor_spec.lua | 340/340 tests pass | ~200 tok |
+| session | Fix setStartHelper reset by AD StartDriving — moved setStartCPOnCompletion to after startRoute | WorkflowExecutor.lua, WorkflowExecutor_spec.lua | 364/364 tests pass | ~300 tok |
+| 2026-06-08 | Fix 3 bugs from live log: boolean crash at sync line 1057 (or nil guard), goTo*Step not resetting WAITING_FOR_LEADER, CP refill cycle broken (re-intro setStartHelper + cpHandedOffWait grace) | WorkflowExecutor.lua | 363/363 tests pass | ~600 tok |
 | 20:11 | Fix stack overflow in WMStepDialog: suppressListCallbacks â†’ isFiltering (guard/flag mismatch) | WMStepDialog.lua | 359/359 tests pass | ~150 tok |
 | 20:35 | Change sync condition from > (past) to >= (reached): follower starts when leader is ON its sync step | WorkflowExecutor.lua, WorkflowExecutor_spec.lua | 359/359 tests pass | ~200 tok |
 | session | Added per-step sync control (isSyncTarget/isSyncSource): storage, executor, step dialog, XML, translations, 61 new tests â†’ 357/357 pass | WorkflowStorage.lua, WorkflowExecutor.lua, WMStepDialog.lua, WMStepDialog.xml, translation_*.xml, specs | all tests pass | ~4000 tok |
@@ -1276,3 +1278,57 @@
 | 22:48 | Session end: 1 writes across 1 files (WMHud.lua) | 1 reads | ~7801 tok |
 | 22:50 | Edited src/gui/WMHud.lua | 20→25 lines | ~349 |
 | 22:51 | Session end: 2 writes across 1 files (WMHud.lua) | 1 reads | ~8175 tok |
+
+## Session: 2026-06-08 10:53
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 11:05 | Edited src/WorkflowExecutor.lua | 45→42 lines | ~553 |
+| 11:06 | Edited tests/specs/WorkflowExecutor_spec.lua | expanded (+46 lines) | ~616 |
+| 11:06 | Edited tests/specs/WorkflowExecutor_spec.lua | 2→2 lines | ~55 |
+| 11:06 | Edited tests/specs/WorkflowExecutor_spec.lua | 2→2 lines | ~40 |
+| 11:17 | Session end: 4 writes across 2 files (WorkflowExecutor.lua, WorkflowExecutor_spec.lua) | 5 reads | ~50088 tok |
+| 13:54 | Edited src/WorkflowExecutor.lua | 15→15 lines | ~183 |
+| 13:55 | Edited tests/specs/WorkflowExecutor_spec.lua | expanded (+16 lines) | ~341 |
+| 13:55 | Session end: 6 writes across 2 files (WorkflowExecutor.lua, WorkflowExecutor_spec.lua) | 5 reads | ~51155 tok |
+| 14:16 | Session end: 6 writes across 2 files (WorkflowExecutor.lua, WorkflowExecutor_spec.lua) | 5 reads | ~51155 tok |
+| 14:19 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~253 |
+| 14:19 | Edited src/WorkflowExecutor.lua | modified notifySupport() | ~173 |
+| 14:19 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~184 |
+| 14:19 | Edited src/WorkflowExecutor.lua | 7→6 lines | ~71 |
+| 14:19 | Edited src/WorkflowExecutor.lua | 4→3 lines | ~70 |
+| 14:20 | Edited src/WorkflowExecutor.lua | 6→4 lines | ~42 |
+| 14:20 | Edited src/WorkflowExecutor.lua | reduced (-20 lines) | ~207 |
+| 14:20 | Edited src/WorkflowExecutor.lua | 4→1 lines | ~15 |
+| 14:20 | Edited tests/specs/WorkflowExecutor_spec.lua | reduced (-20 lines) | ~475 |
+| 14:21 | Edited tests/specs/WorkflowExecutor_spec.lua | 22→18 lines | ~214 |
+| 14:25 | Edited tests/specs/WorkflowExecutor_spec.lua | removed 14 lines | ~23 |
+| 14:26 | Session end: 17 writes across 2 files (WorkflowExecutor.lua, WorkflowExecutor_spec.lua) | 5 reads | ~53152 tok |
+| 14:53 | Edited src/WorkflowExecutor.lua | 4→3 lines | ~31 |
+| 14:53 | Edited tests/specs/WorkflowExecutor_spec.lua | 6→5 lines | ~59 |
+| 14:53 | Edited tests/specs/WorkflowExecutor_spec.lua | 3→2 lines | ~24 |
+| 14:59 | Session end: 20 writes across 2 files (WorkflowExecutor.lua, WorkflowExecutor_spec.lua) | 5 reads | ~52059 tok |
+
+## Session: 2026-06-08 16:18
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 16:19 | Edited src/WorkflowExecutor.lua | 5→5 lines | ~126 |
+| 16:19 | Edited src/WorkflowExecutor.lua | 23→23 lines | ~246 |
+| 16:19 | Edited src/WorkflowExecutor.lua | 23→23 lines | ~244 |
+| 16:19 | Edited src/WorkflowExecutor.lua | 12→14 lines | ~182 |
+| 16:19 | Edited src/WorkflowExecutor.lua | 14→16 lines | ~219 |
+| 16:20 | Edited src/WorkflowExecutor.lua | expanded (+7 lines) | ~474 |
+| 16:20 | Edited src/WorkflowExecutor.lua | 7→8 lines | ~84 |
+| 16:24 | Session end: 7 writes across 1 files (WorkflowExecutor.lua) | 1 reads | ~21133 tok |
+| 18:32 | Edited tests/specs/WorkflowExecutor_spec.lua | 23→25 lines | ~293 |
+| 18:32 | Edited tests/specs/WorkflowExecutor_spec.lua | expanded (+102 lines) | ~1396 |
+| 18:33 | Edited tests/specs/WorkflowExecutor_spec.lua | 3→3 lines | ~40 |
+| 18:33 | Edited tests/specs/WorkflowExecutor_spec.lua | 3→3 lines | ~27 |
+| 18:34 | Edited tests/specs/WorkflowExecutor_spec.lua | 10→13 lines | ~214 |
+| 18:44 | Session end: 12 writes across 2 files (WorkflowExecutor.lua, WorkflowExecutor_spec.lua) | 3 reads | ~43755 tok |
+
+## Session: 2026-06-08 22:27
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|

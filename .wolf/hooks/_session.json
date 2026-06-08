@@ -1,33 +1,38 @@
 {
-  "session_id": "session-2026-06-07-2031",
-  "started": "2026-06-07T18:31:12.036Z",
+  "session_id": "session-2026-06-08-2227",
+  "started": "2026-06-08T20:27:57.914Z",
   "files_read": {
-    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMHud.lua": {
-      "count": 2,
-      "tokens": 7447,
-      "first_read": "2026-06-07T20:37:17.539Z"
+    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/log.txt": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-06-08T20:28:03.363Z"
+    },
+    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowExecutor.lua": {
+      "count": 1,
+      "tokens": 19456,
+      "first_read": "2026-06-08T20:32:25.508Z"
     }
   },
   "files_written": [
     {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMHud.lua",
+      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowExecutor.lua",
       "action": "edit",
-      "tokens": 354,
-      "at": "2026-06-07T20:37:39.256Z"
+      "tokens": 200,
+      "at": "2026-06-08T20:32:32.213Z"
     },
     {
-      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMHud.lua",
+      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/WorkflowExecutor.lua",
       "action": "edit",
-      "tokens": 374,
-      "at": "2026-06-07T20:50:24.232Z"
+      "tokens": 124,
+      "at": "2026-06-08T20:32:38.696Z"
     }
   ],
   "edit_counts": {
-    "src/gui/WMHud.lua": 2
+    "src/WorkflowExecutor.lua": 2
   },
   "anatomy_hits": 1,
-  "anatomy_misses": 0,
-  "repeated_reads_warned": 1,
+  "anatomy_misses": 1,
+  "repeated_reads_warned": 0,
   "cerebrum_warnings": 0,
-  "stop_count": 2
+  "stop_count": 0
 }

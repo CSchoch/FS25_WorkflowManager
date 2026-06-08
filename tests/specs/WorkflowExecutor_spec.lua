@@ -1100,11 +1100,9 @@ describe("WMExecutor (real)", function()
         it("clears all tracking flags on activeData", function()
             local d = {
                 waitingForCompletion = true,
-                willHandoffToCP      = true,
                 cpHandedOffToAD      = true,
+                cpHandedOffWait      = 1,
                 cpWasRunning         = true,
-                cpStartedByAD        = true,
-                cpStartWaitCount     = 5,
                 pausedTrackingState  = { something = true },
                 pendingCPStart       = true,
                 pendingCPStartRetries = 3,
@@ -1114,11 +1112,9 @@ describe("WMExecutor (real)", function()
             }
             WMExecutor:resetStepTrackingState(d)
             assert.is_false(d.waitingForCompletion)
-            assert.is_false(d.willHandoffToCP)
             assert.is_false(d.cpHandedOffToAD)
+            assert.is_nil(d.cpHandedOffWait)
             assert.is_false(d.cpWasRunning)
-            assert.is_false(d.cpStartedByAD)
-            assert.is_nil(d.cpStartWaitCount)
             assert.is_nil(d.pausedTrackingState)
             assert.is_nil(d.pendingCPStart)
             assert.is_nil(d.pendingCPStartRetries)
@@ -1131,6 +1127,35 @@ describe("WMExecutor (real)", function()
             assert.has_no.errors(function()
                 WMExecutor:resetStepTrackingState({})
             end)
+        end)
+    end)
+
+
+    -- =========================================================================
+    -- AD->CP transition: WM starts CP directly after AD completes
+    -- =========================================================================
+    describe("AD->CP transition", function()
+        local wfAdThenCp = {
+            id = "wf_adcp", name = "AD then CP",
+            steps = {
+                { type = "autodrive",  target = "Farm",   action = "drive",     support = {} },
+                { type = "courseplay", target = "Field1", action = "fieldwork", support = {} },
+            }
+        }
+
+        it("starts CP directly via executeCurrentStep after AD completes", function()
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfAdThenCp, v)
+            local d = activeData(v)
+            assert.are.equal(WorkflowManager.STEP_AUTODRIVE, d.currentStepType)
+
+            -- Simulate AD completing
+            WMExecutor:onStepCompleted(d)
+
+            -- Should now be on step 2 (CP) started directly by WM
+            assert.are.equal(2, d.currentStep)
+            assert.are.equal(WorkflowManager.STEP_COURSEPLAY, d.currentStepType)
+            assert.is_true(d.waitingForCompletion)
         end)
     end)
 
@@ -1561,6 +1586,111 @@ describe("WMExecutor (real)", function()
             assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
         end)
 
+        it("no crash when WAITING_FOR_LEADER on a step with isSyncSource=false", function()
+            -- Regression: ordinal=false (Lua short-circuit) propagated into >= comparison → crash
+            local wf = {
+                id = "wf_ibs_nosource", name = "NoSource",
+                steps = {
+                    { type = "autodrive", target = "A", action = "drive", isSyncTarget = true, isSyncSource = false, support = {} },
+                    { type = "autodrive", target = "B", action = "drive", isSyncTarget = true, isSyncSource = true,  support = {} },
+                },
+            }
+            local leader   = makeVehicle("L")
+            local follower = makeVehicle("F")
+            WMExecutor:startWorkflow(wf, leader)
+            WMExecutor:startWorkflow(wf, follower, true, leader)
+            -- Force follower into WAITING_FOR_LEADER on step 1 (isSyncSource=false)
+            activeData(follower).status = WorkflowManager.STATUS_WAITING_FOR_LEADER
+            -- Must not crash; isSyncSource=false → required=nil → free to run
+            assert.has_no.errors(function()
+                WMExecutor.updateTimer = 0
+                WMExecutor:update(500)
+            end)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
+        end)
+
+    end)
+
+    -- =========================================================================
+    -- goToPreviousStep / goToNextStep: STATUS_WAITING_FOR_LEADER reset
+    -- =========================================================================
+    describe("goToPreviousStep / goToNextStep: WAITING_FOR_LEADER reset", function()
+        local wf = {
+            id = "wf_nav_wfl", name = "NavWFL",
+            steps = {
+                { type = "autodrive", target = "A", action = "drive", support = {} },
+                { type = "autodrive", target = "B", action = "drive", support = {} },
+                { type = "autodrive", target = "C", action = "drive", support = {} },
+            },
+        }
+
+        it("goToPreviousStep resumes from WAITING_FOR_LEADER to RUNNING", function()
+            local leader   = makeVehicle("L")
+            local follower = makeVehicle("F")
+            WMExecutor:startWorkflow(wf, leader)
+            WMExecutor:startWorkflow(wf, follower, true, leader)
+            activeData(follower).currentStep = 2
+            activeData(follower).status = WorkflowManager.STATUS_WAITING_FOR_LEADER
+            WMExecutor:goToPreviousStep(follower)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
+            assert.are.equal(1, activeData(follower).currentStep)
+        end)
+
+        it("goToNextStep resumes from WAITING_FOR_LEADER to RUNNING", function()
+            local leader   = makeVehicle("L")
+            local follower = makeVehicle("F")
+            WMExecutor:startWorkflow(wf, leader)
+            WMExecutor:startWorkflow(wf, follower, true, leader)
+            -- Advance leader to step 2 so the sync condition is already satisfied
+            -- (without this the follower would re-enter WAITING_FOR_LEADER after nav)
+            activeData(leader).currentStep = 2
+            activeData(follower).status = WorkflowManager.STATUS_WAITING_FOR_LEADER
+            WMExecutor:goToNextStep(follower)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
+            assert.are.equal(2, activeData(follower).currentStep)
+        end)
+    end)
+
+    -- =========================================================================
+    -- CP refill cycle: setStartHelper set on CP step start
+    -- =========================================================================
+    describe("CP refill cycle: setStartCPOnCompletion", function()
+        local wfCp = {
+            id = "wf_cp_refill", name = "CP Refill",
+            steps = {
+                { type = "courseplay", target = "Field1", action = "fieldwork", support = {} },
+            },
+        }
+        local wfAd = {
+            id = "wf_ad_refill", name = "AD Refill",
+            steps = {
+                { type = "autodrive", target = "Farm", action = "drive", support = {} },
+            },
+        }
+
+        it("setStartCPOnCompletion(true) called when CP step starts", function()
+            local called = false
+            local origFn = ADIntegration.setStartCPOnCompletion
+            ADIntegration.setStartCPOnCompletion = function(_, _, enabled)
+                if enabled == true then called = true end
+            end
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfCp, v)
+            ADIntegration.setStartCPOnCompletion = origFn
+            assert.is_true(called)
+        end)
+
+        it("clearCPHandoff called when AD step starts", function()
+            local called = false
+            local origFn = ADIntegration.clearCPHandoff
+            ADIntegration.clearCPHandoff = function()
+                called = true
+            end
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfAd, v)
+            ADIntegration.clearCPHandoff = origFn
+            assert.is_true(called)
+        end)
     end)
 
 end)

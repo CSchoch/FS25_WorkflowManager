@@ -51,6 +51,8 @@
 
 [2026-05-21] All WM dialog XML files must use `inputContext="MENU"` (a standard registered FS25 context), NOT custom names like `inputContext="DIALOG_WMEditorDialog"`. Unregistered context names silently fail to activate, leaving the current context as `""`. TextInputElement then pushes TEXT_INPUT with `""` as the saved previous context. On focus-leave (e.g. clicking a SmoothList) it tries to revert to `""` which is undefined → warning + input system corruption → no inputs recognized after dialog closes.
 
+[2026-06-08] `stateModule:setStartHelper(true)` must be called AFTER `AutoDrive:StartDriving` (via `ADIntegration:startRoute`). AD's `StartDriving` resets the `startHelper` flag as part of route initialization. Calling `setStartCPOnCompletion` before `startRoute` means AD silently wipes the flag → CP never auto-starts at target → refill/seed workflows stall. Pattern matches `applyWorkflowSettings`, which already had this "apply after StartDriving" comment.
+
 ## Decision Log
 
 <!-- Significant technical decisions with rationale. Why X was chosen over Y. -->

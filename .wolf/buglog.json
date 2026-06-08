@@ -943,6 +943,108 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-06-07T20:50:24.240Z"
+    },
+    {
+      "id": "bug-059",
+      "timestamp": "2026-06-08T00:00:00.000Z",
+      "error_message": "start CP/AI at target flag sometimes not set, causing wrong refill/seeding handling",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "setStartCPOnCompletion (stateModule:setStartHelper(true)) was called BEFORE AutoDrive:StartDriving. AD's StartDriving resets the startHelper flag internally, silently wiping it. Vehicle would arrive at refill target but never auto-start CP.",
+      "fix": "Moved setStartCPOnCompletion to after startRoute succeeds, mirroring the existing applyWorkflowSettings pattern. Pre-loading the CP course still happens before startRoute (order-independent). Also simplified error path: no need to call clearCPHandoff on failure since setStartCPOnCompletion was never reached.",
+      "tags": [
+        "ad-cp-handoff",
+        "setStartHelper",
+        "ordering",
+        "refill",
+        "seeds"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-08T00:00:00.000Z"
+    },
+    {
+      "id": "bug-060",
+      "timestamp": "2026-06-08T12:19:20.001Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "22 lines replaced/restructured",
+      "fix": "Rewrote 50→24 lines (22 removed) | Also: -- Check if AD handed off to CP (AD already starte; local adHandedOffToCP = activeData.willHandoffToCP | Also: activeData.willHandoffToCP = false; activeData.cpStartedByAD = false | Also: -- Check if AD is running (might have started befo; elseif activeData.cpStartedByAD then",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 4,
+      "last_seen": "2026-06-08T12:20:21.136Z"
+    },
+    {
+      "id": "bug-061",
+      "timestamp": "2026-06-08T12:20:50.803Z",
+      "error_message": "Significant refactor of ",
+      "file": "tests/specs/WorkflowExecutor_spec.lua",
+      "root_cause": "25 lines replaced/restructured",
+      "fix": "Rewrote 60→40 lines (25 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-08T12:20:50.803Z"
+    },
+    {
+      "id": "bug-062",
+      "timestamp": "2026-06-08T14:20:05.703Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 17→24 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-08T14:20:05.703Z"
+    },
+    {
+      "id": "bug-063",
+      "timestamp": "2026-06-08T00:00:00.000Z",
+      "error_message": "WorkflowExecutor.lua:1057: attempt to compare boolean <= number",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "Lua short-circuit evaluation: when curStep.isSyncSource == false, isSyncStep = false, then `ordinal = false and ...` evaluates to false (not nil). `required = false and ...` also evaluates to false. Then `leaderExec.currentStep >= false` crashes because Lua implements >= as b <= a, hitting `false <= number`.",
+      "fix": "Added `or nil` to both `ordinal` and `required` local variable assignments to ensure they are nil (not false) when the short-circuit produces a falsy boolean.",
+      "tags": ["crash", "lua-boolean", "sync", "leader-follower"],
+      "related_bugs": ["bug-064"],
+      "occurrences": 1,
+      "last_seen": "2026-06-08T00:00:00.000Z"
+    },
+    {
+      "id": "bug-064",
+      "timestamp": "2026-06-08T00:00:00.000Z",
+      "error_message": "goToPreviousStep/goToNextStep leaves follower in STATUS_WAITING_FOR_LEADER, executeCurrentStep never called",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "`wasPaused` only captured STATUS_PAUSED, so the status-reset guard missed STATUS_WAITING_FOR_LEADER. After manual navigation the follower kept its old status and the `if status == RUNNING` guard blocked executeCurrentStep.",
+      "fix": "Changed both goToPreviousStep and goToNextStep to reset status to RUNNING when `wasPaused OR status == STATUS_WAITING_FOR_LEADER` (manual navigation always resumes).",
+      "tags": ["state-machine", "follower", "navigation", "waiting-for-leader"],
+      "related_bugs": ["bug-063"],
+      "occurrences": 1,
+      "last_seen": "2026-06-08T00:00:00.000Z"
+    },
+    {
+      "id": "bug-065",
+      "timestamp": "2026-06-08T00:00:00.000Z",
+      "error_message": "CP refill cycle broken: after running out of consumables CP triggers AD but AD does not auto-start CP on return",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "Refactor removed setStartHelper(true) entirely. Without it, when CP internally starts AD for a refill run, AD finishes and WM's cpHandedOffToAD path sees neither CP nor AD running and marks the step complete prematurely.",
+      "fix": "Re-introduced ADIntegration:setStartCPOnCompletion(vehicle, true) in startCourseplayStep (after CP starts), and ADIntegration:clearCPHandoff(vehicle) in startAutoDriveStep (to prevent WM-directed AD steps from accidentally auto-starting CP). Also added cpHandedOffWait grace counter (2 polls) so the brief gap between AD finishing and CP restarting doesn't trigger premature completion.",
+      "tags": ["cp-refill", "setStartHelper", "cpHandedOffToAD", "timing"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-08T00:00:00.000Z"
     }
   ]
 }
