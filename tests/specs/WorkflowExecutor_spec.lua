@@ -1612,6 +1612,89 @@ describe("WMExecutor (real)", function()
     end)
 
     -- =========================================================================
+    -- save/load restore: nil sync maps
+    -- =========================================================================
+    describe("save/load restore: nil sync maps", function()
+
+        -- Helper: build a follower exec that mimics onPostLoad restore —
+        -- leaderVehicle and linkedLeaderExecution are set, but syncMaps are nil.
+        local function makeRestoredFollower(wf, follower, leaderExec)
+            local exec = {
+                workflow              = wf,
+                vehicle               = follower,
+                status                = WorkflowManager.STATUS_RUNNING,
+                currentStep           = 2,
+                isMainVehicle         = true,
+                waitingForCompletion  = false,
+                leaderVehicle         = leaderExec.vehicle,
+                linkedLeaderExecution = leaderExec,
+                syncSourceOrdinals    = nil,
+                syncTargets           = nil,
+            }
+            follower.spec_workflowManagerSpec.wmExecution = exec
+            WMExecutor.activeVehicles[follower] = true
+            return exec
+        end
+
+        it("executeCurrentStep rebuilds nil sync maps and waits when leader has not reached required step", function()
+            local wf      = makeWorkflow("wf_restore_wait")
+            local leader  = makeVehicle("Leader")
+            local follower = makeVehicle("Follower")
+            WMExecutor:startWorkflow(wf, leader)
+            -- leader is on step 1; follower step 2 requires leader step 2
+            local followerExec = makeRestoredFollower(wf, follower, activeData(leader))
+            WMExecutor:executeCurrentStep(followerExec)
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, followerExec.status)
+            assert.is_not_nil(followerExec.syncSourceOrdinals)
+            assert.is_not_nil(followerExec.syncTargets)
+        end)
+
+        it("executeCurrentStep rebuilds nil sync maps and runs freely when leader is already past required step", function()
+            local wf      = makeWorkflow("wf_restore_free")
+            local leader  = makeVehicle("Leader")
+            local follower = makeVehicle("Follower")
+            WMExecutor:startWorkflow(wf, leader)
+            activeData(leader).currentStep = 3  -- already past required step 2
+            local followerExec = makeRestoredFollower(wf, follower, activeData(leader))
+            WMExecutor:executeCurrentStep(followerExec)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, followerExec.status)
+        end)
+
+        it("update poll rebuilds nil sync maps and keeps follower waiting while leader has not reached required step", function()
+            local wf      = makeWorkflow("wf_restore_poll_wait")
+            local leader  = makeVehicle("Leader")
+            local follower = makeVehicle("Follower")
+            WMExecutor:startWorkflow(wf, leader)
+            -- leader at step 1; follower step 2 requires leader step 2
+            local followerExec = makeRestoredFollower(wf, follower, activeData(leader))
+            followerExec.status           = WorkflowManager.STATUS_WAITING_FOR_LEADER
+            followerExec.dummyHelperActive = true
+            follower._isADActive           = true
+            WMExecutor.updateTimer = 0
+            WMExecutor:update(500)
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, followerExec.status)
+            assert.is_not_nil(followerExec.syncSourceOrdinals)  -- maps rebuilt by poll
+        end)
+
+        it("update poll rebuilds nil sync maps and unblocks follower when leader advances past required step", function()
+            local wf      = makeWorkflow("wf_restore_poll_unblock")
+            local leader  = makeVehicle("Leader")
+            local follower = makeVehicle("Follower")
+            WMExecutor:startWorkflow(wf, leader)
+            local followerExec = makeRestoredFollower(wf, follower, activeData(leader))
+            followerExec.status           = WorkflowManager.STATUS_WAITING_FOR_LEADER
+            followerExec.dummyHelperActive = true
+            follower._isADActive           = true
+            -- Advance leader past required step for follower step 2
+            activeData(leader).currentStep = 2
+            WMExecutor.updateTimer = 0
+            WMExecutor:update(500)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, followerExec.status)
+        end)
+
+    end)
+
+    -- =========================================================================
     -- goToPreviousStep / goToNextStep: STATUS_WAITING_FOR_LEADER reset
     -- =========================================================================
     describe("goToPreviousStep / goToNextStep: WAITING_FOR_LEADER reset", function()

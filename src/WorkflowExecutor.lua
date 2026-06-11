@@ -412,8 +412,10 @@ function WMExecutor:executeCurrentStep(activeData)
     if activeData.isMainVehicle ~= false and activeData.leaderVehicle ~= nil then
         local leaderSpec = activeData.leaderVehicle.spec_workflowManagerSpec
         local leaderExec = leaderSpec and leaderSpec.wmExecution
-        -- Snap execution reference on first check (covers save/load restore ordering)
-        if activeData.linkedLeaderExecution == nil and leaderExec ~= nil then
+        -- Snap execution reference on first check (covers save/load restore ordering).
+        -- Also rebuild sync maps if nil — they are not persisted across save/load, so a restored
+        -- follower whose leader was already linked will have leaderVehicle set but no sync maps.
+        if leaderExec ~= nil and (activeData.linkedLeaderExecution == nil or activeData.syncSourceOrdinals == nil) then
             activeData.linkedLeaderExecution = leaderExec
             local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
             WMLogger:debug("Leader sync: snapped execution reference for '%s'", leaderName)
@@ -1031,8 +1033,9 @@ function WMExecutor:update(dt)
             if activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER then
                 local leaderSpec = activeData.leaderVehicle and activeData.leaderVehicle.spec_workflowManagerSpec
                 local leaderExec = leaderSpec and leaderSpec.wmExecution
-                -- Snap execution reference on first check (covers save/load restore ordering)
-                if activeData.linkedLeaderExecution == nil and leaderExec ~= nil then
+                -- Snap execution reference on first check (covers save/load restore ordering).
+                -- Also rebuild sync maps if nil (see executeCurrentStep snap for the same rationale).
+                if leaderExec ~= nil and (activeData.linkedLeaderExecution == nil or activeData.syncSourceOrdinals == nil) then
                     activeData.linkedLeaderExecution = leaderExec
                     local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
                     WMLogger:debug("Leader sync: snapped execution reference for '%s' (poll)", leaderName)
