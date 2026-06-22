@@ -17,8 +17,10 @@ describe("WorkflowManagerSpec", function()
 
     -- Minimal vehicle with the fields the spec methods touch
     local function makeVehicle(name)
-        local v = {
+        local v  -- declared first so stateModule closures can capture it
+        v = {
             spec_workflowManagerSpec = nil,
+            _isADActive = false,
             isClient = true,
             getName = function() return name or "TestVehicle" end,
             clearActionEventsTable = function(_, tbl)
@@ -30,6 +32,12 @@ describe("WorkflowManagerSpec", function()
                 return true, id
             end,
             getIsActiveForInput = function() return true end,
+            ad = {
+                stateModule = {
+                    setActive = function(self, active) v._isADActive = active end,
+                    isActive   = function(self) return v._isADActive end,
+                }
+            },
         }
         return v
     end
@@ -80,11 +88,17 @@ describe("WorkflowManagerSpec", function()
     -- Per-test reset
     -- -------------------------------------------------------------------------
     before_each(function()
-        _G.WMExecutor = { activeVehicles = {}, stopWorkflow = function() end }
+        _G.WMExecutor = {
+            activeVehicles        = {},
+            stopWorkflow          = function() end,
+            ensureWaitPollerActive = function() end,
+        }
 
         _G.WorkflowManager = {
-            STATUS_PAUSED = "paused",
-            workflows     = {},
+            STATUS_PAUSED              = "paused",
+            STATUS_WAITING_FOR_LEADER  = "waiting_for_leader",
+            STATUS_WAITING_FOR_MAIN    = "waiting_for_main",
+            workflows                  = {},
             getWorkflowById = function(_, id)
                 for _, wf in ipairs(_G.WorkflowManager.workflows) do
                     if wf.id == id then return wf end
@@ -472,6 +486,110 @@ describe("WorkflowManagerSpec", function()
             WorkflowManagerSpec.onPostLoad(v2, sg)
 
             assert.is_nil(v2.spec_workflowManagerSpec.wmExecution.leaderVehicle)
+        end)
+
+        it("saves #status when WAITING_FOR_LEADER", function()
+            local wf = { id = "wf_wfl_save", name = "WFL Save", steps = {} }
+            local v = makeVehicle("Follower")
+            WorkflowManagerSpec.onLoad(v, nil)
+            v.spec_workflowManagerSpec.wmExecution = {
+                workflow      = wf,
+                currentStep   = 1,
+                isMainVehicle = true,
+                status        = WorkflowManager.STATUS_WAITING_FOR_LEADER,
+            }
+
+            local xml = makeSavegameXML()
+            WorkflowManagerSpec.saveToXMLFile(v, xml, BASE_KEY, {})
+
+            assert.are.equal("waiting_for_leader", xml._data[BASE_KEY .. "#status"])
+        end)
+
+        it("does NOT save #status for non-WAITING_FOR_LEADER statuses", function()
+            local wf = { id = "wf_nostat", name = "NoStat", steps = {} }
+            local v = makeVehicle("Main")
+            WorkflowManagerSpec.onLoad(v, nil)
+            v.spec_workflowManagerSpec.wmExecution = {
+                workflow = wf, currentStep = 1, isMainVehicle = true,
+                status   = WorkflowManager.STATUS_RUNNING,
+            }
+
+            local xml = makeSavegameXML()
+            WorkflowManagerSpec.saveToXMLFile(v, xml, BASE_KEY, {})
+
+            assert.is_nil(xml._data[BASE_KEY .. "#status"])
+        end)
+
+        it("onPostLoad restores WAITING_FOR_LEADER status from XML", function()
+            local wf = { id = "wf_wfl_rt", name = "WFL RT", steps = {} }
+            _G.WorkflowManager.workflows = { wf }
+            local v = makeVehicle("Follower")
+            WorkflowManagerSpec.onLoad(v, nil)
+            local xml = makeSavegameXML({
+                [BASE_KEY .. "#workflowId"]   = "wf_wfl_rt",
+                [BASE_KEY .. "#currentStep"]  = 1,
+                [BASE_KEY .. "#isMainVehicle"] = true,
+                [BASE_KEY .. "#status"]        = "waiting_for_leader",
+            })
+            local sg = { key = "vehicles.vehicle(0)", resetVehicles = false, xmlFile = xml }
+            WorkflowManagerSpec.onPostLoad(v, sg)
+
+            local d = v.spec_workflowManagerSpec.wmExecution
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, d.status)
+        end)
+
+        it("onPostLoad sets no autoResumeUntil when restored as WAITING_FOR_LEADER", function()
+            local wf = { id = "wf_wfl_noresume", name = "WFL NoResume", steps = {} }
+            _G.WorkflowManager.workflows = { wf }
+            local v = makeVehicle("Follower")
+            WorkflowManagerSpec.onLoad(v, nil)
+            local xml = makeSavegameXML({
+                [BASE_KEY .. "#workflowId"]   = "wf_wfl_noresume",
+                [BASE_KEY .. "#currentStep"]  = 1,
+                [BASE_KEY .. "#isMainVehicle"] = true,
+                [BASE_KEY .. "#status"]        = "waiting_for_leader",
+            })
+            local sg = { key = "vehicles.vehicle(0)", resetVehicles = false, xmlFile = xml }
+            WorkflowManagerSpec.onPostLoad(v, sg)
+
+            assert.is_nil(v.spec_workflowManagerSpec.wmExecution.autoResumeUntil)
+        end)
+
+        it("onPostLoad registers global wait poller when restored as WAITING_FOR_LEADER", function()
+            local wf = { id = "wf_wfl_dummy", name = "WFL Dummy", steps = {} }
+            _G.WorkflowManager.workflows = { wf }
+            local pollerCalls = 0
+            _G.WMExecutor.ensureWaitPollerActive = function() pollerCalls = pollerCalls + 1 end
+            local v = makeVehicle("Follower")
+            WorkflowManagerSpec.onLoad(v, nil)
+            local xml = makeSavegameXML({
+                [BASE_KEY .. "#workflowId"]   = "wf_wfl_dummy",
+                [BASE_KEY .. "#currentStep"]  = 1,
+                [BASE_KEY .. "#isMainVehicle"] = true,
+                [BASE_KEY .. "#status"]        = "waiting_for_leader",
+            })
+            local sg = { key = "vehicles.vehicle(0)", resetVehicles = false, xmlFile = xml }
+            WorkflowManagerSpec.onPostLoad(v, sg)
+
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER,
+                v.spec_workflowManagerSpec.wmExecution.status)
+            assert.is_true(pollerCalls > 0)
+        end)
+
+        it("onPostLoad still sets autoResumeUntil when no status saved (normal restore)", function()
+            local wf = { id = "wf_normal_resume", name = "Normal", steps = {} }
+            _G.WorkflowManager.workflows = { wf }
+            local v = makeVehicle("Main")
+            WorkflowManagerSpec.onLoad(v, nil)
+            local xml = makeSavegameXML({
+                [BASE_KEY .. "#workflowId"]   = "wf_normal_resume",
+                [BASE_KEY .. "#currentStep"]  = 1,
+                [BASE_KEY .. "#isMainVehicle"] = true,
+            })
+            local sg = { key = "vehicles.vehicle(0)", resetVehicles = false, xmlFile = xml }
+            WorkflowManagerSpec.onPostLoad(v, sg)
+
+            assert.is_not_nil(v.spec_workflowManagerSpec.wmExecution.autoResumeUntil)
         end)
     end)
 

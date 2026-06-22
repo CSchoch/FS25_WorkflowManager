@@ -1,12 +1,27 @@
 {
-  "session_id": "session-2026-06-11-2206",
-  "started": "2026-06-11T20:06:34.256Z",
-  "files_read": {},
-  "files_written": [],
-  "edit_counts": {},
-  "anatomy_hits": 0,
+  "session_id": "session-2026-06-21-2228",
+  "started": "2026-06-21T20:28:45.010Z",
+  "files_read": {
+    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/dev/WMConsoleCommands.lua": {
+      "count": 1,
+      "tokens": 721,
+      "first_read": "2026-06-21T20:29:34.749Z"
+    }
+  },
+  "files_written": [
+    {
+      "file": "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/dev/WMConsoleCommands.lua",
+      "action": "edit",
+      "tokens": 214,
+      "at": "2026-06-21T20:30:17.204Z"
+    }
+  ],
+  "edit_counts": {
+    "src/dev/WMConsoleCommands.lua": 1
+  },
+  "anatomy_hits": 1,
   "anatomy_misses": 0,
   "repeated_reads_warned": 0,
   "cerebrum_warnings": 0,
-  "stop_count": 0
+  "stop_count": 1
 }

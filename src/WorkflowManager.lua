@@ -74,6 +74,9 @@ source(Utils.getFilename("src/gui/WMLeaderVehicleSelectDialog.lua", g_currentMod
 source(Utils.getFilename("src/gui/WMHudElements.lua", g_currentModDirectory))
 source(Utils.getFilename("src/gui/WMHud.lua", g_currentModDirectory))
 
+-- 8. Developer console commands
+source(Utils.getFilename("src/dev/WMConsoleCommands.lua", g_currentModDirectory))
+
 -- Initialize logger from dev config immediately after loading
 WMLogger:initFromDevConfig()
 
@@ -90,6 +93,7 @@ WorkflowManager.STATUS_PAUSED = "paused"
 WorkflowManager.STATUS_COMPLETED = "completed"
 WorkflowManager.STATUS_ERROR = "error"
 WorkflowManager.STATUS_WAITING_FOR_LEADER = "waiting_for_leader"
+WorkflowManager.STATUS_WAITING_FOR_MAIN = "waiting_for_main"
 
 -- Step type constants
 WorkflowManager.STEP_AUTODRIVE = "autodrive"
@@ -150,6 +154,9 @@ function WorkflowManager:init()
 
     -- Register input actions (fallback for direct access)
     self:registerInputActions()
+
+    -- Register developer console commands
+    WMConsoleCommands:init()
 
     self.isInitialized = true
     WMLogger:info("WorkflowManager initialized successfully")
@@ -1211,6 +1218,9 @@ function WorkflowManager:deleteMap()
             WMHud:delete()
         end
     end)
+
+    -- Unregister developer console commands
+    WMConsoleCommands:delete()
 
     -- Reset remaining state
     self.guiVisible = false

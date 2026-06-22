@@ -135,6 +135,7 @@
         <text name="wm_hud_ad_active" text="AD active"/>
         <text name="wm_hud_paused" text="Paused"/>
         <text name="wm_hud_waiting_for_leader" text="Waiting for leader"/>
+        <text name="wm_hud_waiting_for_main" text="Waiting for main vehicle"/>
         <text name="wm_hud_idle" text="Idle"/>
         <text name="wm_hud_no_vehicle" text="No vehicle"/>
         <text name="wm_hud_tooltip_prev" text="Previous Step"/>

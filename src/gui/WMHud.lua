@@ -427,6 +427,9 @@ function WMHud:draw()
         if activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER then
             setTextColor(1, 0.85, 0, 1)
             renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_waiting_for_leader"))
+        elseif activeData.status == WorkflowManager.STATUS_WAITING_FOR_MAIN then
+            setTextColor(1, 0.85, 0, 1)
+            renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_waiting_for_main"))
         elseif cpRunning then
             local progress = nil
             if vehicle.getCpFieldWorkProgress then

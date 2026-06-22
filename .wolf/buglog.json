@@ -1080,6 +1080,249 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-06-08T20:57:25.312Z"
+    },
+    {
+      "id": "bug-067",
+      "timestamp": "2026-06-12T08:30:10.846Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowManagerSpec.lua",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 47→63 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T08:30:10.847Z"
+    },
+    {
+      "id": "bug-068",
+      "timestamp": "2026-06-12T08:32:56.976Z",
+      "error_message": "Significant refactor of ",
+      "file": "tests/specs/WorkflowManagerSpec_spec.lua",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 3→4 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T08:32:56.976Z"
+    },
+    {
+      "id": "bug-069",
+      "timestamp": "2026-06-12T00:00:00.000Z",
+      "error_message": "After save/reload, follower vehicle that was WAITING_FOR_LEADER at step 1 advances to step 2 instead of waiting",
+      "file": "src/WorkflowManagerSpec.lua",
+      "root_cause": "AD saves stateModule:setActive(true) across game reloads, so the dummy AD hold (used to keep AD alive while follower waits for leader) persists after reload. onPostLoad always restored status as PAUSED. The auto-resume path (checking adRunning) detected the dummy hold as real AD activity, transitioned follower to RUNNING+waitingForCompletion without going through executeCurrentStep, bypassing the leader-sync check entirely. AD then had no real route and fired onADFinishedEvent almost immediately, triggering onStepCompleted → step 2.",
+      "fix": "Save #status attribute in saveToXMLFile when status == WAITING_FOR_LEADER. In onPostLoad, read #status and restore WAITING_FOR_LEADER exactly (no autoResumeUntil, dummyHelperActive=true). Auto-resume only triggers for STATUS_PAUSED so it never fires. The update-loop WAITING_FOR_LEADER poll correctly re-checks the leader condition each tick.",
+      "tags": [
+        "save-load",
+        "follower",
+        "waiting-for-leader",
+        "auto-resume",
+        "dummy-ad-hold",
+        "status-not-persisted"
+      ],
+      "related_bugs": [
+        "bug-064"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T00:00:00.000Z"
+    },
+    {
+      "id": "bug-070",
+      "timestamp": "2026-06-15T07:24:52.323Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowManagerSpec.lua",
+      "root_cause": "6 lines replaced/restructured",
+      "fix": "Rewrote 23→17 lines (6 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-15T07:24:52.323Z"
+    },
+    {
+      "id": "bug-071",
+      "timestamp": "2026-06-15T09:45:00.000Z",
+      "error_message": "After save/reload, follower in WAITING_FOR_LEADER state has AD auto-start driving",
+      "file": "src/WorkflowManagerSpec.lua, src/WorkflowExecutor.lua",
+      "root_cause": "stateModule:setActive(true) (dummy hold) persisted by AD across saves. On reload AD auto-resumes the last route, causing the follower to drive. Additionally, FS25 sleeps distant vehicles without an active AI helper, so the dummy MUST call setActive(true) to keep WM's update loop running.",
+      "fix": "onPostLoad: for WAITING_FOR_LEADER restores, call setActive(false) to clear AD's auto-started route, then setActive(true) to re-apply clean dummy hold; set dummyHelperActive=true. startDummyADHold renamed to startDummyHold, now takes vehicle param, calls stateModule:setActive(true) directly. stopCurrentStep and pauseWorkflow call setActive(false) to deactivate. No gate in update loop — leader poll always runs when in WAITING_FOR_LEADER.",
+      "tags": [
+        "save-restore",
+        "leader-follower",
+        "dummy-hold",
+        "autodrive",
+        "WAITING_FOR_LEADER"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-15T09:45:00.000Z"
+    },
+    {
+      "id": "bug-072",
+      "timestamp": "2026-06-15T08:31:05.729Z",
+      "error_message": "Significant refactor of ",
+      "file": "tests/specs/WorkflowExecutor_spec.lua",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 4→3 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-15T08:31:05.729Z"
+    },
+    {
+      "id": "bug-073",
+      "timestamp": "2026-06-15T12:50:13.327Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "6 lines replaced/restructured",
+      "fix": "Rewrote 11→6 lines (6 removed) | Also: -- If the dummy helper is active, deactivate it cl; -- The dummy is just stateModule:setActive(true) w | Also: ---Activate a dummy AD helper to keep AD's subsyst; ---Sets stateModule:setActive(true) directly — no ",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-06-15T12:51:05.045Z"
+    },
+    {
+      "id": "bug-074",
+      "timestamp": "2026-06-15T13:53:21.463Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 14→25 lines (4 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-15T13:53:21.463Z"
+    },
+    {
+      "id": "bug-075",
+      "timestamp": "2026-06-15T13:53:42.918Z",
+      "error_message": "Wrong reference: return should be vehicle",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "Used \"return\" instead of \"vehicle\"",
+      "fix": "Changed return → vehicle",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-15T13:53:42.918Z"
+    },
+    {
+      "id": "bug-076",
+      "timestamp": "2026-06-17T21:15:56.802Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "18 lines replaced/restructured",
+      "fix": "Rewrote 25→121 lines (18 removed) | Also: -- Skip resume if dummy helper is active — it has ; if not activeData.dummyHelperActive then | Also: -- Support vehicle idle polling: check if main has; if activeData.isMainVehicle == false and activeDat | Also: -- wait poller (runWaitPoll), which runs via g_cur; -- when FS25 puts distant vehicles to sleep. | Also: -- Resume to RUNNING if was paused or waiting-for-; if wasPaused or activeData.status == WorkflowManag",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 5,
+      "last_seen": "2026-06-17T21:19:43.721Z"
+    },
+    {
+      "id": "bug-077",
+      "timestamp": "2026-06-17T21:23:04.868Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowManagerSpec.lua",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 5→9 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-17T21:23:04.868Z"
+    },
+    {
+      "id": "bug-078",
+      "timestamp": "2026-06-17T21:23:59.369Z",
+      "error_message": "Incorrect value in code",
+      "file": "translations/translation_en.xml",
+      "root_cause": "Had \"wm_hud_idle\"",
+      "fix": "Changed to \"wm_hud_waiting_for_main\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-17T21:23:59.369Z"
+    },
+    {
+      "id": "bug-079",
+      "timestamp": "2026-06-17T21:24:13.679Z",
+      "error_message": "Incorrect value in code",
+      "file": "translations/translation_de.xml",
+      "root_cause": "Had \"wm_hud_idle\"",
+      "fix": "Changed to \"wm_hud_waiting_for_main\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-17T21:24:13.679Z"
+    },
+    {
+      "id": "bug-080",
+      "timestamp": "2026-06-17T21:30:14.482Z",
+      "error_message": "Incorrect value in code",
+      "file": "tests/specs/WorkflowExecutor_spec.lua",
+      "root_cause": "Had \"autodrive\"",
+      "fix": "Changed to \"waiting_for_main\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-17T21:30:14.482Z"
+    },
+    {
+      "id": "bug-081",
+      "timestamp": "2026-06-21T22:09:07.000Z",
+      "error_message": "attempt to index nil with 'init' at WorkflowManager.lua:159 — WMConsoleCommands is nil",
+      "file": "src/dev/WMConsoleCommands.lua",
+      "root_cause": "Lua syntax error on line 25: `vehicle:getFullName and ...` — in Lua 5.1, `a:b` without `()` is invalid method-call syntax; parser expected `(` but got `and`. This caused the file to fail to compile so WMConsoleCommands was never defined as a global.",
+      "fix": "Changed `vehicle:getFullName` to `vehicle.getFullName` (dot access for nil-check, colon only for the actual call).",
+      "tags": ["syntax-error", "lua", "console-commands"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-21T22:09:07.000Z"
     }
   ]
 }

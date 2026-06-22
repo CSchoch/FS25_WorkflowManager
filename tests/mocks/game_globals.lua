@@ -9,7 +9,16 @@ _G.g_currentMission = {
     controlledVehicle = nil,
     hud = {
         showBlinkingWarning = function(self, text, duration) end
-    }
+    },
+    _updateables = {},
+    addUpdateable = function(self, obj)
+        table.insert(self._updateables, obj)
+    end,
+    removeUpdateable = function(self, obj)
+        for i, v in ipairs(self._updateables) do
+            if v == obj then table.remove(self._updateables, i) return end
+        end
+    end,
 }
 
 -- Player object

@@ -95,10 +95,38 @@ function WorkflowManagerSpec:onPostLoad(savegame)
                     WMLogger:debug("Restore leader: workflowId='%s' → not found yet, deferred", leaderWorkflowId)
                 end
             end
+
+            -- Restore WAITING_FOR_LEADER / WAITING_FOR_MAIN exactly as saved so the
+            -- auto-resume path is never triggered for a vehicle that was waiting.
+            -- All other statuses restore as PAUSED and rely on the 10-second auto-resume
+            -- window to detect AD/CP still running.
+            local savedStatus = savegame.xmlFile:getValue(key .. "#status")
+            local isWaitingForLeader = (savedStatus == WorkflowManager.STATUS_WAITING_FOR_LEADER)
+            local isWaitingForMain   = (savedStatus == WorkflowManager.STATUS_WAITING_FOR_MAIN)
+            local restoredStatus
+            if isWaitingForLeader then
+                restoredStatus = WorkflowManager.STATUS_WAITING_FOR_LEADER
+            elseif isWaitingForMain then
+                restoredStatus = WorkflowManager.STATUS_WAITING_FOR_MAIN
+            else
+                restoredStatus = WorkflowManager.STATUS_PAUSED
+            end
+            local restoredAutoResume = nil
+            if not isWaitingForLeader and not isWaitingForMain then
+                restoredAutoResume = g_currentMission.time + 10000
+            end
+            -- Restore waitingForMainStep tracking fields so the idle poll can detect changes.
+            local restoredWaitingForMainStep = nil
+            local restoredWaitingForMainStepIndex = nil
+            if isWaitingForMain then
+                restoredWaitingForMainStep = true
+                restoredWaitingForMainStepIndex = savegame.xmlFile:getValue(key .. "#waitingForMainStepIndex")
+            end
+
             self.spec_workflowManagerSpec.wmExecution = {
                 workflow                = workflow,
                 vehicle                 = self,
-                status                  = WorkflowManager.STATUS_PAUSED,
+                status                  = restoredStatus,
                 currentStep             = currentStep,
                 startTime               = g_currentMission.time,
                 waitingForCompletion    = false,
@@ -107,9 +135,14 @@ function WorkflowManagerSpec:onPostLoad(savegame)
                 leaderVehicle           = leaderVehicle,
                 linkedLeaderExecution   = linkedLeaderExecution,
                 pendingLeaderWorkflowId = pendingLeaderWorkflowId,
-                autoResumeUntil         = g_currentMission.time + 10000
+                waitingForMainStep      = restoredWaitingForMainStep,
+                waitingForMainStepIndex = restoredWaitingForMainStepIndex,
+                autoResumeUntil         = restoredAutoResume,
             }
             WMExecutor.activeVehicles[self] = true
+            if isWaitingForLeader or isWaitingForMain then
+                WMExecutor:ensureWaitPollerActive()
+            end
             WMHud:show(self)
             WMLogger:info("Restored workflow '%s' step=%d isMain=%s on '%s' (paused)",
                 workflow.name, currentStep, tostring(isMainVehicle),
@@ -141,6 +174,15 @@ function WorkflowManagerSpec:saveToXMLFile(xmlFile, key, usedModNames)
     xmlFile:setValue(key .. "#isMainVehicle", activeData.isMainVehicle ~= false)
     if activeData.isMainVehicle == false then
         xmlFile:setValue(key .. "#currentSupportStep", activeData.currentSupportStep or 1)
+    end
+    -- Save wait statuses so vehicles are restored correctly and the auto-resume path
+    -- (which bypasses sync logic) is never triggered on reload.
+    if activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER
+    or activeData.status == WorkflowManager.STATUS_WAITING_FOR_MAIN then
+        xmlFile:setValue(key .. "#status", activeData.status)
+    end
+    if activeData.status == WorkflowManager.STATUS_WAITING_FOR_MAIN then
+        xmlFile:setValue(key .. "#waitingForMainStepIndex", activeData.waitingForMainStepIndex or 1)
     end
     if activeData.leaderVehicle then
         local leaderExec = activeData.leaderVehicle.spec_workflowManagerSpec and
@@ -454,6 +496,8 @@ function WorkflowManagerSpec.initSpecialization()
         "Current support sub-step index (support vehicles only)")
     schema:register(XMLValueType.STRING, key .. "#leaderWorkflowId",
         "Workflow ID of the leader vehicle (absent = no leader)")
+    schema:register(XMLValueType.STRING, key .. "#status",
+        "Workflow status at save time (only written for waiting_for_leader)")
     print("[WorkflowManager] Registered savegame XML schema")
 end
 

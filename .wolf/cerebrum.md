@@ -10,6 +10,10 @@
 
 ## Key Learnings
 
+- **Global wait poller pattern:** `g_currentMission:addUpdateable(obj)` / `removeUpdateable(obj)` is the confirmed FS25 pattern for running logic regardless of vehicle sleep. `obj` must have an `update(dt)` method. WMExecutor uses one shared `globalWaitPoller` for all waiting vehicles (WAITING_FOR_LEADER + WAITING_FOR_MAIN); it self-cleans at the end of each tick via `stopWaitPollerIfIdle()`.
+- **STATUS_WAITING_FOR_MAIN:** Added 2026-06-17. Support vehicle enters this status when main is on a step with no support sub-steps OR when all sub-steps for the current step are done. Pauseable. Saved to XML as `#status`. Poller detects `waitingForMainStepIndex != main.currentStep` AND `#supportSteps > 0` to trigger resume via `onMainStepChanged`. When support starts a sub-step, `executeCurrentStep` sets `status = RUNNING` explicitly before dispatching to `startAutoDriveStep` / `startCourseplayStep`.
+- **Test poll triggering:** In executor tests, replace `WMExecutor.updateTimer=0; WMExecutor:update(500)` poll patterns with `triggerPoll()` (defined in the spec as a local helper). For manual WAITING_FOR_LEADER status sets (without `executeCurrentStep`), also call `WMExecutor:ensureWaitPollerActive()` first. The `WorkflowManagerSpec_spec.lua` WMExecutor stub must include `ensureWaitPollerActive = function() end`.
+
 - **Project:** FS25_WorkflowManager
 - **HUD show/hide architecture:** `WMHud:update(dt)` polls every frame to auto-hide after 3s when current vehicle has no active workflow. Re-show on vehicle entry is handled by `WorkflowManagerSpec:onRegisterActionEvents()` (fires when player enters and takes control of a vehicle) — NOT by the update loop, because `g_currentMission.controlledVehicle` may not be populated yet when update() first runs after a vehicle switch.
 - **FS25 `wm_hBox` alignment:** `wm_hBox` has `elementSpacing=10px` and `alignmentX=center`. Rows with different child counts center at different X positions. Always use 2 children per row (label + content wrapper) with identical declared widths for consistent alignment. For list+slider rows, put both inside a no-spacing inner BoxLayout as one child.
@@ -17,6 +21,9 @@
 - **FS25 slider pattern:** `SmoothList` + `ThreePartBitmap (fs25_listSliderBox)` + `Slider` always in a `flowDirection="horizontal"` BoxLayout; list width = container width − 40px (slider).
 
 ## Do-Not-Repeat
+
+[2026-06-17] **SUPERSEDED — dummy hold replaced by global wait poller.** `startDummyHold` and `dummyHelperActive` are GONE. The vehicle-sleep problem is now solved by `WMExecutor.globalWaitPoller` registered with `g_currentMission:addUpdateable()`. This runs at mission level regardless of vehicle sleep state. Poller is created by `ensureWaitPollerActive()` and self-removes via `stopWaitPollerIfIdle()` when no vehicles are waiting. Do NOT reintroduce `stateModule:setActive()` calls for wait states — they cause AD to auto-start on reload.
+
 
 [2026-05-21] Calling `SmoothList:reloadData()` inside `onSelectionChanged` (or any callback that fires during `mouseEvent` processing) without an `isFiltering` guard causes infinite recursion → `GuiElement.lua:1198: stack overflow`. Always wrap any `reloadData()` call inside a selection callback with `self.isFiltering = true` / `false`.
 

@@ -28,11 +28,17 @@ WMExecutor.updateTimer = 0
 -- Callback tracking for AutoDrive completion
 WMExecutor.pendingADCallbacks = {}
 
+-- Global mission-level updateable that polls waiting vehicles (WAITING_FOR_LEADER /
+-- WAITING_FOR_MAIN) independently of the vehicle sleep state. Created on demand;
+-- torn down when no vehicles are in a wait state.
+WMExecutor.globalWaitPoller = nil
+
 ---Initialize the executor
 function WMExecutor:init()
     self.activeVehicles = {}
     self.pendingADCallbacks = {}
     self.updateTimer = 0
+    self.globalWaitPoller = nil
     self.isInitialized = true
 
     -- Register for AutoDrive destination listener (global completion notifications)
@@ -259,10 +265,14 @@ function WMExecutor:pauseWorkflow(vehicle)
         return false
     end
 
-    if activeData.status ~= WorkflowManager.STATUS_RUNNING then
+    local isRunningOrWaiting = activeData.status == WorkflowManager.STATUS_RUNNING
+                            or activeData.status == WorkflowManager.STATUS_WAITING_FOR_MAIN
+    if not isRunningOrWaiting then
         WMLogger:warning("Workflow %s is not running", activeData.workflow.id)
         return false
     end
+
+    local wasWaitingForMain = activeData.status == WorkflowManager.STATUS_WAITING_FOR_MAIN
 
     -- Mark as paused FIRST to stop tracking in update loop
     activeData.status = WorkflowManager.STATUS_PAUSED
@@ -272,27 +282,18 @@ function WMExecutor:pauseWorkflow(vehicle)
         waitingForCompletion = activeData.waitingForCompletion,
         currentStepType = activeData.currentStepType,
         cpHandedOffToAD = activeData.cpHandedOffToAD,
-        cpWasRunning = activeData.cpWasRunning
+        cpWasRunning = activeData.cpWasRunning,
+        wasWaitingForMain = wasWaitingForMain,
     }
 
     -- Stop waiting for completion while paused
     -- This ensures we stay in the current step even if AD/CP finishes
     activeData.waitingForCompletion = false
 
-    -- Deactivate dummy helper FIRST — before pauseCurrentStep touches AD state,
-    -- so AD is fully cleared and the player regains manual control.
-    -- When dummy was active there is no real AD/CP step running, so skip pauseCurrentStep.
-    local wasDummy = activeData.dummyHelperActive
-    if wasDummy then
-        if vehicle.ad and vehicle.ad.stateModule then
-            pcall(function() vehicle.ad.stateModule:setActive(false) end)
-        end
-        activeData.dummyHelperActive = nil
-        WMLogger:debug("Dummy AD helper deactivated on pause")
-    end
-
-    -- Pause current step (AD/CP) — skip if dummy was the only thing running
-    if not wasDummy then
+    -- Release wait poller if pausing from an idle wait state (no real AD/CP to pause)
+    if wasWaitingForMain then
+        self:stopWaitPollerIfIdle()
+    else
         self:pauseCurrentStep(activeData)
     end
 
@@ -342,15 +343,14 @@ function WMExecutor:resumeWorkflow(vehicle)
         activeData.cpWasRunning = activeData.pausedTrackingState.cpWasRunning
         activeData.pausedTrackingState = nil
 
-        activeData.status = WorkflowManager.STATUS_RUNNING
-
-        -- AD/CP was paused in this session – just unpause it
-        -- (resumeCurrentStep guards against unpausing a dummy hold via dummyHelperActive check)
-        self:resumeCurrentStep(activeData)
-
-        -- Restart dummy AD hold if the support vehicle is still in idle state
+        -- Support vehicle was idling (STATUS_WAITING_FOR_MAIN) before pause — restore that
+        -- state and restart the poller. No real AD/CP route to unpause.
         if activeData.isMainVehicle == false and activeData.waitingForMainStep then
-            self:startDummyADHold(activeData, vehicle)
+            activeData.status = WorkflowManager.STATUS_WAITING_FOR_MAIN
+            self:ensureWaitPollerActive()
+        else
+            activeData.status = WorkflowManager.STATUS_RUNNING
+            self:resumeCurrentStep(activeData)
         end
 
         WMLogger:info("Resumed workflow: %s at step %d (tracking restored)", activeData.workflow.name, activeData.currentStep)
@@ -440,7 +440,7 @@ function WMExecutor:executeCurrentStep(activeData)
                     WMLogger:debug("Waiting for leader: need leader at step %d (at %d), follower step %d",
                         required, leaderExec.currentStep, activeData.currentStep)
                     activeData.status = WorkflowManager.STATUS_WAITING_FOR_LEADER
-                    self:startDummyADHold(activeData, vehicle)
+                    self:ensureWaitPollerActive()
                     WorkflowManager:broadcastState(activeData.vehicle)
                     return
                 end
@@ -463,8 +463,11 @@ function WMExecutor:executeCurrentStep(activeData)
         if #supportSteps == 0 then
             WMLogger:info("Support vehicle: main step %d has no support sub-steps, idling",
                 mainActiveData.currentStep)
+            activeData.status = WorkflowManager.STATUS_WAITING_FOR_MAIN
             activeData.waitingForMainStep = true
-            self:startDummyADHold(activeData, vehicle)
+            activeData.waitingForMainStepIndex = mainActiveData.currentStep
+            self:ensureWaitPollerActive()
+            WorkflowManager:broadcastState(activeData.vehicle)
             return
         end
 
@@ -478,6 +481,8 @@ function WMExecutor:executeCurrentStep(activeData)
             WMLogger:error("Support vehicle: no sub-step at index %d", activeData.currentSupportStep)
             return
         end
+
+        activeData.status = WorkflowManager.STATUS_RUNNING
 
         WMLogger:info("Executing support sub-step %d/%d: %s -> %s (main step %d)",
             activeData.currentSupportStep, #supportSteps,
@@ -613,17 +618,9 @@ function WMExecutor:stopCurrentStep(activeData)
         return
     end
 
-    -- If the dummy helper is active, deactivate it cleanly before normal stop logic.
-    -- The dummy is just stateModule:setActive(true) with no real route, so calling
-    -- stopAutoDrive() on it could behave unpredictably. Handle it here and return early
-    -- since there is no real AD/CP step running that needs to be stopped.
-    if activeData.dummyHelperActive then
-        if vehicle.ad and vehicle.ad.stateModule then
-            pcall(function() vehicle.ad.stateModule:setActive(false) end)
-        end
-        activeData.dummyHelperActive = nil
-        -- Do NOT set justStoppedAD — no real route was running
-        WMLogger:debug("Dummy AD helper deactivated (stateModule cleared)")
+    -- Wait states: no real AD/CP route was running. The global poller self-cleans next tick.
+    if activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER
+    or activeData.status == WorkflowManager.STATUS_WAITING_FOR_MAIN then
         return
     end
 
@@ -651,34 +648,128 @@ function WMExecutor:stopCurrentStep(activeData)
     end
 end
 
----Activate a dummy AD helper to keep AD's subsystem alive while the support vehicle is idle.
----Sets stateModule:setActive(true) directly — no route, no destination, no hold timeout.
----AD's getIsAIActive() returns true so the vehicle is treated as AI-managed.
----When real work arrives, stopCurrentStep() deactivates it before starting the real step.
+---Ensure the global wait-poller is registered with g_currentMission. The poller iterates
+---all active vehicles every ~500 ms and calls runWaitPoll for those in a waiting status.
+---This keeps polling alive even when FS25 puts distant vehicles to sleep.
+function WMExecutor:ensureWaitPollerActive()
+    if self.globalWaitPoller then return end
+    local executor = self
+    local poller = { throttle = 0 }
+    function poller:update(dt)
+        if g_server == nil then return end
+        self.throttle = self.throttle - dt
+        if self.throttle > 0 then return end
+        self.throttle = 500
+        for vehicle, _ in pairs(executor.activeVehicles) do
+            local spec = vehicle.spec_workflowManagerSpec
+            local ad = spec and spec.wmExecution
+            if ad then executor:runWaitPoll(ad, vehicle) end
+        end
+        -- Self-cleanup: remove poller once no vehicles remain in a wait state.
+        -- Called at tick-end so status changes from runWaitPoll are already applied.
+        executor:stopWaitPollerIfIdle()
+    end
+    self.globalWaitPoller = poller
+    g_currentMission:addUpdateable(poller)
+    WMLogger:debug("Global wait poller started")
+end
+
+---Remove the global wait poller if no vehicles remain in a wait status.
+function WMExecutor:stopWaitPollerIfIdle()
+    if not self.globalWaitPoller then return end
+    for vehicle, _ in pairs(self.activeVehicles) do
+        local spec = vehicle.spec_workflowManagerSpec
+        local ad = spec and spec.wmExecution
+        if ad and (ad.status == WorkflowManager.STATUS_WAITING_FOR_LEADER
+                or ad.status == WorkflowManager.STATUS_WAITING_FOR_MAIN) then
+            return
+        end
+    end
+    g_currentMission:removeUpdateable(self.globalWaitPoller)
+    self.globalWaitPoller = nil
+    WMLogger:debug("Global wait poller stopped (no vehicles waiting)")
+end
+
+---Poll logic for a single vehicle in a wait state. Called by the global poller every ~500 ms.
+---Covers: pending leader resolution, WAITING_FOR_LEADER unblock, WAITING_FOR_MAIN unblock.
 ---@param activeData table Per-vehicle execution state
 ---@param vehicle table Vehicle
-function WMExecutor:startDummyADHold(activeData, vehicle)
-    if not ADIntegration.isAvailable then return end
-    if activeData.dummyHelperActive then return end
-    -- Relevant for support vehicles (waiting for main) and follower vehicles (waiting for leader)
-    local isSupport = activeData.isMainVehicle == false
-    local isFollowerWaiting = activeData.leaderVehicle ~= nil
-    if not isSupport and not isFollowerWaiting then return end
-    local okStatus = activeData.status == WorkflowManager.STATUS_RUNNING
-                  or activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER
-    if not okStatus then return end
+function WMExecutor:runWaitPoll(activeData, vehicle)
+    local workflow = activeData.workflow
 
-    if vehicle.ad == nil or vehicle.ad.stateModule == nil then
-        WMLogger:debug("Support idle: vehicle has no AD stateModule, skipping dummy helper")
-        return
+    -- Resolve pending leader workflow ID (retry until leader's onPostLoad/onReadStream runs)
+    if activeData.pendingLeaderWorkflowId ~= nil and activeData.leaderVehicle == nil then
+        for candidate, _ in pairs(self.activeVehicles) do
+            if candidate ~= activeData.vehicle then
+                local exec = candidate.spec_workflowManagerSpec and candidate.spec_workflowManagerSpec.wmExecution
+                if exec and exec.workflow and exec.workflow.id == activeData.pendingLeaderWorkflowId then
+                    activeData.leaderVehicle = candidate
+                    activeData.linkedLeaderExecution = exec
+                    activeData.pendingLeaderWorkflowId = nil
+                    WMLogger:info("Resolved pending leader '%s' for follower at step %d (poll)",
+                        candidate.getName and candidate:getName() or "?", activeData.currentStep)
+                    break
+                end
+            end
+        end
     end
 
-    local ok = pcall(function() vehicle.ad.stateModule:setActive(true) end)
-    if ok then
-        activeData.dummyHelperActive = true
-        WMLogger:info("Support idle: dummy AD helper active (stateModule set active)")
-    else
-        WMLogger:warning("Support idle: failed to activate dummy AD helper — vehicle may stale")
+    -- Leader-follower poll: check if leader has advanced past our current step
+    if activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER then
+        local leaderSpec = activeData.leaderVehicle and activeData.leaderVehicle.spec_workflowManagerSpec
+        local leaderExec = leaderSpec and leaderSpec.wmExecution
+        -- Snap execution reference on first check (covers save/load restore ordering)
+        if leaderExec ~= nil and (activeData.linkedLeaderExecution == nil or activeData.syncSourceOrdinals == nil) then
+            activeData.linkedLeaderExecution = leaderExec
+            local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
+            WMLogger:debug("Leader sync: snapped execution reference for '%s' (poll)", leaderName)
+            self:buildSyncMaps(activeData)
+        end
+        if leaderExec == nil or (activeData.linkedLeaderExecution ~= nil and leaderExec ~= activeData.linkedLeaderExecution) then
+            local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
+            WMLogger:info("Leader '%s' %s — follower resuming freely at step %d",
+                leaderName, leaderExec == nil and "stopped" or "restarted with new execution",
+                activeData.currentStep)
+            activeData.leaderVehicle = nil
+            activeData.linkedLeaderExecution = nil
+            self:stopCurrentStep(activeData)
+            activeData.status = WorkflowManager.STATUS_RUNNING
+            self:executeCurrentStep(activeData)
+            WorkflowManager:broadcastState(activeData.vehicle)
+        else
+            local curStep = activeData.workflow.steps[activeData.currentStep]
+            local isSyncStep = curStep == nil or curStep.isSyncSource ~= false
+            local ordinal = (isSyncStep and activeData.syncSourceOrdinals
+                            and activeData.syncSourceOrdinals[activeData.currentStep]) or nil
+            local required = (ordinal and activeData.syncTargets and activeData.syncTargets[ordinal]) or nil
+            if required == nil or leaderExec.currentStep >= required then
+                local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
+                WMLogger:info("Leader '%s' at step %d — sync condition met, follower starting step %d",
+                    leaderName, leaderExec.currentStep, activeData.currentStep)
+                self:stopCurrentStep(activeData)
+                activeData.status = WorkflowManager.STATUS_RUNNING
+                self:executeCurrentStep(activeData)
+                WorkflowManager:broadcastState(activeData.vehicle)
+            end
+        end
+    end
+
+    -- Support vehicle idle polling: check if main has moved to a step with support sub-steps
+    if activeData.status == WorkflowManager.STATUS_WAITING_FOR_MAIN then
+        local mainActiveData = self:getMainActiveDataForWorkflow(workflow.id)
+        if mainActiveData == nil then
+            WMLogger:info("Support vehicle (idle): main stopped, stopping support")
+            self:stopWorkflow(vehicle)
+        else
+            local mainStep = workflow.steps[mainActiveData.currentStep]
+            local supportSteps = mainStep and mainStep.support or {}
+            local mainStepChanged = mainActiveData.currentStep ~= activeData.waitingForMainStepIndex
+            if #supportSteps > 0 and mainStepChanged then
+                WMLogger:info("Support vehicle (idle): main moved to step %d which has sub-steps",
+                    mainActiveData.currentStep)
+                self:onMainStepChanged(activeData, mainActiveData.currentStep)
+            end
+        end
     end
 end
 
@@ -814,10 +905,7 @@ function WMExecutor:resumeCurrentStep(activeData)
     end
 
     if step.type == WorkflowManager.STEP_AUTODRIVE then
-        -- Skip resume if dummy helper is active — it has no real route to unpause
-        if not activeData.dummyHelperActive then
-            ADIntegration:resumeRoute(vehicle)
-        end
+        ADIntegration:resumeRoute(vehicle)
     elseif step.type == WorkflowManager.STEP_COURSEPLAY then
         CPIntegration:resumeCourse(vehicle)
     end
@@ -855,9 +943,10 @@ function WMExecutor:onStepCompleted(activeData)
             activeData.currentSupportStep = 1
             activeData.waitingForMainStep = true
             activeData.waitingForMainStepIndex = mainActiveData.currentStep
+            activeData.status = WorkflowManager.STATUS_WAITING_FOR_MAIN
             WMLogger:info("Support vehicle: all sub-steps done, waiting for main to advance (main step %d)",
                 mainActiveData.currentStep)
-            self:startDummyADHold(activeData, activeData.vehicle)
+            self:ensureWaitPollerActive()
             WorkflowManager:broadcastState(activeData.vehicle)
             return
         end
@@ -992,86 +1081,9 @@ function WMExecutor:update(dt)
                 end
             end
 
-            -- Support vehicle idle polling: check if main has moved to a step with support sub-steps
-            if activeData.isMainVehicle == false and activeData.waitingForMainStep then
-                local mainActiveData = self:getMainActiveDataForWorkflow(workflow.id)
-                if mainActiveData == nil then
-                    WMLogger:info("Support vehicle (idle): main stopped, stopping support")
-                    self:stopWorkflow(vehicle)
-                else
-                    local mainStep = workflow.steps[mainActiveData.currentStep]
-                    local supportSteps = mainStep and mainStep.support or {}
-                    local mainStepChanged = mainActiveData.currentStep ~= activeData.waitingForMainStepIndex
-                    if #supportSteps > 0 and mainStepChanged then
-                        WMLogger:info("Support vehicle (idle): main moved to step %d which has sub-steps",
-                            mainActiveData.currentStep)
-                        self:onMainStepChanged(activeData, mainActiveData.currentStep)
-                    end
-                end
-            end
-
-            -- Resolve pending leader workflow ID (retry each tick until leader's onPostLoad/onReadStream runs).
-            -- This is the primary resolution path; executeCurrentStep has a matching safety-net copy
-            -- for the manual-resume-before-first-tick case.
-            if activeData.pendingLeaderWorkflowId ~= nil and activeData.leaderVehicle == nil then
-                for candidate, _ in pairs(self.activeVehicles) do
-                    if candidate ~= activeData.vehicle then
-                        local exec = candidate.spec_workflowManagerSpec and candidate.spec_workflowManagerSpec.wmExecution
-                        if exec and exec.workflow and exec.workflow.id == activeData.pendingLeaderWorkflowId then
-                            activeData.leaderVehicle = candidate
-                            activeData.linkedLeaderExecution = exec
-                            activeData.pendingLeaderWorkflowId = nil
-                            WMLogger:info("Resolved pending leader '%s' for follower at step %d (poll)",
-                                candidate.getName and candidate:getName() or "?", activeData.currentStep)
-                            break
-                        end
-                    end
-                end
-            end
-
-            -- Leader-follower poll: check if leader has advanced past our current step
-            if activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER then
-                local leaderSpec = activeData.leaderVehicle and activeData.leaderVehicle.spec_workflowManagerSpec
-                local leaderExec = leaderSpec and leaderSpec.wmExecution
-                -- Snap execution reference on first check (covers save/load restore ordering).
-                -- Also rebuild sync maps if nil (see executeCurrentStep snap for the same rationale).
-                if leaderExec ~= nil and (activeData.linkedLeaderExecution == nil or activeData.syncSourceOrdinals == nil) then
-                    activeData.linkedLeaderExecution = leaderExec
-                    local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
-                    WMLogger:debug("Leader sync: snapped execution reference for '%s' (poll)", leaderName)
-                    -- Rebuild sync maps now that we have the leader's workflow
-                    self:buildSyncMaps(activeData)
-                end
-                if leaderExec == nil or (activeData.linkedLeaderExecution ~= nil and leaderExec ~= activeData.linkedLeaderExecution) then
-                    -- Leader finished, stopped, or restarted a new execution — free the follower
-                    local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
-                    WMLogger:info("Leader '%s' %s — follower resuming freely at step %d",
-                        leaderName, leaderExec == nil and "stopped" or "restarted with new execution",
-                        activeData.currentStep)
-                    activeData.leaderVehicle = nil
-                    activeData.linkedLeaderExecution = nil
-                    self:stopCurrentStep(activeData)
-                    activeData.status = WorkflowManager.STATUS_RUNNING
-                    self:executeCurrentStep(activeData)
-                    WorkflowManager:broadcastState(activeData.vehicle)
-                else
-                    -- Check if the index-based sync condition is now met
-                    local curStep = activeData.workflow.steps[activeData.currentStep]
-                    local isSyncStep = curStep == nil or curStep.isSyncSource ~= false
-                    local ordinal = (isSyncStep and activeData.syncSourceOrdinals
-                                    and activeData.syncSourceOrdinals[activeData.currentStep]) or nil
-                    local required = (ordinal and activeData.syncTargets and activeData.syncTargets[ordinal]) or nil
-                    if required == nil or leaderExec.currentStep >= required then
-                        local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
-                        WMLogger:info("Leader '%s' at step %d — sync condition met, follower starting step %d",
-                            leaderName, leaderExec.currentStep, activeData.currentStep)
-                        self:stopCurrentStep(activeData)
-                        activeData.status = WorkflowManager.STATUS_RUNNING
-                        self:executeCurrentStep(activeData)
-                        WorkflowManager:broadcastState(activeData.vehicle)
-                    end
-                end
-            end
+            -- Leader-follower poll and support-vehicle idle poll are handled by the global
+            -- wait poller (runWaitPoll via g_currentMission:addUpdateable), so they run
+            -- even when FS25 puts distant vehicles to sleep.
 
             if activeData.status == WorkflowManager.STATUS_RUNNING and activeData.waitingForCompletion then
             -- Handle deferred CP start: either AD was stopped (AD->CP) or previous step
@@ -1424,9 +1436,9 @@ function WMExecutor:resetStepTrackingState(activeData)
     activeData.pendingADStart = nil
     activeData.pendingADStartRetries = nil
     activeData.justStoppedAD = nil
-    activeData.dummyHelperActive = nil
+    activeData.waitingForMainStep = nil
+    activeData.waitingForMainStepIndex = nil
     activeData.pendingExecuteOnResume = nil
-    -- Note: lastADTarget is intentionally preserved for dummy hold reuse
 end
 
 
@@ -1466,8 +1478,9 @@ function WMExecutor:goToPreviousStep(vehicle)
 
     self:resetStepTrackingState(activeData)
 
-    -- Resume to RUNNING if was paused or waiting-for-leader (manual nav always resumes)
-    if wasPaused or activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER then
+    -- Resume to RUNNING if was paused or in any wait state (manual nav always resumes)
+    if wasPaused or activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER
+                 or activeData.status == WorkflowManager.STATUS_WAITING_FOR_MAIN then
         activeData.status = WorkflowManager.STATUS_RUNNING
     end
 
@@ -1533,8 +1546,9 @@ function WMExecutor:goToNextStep(vehicle)
 
     self:resetStepTrackingState(activeData)
 
-    -- Resume to RUNNING if was paused or waiting-for-leader (manual nav always resumes)
-    if wasPaused or activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER then
+    -- Resume to RUNNING if was paused or in any wait state (manual nav always resumes)
+    if wasPaused or activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER
+                 or activeData.status == WorkflowManager.STATUS_WAITING_FOR_MAIN then
         activeData.status = WorkflowManager.STATUS_RUNNING
     end
 

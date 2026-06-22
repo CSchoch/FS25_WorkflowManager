@@ -133,6 +133,7 @@
         <text name="wm_hud_ad_active" text="AD aktiv"/>
         <text name="wm_hud_paused" text="Pausiert"/>
         <text name="wm_hud_waiting_for_leader" text="Wartet auf Fuehrer"/>
+        <text name="wm_hud_waiting_for_main" text="Wartet auf Hauptfahrzeug"/>
         <text name="wm_hud_idle" text="Leerlauf"/>
         <text name="wm_hud_no_vehicle" text="Kein Fahrzeug"/>
         <text name="wm_hud_tooltip_prev" text="Vorheriger Schritt"/>

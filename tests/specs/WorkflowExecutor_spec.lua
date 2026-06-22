@@ -29,6 +29,7 @@ describe("WMExecutor (real)", function()
             STATUS_COMPLETED          = "completed",
             STATUS_ERROR              = "error",
             STATUS_WAITING_FOR_LEADER = "waiting_for_leader",
+            STATUS_WAITING_FOR_MAIN   = "waiting_for_main",
             STEP_AUTODRIVE            = "autodrive",
             STEP_COURSEPLAY           = "courseplay",
             broadcastState            = function() end,
@@ -88,6 +89,15 @@ describe("WMExecutor (real)", function()
                 { type = "autodrive",  target = "Farm2",  action = "drive",     support = {} },
             },
         }
+    end
+
+    -- Fire the global wait poller once (bypasses throttle). Call after arranging
+    -- WAITING_FOR_LEADER / WAITING_FOR_MAIN state to simulate a poll tick.
+    local function triggerPoll()
+        if WMExecutor.globalWaitPoller then
+            WMExecutor.globalWaitPoller.throttle = 0
+            WMExecutor.globalWaitPoller:update(1000)
+        end
     end
 
     -- -------------------------------------------------------------------------
@@ -866,15 +876,15 @@ describe("WMExecutor (real)", function()
     -- Support vehicle: execution and looping
     -- =========================================================================
     describe("support vehicle execution", function()
-        it("support vehicle idles (waitingForMainStep) when main step has no sub-steps", function()
+        it("support vehicle idles (WAITING_FOR_MAIN) when main step has no sub-steps", function()
             local wf = makeWorkflowWithSupport("wf_sv1")
             local vm = makeVehicle("Main")
             local vs = makeVehicle("Support")
             WMExecutor:startWorkflow(wf, vm, true)
             WMExecutor:startWorkflow(wf, vs, false)
             -- Main is on step 1 which has no support sub-steps
-            -- Support vehicle should be idle
             local d = activeData(vs)
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_MAIN, d.status)
             assert.is_true(d.waitingForMainStep == true)
         end)
 
@@ -1246,8 +1256,7 @@ describe("WMExecutor (real)", function()
 
             -- Leader reaches step 2 (follower's required step) → follower resumes
             activeData(leader).currentStep = 2
-            WMExecutor.updateTimer = 0
-            WMExecutor:update(500)
+            triggerPoll()
             assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
         end)
 
@@ -1265,10 +1274,7 @@ describe("WMExecutor (real)", function()
 
             -- Leader stops (wmExecution cleared)
             WMExecutor:stopWorkflow(leader)
-
-            WMExecutor.updateTimer = 0
-            WMExecutor:update(500)
-
+            triggerPoll()
             assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
             assert.is_nil(activeData(follower).leaderVehicle)
         end)
@@ -1288,16 +1294,13 @@ describe("WMExecutor (real)", function()
             -- Leader stops and immediately restarts — new wmExecution table, same workflow id, step=1
             WMExecutor:stopWorkflow(leader)
             WMExecutor:startWorkflow(wf, leader)
-
-            WMExecutor.updateTimer = 0
-            WMExecutor:update(500)
-
+            triggerPoll()
             assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
             assert.is_nil(activeData(follower).leaderVehicle)
             assert.is_nil(activeData(follower).linkedLeaderExecution)
         end)
 
-        it("follower waiting for leader activates dummy AD hold", function()
+        it("follower waiting for leader registers global wait poller", function()
             local wf      = makeWorkflow("wf_ldr_dummy")
             local leader  = makeVehicle("Leader")
             local follower = makeVehicle("Follower")
@@ -1308,50 +1311,41 @@ describe("WMExecutor (real)", function()
             activeData(follower).status = WorkflowManager.STATUS_RUNNING
             WMExecutor:executeCurrentStep(activeData(follower))
             assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, activeData(follower).status)
-            assert.is_true(activeData(follower).dummyHelperActive)
-            assert.is_true(follower._isADActive)
+            assert.is_not_nil(WMExecutor.globalWaitPoller)
         end)
 
-        it("dummy AD hold is deactivated when leader reaches sync step", function()
+        it("global wait poller unblocks follower when leader reaches sync step", function()
             local wf      = makeWorkflow("wf_ldr_dummy_rel")
             local leader  = makeVehicle("Leader")
             local follower = makeVehicle("Follower")
             WMExecutor:startWorkflow(wf, leader)
             WMExecutor:startWorkflow(wf, follower, true, leader)
-            -- Advance follower to step 2 while leader is on step 1 → wait + dummy active
+            -- Advance follower to step 2 while leader is on step 1 → wait, poller active
             activeData(follower).currentStep = 2
             activeData(follower).status = WorkflowManager.STATUS_RUNNING
             WMExecutor:executeCurrentStep(activeData(follower))
-            assert.is_true(activeData(follower).dummyHelperActive)
-            assert.is_true(follower._isADActive)
-            -- Leader reaches step 2 (= required) → follower unblocked, dummy deactivated
+            assert.is_not_nil(WMExecutor.globalWaitPoller)
+            -- Leader reaches step 2 (= required) → follower unblocked
             activeData(leader).currentStep = 2
-            WMExecutor.updateTimer = 0
-            WMExecutor:update(500)
+            triggerPoll()
             assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
-            assert.is_nil(activeData(follower).dummyHelperActive)
-            assert.is_false(follower._isADActive)
         end)
 
-        it("dummy AD hold is deactivated when leader stops", function()
+        it("global wait poller unblocks follower when leader stops", function()
             local wf      = makeWorkflow("wf_ldr_dummy_stop")
             local leader  = makeVehicle("Leader")
             local follower = makeVehicle("Follower")
             WMExecutor:startWorkflow(wf, leader)
             WMExecutor:startWorkflow(wf, follower, true, leader)
-            -- Advance follower to step 2 while leader is on step 1 → wait + dummy active
+            -- Advance follower to step 2 while leader is on step 1 → wait, poller active
             activeData(follower).currentStep = 2
             activeData(follower).status = WorkflowManager.STATUS_RUNNING
             WMExecutor:executeCurrentStep(activeData(follower))
-            assert.is_true(activeData(follower).dummyHelperActive)
-            assert.is_true(follower._isADActive)
-            -- Leader stops → follower freed, dummy deactivated
+            assert.is_not_nil(WMExecutor.globalWaitPoller)
+            -- Leader stops → follower freed
             WMExecutor:stopWorkflow(leader)
-            WMExecutor.updateTimer = 0
-            WMExecutor:update(500)
+            triggerPoll()
             assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
-            assert.is_nil(activeData(follower).dummyHelperActive)
-            assert.is_false(follower._isADActive)
         end)
 
     end)
@@ -1471,8 +1465,7 @@ describe("WMExecutor (real)", function()
             assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, activeData(follower).status)
             -- Leader reaches step 2 → follower resumes
             activeData(leader).currentStep = 2
-            WMExecutor.updateTimer = 0
-            WMExecutor:update(500)
+            triggerPoll()
             assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
         end)
 
@@ -1516,8 +1509,7 @@ describe("WMExecutor (real)", function()
 
             -- Leader reaches step 3 (= required) → follower resumes
             activeData(leader).currentStep = 3
-            WMExecutor.updateTimer = 0
-            WMExecutor:update(500)
+            triggerPoll()
             assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
         end)
 
@@ -1575,14 +1567,13 @@ describe("WMExecutor (real)", function()
             activeData(leader).currentStep  = 2
             activeData(follower).currentStep = 2
             activeData(follower).status = WorkflowManager.STATUS_WAITING_FOR_LEADER
+            WMExecutor:ensureWaitPollerActive()
             -- Poll: leader at 2, required 3 → still waits
-            WMExecutor.updateTimer = 0
-            WMExecutor:update(500)
+            triggerPoll()
             assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, activeData(follower).status)
             -- Advance leader past required step (3)
             activeData(leader).currentStep = 4
-            WMExecutor.updateTimer = 0
-            WMExecutor:update(500)
+            triggerPoll()
             assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
         end)
 
@@ -1601,10 +1592,10 @@ describe("WMExecutor (real)", function()
             WMExecutor:startWorkflow(wf, follower, true, leader)
             -- Force follower into WAITING_FOR_LEADER on step 1 (isSyncSource=false)
             activeData(follower).status = WorkflowManager.STATUS_WAITING_FOR_LEADER
+            WMExecutor:ensureWaitPollerActive()
             -- Must not crash; isSyncSource=false → required=nil → free to run
             assert.has_no.errors(function()
-                WMExecutor.updateTimer = 0
-                WMExecutor:update(500)
+                triggerPoll()
             end)
             assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
         end)
@@ -1667,11 +1658,9 @@ describe("WMExecutor (real)", function()
             WMExecutor:startWorkflow(wf, leader)
             -- leader at step 1; follower step 2 requires leader step 2
             local followerExec = makeRestoredFollower(wf, follower, activeData(leader))
-            followerExec.status           = WorkflowManager.STATUS_WAITING_FOR_LEADER
-            followerExec.dummyHelperActive = true
-            follower._isADActive           = true
-            WMExecutor.updateTimer = 0
-            WMExecutor:update(500)
+            followerExec.status = WorkflowManager.STATUS_WAITING_FOR_LEADER
+            WMExecutor:ensureWaitPollerActive()
+            triggerPoll()
             assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, followerExec.status)
             assert.is_not_nil(followerExec.syncSourceOrdinals)  -- maps rebuilt by poll
         end)
@@ -1682,13 +1671,11 @@ describe("WMExecutor (real)", function()
             local follower = makeVehicle("Follower")
             WMExecutor:startWorkflow(wf, leader)
             local followerExec = makeRestoredFollower(wf, follower, activeData(leader))
-            followerExec.status           = WorkflowManager.STATUS_WAITING_FOR_LEADER
-            followerExec.dummyHelperActive = true
-            follower._isADActive           = true
+            followerExec.status = WorkflowManager.STATUS_WAITING_FOR_LEADER
+            WMExecutor:ensureWaitPollerActive()
             -- Advance leader past required step for follower step 2
             activeData(leader).currentStep = 2
-            WMExecutor.updateTimer = 0
-            WMExecutor:update(500)
+            triggerPoll()
             assert.are.equal(WorkflowManager.STATUS_RUNNING, followerExec.status)
         end)
 
@@ -1732,6 +1719,93 @@ describe("WMExecutor (real)", function()
             assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
             assert.are.equal(2, activeData(follower).currentStep)
         end)
+    end)
+
+    -- =========================================================================
+    -- STATUS_WAITING_FOR_MAIN: global poller, poll-triggered resume, pause/resume
+    -- =========================================================================
+    describe("STATUS_WAITING_FOR_MAIN", function()
+
+        it("global wait poller is registered when support enters WAITING_FOR_MAIN", function()
+            local wf = makeWorkflowWithSupport("wf_wfm_poll")
+            local vm = makeVehicle("Main")
+            local vs = makeVehicle("Support")
+            WMExecutor:startWorkflow(wf, vm, true)
+            WMExecutor:startWorkflow(wf, vs, false)
+            -- Main on step 1 (no sub-steps) → support should be in WAITING_FOR_MAIN
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_MAIN, activeData(vs).status)
+            assert.is_not_nil(WMExecutor.globalWaitPoller)
+        end)
+
+        it("poll triggers support to start sub-step when main advances to a step with sub-steps", function()
+            local wf = makeWorkflowWithSupport("wf_wfm_trigger")
+            local vm = makeVehicle("Main")
+            local vs = makeVehicle("Support")
+            WMExecutor:startWorkflow(wf, vm, true)
+            WMExecutor:startWorkflow(wf, vs, false)
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_MAIN, activeData(vs).status)
+            -- Main advances to step 2 (has 2 support sub-steps)
+            activeData(vm).currentStep = 2
+            triggerPoll()
+            -- Support should now be executing sub-step 1 (RUNNING, waitingForCompletion)
+            local d = activeData(vs)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, d.status)
+            assert.is_true(d.waitingForCompletion)
+        end)
+
+        it("poll does nothing if main step changed but still has no sub-steps", function()
+            local wf = makeWorkflowWithSupport("wf_wfm_nostep")
+            local vm = makeVehicle("Main")
+            local vs = makeVehicle("Support")
+            WMExecutor:startWorkflow(wf, vm, true)
+            WMExecutor:startWorkflow(wf, vs, false)
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_MAIN, activeData(vs).status)
+            -- Main advances to step 3 (no sub-steps) — support stays waiting
+            activeData(vm).currentStep = 3
+            triggerPoll()
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_MAIN, activeData(vs).status)
+        end)
+
+        it("can pause from WAITING_FOR_MAIN and resume returns to WAITING_FOR_MAIN", function()
+            local wf = makeWorkflowWithSupport("wf_wfm_pause")
+            local vm = makeVehicle("Main")
+            local vs = makeVehicle("Support")
+            WMExecutor:startWorkflow(wf, vm, true)
+            WMExecutor:startWorkflow(wf, vs, false)
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_MAIN, activeData(vs).status)
+            WMExecutor:pauseWorkflow(vs)
+            assert.are.equal(WorkflowManager.STATUS_PAUSED, activeData(vs).status)
+            WMExecutor:resumeWorkflow(vs)
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_MAIN, activeData(vs).status)
+            assert.is_not_nil(WMExecutor.globalWaitPoller)
+        end)
+
+        it("goToNextStep resumes from WAITING_FOR_MAIN to RUNNING", function()
+            local wf = makeWorkflowWithSupport("wf_wfm_nav")
+            local vm = makeVehicle("Main")
+            local vs = makeVehicle("Support")
+            WMExecutor:startWorkflow(wf, vm, true)
+            WMExecutor:startWorkflow(wf, vs, false)
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_MAIN, activeData(vs).status)
+            -- Move main to step 2 first so there is a step to navigate to
+            activeData(vm).currentStep = 2
+            WMExecutor:goToNextStep(vs)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(vs).status)
+        end)
+
+        it("support stops when main stops while support is in WAITING_FOR_MAIN", function()
+            local wf = makeWorkflowWithSupport("wf_wfm_mainstop")
+            local vm = makeVehicle("Main")
+            local vs = makeVehicle("Support")
+            WMExecutor:startWorkflow(wf, vm, true)
+            WMExecutor:startWorkflow(wf, vs, false)
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_MAIN, activeData(vs).status)
+            -- Main stops → poll detects mainActiveData == nil → stop support
+            WMExecutor:stopWorkflow(vm)
+            triggerPoll()
+            assert.is_nil(activeData(vs))
+        end)
+
     end)
 
     -- =========================================================================
