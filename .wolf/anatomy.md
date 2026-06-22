@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-06-21T20:30:17.181Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-06-22T22:59:15.158Z
 > Files: 47 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
@@ -46,14 +46,14 @@
 
 ## src/
 
-- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~19470 tok)
+- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~19919 tok)
 - `WorkflowManager.lua` — init, loadDialogs, Callback, showTextInputDialog, Called (~13764 tok)
-- `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~6266 tok)
+- `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~7161 tok)
 - `WorkflowStorage.lua` — deepCopySupportStep, parseFillTypes, init, getXmlPath, saveWorkflows (~3782 tok)
 
 ## src/dev/
 
-- `WMConsoleCommands.lua` — -@class WMConsoleCommands (~861 tok)
+- `WMConsoleCommands.lua` — -@class WMConsoleCommands (~2702 tok)
 
 ## src/gui/
 
@@ -91,9 +91,9 @@
 ## tests/specs/
 
 - `WMLeaderVehicleSelectDialog_spec.lua` — makeVehicle, makeList, makeButton (~3135 tok)
-- `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport, triggerPoll (~22862 tok)
+- `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport, triggerPoll (~23820 tok)
 - `WorkflowManager_spec.lua` — Declares constants (~9079 tok)
-- `WorkflowManagerSpec_spec.lua` — makeVehicle, makeSavegameXML (~10544 tok)
+- `WorkflowManagerSpec_spec.lua` — makeVehicle, makeSavegameXML (~10466 tok)
 - `WorkflowStorage_spec.lua` — hasKey (~9633 tok)
 
 ## textures/

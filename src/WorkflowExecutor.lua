@@ -394,16 +394,23 @@ function WMExecutor:executeCurrentStep(activeData)
     -- Safety net for the manual-resume path: update() resolves this each tick, but if the player
     -- resumes before the first update() tick (or goToNextStep/goToPreviousStep is called early),
     -- pendingLeaderWorkflowId may still be set when we arrive here.
-    if activeData.isMainVehicle ~= false and activeData.pendingLeaderWorkflowId ~= nil then
-        for vehicle, _ in pairs(self.activeVehicles) do
-            if vehicle ~= activeData.vehicle then
-                local exec = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
-                if exec and exec.workflow and exec.workflow.id == activeData.pendingLeaderWorkflowId then
-                    activeData.leaderVehicle = vehicle
-                    activeData.linkedLeaderExecution = exec
+    if activeData.isMainVehicle ~= false and activeData.leaderVehicle == nil
+    and (activeData.pendingLeaderWorkflowId ~= nil or activeData.pendingLeaderXmlIndex ~= nil) then
+        for v, _ in pairs(self.activeVehicles) do
+            if v ~= activeData.vehicle then
+                local vSpec = v.spec_workflowManagerSpec
+                local vExec = vSpec and vSpec.wmExecution
+                local matched = (activeData.pendingLeaderWorkflowId ~= nil
+                    and vExec and vExec.workflow and vExec.workflow.id == activeData.pendingLeaderWorkflowId)
+                    or (activeData.pendingLeaderXmlIndex ~= nil
+                    and vSpec and vSpec.wmXmlIndex == activeData.pendingLeaderXmlIndex)
+                if matched then
+                    activeData.leaderVehicle           = v
+                    activeData.linkedLeaderExecution   = vExec
                     activeData.pendingLeaderWorkflowId = nil
+                    activeData.pendingLeaderXmlIndex   = nil
                     WMLogger:info("Resolved pending leader '%s' for follower at step %d",
-                        vehicle.getName and vehicle:getName() or "?", activeData.currentStep)
+                        v.getName and v:getName() or "?", activeData.currentStep)
                     break
                 end
             end
@@ -436,6 +443,11 @@ function WMExecutor:executeCurrentStep(activeData)
                 local ordinal = activeData.syncSourceOrdinals
                                 and activeData.syncSourceOrdinals[activeData.currentStep]
                 local required = ordinal and activeData.syncTargets and activeData.syncTargets[ordinal]
+                -- Ordinal beyond leader's target list: wait until leader finishes (leaderExec==nil path)
+                if required == nil and ordinal then
+                    local leaderWF = activeData.linkedLeaderExecution and activeData.linkedLeaderExecution.workflow
+                    if leaderWF then required = #leaderWF.steps + 1 end
+                end
                 if required and leaderExec.currentStep < required then
                     WMLogger:debug("Waiting for leader: need leader at step %d (at %d), follower step %d",
                         required, leaderExec.currentStep, activeData.currentStep)
@@ -654,12 +666,13 @@ end
 function WMExecutor:ensureWaitPollerActive()
     if self.globalWaitPoller then return end
     local executor = self
-    local poller = { throttle = 0 }
+    local poller = { throttle = 0, cycles = 0 }
     function poller:update(dt)
         if g_server == nil then return end
         self.throttle = self.throttle - dt
         if self.throttle > 0 then return end
         self.throttle = 500
+        self.cycles = self.cycles + 1
         for vehicle, _ in pairs(executor.activeVehicles) do
             local spec = vehicle.spec_workflowManagerSpec
             local ad = spec and spec.wmExecution
@@ -681,7 +694,9 @@ function WMExecutor:stopWaitPollerIfIdle()
         local spec = vehicle.spec_workflowManagerSpec
         local ad = spec and spec.wmExecution
         if ad and (ad.status == WorkflowManager.STATUS_WAITING_FOR_LEADER
-                or ad.status == WorkflowManager.STATUS_WAITING_FOR_MAIN) then
+                or ad.status == WorkflowManager.STATUS_WAITING_FOR_MAIN
+                or ad.pendingLeaderXmlIndex ~= nil
+                or ad.pendingLeaderWorkflowId ~= nil) then
             return
         end
     end
@@ -698,14 +713,21 @@ function WMExecutor:runWaitPoll(activeData, vehicle)
     local workflow = activeData.workflow
 
     -- Resolve pending leader workflow ID (retry until leader's onPostLoad/onReadStream runs)
-    if activeData.pendingLeaderWorkflowId ~= nil and activeData.leaderVehicle == nil then
+    if activeData.leaderVehicle == nil
+    and (activeData.pendingLeaderWorkflowId ~= nil or activeData.pendingLeaderXmlIndex ~= nil) then
         for candidate, _ in pairs(self.activeVehicles) do
             if candidate ~= activeData.vehicle then
-                local exec = candidate.spec_workflowManagerSpec and candidate.spec_workflowManagerSpec.wmExecution
-                if exec and exec.workflow and exec.workflow.id == activeData.pendingLeaderWorkflowId then
-                    activeData.leaderVehicle = candidate
-                    activeData.linkedLeaderExecution = exec
+                local vSpec = candidate.spec_workflowManagerSpec
+                local vExec = vSpec and vSpec.wmExecution
+                local matched = (activeData.pendingLeaderWorkflowId ~= nil
+                    and vExec and vExec.workflow and vExec.workflow.id == activeData.pendingLeaderWorkflowId)
+                    or (activeData.pendingLeaderXmlIndex ~= nil
+                    and vSpec and vSpec.wmXmlIndex == activeData.pendingLeaderXmlIndex)
+                if matched then
+                    activeData.leaderVehicle           = candidate
+                    activeData.linkedLeaderExecution   = vExec
                     activeData.pendingLeaderWorkflowId = nil
+                    activeData.pendingLeaderXmlIndex   = nil
                     WMLogger:info("Resolved pending leader '%s' for follower at step %d (poll)",
                         candidate.getName and candidate:getName() or "?", activeData.currentStep)
                     break
@@ -742,6 +764,11 @@ function WMExecutor:runWaitPoll(activeData, vehicle)
             local ordinal = (isSyncStep and activeData.syncSourceOrdinals
                             and activeData.syncSourceOrdinals[activeData.currentStep]) or nil
             local required = (ordinal and activeData.syncTargets and activeData.syncTargets[ordinal]) or nil
+            -- Ordinal beyond leader's target list: wait until leader finishes (leaderExec==nil path)
+            if required == nil and ordinal then
+                local leaderWF = activeData.linkedLeaderExecution and activeData.linkedLeaderExecution.workflow
+                if leaderWF then required = #leaderWF.steps + 1 end
+            end
             if required == nil or leaderExec.currentStep >= required then
                 local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
                 WMLogger:info("Leader '%s' at step %d — sync condition met, follower starting step %d",

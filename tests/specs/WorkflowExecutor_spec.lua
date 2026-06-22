@@ -1513,7 +1513,7 @@ describe("WMExecutor (real)", function()
             assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
         end)
 
-        it("more sources than targets: extra source step runs freely (no 3rd target)", function()
+        it("more sources than targets: extra source step waits until leader finishes", function()
             local wf = {
                 id = "wf_ibs_extra", name = "Extra",
                 steps = {
@@ -1529,12 +1529,72 @@ describe("WMExecutor (real)", function()
             -- Step 1 runs freely (1st source, syncTargets[1]=1, leader step=1 which is >= 1)
             assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
 
-            -- Advance to step 3: syncSourceOrdinals[3]=2, syncTargets[2]=nil → run freely
+            -- Advance to step 3: ordinal=2, syncTargets[2]=nil → required=#leaderSteps+1=4
+            -- Leader is at step 2 < 4 → follower must wait until leader finishes
             activeData(leader).currentStep = 2
             activeData(follower).currentStep = 3
             activeData(follower).status = WorkflowManager.STATUS_RUNNING
             WMExecutor:executeCurrentStep(activeData(follower))
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, activeData(follower).status)
+
+            -- Leader stops (wmExecution cleared) → follower freed
+            leader.spec_workflowManagerSpec.wmExecution = nil
+            WMExecutor:ensureWaitPollerActive()
+            triggerPoll()
             assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
+        end)
+
+        it("overflow ordinal: poll keeps follower waiting while leader is still running", function()
+            local wf = {
+                id = "wf_ibs_extra_poll", name = "ExtraPoll",
+                steps = {
+                    { type = "autodrive", target = "A", action = "drive", isSyncTarget = true,  isSyncSource = true, support = {} },
+                    { type = "autodrive", target = "B", action = "drive", isSyncTarget = false, isSyncSource = true, support = {} },
+                    { type = "autodrive", target = "C", action = "drive", isSyncTarget = false, isSyncSource = true, support = {} },
+                },
+            }
+            local leader   = makeVehicle("L_ep")
+            local follower = makeVehicle("F_ep")
+            WMExecutor:startWorkflow(wf, leader)
+            WMExecutor:startWorkflow(wf, follower, true, leader)
+            activeData(leader).currentStep  = 2
+            activeData(follower).currentStep = 3
+            activeData(follower).status = WorkflowManager.STATUS_RUNNING
+            WMExecutor:executeCurrentStep(activeData(follower))
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, activeData(follower).status)
+
+            -- Poll: leader still running (step 2 < required 4) → stays waiting
+            WMExecutor:ensureWaitPollerActive()
+            triggerPoll()
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, activeData(follower).status)
+
+            -- Leader finishes → follower freed
+            leader.spec_workflowManagerSpec.wmExecution = nil
+            triggerPoll()
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
+        end)
+
+        it("overflow ordinal: follower runs freely when leader already finished before follower reaches overflow step", function()
+            local wf = {
+                id = "wf_ibs_extra_done", name = "ExtraDone",
+                steps = {
+                    { type = "autodrive", target = "A", action = "drive", isSyncTarget = true,  isSyncSource = true, support = {} },
+                    { type = "autodrive", target = "B", action = "drive", isSyncTarget = false, isSyncSource = true, support = {} },
+                    { type = "autodrive", target = "C", action = "drive", isSyncTarget = false, isSyncSource = true, support = {} },
+                },
+            }
+            local leader   = makeVehicle("L_ed")
+            local follower = makeVehicle("F_ed")
+            WMExecutor:startWorkflow(wf, leader)
+            WMExecutor:startWorkflow(wf, follower, true, leader)
+            -- Leader finishes before follower reaches the overflow step
+            leader.spec_workflowManagerSpec.wmExecution = nil
+            activeData(follower).currentStep = 3
+            activeData(follower).status = WorkflowManager.STATUS_RUNNING
+            WMExecutor:executeCurrentStep(activeData(follower))
+            -- leaderExec==nil path clears leaderVehicle → follower runs freely
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
+            assert.is_nil(activeData(follower).leaderVehicle)
         end)
 
         it("leader already past required step: follower does not wait", function()

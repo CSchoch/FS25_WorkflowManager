@@ -50,6 +50,13 @@ end
 function WorkflowManagerSpec:onPostLoad(savegame)
     if savegame == nil or savegame.resetVehicles then return end
 
+    -- Parse and store this vehicle's XML index from savegame.key ("vehicles.vehicle(N)").
+    -- Used as a stable cross-session identity for leader vehicle lookup.
+    local selfXmlIndex = tonumber(savegame.key:match("vehicle%((%d+)%)"))
+    self.spec_workflowManagerSpec.wmXmlIndex = selfXmlIndex
+    WMLogger:debug("onPostLoad: vehicle='%s' xmlIndex=%s key='%s'",
+        self.getName and self:getName() or "?", tostring(selfXmlIndex), savegame.key)
+
     local key = savegame.key .. ".FS25_WorkflowManager.workflowManagerSpec"
     local workflowId = savegame.xmlFile:getValue(key .. "#workflowId")
     if workflowId ~= nil and workflowId ~= "" then
@@ -70,29 +77,58 @@ function WorkflowManagerSpec:onPostLoad(savegame)
                 currentSupportStep = savegame.xmlFile:getValue(key .. "#currentSupportStep") or 1
             end
 
-            local leaderWorkflowId = savegame.xmlFile:getValue(key .. "#leaderWorkflowId")
             local leaderVehicle = nil
             local linkedLeaderExecution = nil
+            local pendingLeaderXmlIndex = nil
             local pendingLeaderWorkflowId = nil
-            if leaderWorkflowId then
-                for vehicle, _ in pairs(WMExecutor.activeVehicles) do
-                    if vehicle ~= self then
-                        local exec = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
-                        if exec and exec.workflow and exec.workflow.id == leaderWorkflowId then
-                            leaderVehicle = vehicle
-                            linkedLeaderExecution = exec
+
+            local leaderXmlIdx = savegame.xmlFile:getValue(key .. "#leaderVehicleXmlIndex")
+            local leaderKeyUsed = leaderXmlIdx ~= nil and "#leaderVehicleXmlIndex" or nil
+            -- Backward compat: old save used 1-based Lua array index
+            if leaderXmlIdx == nil then
+                local legacyIdx = savegame.xmlFile:getValue(key .. "#leaderVehicleIndex")
+                if legacyIdx then
+                    leaderXmlIdx = legacyIdx - 1
+                    leaderKeyUsed = "#leaderVehicleIndex(legacy)"
+                end
+            end
+            WMLogger:debug("Restore leader: key=%s rawValue=%s", tostring(leaderKeyUsed), tostring(leaderXmlIdx))
+
+            if leaderXmlIdx ~= nil then
+                for v, _ in pairs(WMExecutor.activeVehicles) do
+                    if v ~= self then
+                        local vSpec = v.spec_workflowManagerSpec
+                        if vSpec and vSpec.wmXmlIndex == leaderXmlIdx then
+                            leaderVehicle = v
+                            linkedLeaderExecution = vSpec.wmExecution
                             break
                         end
                     end
                 end
                 if leaderVehicle then
-                    WMLogger:debug("Restore leader: workflowId='%s' → vehicle='%s' execLinked=%s",
-                        leaderWorkflowId,
-                        leaderVehicle.getName and leaderVehicle:getName() or "?",
-                        tostring(linkedLeaderExecution ~= nil))
+                    WMLogger:debug("Restore leader: xmlIndex=%d → vehicle='%s'", leaderXmlIdx,
+                        leaderVehicle.getName and leaderVehicle:getName() or "?")
                 else
-                    pendingLeaderWorkflowId = leaderWorkflowId
-                    WMLogger:debug("Restore leader: workflowId='%s' → not found yet, deferred", leaderWorkflowId)
+                    pendingLeaderXmlIndex = leaderXmlIdx
+                    -- Log which candidates were visible so mismatches are diagnosable
+                    local seen = {}
+                    for v, _ in pairs(WMExecutor.activeVehicles) do
+                        local vSpec = v.spec_workflowManagerSpec
+                        table.insert(seen, string.format("'%s'(idx=%s)",
+                            v.getName and v:getName() or "?",
+                            tostring(vSpec and vSpec.wmXmlIndex)))
+                    end
+                    WMLogger:debug("Restore leader: xmlIndex=%d → not found yet, deferred (activeVehicles: %s)",
+                        leaderXmlIdx, #seen > 0 and table.concat(seen, ", ") or "none")
+                end
+            else
+                -- Backward compat: even older saves used workflow ID
+                local legacyWfId = savegame.xmlFile:getValue(key .. "#leaderWorkflowId")
+                if legacyWfId then
+                    pendingLeaderWorkflowId = legacyWfId
+                    WMLogger:debug("Restore leader: legacy workflowId='%s' (deferred)", legacyWfId)
+                else
+                    WMLogger:debug("Restore leader: no leader key found in savegame")
                 end
             end
 
@@ -134,13 +170,15 @@ function WorkflowManagerSpec:onPostLoad(savegame)
                 currentSupportStep      = currentSupportStep,
                 leaderVehicle           = leaderVehicle,
                 linkedLeaderExecution   = linkedLeaderExecution,
+                pendingLeaderXmlIndex   = pendingLeaderXmlIndex,
                 pendingLeaderWorkflowId = pendingLeaderWorkflowId,
                 waitingForMainStep      = restoredWaitingForMainStep,
                 waitingForMainStepIndex = restoredWaitingForMainStepIndex,
                 autoResumeUntil         = restoredAutoResume,
             }
             WMExecutor.activeVehicles[self] = true
-            if isWaitingForLeader or isWaitingForMain then
+            if isWaitingForLeader or isWaitingForMain
+            or pendingLeaderXmlIndex ~= nil or pendingLeaderWorkflowId ~= nil then
                 WMExecutor:ensureWaitPollerActive()
             end
             WMHud:show(self)
@@ -163,8 +201,9 @@ function WorkflowManagerSpec:saveToXMLFile(xmlFile, key, usedModNames)
     if spec == nil or spec.wmExecution == nil then return end
 
     local activeData = spec.wmExecution
-    WMLogger:debug("saveToXMLFile: vehicle='%s' step=%d status=%s leaderVehicle=%s",
+    WMLogger:debug("saveToXMLFile: vehicle='%s' xmlIndex=%s step=%d status=%s leaderVehicle=%s",
         self.getName and self:getName() or "?",
+        tostring(spec.wmXmlIndex),
         activeData.currentStep, tostring(activeData.status),
         activeData.leaderVehicle and (activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?") or "nil")
     -- 'key' already contains the full path including our mod/spec namespace
@@ -185,15 +224,30 @@ function WorkflowManagerSpec:saveToXMLFile(xmlFile, key, usedModNames)
         xmlFile:setValue(key .. "#waitingForMainStepIndex", activeData.waitingForMainStepIndex or 1)
     end
     if activeData.leaderVehicle then
-        local leaderExec = activeData.leaderVehicle.spec_workflowManagerSpec and
-                           activeData.leaderVehicle.spec_workflowManagerSpec.wmExecution
-        local leaderWorkflowId = leaderExec and leaderExec.workflow and leaderExec.workflow.id
-        if leaderWorkflowId then
-            xmlFile:setValue(key .. "#leaderWorkflowId", leaderWorkflowId)
-            WMLogger:debug("Saved leaderWorkflowId='%s' for '%s'", leaderWorkflowId,
-                activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?")
+        local leaderSpec = activeData.leaderVehicle.spec_workflowManagerSpec
+        local leaderXmlIdx = leaderSpec and leaderSpec.wmXmlIndex
+        local leaderIdxSource = "wmXmlIndex"
+        if leaderXmlIdx == nil then
+            -- Fallback for vehicles started fresh this session (no prior savegame load).
+            -- FS25 saves vehicles in g_currentMission.vehicles order, so position - 1 = XML index.
+            local vehicles = g_currentMission and g_currentMission.vehicles
+            if vehicles then
+                for i, v in ipairs(vehicles) do
+                    if v == activeData.leaderVehicle then
+                        leaderXmlIdx = i - 1
+                        leaderIdxSource = "g_currentMission.vehicles fallback"
+                        break
+                    end
+                end
+            end
+        end
+        if leaderXmlIdx ~= nil then
+            xmlFile:setValue(key .. "#leaderVehicleXmlIndex", leaderXmlIdx)
+            WMLogger:debug("Saved leaderVehicleXmlIndex=%d for '%s' (source: %s)", leaderXmlIdx,
+                activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?",
+                leaderIdxSource)
         else
-            WMLogger:warning("Leader vehicle '%s' has no active workflow — leader not saved",
+            WMLogger:warning("Leader vehicle '%s' has no resolvable index — leader not saved",
                 activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?")
         end
     end
@@ -494,10 +548,15 @@ function WorkflowManagerSpec.initSpecialization()
         "true = main role, false = support role")
     schema:register(XMLValueType.INT,  key .. "#currentSupportStep",
         "Current support sub-step index (support vehicles only)")
-    schema:register(XMLValueType.STRING, key .. "#leaderWorkflowId",
-        "Workflow ID of the leader vehicle (absent = no leader)")
+    schema:register(XMLValueType.INT, key .. "#leaderVehicleXmlIndex",
+        "0-based XML vehicle index (vehicles.vehicle(N)) of the leader vehicle (absent = no leader)")
+    -- Legacy keys — read-only for backward compat with old saves; never written by new code
+    schema:register(XMLValueType.INT,    key .. "#leaderVehicleIndex",  "Legacy: 1-based leader index")
+    schema:register(XMLValueType.STRING, key .. "#leaderWorkflowId",    "Legacy: leader workflow ID")
     schema:register(XMLValueType.STRING, key .. "#status",
         "Workflow status at save time (only written for waiting_for_leader)")
+    schema:register(XMLValueType.INT, key .. "#waitingForMainStepIndex",
+        "Main vehicle step index when support entered WAITING_FOR_MAIN (support vehicles only)")
     print("[WorkflowManager] Registered savegame XML schema")
 end
 

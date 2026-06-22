@@ -1319,10 +1319,138 @@
       "file": "src/dev/WMConsoleCommands.lua",
       "root_cause": "Lua syntax error on line 25: `vehicle:getFullName and ...` — in Lua 5.1, `a:b` without `()` is invalid method-call syntax; parser expected `(` but got `and`. This caused the file to fail to compile so WMConsoleCommands was never defined as a global.",
       "fix": "Changed `vehicle:getFullName` to `vehicle.getFullName` (dot access for nil-check, colon only for the actual call).",
-      "tags": ["syntax-error", "lua", "console-commands"],
+      "tags": [
+        "syntax-error",
+        "lua",
+        "console-commands"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-06-21T22:09:07.000Z"
+    },
+    {
+      "id": "bug-082",
+      "timestamp": "2026-06-22T06:44:28.570Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowManagerSpec.lua",
+      "root_cause": "16 lines replaced/restructured",
+      "fix": "Rewrote 25→15 lines (16 removed) | Also: local leaderExec = activeData.leaderVehicle.spec_w; activeData.leaderVehicle.spec_workflowManagerSpec. | Also: schema:register(XMLValueType.STRING, key .. \"#lead; \"Workflow ID of the leader vehicle (absent = no le",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-06-22T06:45:03.489Z"
+    },
+    {
+      "id": "bug-083",
+      "timestamp": "2026-06-22T07:32:22.932Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/WorkflowManagerSpec.lua",
+      "root_cause": "Had \"#leaderVehicleIndex\"",
+      "fix": "Changed to \"#leaderVehicleXmlIndex\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-22T07:32:22.933Z"
+    },
+    {
+      "id": "bug-084",
+      "timestamp": "2026-06-22T07:32:35.021Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "8 lines replaced/restructured",
+      "fix": "Rewrote 15→22 lines (8 removed) | Also: if activeData.pendingLeaderWorkflowId ~= nil and a; local exec = candidate.spec_workflowManagerSpec an",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-06-22T07:32:42.635Z"
+    },
+    {
+      "id": "bug-085",
+      "timestamp": "2026-06-22T08:13:00.066Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowManagerSpec.lua",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 33→49 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-22T08:13:00.066Z"
+    },
+    {
+      "id": "bug-086",
+      "timestamp": "2026-06-22T17:04:33.276Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/dev/WMConsoleCommands.lua",
+      "root_cause": "Had \"  waitPoller:        %s\"",
+      "fix": "Changed to \"  waitPoller:        %s  (cycles: %d)\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-22T17:04:33.276Z"
+    },
+    {
+      "id": "bug-087",
+      "timestamp": "2026-06-22T20:37:45.550Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/dev/WMConsoleCommands.lua",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 13→10 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-22T20:37:45.550Z"
+    },
+    {
+      "id": "bug-088",
+      "timestamp": "2026-06-22T21:26:36.235Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/dev/WMConsoleCommands.lua",
+      "root_cause": "Had \"  syncRequired:      %s  (ordinal: %s)\"",
+      "fix": "Changed to \"  syncRequired:      %s\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-22T21:26:36.235Z"
+    },
+    {
+      "id": "bug-089",
+      "timestamp": "2026-06-23T00:00:00.000Z",
+      "error_message": "Follower stuck in waiting_for_leader with syncRequired nil — leader at last step, follower never unblocks",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "When a follower's sync ordinal has no corresponding entry in syncTargets (overflow case), the code set required = #leaderWF.steps + 1. This makes the check `leaderExec.currentStep >= required` permanently unsatisfiable — currentStep can never reach steps+1. Follower is stuck until leader stops its workflow entirely.",
+      "fix": "Changed required = #leaderWF.steps + 1 to required = #leaderWF.steps in both executeCurrentStep and runWaitPoll. Now the follower unblocks as soon as the leader has started its last step, consistent with the rest of the sync semantics (reaching step N = starting it).",
+      "tags": ["sync", "waiting_for_leader", "off-by-one", "overflow-ordinal"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-23T00:00:00.000Z"
     }
   ]
 }
