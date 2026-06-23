@@ -19,9 +19,14 @@ describe("WMStorage", function()
     -- Setup: load dependencies then WMStorage
     -- -------------------------------------------------------------------------
     setup(function()
-        -- WorkflowManager stub (WMStorage uses WorkflowManager.modDirectory and WMHud)
+        -- WorkflowManager stub (WMStorage uses WorkflowManager.modDirectory, step type
+        -- constants for marker steps, and WMHud)
         _G.WorkflowManager = _G.WorkflowManager or {}
         _G.WorkflowManager.modDirectory = "./"
+        _G.WorkflowManager.STEP_AUTODRIVE = "autodrive"
+        _G.WorkflowManager.STEP_COURSEPLAY = "courseplay"
+        _G.WorkflowManager.STEP_WAIT_FOR_LEADER = "wait_for_leader"
+        _G.WorkflowManager.STEP_UNLOCK_FOLLOWER = "unlock_follower"
 
         -- WMHud stub for HUD position save/restore
         _G.WMHud = { x = nil, y = nil }
@@ -153,75 +158,90 @@ describe("WMStorage", function()
             assert.is_nil(step.syncGroup)
         end)
 
-        it("isSyncTarget=false round-trips correctly", function()
+        it("marker steps round-trip without target/action", function()
             local wf = {
-                id = "wf_sync_001", name = "Sync Workflow",
+                id = "wf_marker_001", name = "Marker Workflow",
                 steps = {
-                    { type = "autodrive", target = "A", action = "drive", isSyncTarget = false, support = {} },
-                }
-            }
-            WMStorage:saveWorkflows({ wf })
-            _G.fileExists = function() return true end
-            local loaded = WMStorage:loadWorkflows()
-            assert.is_false(loaded[1].steps[1].isSyncTarget)
-        end)
-
-        it("isSyncSource=false round-trips correctly", function()
-            local wf = {
-                id = "wf_sync_002", name = "Sync Workflow 2",
-                steps = {
-                    { type = "autodrive", target = "A", action = "drive", isSyncSource = false, support = {} },
-                }
-            }
-            WMStorage:saveWorkflows({ wf })
-            _G.fileExists = function() return true end
-            local loaded = WMStorage:loadWorkflows()
-            assert.is_false(loaded[1].steps[1].isSyncSource)
-        end)
-
-        it("step with no sync attributes loads with isSyncTarget and isSyncSource both true", function()
-            local wf = {
-                id = "wf_sync_003", name = "Sync Default",
-                steps = {
+                    { type = "wait_for_leader", target = "", support = {} },
                     { type = "autodrive", target = "A", action = "drive", support = {} },
+                    { type = "unlock_follower", target = "", support = {} },
                 }
             }
             WMStorage:saveWorkflows({ wf })
             _G.fileExists = function() return true end
             local loaded = WMStorage:loadWorkflows()
-            local step = loaded[1].steps[1]
-            assert.is_true(step.isSyncTarget)
-            assert.is_true(step.isSyncSource)
+            assert.are.equal(3, #loaded[1].steps)
+            assert.are.equal("wait_for_leader", loaded[1].steps[1].type)
+            assert.are.equal("autodrive", loaded[1].steps[2].type)
+            assert.are.equal("unlock_follower", loaded[1].steps[3].type)
         end)
 
-        it("step with both flags true produces no sync attributes in XML (clean default)", function()
+        it("saving writes formatVersion 2 to the root", function()
             local wf = {
-                id = "wf_sync_004", name = "Sync Clean",
-                steps = {
-                    { type = "autodrive", target = "A", action = "drive", isSyncTarget = true, isSyncSource = true, support = {} },
-                }
+                id = "wf_ver_001", name = "Versioned",
+                steps = { { type = "autodrive", target = "A", action = "drive", support = {} } }
             }
             WMStorage:saveWorkflows({ wf })
-            -- Reload: if isSyncTarget/isSyncSource are absent from XML they default to true on load.
-            -- The key indicator is that no extra attributes exist — confirm via round-trip.
-            _G.fileExists = function() return true end
-            local loaded = WMStorage:loadWorkflows()
-            -- Values default to true when absent → loaded step should still read as true
-            assert.is_true(loaded[1].steps[1].isSyncTarget)
-            assert.is_true(loaded[1].steps[1].isSyncSource)
-            -- Confirm the raw store does NOT contain explicit false values (only false is ever written)
             local store = XMLFile._getStorage()
-            -- Find any key containing "isSyncTarget" in the data — there should be none
-            local function hasKey(t, needle)
+            local function hasFormatVersion(t)
                 if type(t) ~= "table" then return false end
                 for k, v in pairs(t) do
-                    if type(k) == "string" and k:find(needle, 1, true) then return true end
-                    if hasKey(v, needle) then return true end
+                    if type(k) == "string" and k:find("formatVersion", 1, true) then return true end
+                    if hasFormatVersion(v) then return true end
                 end
                 return false
             end
-            assert.is_false(hasKey(store, "isSyncTarget"))
-            assert.is_false(hasKey(store, "isSyncSource"))
+            assert.is_true(hasFormatVersion(store))
+        end)
+
+        it("migrates old per-step sync flags (formatVersion 1) into marker steps", function()
+            -- Build a v1 file (no formatVersion) with two steps: step 1 fully syncing
+            -- (both flags default true), step 2 with sync explicitly disabled.
+            local xmlPath = WMStorage:getXmlPath()
+            local f = XMLFile.create("wm_sync_migrate", xmlPath, "WorkflowManager")
+            local base = "WorkflowManager.workflows.workflow(0)"
+            f:setString(base .. "#id", "wf_old_sync")
+            f:setString(base .. "#name", "Old Sync")
+            f:setString(base .. ".step(0)#type", "autodrive")
+            f:setString(base .. ".step(0)#target", "A")
+            f:setString(base .. ".step(0)#action", "drive")
+            f:setString(base .. ".step(1)#type", "courseplay")
+            f:setString(base .. ".step(1)#target", "Field1")
+            f:setString(base .. ".step(1)#action", "fieldwork")
+            f:setBool(base .. ".step(1)#isSyncTarget", false)
+            f:setBool(base .. ".step(1)#isSyncSource", false)
+            f:save()
+
+            _G.fileExists = function() return true end
+            local loaded = WMStorage:loadWorkflows()
+            local steps = loaded[1].steps
+            -- step 1 (both flags true) -> wait, unlock, work ; step 2 (both false) -> work only
+            assert.are.equal(4, #steps)
+            assert.are.equal("wait_for_leader", steps[1].type)
+            assert.are.equal("unlock_follower", steps[2].type)
+            assert.are.equal("autodrive", steps[3].type)
+            assert.are.equal("courseplay", steps[4].type)
+            -- migrated work steps no longer carry the legacy flags
+            assert.is_nil(steps[3].isSyncTarget)
+            assert.is_nil(steps[3].isSyncSource)
+        end)
+
+        it("does not migrate a formatVersion 2 file (markers left as-is)", function()
+            local xmlPath = WMStorage:getXmlPath()
+            local f = XMLFile.create("wm_v2_nomigrate", xmlPath, "WorkflowManager")
+            f:setInt("WorkflowManager#formatVersion", 2)
+            local base = "WorkflowManager.workflows.workflow(0)"
+            f:setString(base .. "#id", "wf_v2")
+            f:setString(base .. "#name", "V2")
+            f:setString(base .. ".step(0)#type", "autodrive")
+            f:setString(base .. ".step(0)#target", "A")
+            f:setString(base .. ".step(0)#action", "drive")
+            f:save()
+
+            _G.fileExists = function() return true end
+            local loaded = WMStorage:loadWorkflows()
+            assert.are.equal(1, #loaded[1].steps)
+            assert.are.equal("autodrive", loaded[1].steps[1].type)
         end)
 
         it("persists support sub-steps nested inside a main step", function()
@@ -498,6 +518,8 @@ describe("WMStorage", function()
             -- Inject old-format XML with fillType (singular) directly
             local xmlPath = WMStorage:getXmlPath()
             local f = XMLFile.create("wm_legacy_ft", xmlPath, "WorkflowManager")
+            -- v2: isolate this test from the sync-flag marker migration
+            f:setInt("WorkflowManager#formatVersion", 2)
             f:setString("WorkflowManager.workflows.workflow(0)#id",              "wf_legacy_ft")
             f:setString("WorkflowManager.workflows.workflow(0)#name",            "Legacy FillType")
             f:setString("WorkflowManager.workflows.workflow(0).step(0)#type",    "autodrive")
@@ -528,6 +550,8 @@ describe("WMStorage", function()
             -- Use the same path that loadWorkflows will query.
             local xmlPath = WMStorage:getXmlPath()
             local f = XMLFile.create("wm_migrate_test", xmlPath, "WorkflowManager")
+            -- v2: isolate the linked-workflow migration tests from the sync-flag marker migration
+            f:setInt("WorkflowManager#formatVersion", 2)
 
             local function writeWf(index, wf)
                 local wk = string.format("WorkflowManager.workflows.workflow(%d)", index)

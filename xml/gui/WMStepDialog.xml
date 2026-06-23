@@ -20,13 +20,13 @@
             </BoxLayout>
 
             <!-- Action Dropdown -->
-            <BoxLayout profile="wm_hBox" size="860px 45px">
+            <BoxLayout profile="wm_hBox" id="actionRow" size="860px 45px">
                 <Text profile="wm_dialogText" text="$l10n_wm_editor_action" size="150px 40px"/>
                 <MultiTextOption profile="fs25_settingsMultiTextOption" id="actionDropdown" onStateChanged="onActionChanged" size="500px 40px"/>
             </BoxLayout>
 
             <!-- Target: label 150 + [input 460 + spacer 40] 500 = 650 -->
-            <BoxLayout profile="wm_hBox" size="860px 40px">
+            <BoxLayout profile="wm_hBox" id="targetRow" size="860px 40px">
                 <Text profile="wm_dialogText" text="$l10n_wm_editor_target" size="150px 35px"/>
                 <BoxLayout flowDirection="horizontal" size="500px 35px">
                     <TextInput profile="fs25_dialogTextInput" id="targetSearchInput" onTextChanged="onTargetSearchChanged" maxCharacters="50" size="460px 35px" focusId="targetSearch">
@@ -37,7 +37,7 @@
             </BoxLayout>
 
             <!-- Selected target: spacer 150 + label 500 = 650 -->
-            <BoxLayout profile="wm_hBox" size="860px 22px">
+            <BoxLayout profile="wm_hBox" id="targetSelectedRow" size="860px 22px">
                 <GuiElement size="150px 22px"/>
                 <Text profile="wm_infoText" id="selectedTargetLabel" text="" size="500px 22px"/>
             </BoxLayout>
@@ -138,18 +138,6 @@
                         <Slider profile="fs25_listSlider" dataElementId="fillTypeList"/>
                     </ThreePartBitmap>
                 </BoxLayout>
-            </BoxLayout>
-
-            <!-- Sync Target -->
-            <BoxLayout profile="wm_hBox" size="860px 45px">
-                <Text profile="wm_dialogText" text="$l10n_wm_step_sync_target" size="150px 40px"/>
-                <MultiTextOption profile="fs25_settingsMultiTextOption" id="syncTargetDropdown" size="500px 40px"/>
-            </BoxLayout>
-
-            <!-- Sync Source -->
-            <BoxLayout profile="wm_hBox" size="860px 45px">
-                <Text profile="wm_dialogText" text="$l10n_wm_step_sync_source" size="150px 40px"/>
-                <MultiTextOption profile="fs25_settingsMultiTextOption" id="syncSourceDropdown" size="500px 40px"/>
             </BoxLayout>
 
         </BoxLayout>

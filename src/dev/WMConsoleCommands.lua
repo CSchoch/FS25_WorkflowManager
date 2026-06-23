@@ -147,24 +147,20 @@ local function printWorkflowSteps(label, steps, currentStep, syncSourceOrdinals,
     for i, step in ipairs(steps) do
         local marker = (i == currentStep) and "[>]" or "   "
         local t = step.type or "?"
-        if t == "autodrive" then t = "AD" elseif t == "courseplay" then t = "CP" end
+        if t == "autodrive" then t = "AD"
+        elseif t == "courseplay" then t = "CP"
+        elseif t == "wait_for_leader" then t = "WAIT"
+        elseif t == "unlock_follower" then t = "UNLK" end
         local target = (step.target or "(none)"):sub(1, 32)
-        local syncStr
-        if syncSourceOrdinals then
-            local ord = syncSourceOrdinals[i]
-            syncStr = ord and ("src #" .. ord) or "-"
-        elseif reverseTargets then
-            local ord = reverseTargets[i]
-            if ord then
-                syncStr = "tgt ←#" .. ord
-            else
-                syncStr = (step.isSyncTarget ~= false) and "tgt" or "-"
-            end
-        else
-            -- No ordinals built yet — show raw isSyncSource flag
-            syncStr = (step.isSyncSource ~= false) and "src" or "-"
+        local syncStr = "-"
+        if step.type == "wait_for_leader" then
+            local ord = syncSourceOrdinals and syncSourceOrdinals[i]
+            syncStr = ord and ("wait #" .. ord) or "wait"
+        elseif step.type == "unlock_follower" then
+            local ord = reverseTargets and reverseTargets[i]
+            syncStr = ord and ("unlock ←#" .. ord) or "unlock"
         end
-        print(string.format("    %s %2d  %-2s    %-32s  %s", marker, i, t, target, syncStr))
+        print(string.format("    %s %2d  %-4s  %-32s  %s", marker, i, t, target, syncStr))
     end
 end
 

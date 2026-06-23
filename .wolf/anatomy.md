@@ -1,12 +1,13 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-06-22T22:59:15.158Z
-> Files: 47 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-06-23T09:38:44.781Z
+> Files: 51 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
 - `add-function-to-log-parsed-yeti.md` — Plan: Add `wmPrintState` Developer Console Command (~687 tok)
 - `foamy-crafting-oasis.md` — Plan: Leader Vehicle — Save Persistence, MP Sync, Dialog Order (~1099 tok)
+- `i-think-we-should-drifting-hammock.md` — Plan: Replace Per-Step Sync Flags with "Wait for Leader" / "Unlock Follower" Step Types (~2785 tok)
 - `implement-milestone-11-tender-blum.md` — Milestone 11 — Multiple Fill Types & Synchronized Follower (~2937 tok)
 - `resilient-noodling-pudding.md` — Fix: Follower AD Auto-Start After Save/Reload (~960 tok)
 - `what-was-te-idea-hidden-karp.md` — Plan: Per-Step Sync Checkboxes (Index-Based) (~2154 tok)
@@ -46,20 +47,22 @@
 
 ## src/
 
-- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~19919 tok)
-- `WorkflowManager.lua` — init, loadDialogs, Callback, showTextInputDialog, Called (~13764 tok)
+- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~20003 tok)
+- `WorkflowManager.lua` — getStepTypeLabel, isMarkerStepType, init, loadDialogs, Callback (~14056 tok)
 - `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~7161 tok)
-- `WorkflowStorage.lua` — deepCopySupportStep, parseFillTypes, init, getXmlPath, saveWorkflows (~3782 tok)
+- `WorkflowStorage.lua` — deepCopySupportStep, isMarkerStepType, parseFillTypes, init, getXmlPath (~4632 tok)
 
 ## src/dev/
 
-- `WMConsoleCommands.lua` — -@class WMConsoleCommands (~2702 tok)
+- `WMConsoleCommands.lua` — -@class WMConsoleCommands (~2685 tok)
 
 ## src/gui/
 
-- `WMHud.lua` — ensureOverlays, createIconOverlays, updateOverlayPositions, init, show (~7593 tok)
+- `WMEditorDialog.lua` — new, onCreate, onOpen, onClose, setWorkflow (~5305 tok)
+- `WMHud.lua` — ensureOverlays, createIconOverlays, updateOverlayPositions, init, show (~7640 tok)
 - `WMLeaderVehicleSelectDialog.lua` — new, onCreate, buildVehicleList, onOpen, onClose (~1149 tok)
-- `WMStepDialog.lua` — new, onCreate, onOpen, onClose, keyEvent (~7707 tok)
+- `WMStepDialog.lua` — new, onCreate, onOpen, onClose, keyEvent (~7563 tok)
+- `WorkflowEditorGUI.lua` — init, openWorkflow, close, saveAndClose, cancelAndClose (~17483 tok)
 
 ## src/integration/
 
@@ -90,11 +93,12 @@
 
 ## tests/specs/
 
+- `WMHud_spec.lua` — makeVehicle (~2098 tok)
 - `WMLeaderVehicleSelectDialog_spec.lua` — makeVehicle, makeList, makeButton (~3135 tok)
-- `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport, triggerPoll (~23820 tok)
+- `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport, makeLeaderWF (~20608 tok)
 - `WorkflowManager_spec.lua` — Declares constants (~9079 tok)
 - `WorkflowManagerSpec_spec.lua` — makeVehicle, makeSavegameXML (~10466 tok)
-- `WorkflowStorage_spec.lua` — hasKey (~9633 tok)
+- `WorkflowStorage_spec.lua` — hasFormatVersion (~9832 tok)
 
 ## textures/
 
@@ -104,8 +108,8 @@
 
 ## translations/
 
-- `translation_de.xml` (~2963 tok)
-- `translation_en.xml` (~2524 tok)
+- `translation_de.xml` (~2969 tok)
+- `translation_en.xml` (~2529 tok)
 
 ## website/
 
@@ -171,4 +175,4 @@
 - `WMLeaderVehicleSelectDialog.xml` — SmoothList of active vehicles (name + workflow); Select / No Leader / Cancel buttons (~80 tok)
 - `WMMainDialog.xml` (~999 tok)
 - `WMModeSelectDialog.xml` (~429 tok)
-- `WMStepDialog.xml` — dropdown: Section (~2639 tok)
+- `WMStepDialog.xml` — dropdown: Section (~2471 tok)

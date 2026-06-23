@@ -98,12 +98,33 @@ WorkflowManager.STATUS_WAITING_FOR_MAIN = "waiting_for_main"
 -- Step type constants
 WorkflowManager.STEP_AUTODRIVE = "autodrive"
 WorkflowManager.STEP_COURSEPLAY = "courseplay"
+-- Leader/follower sync marker steps (pass-through coordination steps, no AD/CP job)
+WorkflowManager.STEP_WAIT_FOR_LEADER = "wait_for_leader"
+WorkflowManager.STEP_UNLOCK_FOLLOWER = "unlock_follower"
 
 -- Internal state
 WorkflowManager.workflows = {}
 WorkflowManager.isInitialized = false
 WorkflowManager.isShuttingDown = false
 WorkflowManager.guiVisible = false
+
+---Get the localized display label for a step type
+---@param stepType string Step type id
+---@return string label
+function WorkflowManager:getStepTypeLabel(stepType)
+    if stepType == self.STEP_AUTODRIVE then return g_i18n:getText("wm_type_autodrive") end
+    if stepType == self.STEP_COURSEPLAY then return g_i18n:getText("wm_type_courseplay") end
+    if stepType == self.STEP_WAIT_FOR_LEADER then return g_i18n:getText("wm_type_wait_for_leader") end
+    if stepType == self.STEP_UNLOCK_FOLLOWER then return g_i18n:getText("wm_type_unlock_follower") end
+    return tostring(stepType)
+end
+
+---Returns true if the step type is a leader/follower sync marker (no AD/CP job)
+---@param stepType string Step type id
+---@return boolean
+function WorkflowManager:isMarkerStepType(stepType)
+    return stepType == self.STEP_WAIT_FOR_LEADER or stepType == self.STEP_UNLOCK_FOLLOWER
+end
 
 ---Initialize the WorkflowManager
 function WorkflowManager:init()

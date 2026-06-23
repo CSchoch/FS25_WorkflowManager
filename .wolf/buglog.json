@@ -1447,10 +1447,179 @@
       "file": "src/WorkflowExecutor.lua",
       "root_cause": "When a follower's sync ordinal has no corresponding entry in syncTargets (overflow case), the code set required = #leaderWF.steps + 1. This makes the check `leaderExec.currentStep >= required` permanently unsatisfiable — currentStep can never reach steps+1. Follower is stuck until leader stops its workflow entirely.",
       "fix": "Changed required = #leaderWF.steps + 1 to required = #leaderWF.steps in both executeCurrentStep and runWaitPoll. Now the follower unblocks as soon as the leader has started its last step, consistent with the rest of the sync semantics (reaching step N = starting it).",
-      "tags": ["sync", "waiting_for_leader", "off-by-one", "overflow-ordinal"],
+      "tags": [
+        "sync",
+        "waiting_for_leader",
+        "off-by-one",
+        "overflow-ordinal"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-06-23T00:00:00.000Z"
+    },
+    {
+      "id": "bug-090",
+      "timestamp": "2026-06-22T23:20:30.173Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "8 lines replaced/restructured",
+      "fix": "Rewrote 33→81 lines (8 removed) | Also: if activeData.isMainVehicle ~= false and activeDat; local leaderSpec = activeData.leaderVehicle.spec_w | Also: local leaderSpec = activeData.leaderVehicle and ac; local leaderExec = leaderSpec and leaderSpec.wmExe",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-06-22T23:22:03.930Z"
+    },
+    {
+      "id": "bug-091",
+      "timestamp": "2026-06-22T23:25:49.051Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/gui/WMStepDialog.lua",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 15→11 lines (4 removed) | Also: -- Update sync dropdowns; self:refreshSyncDropdowns() | Also: local types = {\"autodrive\", \"courseplay\"}; local texts = { | Also: ---Update field visibility based on action; local needsUnloadTarget = self:actionNeedsUnloadTa",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 4,
+      "last_seen": "2026-06-22T23:26:27.890Z"
+    },
+    {
+      "id": "bug-092",
+      "timestamp": "2026-06-22T23:29:17.828Z",
+      "error_message": "Significant refactor of ",
+      "file": "translations/translation_en.xml",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 7→5 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-22T23:29:17.828Z"
+    },
+    {
+      "id": "bug-093",
+      "timestamp": "2026-06-22T23:29:35.331Z",
+      "error_message": "Significant refactor of ",
+      "file": "translations/translation_de.xml",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 5→3 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-22T23:29:35.331Z"
+    },
+    {
+      "id": "bug-094",
+      "timestamp": "2026-06-23T10:05:00.000Z",
+      "error_message": "src/WorkflowStorage.lua:97: attempt to call method 'isMarkerStepType' (a nil value); WorkflowExecutor tests: 'Unknown step type' / nil wmExecution for marker steps",
+      "file": "tests/specs/WorkflowStorage_spec.lua, tests/specs/WorkflowExecutor_spec.lua",
+      "root_cause": "Unit specs stub _G.WorkflowManager themselves and did not define the new STEP_WAIT_FOR_LEADER/STEP_UNLOCK_FOLLOWER constants (and storage initially called WorkflowManager:isMarkerStepType, absent in the minimal stub). Source referencing new constants/methods broke against the stale stubs.",
+      "fix": "Added STEP_WAIT_FOR_LEADER/STEP_UNLOCK_FOLLOWER to both spec stubs; replaced the WorkflowManager:isMarkerStepType call in WorkflowStorage save with a file-local isMarkerStepType that only reads the constants (no method coupling).",
+      "tags": [
+        "tests",
+        "stub",
+        "marker-steps",
+        "sync-refactor"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-23T10:05:00.000Z"
+    },
+    {
+      "id": "bug-095",
+      "timestamp": "2026-06-23T10:10:00.000Z",
+      "error_message": "Legacy migration tests (#fillType, migrateOldLinkedWorkflows) failed after sync-flag migration was added: step indices shifted because marker migration ran on their pre-v2 XML",
+      "file": "tests/specs/WorkflowStorage_spec.lua",
+      "root_cause": "An all-default v1 workflow has no sync attributes and is indistinguishable from a v2 no-marker workflow, so migrateSyncFlagsToMarkers ran on any file lacking formatVersion, inserting markers and shifting indices the legacy tests asserted on.",
+      "fix": "Added WorkflowManager#formatVersion (absent=1, written=2) as the migration guard; isolated unrelated legacy-migration tests by writing formatVersion=2 in their test XML.",
+      "tags": [
+        "tests",
+        "migration",
+        "formatVersion",
+        "sync-refactor"
+      ],
+      "related_bugs": [
+        "bug-094"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-06-23T10:10:00.000Z"
+    },
+    {
+      "id": "bug-096",
+      "timestamp": "2026-06-23T08:43:17.225Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/gui/WMHud.lua",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 11→17 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-23T08:43:17.225Z"
+    },
+    {
+      "id": "bug-097",
+      "timestamp": "2026-06-23T08:51:49.588Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/gui/WMHud.lua",
+      "root_cause": "6 lines replaced/restructured",
+      "fix": "Rewrote 17→11 lines (6 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-23T08:51:49.588Z"
+    },
+    {
+      "id": "bug-098",
+      "timestamp": "2026-06-23T09:35:58.143Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "11 lines replaced/restructured",
+      "fix": "Rewrote 12→3 lines (11 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-23T09:35:58.143Z"
+    },
+    {
+      "id": "bug-099",
+      "timestamp": "2026-06-23T09:38:44.804Z",
+      "error_message": "Significant refactor of ",
+      "file": "tests/specs/WorkflowExecutor_spec.lua",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 14→20 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-23T09:38:44.804Z"
     }
   ]
 }

@@ -1,3 +1,4 @@
+| 14:45 | Add 10s deferred auto-step in WorkflowExecutor: when player is in vehicle at step completion, pendingAutoStep defers executeCurrentStep; manual prev/next unaffected (resetStepTrackingState clears flag) | WorkflowExecutor.lua | 377/377 tests pass | ~120 tok |
 | 00:10 | Fix bug-089: overflow sync ordinal (#steps+1) made follower permanently stuck in waiting_for_leader; changed to #steps; also updated console syncRequired display to show overflow fallback | WorkflowExecutor.lua, WMConsoleCommands.lua | 386/386 tests pass | ~300 tok |
 | 23:15 | Fix: follower with uncovered sync ordinals now waits until leader finishes instead of running freely | WorkflowExecutor.lua, WorkflowExecutor_spec.lua | 384/384 tests pass | ~400 tok |
 | 22:30 | Add sync ordinals to wmPrintState + new wmPrintWorkflow command (annotated step table for current + leader) | WMConsoleCommands.lua | 384/384 tests pass | ~300 tok |
@@ -250,6 +251,92 @@
 | 00:59 | Session end: 6 writes across 2 files (WorkflowExecutor.lua, WMConsoleCommands.lua) | 2 reads | ~23392 tok |
 
 ## Session: 2026-06-22 01:00
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 01:16 | Created ../../../../../.claude/plans/i-think-we-should-drifting-hammock.md | — | ~2971 |
+| 01:19 | Edited src/WorkflowManager.lua | 3→6 lines | ~84 |
+| 01:20 | Edited src/WorkflowManager.lua | modified WorkflowManager() | ~272 |
+| 01:20 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~1077 |
+| 01:20 | Edited src/WorkflowExecutor.lua | removed 45 lines | ~51 |
+| 01:21 | Edited src/WorkflowExecutor.lua | expanded (+16 lines) | ~256 |
+| 01:22 | Edited src/WorkflowExecutor.lua | reduced (-32 lines) | ~163 |
+| 01:22 | Edited src/WorkflowStorage.lua | 7→11 lines | ~123 |
+| 01:22 | Edited src/WorkflowStorage.lua | 22→19 lines | ~262 |
+| 01:22 | Edited src/WorkflowStorage.lua | 7→5 lines | ~86 |
+| 01:23 | Edited src/WorkflowStorage.lua | 8→11 lines | ~106 |
+| 01:23 | Edited src/WorkflowStorage.lua | flags() → only() | ~113 |
+| 01:23 | Edited src/WorkflowStorage.lua | 2→5 lines | ~76 |
+| 01:23 | Edited src/WorkflowStorage.lua | modified WMStorage() | ~700 |
+| 01:25 | Edited xml/gui/WMStepDialog.xml | 9→9 lines | ~167 |
+| 01:25 | Edited xml/gui/WMStepDialog.xml | 5→5 lines | ~86 |
+| 01:25 | Edited xml/gui/WMStepDialog.xml | removed 13 lines | ~6 |
+| 01:25 | Edited src/gui/WMStepDialog.lua | 5→3 lines | ~37 |
+| 01:25 | Edited src/gui/WMStepDialog.lua | removed 14 lines | ~12 |
+| 01:25 | Edited src/gui/WMStepDialog.lua | 15→11 lines | ~105 |
+| 01:25 | Edited src/gui/WMStepDialog.lua | 7→4 lines | ~26 |
+| 01:26 | Edited src/gui/WMStepDialog.lua | modified WMStepDialog() | ~252 |
+| 01:26 | Edited src/gui/WMStepDialog.lua | removed 27 lines | ~12 |
+| 01:26 | Edited src/gui/WMStepDialog.lua | modified WMStepDialog() | ~222 |
+| 01:26 | Edited src/gui/WMStepDialog.lua | 8→8 lines | ~94 |
+| 01:27 | Edited src/gui/WMStepDialog.lua | modified WMStepDialog() | ~272 |
+| 01:27 | Edited src/dev/WMConsoleCommands.lua | 20→16 lines | ~223 |
+| 01:27 | Edited src/gui/WorkflowEditorGUI.lua | 7→9 lines | ~102 |
+| 01:27 | Edited src/gui/WorkflowEditorGUI.lua | getText() → getStepTypeLabel() | ~35 |
+| 01:28 | Edited src/gui/WorkflowEditorGUI.lua | 3→5 lines | ~49 |
+| 01:28 | Edited src/gui/WMEditorDialog.lua | 14→15 lines | ~175 |
+| 01:29 | Edited src/gui/WMHud.lua | 6→9 lines | ~119 |
+| 01:29 | Edited translations/translation_en.xml | 7→5 lines | ~32 |
+| 01:29 | Edited translations/translation_en.xml | 3→5 lines | ~76 |
+| 01:29 | Edited translations/translation_de.xml | 5→3 lines | ~40 |
+| 01:29 | Edited translations/translation_de.xml | 3→5 lines | ~78 |
+| 01:31 | Edited src/WorkflowStorage.lua | modified isMarkerStepType() | ~103 |
+| 01:31 | Edited src/WorkflowStorage.lua | 5→5 lines | ~81 |
+| 01:31 | Edited tests/specs/WorkflowStorage_spec.lua | 3→8 lines | ~131 |
+| 01:32 | Edited tests/specs/WorkflowStorage_spec.lua | modified hasFormatVersion() | ~1151 |
+| 01:33 | Edited tests/specs/WorkflowStorage_spec.lua | 2→4 lines | ~82 |
+| 01:33 | Edited tests/specs/WorkflowStorage_spec.lua | modified writeWf() | ~90 |
+| 08:07 | Edited tests/specs/WorkflowStorage_spec.lua | 2→2 lines | ~37 |
+| 08:08 | Edited tests/specs/WorkflowExecutor_spec.lua | modified makeLeaderWF() | ~338 |
+| 09:23 | Edited tests/specs/WorkflowExecutor_spec.lua | modified makeRestoredFollower() | ~4708 |
+| 09:35 | Edited tests/specs/WorkflowExecutor_spec.lua | 4→6 lines | ~78 |
+| 09:35 | Edited tests/specs/WorkflowExecutor_spec.lua | 8→9 lines | ~144 |
+| 10:05 | Refactored per-step sync flags (isSyncTarget/isSyncSource) into explicit wait_for_leader / unlock_follower marker step types; added formatVersion=2 + migrateSyncFlagsToMarkers; rewrote sync tests | WorkflowManager.lua, WorkflowExecutor.lua, WorkflowStorage.lua, WMStepDialog.lua/.xml, WorkflowEditorGUI.lua, WMEditorDialog.lua, WMHud.lua, WMConsoleCommands.lua, translations, specs | all 377 tests pass | ~6000 |
+| 09:48 | Session end: 47 writes across 14 files (i-think-we-should-drifting-hammock.md, WorkflowManager.lua, WorkflowExecutor.lua, WorkflowStorage.lua, WMStepDialog.xml) | 17 reads | ~134863 tok |
+
+## Session: 2026-06-23 10:40
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 10:43 | Edited src/gui/WMHud.lua | 2→5 lines | ~66 |
+| 10:43 | Edited src/gui/WMHud.lua | modified WMHud() | ~206 |
+| 10:43 | Edited src/gui/WMHud.lua | 6→7 lines | ~132 |
+| 10:43 | Edited src/gui/WMHud.lua | modified WMHud() | ~216 |
+| 10:43 | Edited tests/specs/WMHud_spec.lua | 2→3 lines | ~26 |
+| 10:44 | Session end: 5 writes across 2 files (WMHud.lua, WMHud_spec.lua) | 2 reads | ~8331 tok |
+| 10:51 | Edited src/gui/WMHud.lua | 5→2 lines | ~39 |
+| 10:51 | Edited src/gui/WMHud.lua | modified WMHud() | ~138 |
+| 10:51 | Edited src/gui/WMHud.lua | 7→6 lines | ~107 |
+| 10:52 | Edited src/gui/WMHud.lua | modified WMHud() | ~159 |
+| 10:52 | Edited tests/specs/WMHud_spec.lua | 3→2 lines | ~16 |
+| 10:52 | Edited src/WorkflowExecutor.lua | expanded (+10 lines) | ~265 |
+| 10:52 | Edited src/WorkflowExecutor.lua | 4→5 lines | ~46 |
+| 10:52 | Edited src/WorkflowExecutor.lua | expanded (+8 lines) | ~228 |
+| 10:53 | Session end: 13 writes across 3 files (WMHud.lua, WMHud_spec.lua, WorkflowExecutor.lua) | 3 reads | ~28812 tok |
+| 11:10 | Edited src/WorkflowExecutor.lua | 6→7 lines | ~91 |
+| 11:10 | Edited src/WorkflowExecutor.lua | 6→7 lines | ~124 |
+| 11:10 | Edited src/WorkflowExecutor.lua | expanded (+15 lines) | ~336 |
+| 11:10 | Edited src/WorkflowExecutor.lua | expanded (+14 lines) | ~256 |
+| 11:10 | Edited src/WorkflowExecutor.lua | expanded (+10 lines) | ~171 |
+| 11:11 | Session end: 18 writes across 3 files (WMHud.lua, WMHud_spec.lua, WorkflowExecutor.lua) | 3 reads | ~30416 tok |
+| 11:35 | Edited src/WorkflowExecutor.lua | reduced (-9 lines) | ~62 |
+| 11:36 | Edited src/WorkflowExecutor.lua | 7→6 lines | ~106 |
+| 11:36 | Edited src/WorkflowExecutor.lua | removed 11 lines | ~10 |
+| 11:36 | Edited src/WorkflowExecutor.lua | 4→5 lines | ~66 |
+| 11:38 | Edited tests/specs/WorkflowExecutor_spec.lua | expanded (+6 lines) | ~239 |
+| 11:39 | Session end: 23 writes across 4 files (WMHud.lua, WMHud_spec.lua, WorkflowExecutor.lua, WorkflowExecutor_spec.lua) | 4 reads | ~51483 tok |
+
+## Session: 2026-06-23 12:03
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|

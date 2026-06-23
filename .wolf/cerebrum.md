@@ -63,6 +63,14 @@
 
 [2026-06-08] `stateModule:setStartHelper(true)` must be called AFTER `AutoDrive:StartDriving` (via `ADIntegration:startRoute`). AD's `StartDriving` resets the `startHelper` flag as part of route initialization. Calling `setStartCPOnCompletion` before `startRoute` means AD silently wipes the flag → CP never auto-starts at target → refill/seed workflows stall. Pattern matches `applyWorkflowSettings`, which already had this "apply after StartDriving" comment.
 
+[2026-06-23] Leader/follower sync is expressed as explicit marker step types — `STEP_WAIT_FOR_LEADER` (follower gate) and `STEP_UNLOCK_FOLLOWER` (leader milestone), paired by ordinal (k-th wait ↔ k-th unlock). They are pass-through steps (no AD/CP job): the wait branch in `executeCurrentStep` calls `WMExecutor:isLeaderSyncSatisfied` then either `onStepCompleted` (proceed) or sets `STATUS_WAITING_FOR_LEADER`; the unlock branch always `onStepCompleted`. `buildSyncMaps` keys off `step.type`, not the old `isSyncTarget/isSyncSource` flags (removed). Sync is opt-in: a workflow with no markers never waits.
+
+[2026-06-23] `WorkflowManager:getStepTypeLabel(type)` / `isMarkerStepType(type)` are the single source for rendering/branching on step type — use them instead of `type == STEP_AUTODRIVE and "AutoDrive" or "Courseplay"` ternaries (which mislabel the two marker types). Touch-points: WorkflowEditorGUI, WMEditorDialog, WMHud, WMConsoleCommands.
+
+[2026-06-23] Unit-test specs stub `_G.WorkflowManager` themselves (NOT the real module): `WorkflowExecutor_spec.lua` (STATUS_*/STEP_* constants + `broadcastState`) and `WorkflowStorage_spec.lua` (minimal stub + STEP_* constants). Adding a new `WorkflowManager.STEP_*` constant or a called method MUST be mirrored in these stubs or tests fail with "unknown step type"/nil-index. WorkflowStorage avoids method coupling via a file-local `isMarkerStepType` that only reads the constants.
+
+[2026-06-23] Storage needs `WorkflowManager#formatVersion` (absent=1, current=2) to migrate. The old save only wrote `isSyncTarget/isSyncSource` when `false`, so an all-default v1 workflow is byte-identical to a new no-marker v2 workflow — version is the only reliable "needs migration" signal. `migrateSyncFlagsToMarkers` inserts a wait marker before each former sync-source step and an unlock marker before each former sync-target step (default true). Migration tests for OTHER concerns (legacy `#fillType`, linked-workflow) must write `formatVersion=2` in their XML to isolate.
+
 ## Decision Log
 
 <!-- Significant technical decisions with rationale. Why X was chosen over Y. -->

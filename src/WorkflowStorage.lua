@@ -22,6 +22,12 @@ local function deepCopySupportStep(step)
     }
 end
 
+--- True for sync marker step types (wait_for_leader/unlock_follower), which carry no target/action.
+local function isMarkerStepType(stepType)
+    return stepType == WorkflowManager.STEP_WAIT_FOR_LEADER
+        or stepType == WorkflowManager.STEP_UNLOCK_FOLLOWER
+end
+
 --- Parse a comma-separated fill types string into an array. Returns nil if empty.
 local function parseFillTypes(str)
     if str == nil or str == "" then return nil end
@@ -69,6 +75,10 @@ function WMStorage:saveWorkflows(workflows)
         return false
     end
 
+    -- Format version: 2 = sync markers (wait_for_leader/unlock_follower) replace
+    -- the old per-step isSyncTarget/isSyncSource flags. Absent/1 triggers migration on load.
+    xmlFile:setInt("WorkflowManager#formatVersion", 2)
+
     -- Save each workflow
     for i, workflow in ipairs(workflows) do
         local workflowKey = string.format("WorkflowManager.workflows.workflow(%d)", i - 1)
@@ -89,8 +99,11 @@ function WMStorage:saveWorkflows(workflows)
         for j, step in ipairs(workflow.steps) do
             local stepKey = string.format("%s.step(%d)", workflowKey, j - 1)
             xmlFile:setString(stepKey .. "#type", step.type)
-            xmlFile:setString(stepKey .. "#target", step.target)
-            xmlFile:setString(stepKey .. "#action", step.action or "default")
+            -- Marker steps (wait_for_leader/unlock_follower) carry no target/action
+            if not isMarkerStepType(step.type) then
+                xmlFile:setString(stepKey .. "#target", step.target)
+                xmlFile:setString(stepKey .. "#action", step.action or "default")
+            end
 
             -- AutoDrive advanced mode parameters
             if step.unloadTarget ~= nil and step.unloadTarget ~= "" then
@@ -98,14 +111,6 @@ function WMStorage:saveWorkflows(workflows)
             end
             if step.fillTypes ~= nil and #step.fillTypes > 0 then
                 xmlFile:setString(stepKey .. "#fillTypes", table.concat(step.fillTypes, ","))
-            end
-
-            -- Sync flags (only write when false; default true is implicit)
-            if step.isSyncTarget == false then
-                xmlFile:setBool(stepKey .. "#isSyncTarget", false)
-            end
-            if step.isSyncSource == false then
-                xmlFile:setBool(stepKey .. "#isSyncSource", false)
             end
 
             -- Nested support sub-steps
@@ -232,6 +237,58 @@ function WMStorage:migrateOldLinkedWorkflows(workflows)
     return newWorkflows
 end
 
+---Migrate old per-step sync flags (isSyncTarget/isSyncSource) to explicit marker steps.
+---Old format: every step carried two flags (default true) paired by ordinal position.
+---New format: a "wait_for_leader" marker is inserted before each former sync-source step,
+---and an "unlock_follower" marker before each former sync-target step. This preserves the
+---ordinal pairing and the old semantics (markers are instant pass-throughs, so a leader
+---reaching its marker is equivalent to reaching the work step it precedes).
+---Only runs for formatVersion < 2; v2+ files already use markers and are left untouched.
+---@param workflows table List of loaded workflows
+---@param formatVersion number Saved file format version (1 = needs migration)
+---@return table workflows Possibly-rebuilt workflow list
+function WMStorage:migrateSyncFlagsToMarkers(workflows, formatVersion)
+    if formatVersion ~= nil and formatVersion >= 2 then
+        -- Already marker-based; just strip any lingering legacy flags and return.
+        for _, wf in ipairs(workflows) do
+            for _, step in ipairs(wf.steps) do
+                step.isSyncTarget = nil
+                step.isSyncSource = nil
+            end
+        end
+        return workflows
+    end
+
+    WMLogger:info("Old per-step sync flags detected (formatVersion %s) — migrating to wait/unlock marker steps...",
+        tostring(formatVersion))
+
+    local migratedCount = 0
+    for _, wf in ipairs(workflows) do
+        local newSteps = {}
+        for _, step in ipairs(wf.steps) do
+            -- Insert markers before the work step (wait first, then unlock — order is
+            -- irrelevant since a vehicle is either leader or follower for a given run).
+            if step.isSyncSource ~= false then
+                table.insert(newSteps, { type = WorkflowManager.STEP_WAIT_FOR_LEADER, target = "", support = {} })
+                migratedCount = migratedCount + 1
+            end
+            if step.isSyncTarget ~= false then
+                table.insert(newSteps, { type = WorkflowManager.STEP_UNLOCK_FOLLOWER, target = "", support = {} })
+                migratedCount = migratedCount + 1
+            end
+            step.isSyncTarget = nil
+            step.isSyncSource = nil
+            table.insert(newSteps, step)
+        end
+        wf.steps = newSteps
+    end
+
+    if migratedCount > 0 then
+        WMLogger:info("Inserted %d sync marker step(s) during migration", migratedCount)
+    end
+    return workflows
+end
+
 ---Load all workflows from XML
 ---@return table workflows List of loaded workflows
 function WMStorage:loadWorkflows()
@@ -251,6 +308,9 @@ function WMStorage:loadWorkflows()
         WMLogger:error("Failed to load XML file: %s", xmlPath)
         return workflows
     end
+
+    -- Format version (absent = 1 = old per-step sync flags, needs marker migration)
+    local formatVersion = xmlFile:getInt("WorkflowManager#formatVersion", 1)
 
     -- Load workflows
     local workflowIndex = 0
@@ -299,7 +359,7 @@ function WMStorage:loadWorkflows()
                                or parseFillTypes(xmlFile:getString(stepKey .. "#fillType")),
                 -- Legacy syncGroup read for migration only
                 syncGroup    = xmlFile:getInt(stepKey .. "#syncGroup"),
-                -- Leader-sync flags (default true = all steps sync by default)
+                -- Legacy sync flags read for marker migration only (formatVersion 1 -> 2)
                 isSyncTarget = xmlFile:getBool(stepKey .. "#isSyncTarget", true),
                 isSyncSource = xmlFile:getBool(stepKey .. "#isSyncSource", true),
                 support      = {},
@@ -336,6 +396,9 @@ function WMStorage:loadWorkflows()
 
     -- Migrate old linked-workflow-pair format to hierarchical support format
     workflows = self:migrateOldLinkedWorkflows(workflows)
+
+    -- Migrate old per-step sync flags to explicit wait/unlock marker steps
+    workflows = self:migrateSyncFlagsToMarkers(workflows, formatVersion)
 
     -- Load HUD position
     local hudX = xmlFile:getFloat("WorkflowManager.settings.hud#posX")

@@ -1172,6 +1172,8 @@ function WMEditorGUI:drawStepRow(baseX, y, index, step)
         textColor = {0.4, 0.7, 1, 1}
     elseif step.type == WorkflowManager.STEP_COURSEPLAY then
         textColor = {0.4, 1, 0.4, 1}
+    elseif WorkflowManager:isMarkerStepType(step.type) then
+        textColor = {1, 0.8, 0.3, 1}  -- amber for sync markers
     end
 
     setTextColor(textColor[1], textColor[2], textColor[3], textColor[4])
@@ -1182,7 +1184,7 @@ function WMEditorGUI:drawStepRow(baseX, y, index, step)
     renderText(baseX + 0.02, textY, 0.014, tostring(index))
 
     -- Type
-    local typeText = step.type == WorkflowManager.STEP_AUTODRIVE and g_i18n:getText("wm_type_autodrive") or g_i18n:getText("wm_type_courseplay")
+    local typeText = WorkflowManager:getStepTypeLabel(step.type)
     renderText(baseX + 0.05, textY, 0.014, typeText)
 
     -- Target
@@ -1192,8 +1194,10 @@ function WMEditorGUI:drawStepRow(baseX, y, index, step)
     end
     renderText(baseX + 0.18, textY, 0.014, target)
 
-    -- Action
-    renderText(baseX + 0.45, textY, 0.014, step.action or "default")
+    -- Action (marker steps have none)
+    if not WorkflowManager:isMarkerStepType(step.type) then
+        renderText(baseX + 0.45, textY, 0.014, step.action or "default")
+    end
 end
 
 ---Draw the step dialog (add or edit mode)

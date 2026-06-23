@@ -23,8 +23,6 @@ function WMStepDialog.new(target)
     self.stepTarget = ""
     self.stepUnloadTarget = ""
     self.selectedFillTypes = {}  -- array of selected fill type name strings
-    self.isSyncTarget = true
-    self.isSyncSource = true
     self.ctrlPressed = false
 
     -- List data
@@ -66,19 +64,6 @@ function WMStepDialog:onOpen()
             dialog:onActionChanged(nil, state)
         end
     end
-    if self.syncTargetDropdown ~= nil then
-        local dialog = self
-        self.syncTargetDropdown.onClickCallback = function(_, state)
-            dialog:onSyncTargetChanged(nil, state)
-        end
-    end
-    if self.syncSourceDropdown ~= nil then
-        local dialog = self
-        self.syncSourceDropdown.onClickCallback = function(_, state)
-            dialog:onSyncSourceChanged(nil, state)
-        end
-    end
-
     -- Setup list data sources and callbacks
     local dialog = self
     if self.targetList ~= nil then
@@ -149,8 +134,6 @@ function WMStepDialog:setStep(step, callback)
         self.stepTarget = step.target or ""
         self.stepUnloadTarget = step.unloadTarget or ""
         self.selectedFillTypes = step.fillTypes and {unpack(step.fillTypes)} or {}
-        self.isSyncTarget = step.isSyncTarget ~= false
-        self.isSyncSource = step.isSyncSource ~= false
     else
         self.step = nil
         self.stepType = "autodrive"
@@ -158,8 +141,6 @@ function WMStepDialog:setStep(step, callback)
         self.stepTarget = ""
         self.stepUnloadTarget = ""
         self.selectedFillTypes = {}
-        self.isSyncTarget = true
-        self.isSyncSource = true
     end
 end
 
@@ -230,9 +211,6 @@ function WMStepDialog:refreshDisplay()
     -- Update action dropdown
     self:refreshActionDropdown()
 
-    -- Update sync dropdowns
-    self:refreshSyncDropdowns()
-
     -- Update input field values
     self:setInputFieldValues()
 
@@ -249,11 +227,11 @@ function WMStepDialog:refreshTypeDropdown()
         return
     end
 
-    local types = {"autodrive", "courseplay"}
-    local texts = {
-        g_i18n:getText("wm_type_autodrive") or "AutoDrive",
-        g_i18n:getText("wm_type_courseplay") or "Courseplay"
-    }
+    local types = self:getStepTypes()
+    local texts = {}
+    for _, t in ipairs(types) do
+        table.insert(texts, WorkflowManager:getStepTypeLabel(t))
+    end
     self.typeDropdown:setTexts(texts)
 
     -- Find current type index
@@ -265,6 +243,21 @@ function WMStepDialog:refreshTypeDropdown()
         end
     end
     self.typeDropdown:setState(currentIndex)
+end
+
+---Ordered list of selectable step types (must match onTypeChanged indexing)
+function WMStepDialog:getStepTypes()
+    return {
+        WorkflowManager.STEP_AUTODRIVE,
+        WorkflowManager.STEP_COURSEPLAY,
+        WorkflowManager.STEP_WAIT_FOR_LEADER,
+        WorkflowManager.STEP_UNLOCK_FOLLOWER,
+    }
+end
+
+---True if the currently selected step type is a sync marker (no target/action needed)
+function WMStepDialog:isMarkerStep()
+    return WorkflowManager:isMarkerStepType(self.stepType)
 end
 
 ---Refresh action dropdown options
@@ -291,32 +284,6 @@ function WMStepDialog:refreshActionDropdown()
     end
 
     self.actionDropdown:setState(currentIndex)
-end
-
----Refresh sync target/source dropdowns
-function WMStepDialog:refreshSyncDropdowns()
-    local texts = {
-        g_i18n:getText("button_yes") or "Yes",
-        g_i18n:getText("button_no") or "No",
-    }
-    if self.syncTargetDropdown then
-        self.syncTargetDropdown:setTexts(texts)
-        self.syncTargetDropdown:setState(self.isSyncTarget and 1 or 2)
-    end
-    if self.syncSourceDropdown then
-        self.syncSourceDropdown:setTexts(texts)
-        self.syncSourceDropdown:setState(self.isSyncSource and 1 or 2)
-    end
-end
-
----Called when Sync Target dropdown state changes (state 1 = Yes/true, 2 = No/false)
-function WMStepDialog:onSyncTargetChanged(_, state)
-    self.isSyncTarget = (state == 1)
-end
-
----Called when Sync Source dropdown state changes (state 1 = Yes/true, 2 = No/false)
-function WMStepDialog:onSyncSourceChanged(_, state)
-    self.isSyncSource = (state == 1)
 end
 
 ---Get available actions based on step type
@@ -476,10 +443,18 @@ function WMStepDialog:setInputFieldValues()
     end
 end
 
----Update field visibility based on action
+---Update field visibility based on step type and action
 function WMStepDialog:updateFieldVisibility()
-    local needsUnloadTarget = self:actionNeedsUnloadTarget()
-    local needsFillType = self:actionNeedsFillType()
+    -- Marker steps (wait_for_leader/unlock_follower) need no action/target/unload/fill fields
+    local isMarker = self:isMarkerStep()
+    local needsUnloadTarget = not isMarker and self:actionNeedsUnloadTarget()
+    local needsFillType = not isMarker and self:actionNeedsFillType()
+
+    -- Action + target rows are hidden entirely for marker steps
+    if self.actionRow then self.actionRow:setVisible(not isMarker) end
+    if self.targetRow then self.targetRow:setVisible(not isMarker) end
+    if self.targetSelectedRow then self.targetSelectedRow:setVisible(not isMarker) end
+    if self.targetDropdownContainer then self.targetDropdownContainer:setVisible(not isMarker) end
 
     -- Update unload target label based on action
     if self.unloadTargetLabel then
@@ -663,7 +638,7 @@ function WMStepDialog:onTypeChanged(element, state)
         state = element
     end
 
-    local types = {"autodrive", "courseplay"}
+    local types = self:getStepTypes()
     local defaultActions = {autodrive = "drive", courseplay = "fieldwork"}
 
     if type(state) == "number" and state > 0 and state <= #types then
@@ -800,31 +775,33 @@ end
 
 ---Called when Confirm button is clicked
 function WMStepDialog:onClickConfirm()
-    -- Validate - target is required
-    if self.stepTarget == "" then
-        return
-    end
+    local step
 
-    -- Build step
-    local step = {
-        type = self.stepType,
-        action = self.stepAction,
-        target = self.stepTarget
-    }
-
-    -- Add AD-specific fields
-    if self.stepType == "autodrive" then
-        if self:actionNeedsUnloadTarget() and self.stepUnloadTarget ~= "" then
-            step.unloadTarget = self.stepUnloadTarget
+    if self:isMarkerStep() then
+        -- Sync marker: only the type matters (no target/action)
+        step = { type = self.stepType, target = "" }
+    else
+        -- Validate - target is required for AD/CP steps
+        if self.stepTarget == "" then
+            return
         end
-        if self:actionNeedsFillType() and #self.selectedFillTypes > 0 then
-            step.fillTypes = {unpack(self.selectedFillTypes)}
+
+        step = {
+            type = self.stepType,
+            action = self.stepAction,
+            target = self.stepTarget
+        }
+
+        -- Add AD-specific fields
+        if self.stepType == "autodrive" then
+            if self:actionNeedsUnloadTarget() and self.stepUnloadTarget ~= "" then
+                step.unloadTarget = self.stepUnloadTarget
+            end
+            if self:actionNeedsFillType() and #self.selectedFillTypes > 0 then
+                step.fillTypes = {unpack(self.selectedFillTypes)}
+            end
         end
     end
-
-    -- Sync flags (only store when false; true is the default)
-    if not self.isSyncTarget then step.isSyncTarget = false end
-    if not self.isSyncSource then step.isSyncSource = false end
 
     self:close()
 

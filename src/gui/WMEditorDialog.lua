@@ -194,16 +194,17 @@ function WMEditorDialog:populateCellForItemInSection(list, section, index, cell)
     -- Type column (indent support steps with "  " prefix)
     local typeEl = cell:getDescendantByName("stepType")
     if typeEl then
-        local typeText = step.type == "autodrive"
-            and (g_i18n:getText("wm_type_autodrive") or "AutoDrive")
-            or  (g_i18n:getText("wm_type_courseplay") or "Courseplay")
+        local typeText = WorkflowManager:getStepTypeLabel(step.type)
         typeEl:setText(item.isMain and typeText or ("  " .. typeText))
     end
 
-    -- Action column (indent support steps)
+    -- Action column (indent support steps; marker steps have no action)
     local actionEl = cell:getDescendantByName("stepAction")
     if actionEl then
-        local actionText = self:getActionDisplayName(step.action) or step.action or ""
+        local actionText = ""
+        if not WorkflowManager:isMarkerStepType(step.type) then
+            actionText = self:getActionDisplayName(step.action) or step.action or ""
+        end
         actionEl:setText(item.isMain and actionText or ("  " .. actionText))
     end
 

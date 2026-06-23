@@ -216,37 +216,85 @@ function WMExecutor:stopWorkflow(vehicle)
 end
 
 ---Build the leader-sync lookup tables on a follower's activeData.
---- syncSourceOrdinals  maps each follower step index to its position in the
----   isSyncSource sequence (nil for steps with isSyncSource==false).
---- syncTargets         is an ordered list of leader step indices whose steps
----   have isSyncTarget~=false.  Follower source ordinal N waits until the
+--- syncSourceOrdinals  maps each "wait_for_leader" follower step index to its
+---   position in the wait sequence (nil for all other steps).
+--- syncTargets         is an ordered list of the leader step indices that are
+---   "unlock_follower" markers.  Follower wait ordinal N is released once the
 ---   leader has reached (is on or past) syncTargets[N].
 ---Called at workflow start and whenever the linked leader execution is first snapped.
 ---@param activeData table Follower's active execution state
 function WMExecutor:buildSyncMaps(activeData)
-    -- Source ordinals: scan follower's own workflow (always available)
+    -- Wait-marker ordinals: scan follower's own workflow (always available)
     local syncSourceOrdinals = {}
     local ordinal = 0
     for i, s in ipairs(activeData.workflow.steps) do
-        if s.isSyncSource ~= false then
+        if s.type == WorkflowManager.STEP_WAIT_FOR_LEADER then
             ordinal = ordinal + 1
             syncSourceOrdinals[i] = ordinal
         end
     end
     activeData.syncSourceOrdinals = syncSourceOrdinals
 
-    -- Target list: scan leader's workflow (may be nil if not yet linked)
+    -- Unlock-marker indices: scan leader's workflow (may be nil if not yet linked)
     local syncTargets = {}
     local leaderWorkflow = activeData.linkedLeaderExecution
                            and activeData.linkedLeaderExecution.workflow
     if leaderWorkflow then
         for i, s in ipairs(leaderWorkflow.steps) do
-            if s.isSyncTarget ~= false then
+            if s.type == WorkflowManager.STEP_UNLOCK_FOLLOWER then
                 table.insert(syncTargets, i)
             end
         end
     end
     activeData.syncTargets = syncTargets
+end
+
+---Returns true if the follower may proceed past its current wait_for_leader step.
+---Encapsulates: leader reference snapping, leader-gone detection (frees follower),
+---and the ordinal-based sync check against the leader's unlock markers.
+---@param activeData table Follower's active execution state
+---@return boolean satisfied
+function WMExecutor:isLeaderSyncSatisfied(activeData)
+    if activeData.leaderVehicle == nil then return true end
+
+    local leaderSpec = activeData.leaderVehicle.spec_workflowManagerSpec
+    local leaderExec = leaderSpec and leaderSpec.wmExecution
+
+    -- Snap reference + (re)build sync maps if needed (covers save/load restore ordering)
+    if leaderExec ~= nil and (activeData.linkedLeaderExecution == nil or activeData.syncTargets == nil) then
+        activeData.linkedLeaderExecution = leaderExec
+        local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
+        WMLogger:debug("Leader sync: snapped execution reference for '%s'", leaderName)
+        self:buildSyncMaps(activeData)
+    end
+
+    -- Leader finished, stopped, or restarted — free the follower
+    if leaderExec == nil or (activeData.linkedLeaderExecution ~= nil and leaderExec ~= activeData.linkedLeaderExecution) then
+        local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
+        WMLogger:info("Leader '%s' %s — follower continuing freely",
+            leaderName, leaderExec == nil and "finished/stopped" or "restarted with new execution")
+        activeData.leaderVehicle = nil
+        activeData.linkedLeaderExecution = nil
+        return true
+    end
+
+    local ordinal = activeData.syncSourceOrdinals
+                    and activeData.syncSourceOrdinals[activeData.currentStep]
+    if ordinal == nil then return true end  -- current step is not a paired wait marker
+
+    local required = activeData.syncTargets and activeData.syncTargets[ordinal]
+    if required == nil then
+        -- More wait markers than unlock markers: wait until the leader finishes
+        local leaderWF = activeData.linkedLeaderExecution and activeData.linkedLeaderExecution.workflow
+        required = leaderWF and (#leaderWF.steps + 1) or 1
+    end
+
+    if leaderExec.currentStep < required then
+        WMLogger:debug("Waiting for leader: need leader at step %d (at %d), follower wait step %d",
+            required, leaderExec.currentStep, activeData.currentStep)
+        return false
+    end
+    return true
 end
 
 ---Pause a running workflow on a vehicle
@@ -276,6 +324,7 @@ function WMExecutor:pauseWorkflow(vehicle)
 
     -- Mark as paused FIRST to stop tracking in update loop
     activeData.status = WorkflowManager.STATUS_PAUSED
+    activeData.pendingAutoStep = nil  -- cancel any deferred step start
 
     -- Store tracking state so we can restore it on resume
     activeData.pausedTrackingState = {
@@ -416,49 +465,8 @@ function WMExecutor:executeCurrentStep(activeData)
             end
         end
     end
-    if activeData.isMainVehicle ~= false and activeData.leaderVehicle ~= nil then
-        local leaderSpec = activeData.leaderVehicle.spec_workflowManagerSpec
-        local leaderExec = leaderSpec and leaderSpec.wmExecution
-        -- Snap execution reference on first check (covers save/load restore ordering).
-        -- Also rebuild sync maps if nil — they are not persisted across save/load, so a restored
-        -- follower whose leader was already linked will have leaderVehicle set but no sync maps.
-        if leaderExec ~= nil and (activeData.linkedLeaderExecution == nil or activeData.syncSourceOrdinals == nil) then
-            activeData.linkedLeaderExecution = leaderExec
-            local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
-            WMLogger:debug("Leader sync: snapped execution reference for '%s'", leaderName)
-            -- Rebuild sync maps now that we have the leader's workflow
-            self:buildSyncMaps(activeData)
-        end
-        if leaderExec == nil or (activeData.linkedLeaderExecution ~= nil and leaderExec ~= activeData.linkedLeaderExecution) then
-            -- Leader finished, stopped, or restarted — free the follower
-            local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
-            WMLogger:info("Leader '%s' %s — follower continuing freely",
-                leaderName, leaderExec == nil and "finished/stopped" or "restarted with new execution")
-            activeData.leaderVehicle = nil
-            activeData.linkedLeaderExecution = nil
-        else
-            -- Index-based sync: check if this follower step should wait for a leader sync target
-            local curStep = activeData.workflow.steps[activeData.currentStep]
-            if curStep == nil or curStep.isSyncSource ~= false then
-                local ordinal = activeData.syncSourceOrdinals
-                                and activeData.syncSourceOrdinals[activeData.currentStep]
-                local required = ordinal and activeData.syncTargets and activeData.syncTargets[ordinal]
-                -- Ordinal beyond leader's target list: wait until leader finishes (leaderExec==nil path)
-                if required == nil and ordinal then
-                    local leaderWF = activeData.linkedLeaderExecution and activeData.linkedLeaderExecution.workflow
-                    if leaderWF then required = #leaderWF.steps + 1 end
-                end
-                if required and leaderExec.currentStep < required then
-                    WMLogger:debug("Waiting for leader: need leader at step %d (at %d), follower step %d",
-                        required, leaderExec.currentStep, activeData.currentStep)
-                    activeData.status = WorkflowManager.STATUS_WAITING_FOR_LEADER
-                    self:ensureWaitPollerActive()
-                    WorkflowManager:broadcastState(activeData.vehicle)
-                    return
-                end
-            end
-        end
-    end
+    -- Leader-sync waiting is now handled explicitly by wait_for_leader marker steps
+    -- (see the main vehicle dispatch below), not on every step.
 
     -- ===== Support vehicle path =====
     if activeData.isMainVehicle == false then
@@ -605,6 +613,22 @@ function WMExecutor:executeCurrentStep(activeData)
         end
 
         self:startCourseplayStep(activeData, vehicle, step)
+
+    elseif step.type == WorkflowManager.STEP_UNLOCK_FOLLOWER then
+        -- Leader-side milestone: pure pass-through for the vehicle running it.
+        WMLogger:info("Unlock Follower marker reached — passing through")
+        self:onStepCompleted(activeData)
+
+    elseif step.type == WorkflowManager.STEP_WAIT_FOR_LEADER then
+        -- Follower-side gate: block until the matching unlock marker is reached.
+        if self:isLeaderSyncSatisfied(activeData) then
+            WMLogger:info("Wait for Leader marker satisfied — passing through")
+            self:onStepCompleted(activeData)
+        else
+            activeData.status = WorkflowManager.STATUS_WAITING_FOR_LEADER
+            self:ensureWaitPollerActive()
+            WorkflowManager:broadcastState(activeData.vehicle)
+        end
     else
         self:handleStepError(activeData, "Unknown step type: " .. tostring(step.type))
     end
@@ -738,46 +762,14 @@ function WMExecutor:runWaitPoll(activeData, vehicle)
 
     -- Leader-follower poll: check if leader has advanced past our current step
     if activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER then
-        local leaderSpec = activeData.leaderVehicle and activeData.leaderVehicle.spec_workflowManagerSpec
-        local leaderExec = leaderSpec and leaderSpec.wmExecution
-        -- Snap execution reference on first check (covers save/load restore ordering)
-        if leaderExec ~= nil and (activeData.linkedLeaderExecution == nil or activeData.syncSourceOrdinals == nil) then
-            activeData.linkedLeaderExecution = leaderExec
-            local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
-            WMLogger:debug("Leader sync: snapped execution reference for '%s' (poll)", leaderName)
-            self:buildSyncMaps(activeData)
-        end
-        if leaderExec == nil or (activeData.linkedLeaderExecution ~= nil and leaderExec ~= activeData.linkedLeaderExecution) then
-            local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
-            WMLogger:info("Leader '%s' %s — follower resuming freely at step %d",
-                leaderName, leaderExec == nil and "stopped" or "restarted with new execution",
+        -- isLeaderSyncSatisfied handles reference snapping, leader-gone detection
+        -- (frees the follower), and the ordinal-based unlock check.
+        if self:isLeaderSyncSatisfied(activeData) then
+            WMLogger:info("Sync condition met (poll) — follower advancing past wait step %d",
                 activeData.currentStep)
-            activeData.leaderVehicle = nil
-            activeData.linkedLeaderExecution = nil
-            self:stopCurrentStep(activeData)
             activeData.status = WorkflowManager.STATUS_RUNNING
             self:executeCurrentStep(activeData)
             WorkflowManager:broadcastState(activeData.vehicle)
-        else
-            local curStep = activeData.workflow.steps[activeData.currentStep]
-            local isSyncStep = curStep == nil or curStep.isSyncSource ~= false
-            local ordinal = (isSyncStep and activeData.syncSourceOrdinals
-                            and activeData.syncSourceOrdinals[activeData.currentStep]) or nil
-            local required = (ordinal and activeData.syncTargets and activeData.syncTargets[ordinal]) or nil
-            -- Ordinal beyond leader's target list: wait until leader finishes (leaderExec==nil path)
-            if required == nil and ordinal then
-                local leaderWF = activeData.linkedLeaderExecution and activeData.linkedLeaderExecution.workflow
-                if leaderWF then required = #leaderWF.steps + 1 end
-            end
-            if required == nil or leaderExec.currentStep >= required then
-                local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
-                WMLogger:info("Leader '%s' at step %d — sync condition met, follower starting step %d",
-                    leaderName, leaderExec.currentStep, activeData.currentStep)
-                self:stopCurrentStep(activeData)
-                activeData.status = WorkflowManager.STATUS_RUNNING
-                self:executeCurrentStep(activeData)
-                WorkflowManager:broadcastState(activeData.vehicle)
-            end
         end
     end
 
@@ -998,7 +990,9 @@ function WMExecutor:onStepCompleted(activeData)
         self:onWorkflowCompleted(activeData)
     else
         notifySupport()
-        self:executeCurrentStep(activeData)
+        -- Delay next step by 2s to give the player time to press "previous step".
+        activeData.pendingAutoStep = g_currentMission.time + 2000
+        WMLogger:info("Deferring step %d start by 10s", activeData.currentStep)
     end
     -- Broadcast the new step / status to all multiplayer clients (no-op in singleplayer)
     WorkflowManager:broadcastState(activeData.vehicle)
@@ -1106,6 +1100,14 @@ function WMExecutor:update(dt)
                     activeData.autoResumeUntil = nil  -- window expired - stay paused
                     WMLogger:info("Auto-resume window expired for '%s', staying paused", workflow.name)
                 end
+            end
+
+            -- Deferred auto-step: player was in vehicle when step completed; start next step after 10s.
+            if activeData.pendingAutoStep and g_currentMission.time >= activeData.pendingAutoStep then
+                activeData.pendingAutoStep = nil
+                WMLogger:info("Deferred auto-step timer elapsed — starting step %d", activeData.currentStep)
+                self:executeCurrentStep(activeData)
+                WorkflowManager:broadcastState(activeData.vehicle)
             end
 
             -- Leader-follower poll and support-vehicle idle poll are handled by the global
@@ -1466,6 +1468,7 @@ function WMExecutor:resetStepTrackingState(activeData)
     activeData.waitingForMainStep = nil
     activeData.waitingForMainStepIndex = nil
     activeData.pendingExecuteOnResume = nil
+    activeData.pendingAutoStep = nil
 end
 
 
@@ -1490,6 +1493,21 @@ function WMExecutor:goToPreviousStep(vehicle)
     end
 
     local workflow = activeData.workflow
+
+    -- Deferred auto-step window: navigate only; don't execute the step yet.
+    -- Restart the 10s timer so the player can navigate multiple steps.
+    if activeData.pendingAutoStep then
+        activeData.currentStep = activeData.currentStep - 1
+        activeData.pendingAutoStep = g_currentMission.time + 10000
+        WMLogger:info("Deferred: navigated to step %d, timer restarted", activeData.currentStep)
+        if activeData.isMainVehicle ~= false then
+            for _, sd in ipairs(self:getSupportActiveDataListForWorkflow(workflow.id)) do
+                self:onMainStepChanged(sd, activeData.currentStep)
+            end
+        end
+        WorkflowManager:broadcastState(vehicle)
+        return true
+    end
 
     -- Remember if workflow was paused so we can resume after step change
     local wasPaused = activeData.status == WorkflowManager.STATUS_PAUSED
@@ -1557,6 +1575,20 @@ function WMExecutor:goToNextStep(vehicle)
     if activeData.currentStep >= #workflow.steps then
         WMLogger:warning("Already at last step of workflow %s", workflow.id)
         return false
+    end
+
+    -- Deferred auto-step window: navigate only; don't execute the step yet.
+    if activeData.pendingAutoStep then
+        activeData.currentStep = activeData.currentStep + 1
+        activeData.pendingAutoStep = g_currentMission.time + 10000
+        WMLogger:info("Deferred: navigated to step %d, timer restarted", activeData.currentStep)
+        if activeData.isMainVehicle ~= false then
+            for _, sd in ipairs(self:getSupportActiveDataListForWorkflow(workflow.id)) do
+                self:onMainStepChanged(sd, activeData.currentStep)
+            end
+        end
+        WorkflowManager:broadcastState(vehicle)
+        return true
     end
 
     -- Remember if workflow was paused so we can resume after step change
