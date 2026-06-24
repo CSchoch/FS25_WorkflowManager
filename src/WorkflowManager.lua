@@ -939,7 +939,7 @@ end
 ---@param callback   function  Called with true (main), false (support), or nil (cancel)
 function WorkflowManager:showModeSelectDialog(workflowId, vehicle, callback)
     if self.modeSelectDialog == nil then
-        callback(true)  -- fallback: main role
+        if callback then callback(true) end
         return
     end
     self.modeSelectDialog:setWorkflow(workflowId, vehicle, callback)

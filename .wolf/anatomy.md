@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-06-23T09:38:44.781Z
-> Files: 51 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-06-24T07:43:11.540Z
+> Files: 52 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -47,9 +47,9 @@
 
 ## src/
 
-- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~20003 tok)
+- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~20008 tok)
 - `WorkflowManager.lua` — getStepTypeLabel, isMarkerStepType, init, loadDialogs, Callback (~14056 tok)
-- `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~7161 tok)
+- `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~7270 tok)
 - `WorkflowStorage.lua` — deepCopySupportStep, isMarkerStepType, parseFillTypes, init, getXmlPath (~4632 tok)
 
 ## src/dev/
@@ -61,7 +61,7 @@
 - `WMEditorDialog.lua` — new, onCreate, onOpen, onClose, setWorkflow (~5305 tok)
 - `WMHud.lua` — ensureOverlays, createIconOverlays, updateOverlayPositions, init, show (~7640 tok)
 - `WMLeaderVehicleSelectDialog.lua` — new, onCreate, buildVehicleList, onOpen, onClose (~1149 tok)
-- `WMStepDialog.lua` — new, onCreate, onOpen, onClose, keyEvent (~7563 tok)
+- `WMStepDialog.lua` — new, onCreate, onOpen, onClose, keyEvent (~7601 tok)
 - `WorkflowEditorGUI.lua` — init, openWorkflow, close, saveAndClose, cancelAndClose (~17483 tok)
 
 ## src/integration/
@@ -79,7 +79,7 @@
 
 ## tests/
 
-- `run_tests.lua` — local, assert, describe, it, before_each (~2123 tok)
+- `run_tests.lua` — local, assert, describe, it, before_each (~2135 tok)
 
 ## tests/fixtures/
 
@@ -95,9 +95,10 @@
 
 - `WMHud_spec.lua` — makeVehicle (~2098 tok)
 - `WMLeaderVehicleSelectDialog_spec.lua` — makeVehicle, makeList, makeButton (~3135 tok)
-- `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport, makeLeaderWF (~20608 tok)
-- `WorkflowManager_spec.lua` — Declares constants (~9079 tok)
-- `WorkflowManagerSpec_spec.lua` — makeVehicle, makeSavegameXML (~10466 tok)
+- `WMStepDialog_spec.lua` — makeDialog, makeStubDialog, confirm (~2605 tok)
+- `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport, makeLeaderWF (~23172 tok)
+- `WorkflowManager_spec.lua` — Declares constants (~9570 tok)
+- `WorkflowManagerSpec_spec.lua` — makeVehicle, makeSavegameXML (~11001 tok)
 - `WorkflowStorage_spec.lua` — hasFormatVersion (~9832 tok)
 
 ## textures/

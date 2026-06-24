@@ -1620,6 +1620,104 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-06-23T09:38:44.804Z"
+    },
+    {
+      "id": "bug-100",
+      "timestamp": "2026-06-23T00:00:00.000Z",
+      "error_message": "clearCPHandoff not called when startRoute fails — setStartHelper(true) left armed from prior CP step",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "ADIntegration:clearCPHandoff was inside the 'if success then' branch of startAutoDriveStep. If startRoute returned false, StartDriving was never called (so AD did not internally reset the flag), leaving setStartHelper(true) from the prior CP step armed. Any subsequent AD activation (manual or retry) would then auto-start CP — the AD→CP double-start / 13-second crash.",
+      "fix": "Moved clearCPHandoff to before the startRoute call (unconditional). On success, StartDriving resets the flag internally anyway, so calling clear first is idempotent. On failure, the flag is now always disarmed.",
+      "tags": [
+        "cp-handoff",
+        "startAutoDriveStep",
+        "regression",
+        "ad-cp-double-start"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-23T00:00:00.000Z"
+    },
+    {
+      "id": "bug-101",
+      "timestamp": "2026-06-23T20:17:39.518Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "Had \"Deferring step %d start by 10s\"",
+      "fix": "Changed to \"Deferring step %d start by 2s\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-23T20:17:39.518Z"
+    },
+    {
+      "id": "bug-102",
+      "timestamp": "2026-06-23T20:17:47.073Z",
+      "error_message": "Wrong reference: 10s should be 2s",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "Used \"10s\" instead of \"2s\"",
+      "fix": "Changed 10s → 2s",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-23T20:17:47.073Z"
+    },
+    {
+      "id": "bug-103",
+      "timestamp": "2026-06-23T00:00:00.000Z",
+      "error_message": "WMStepDialog used hardcoded 'autodrive'/'courseplay' string literals in 6 type-branching sites instead of WorkflowManager.STEP_AUTODRIVE / STEP_COURSEPLAY constants",
+      "file": "src/gui/WMStepDialog.lua",
+      "root_cause": "getAvailableActions, refreshTargetList, actionNeedsUnloadTarget, actionNeedsFillType, onTypeChanged defaultActions map, and onClickConfirm all compared self.stepType against raw string literals. If a constant value is ever renamed, all six sites silently break.",
+      "fix": "Replaced all 6 hardcoded literals with WorkflowManager.STEP_AUTODRIVE / STEP_COURSEPLAY constants. Added WMStepDialog_spec.lua covering all six sites.",
+      "tags": [
+        "constants",
+        "step-type",
+        "refactor",
+        "WMStepDialog"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-23T00:00:00.000Z"
+    },
+    {
+      "id": "bug-104",
+      "timestamp": "2026-06-24T06:31:36.323Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "29 lines replaced/restructured",
+      "fix": "Rewrote 29→4 lines (29 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-24T06:31:36.323Z"
+    },
+    {
+      "id": "bug-105",
+      "timestamp": "2026-06-24T07:11:33.824Z",
+      "error_message": "Wrong return value",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "Was returning: true end",
+      "fix": "Now returns: false  -- leader reference not yet resolved; block",
+      "tags": [
+        "auto-detected",
+        "return-value",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-24T07:11:33.824Z"
     }
   ]
 }

@@ -255,6 +255,9 @@ end
 ---@param activeData table Follower's active execution state
 ---@return boolean satisfied
 function WMExecutor:isLeaderSyncSatisfied(activeData)
+    if activeData.pendingLeaderXmlIndex ~= nil or activeData.pendingLeaderWorkflowId ~= nil then
+        return false  -- leader reference not yet resolved; block until poller resolves it
+    end
     if activeData.leaderVehicle == nil then return true end
 
     local leaderSpec = activeData.leaderVehicle.spec_workflowManagerSpec
@@ -315,12 +318,14 @@ function WMExecutor:pauseWorkflow(vehicle)
 
     local isRunningOrWaiting = activeData.status == WorkflowManager.STATUS_RUNNING
                             or activeData.status == WorkflowManager.STATUS_WAITING_FOR_MAIN
+                            or activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER
     if not isRunningOrWaiting then
         WMLogger:warning("Workflow %s is not running", activeData.workflow.id)
         return false
     end
 
-    local wasWaitingForMain = activeData.status == WorkflowManager.STATUS_WAITING_FOR_MAIN
+    local wasWaitingForMain   = activeData.status == WorkflowManager.STATUS_WAITING_FOR_MAIN
+    local wasWaitingForLeader = activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER
 
     -- Mark as paused FIRST to stop tracking in update loop
     activeData.status = WorkflowManager.STATUS_PAUSED
@@ -332,7 +337,8 @@ function WMExecutor:pauseWorkflow(vehicle)
         currentStepType = activeData.currentStepType,
         cpHandedOffToAD = activeData.cpHandedOffToAD,
         cpWasRunning = activeData.cpWasRunning,
-        wasWaitingForMain = wasWaitingForMain,
+        wasWaitingForMain   = wasWaitingForMain,
+        wasWaitingForLeader = wasWaitingForLeader,
     }
 
     -- Stop waiting for completion while paused
@@ -340,7 +346,7 @@ function WMExecutor:pauseWorkflow(vehicle)
     activeData.waitingForCompletion = false
 
     -- Release wait poller if pausing from an idle wait state (no real AD/CP to pause)
-    if wasWaitingForMain then
+    if wasWaitingForMain or wasWaitingForLeader then
         self:stopWaitPollerIfIdle()
     else
         self:pauseCurrentStep(activeData)
@@ -386,15 +392,21 @@ function WMExecutor:resumeWorkflow(vehicle)
         self:executeCurrentStep(activeData)
     -- Restore tracking state from before pause
     elseif activeData.pausedTrackingState then
-        activeData.waitingForCompletion = activeData.pausedTrackingState.waitingForCompletion
-        activeData.currentStepType = activeData.pausedTrackingState.currentStepType
-        activeData.cpHandedOffToAD = activeData.pausedTrackingState.cpHandedOffToAD
-        activeData.cpWasRunning = activeData.pausedTrackingState.cpWasRunning
-        activeData.pausedTrackingState = nil
+        local pts = activeData.pausedTrackingState
+        activeData.waitingForCompletion = pts.waitingForCompletion
+        activeData.currentStepType      = pts.currentStepType
+        activeData.cpHandedOffToAD      = pts.cpHandedOffToAD
+        activeData.cpWasRunning         = pts.cpWasRunning
+        local wasWaitingForLeader       = pts.wasWaitingForLeader
+        activeData.pausedTrackingState  = nil
 
+        -- Follower was waiting for leader sync — restore that state and restart poller.
+        if wasWaitingForLeader then
+            activeData.status = WorkflowManager.STATUS_WAITING_FOR_LEADER
+            self:ensureWaitPollerActive()
         -- Support vehicle was idling (STATUS_WAITING_FOR_MAIN) before pause — restore that
         -- state and restart the poller. No real AD/CP route to unpause.
-        if activeData.isMainVehicle == false and activeData.waitingForMainStep then
+        elseif activeData.isMainVehicle == false and activeData.waitingForMainStep then
             activeData.status = WorkflowManager.STATUS_WAITING_FOR_MAIN
             self:ensureWaitPollerActive()
         else
@@ -438,35 +450,10 @@ function WMExecutor:executeCurrentStep(activeData)
     local workflow = activeData.workflow
     local vehicle = activeData.vehicle
 
-    -- ===== Leader-follower synchronization (main vehicle only) =====
-    -- Resolve pending leader from workflow ID.
-    -- Safety net for the manual-resume path: update() resolves this each tick, but if the player
-    -- resumes before the first update() tick (or goToNextStep/goToPreviousStep is called early),
-    -- pendingLeaderWorkflowId may still be set when we arrive here.
-    if activeData.isMainVehicle ~= false and activeData.leaderVehicle == nil
-    and (activeData.pendingLeaderWorkflowId ~= nil or activeData.pendingLeaderXmlIndex ~= nil) then
-        for v, _ in pairs(self.activeVehicles) do
-            if v ~= activeData.vehicle then
-                local vSpec = v.spec_workflowManagerSpec
-                local vExec = vSpec and vSpec.wmExecution
-                local matched = (activeData.pendingLeaderWorkflowId ~= nil
-                    and vExec and vExec.workflow and vExec.workflow.id == activeData.pendingLeaderWorkflowId)
-                    or (activeData.pendingLeaderXmlIndex ~= nil
-                    and vSpec and vSpec.wmXmlIndex == activeData.pendingLeaderXmlIndex)
-                if matched then
-                    activeData.leaderVehicle           = v
-                    activeData.linkedLeaderExecution   = vExec
-                    activeData.pendingLeaderWorkflowId = nil
-                    activeData.pendingLeaderXmlIndex   = nil
-                    WMLogger:info("Resolved pending leader '%s' for follower at step %d",
-                        v.getName and v:getName() or "?", activeData.currentStep)
-                    break
-                end
-            end
-        end
-    end
-    -- Leader-sync waiting is now handled explicitly by wait_for_leader marker steps
-    -- (see the main vehicle dispatch below), not on every step.
+    -- Safety net: if the player resumes before the first wait-poller tick (or
+    -- goToNext/PreviousStep is called early after load), pendingLeaderXmlIndex may still
+    -- be set.  tryResolvePendingLeader is the same loop runWaitPoll uses every 500 ms.
+    self:tryResolvePendingLeader(activeData)
 
     -- ===== Support vehicle path =====
     if activeData.isMainVehicle == false then
@@ -684,6 +671,34 @@ function WMExecutor:stopCurrentStep(activeData)
     end
 end
 
+---Resolve a pending leader reference (by xmlIndex or legacy workflowId) if the leader
+---vehicle is now available in activeVehicles.  Called from executeCurrentStep (early-resume
+---safety net) and runWaitPoll (normal deferred path after save/load).
+---@param activeData table Per-vehicle execution state
+function WMExecutor:tryResolvePendingLeader(activeData)
+    if activeData.leaderVehicle ~= nil then return end
+    if activeData.pendingLeaderWorkflowId == nil and activeData.pendingLeaderXmlIndex == nil then return end
+    for candidate, _ in pairs(self.activeVehicles) do
+        if candidate ~= activeData.vehicle then
+            local vSpec = candidate.spec_workflowManagerSpec
+            local vExec = vSpec and vSpec.wmExecution
+            local matched = (activeData.pendingLeaderWorkflowId ~= nil
+                and vExec and vExec.workflow and vExec.workflow.id == activeData.pendingLeaderWorkflowId)
+                or (activeData.pendingLeaderXmlIndex ~= nil
+                and vSpec and vSpec.wmXmlIndex == activeData.pendingLeaderXmlIndex)
+            if matched then
+                activeData.leaderVehicle           = candidate
+                activeData.linkedLeaderExecution   = vExec
+                activeData.pendingLeaderWorkflowId = nil
+                activeData.pendingLeaderXmlIndex   = nil
+                WMLogger:info("Resolved pending leader '%s' for follower at step %d",
+                    candidate.getName and candidate:getName() or "?", activeData.currentStep)
+                break
+            end
+        end
+    end
+end
+
 ---Ensure the global wait-poller is registered with g_currentMission. The poller iterates
 ---all active vehicles every ~500 ms and calls runWaitPoll for those in a waiting status.
 ---This keeps polling alive even when FS25 puts distant vehicles to sleep.
@@ -697,7 +712,11 @@ function WMExecutor:ensureWaitPollerActive()
         if self.throttle > 0 then return end
         self.throttle = 500
         self.cycles = self.cycles + 1
+        local vehicles = {}
         for vehicle, _ in pairs(executor.activeVehicles) do
+            vehicles[#vehicles + 1] = vehicle
+        end
+        for _, vehicle in ipairs(vehicles) do
             local spec = vehicle.spec_workflowManagerSpec
             local ad = spec and spec.wmExecution
             if ad then executor:runWaitPoll(ad, vehicle) end
@@ -736,29 +755,8 @@ end
 function WMExecutor:runWaitPoll(activeData, vehicle)
     local workflow = activeData.workflow
 
-    -- Resolve pending leader workflow ID (retry until leader's onPostLoad/onReadStream runs)
-    if activeData.leaderVehicle == nil
-    and (activeData.pendingLeaderWorkflowId ~= nil or activeData.pendingLeaderXmlIndex ~= nil) then
-        for candidate, _ in pairs(self.activeVehicles) do
-            if candidate ~= activeData.vehicle then
-                local vSpec = candidate.spec_workflowManagerSpec
-                local vExec = vSpec and vSpec.wmExecution
-                local matched = (activeData.pendingLeaderWorkflowId ~= nil
-                    and vExec and vExec.workflow and vExec.workflow.id == activeData.pendingLeaderWorkflowId)
-                    or (activeData.pendingLeaderXmlIndex ~= nil
-                    and vSpec and vSpec.wmXmlIndex == activeData.pendingLeaderXmlIndex)
-                if matched then
-                    activeData.leaderVehicle           = candidate
-                    activeData.linkedLeaderExecution   = vExec
-                    activeData.pendingLeaderWorkflowId = nil
-                    activeData.pendingLeaderXmlIndex   = nil
-                    WMLogger:info("Resolved pending leader '%s' for follower at step %d (poll)",
-                        candidate.getName and candidate:getName() or "?", activeData.currentStep)
-                    break
-                end
-            end
-        end
-    end
+    -- Retry pending leader resolution (leader may load after follower during map load)
+    self:tryResolvePendingLeader(activeData)
 
     -- Leader-follower poll: check if leader has advanced past our current step
     if activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER then
@@ -799,6 +797,13 @@ end
 function WMExecutor:startAutoDriveStep(activeData, vehicle, step)
     local workflow = activeData.workflow
 
+    -- Clear any CP-handoff flag before starting AD, regardless of success.
+    -- A prior CP step may have called setStartCPOnCompletion(true); if startRoute
+    -- fails without calling StartDriving, that flag stays armed and the next AD
+    -- activation would auto-start CP. (On success, StartDriving resets the flag
+    -- internally anyway, so calling clear first is safe and idempotent.)
+    ADIntegration:clearCPHandoff(vehicle)
+
     local success = ADIntegration:startRoute(
         vehicle,
         step.target,
@@ -815,8 +820,6 @@ function WMExecutor:startAutoDriveStep(activeData, vehicle, step)
         activeData.lastADTarget = step.target
         -- Apply after StartDriving so AD's own route-start logic can't overwrite them
         ADIntegration:applyWorkflowSettings(vehicle, workflow.adSettings)
-        -- Clear any CP-handoff flag so this AD step won't accidentally auto-start CP on finish
-        ADIntegration:clearCPHandoff(vehicle)
         WMLogger:info("AutoDrive step started successfully, waiting for completion")
     else
         self:handleStepError(activeData, "Failed to start AutoDrive route: " .. (step.target or "nil"))
@@ -992,7 +995,7 @@ function WMExecutor:onStepCompleted(activeData)
         notifySupport()
         -- Delay next step by 2s to give the player time to press "previous step".
         activeData.pendingAutoStep = g_currentMission.time + 2000
-        WMLogger:info("Deferring step %d start by 10s", activeData.currentStep)
+        WMLogger:info("Deferring step %d start by 2s", activeData.currentStep)
     end
     -- Broadcast the new step / status to all multiplayer clients (no-op in singleplayer)
     WorkflowManager:broadcastState(activeData.vehicle)
@@ -1102,7 +1105,7 @@ function WMExecutor:update(dt)
                 end
             end
 
-            -- Deferred auto-step: player was in vehicle when step completed; start next step after 10s.
+            -- Deferred auto-step: player was in vehicle when step completed; start next step after 2s.
             if activeData.pendingAutoStep and g_currentMission.time >= activeData.pendingAutoStep then
                 activeData.pendingAutoStep = nil
                 WMLogger:info("Deferred auto-step timer elapsed — starting step %d", activeData.currentStep)

@@ -1,3 +1,8 @@
+| 00:00 | TDD fix (bug-105/106): isLeaderSyncSatisfied returned true when leaderVehicle==nil but pendingLeaderXmlIndex was set — follower passed WAIT_FOR_LEADER gate without blocking. Fix: added pending check before nil-leader early-return. 2 new tests, 408/408 pass | WorkflowExecutor.lua, WorkflowExecutor_spec.lua | 408/408 tests pass | ~80 tok |
+| 00:00 | TDD refactor: extract tryResolvePendingLeader() from duplicate blocks in executeCurrentStep and runWaitPoll; added 2 tests pinning both paths; finding "dead code for followers" was imprecise (linked followers are main vehicles), but divergence risk was valid | WorkflowExecutor.lua, WorkflowExecutor_spec.lua | 406/406 tests pass | ~120 tok |
+| 00:00 | Fix 3 bugs (TDD): (1) pauseWorkflow now accepts STATUS_WAITING_FOR_LEADER + resume restores that state; (2) saveToXMLFile parses wmXmlIndex from key for fresh-start vehicles; (3) showModeSelectDialog nil-guards callback before calling it | WorkflowExecutor.lua, WorkflowManagerSpec.lua, WorkflowManager.lua, WorkflowExecutor_spec.lua, WorkflowManagerSpec_spec.lua, WorkflowManager_spec.lua | 404/404 tests pass | ~350 tok |
+| 00:00 | Fix bug-102/103: (1) WorkflowExecutor log said "10s" but pendingAutoStep is 2000ms — fixed log+comment; pinned timer value in spec. (2) WMStepDialog had 6 hardcoded "autodrive"/"courseplay" literals — replaced with STEP_AUTODRIVE/STEP_COURSEPLAY constants; added WMStepDialog_spec.lua (16 tests, 394/394 pass) | WorkflowExecutor.lua, WorkflowExecutor_spec.lua, WMStepDialog.lua, WMStepDialog_spec.lua, run_tests.lua | 394/394 tests pass | ~180 tok |
+| 00:00 | Fix bug-100: clearCPHandoff moved before startRoute in startAutoDriveStep — on failure path, setStartHelper(true) from prior CP step was left armed (AD→CP double-start crash) | WorkflowExecutor.lua, WorkflowExecutor_spec.lua | 378/378 tests pass | ~80 tok |
 | 14:45 | Add 10s deferred auto-step in WorkflowExecutor: when player is in vehicle at step completion, pendingAutoStep defers executeCurrentStep; manual prev/next unaffected (resetStepTrackingState clears flag) | WorkflowExecutor.lua | 377/377 tests pass | ~120 tok |
 | 00:10 | Fix bug-089: overflow sync ordinal (#steps+1) made follower permanently stuck in waiting_for_leader; changed to #steps; also updated console syncRequired display to show overflow fallback | WorkflowExecutor.lua, WMConsoleCommands.lua | 386/386 tests pass | ~300 tok |
 | 23:15 | Fix: follower with uncovered sync ordinals now waits until leader finishes instead of running freely | WorkflowExecutor.lua, WorkflowExecutor_spec.lua | 384/384 tests pass | ~400 tok |
@@ -340,3 +345,70 @@
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+
+## Session: 2026-06-23 15:03
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 21:37 | Edited tests/specs/WorkflowExecutor_spec.lua | expanded (+13 lines) | ~302 |
+| 21:38 | Edited tests/specs/WorkflowExecutor_spec.lua | inline fix | ~27 |
+| 22:09 | Edited src/WorkflowExecutor.lua | 22→27 lines | ~340 |
+| 22:10 | Session end: 3 writes across 2 files (WorkflowExecutor_spec.lua, WorkflowExecutor.lua) | 17 reads | ~137298 tok |
+
+## Session: 2026-06-23 22:11
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 22:17 | Edited tests/specs/WorkflowExecutor_spec.lua | 4→5 lines | ~80 |
+| 22:17 | Edited src/WorkflowExecutor.lua | "Deferring step %d start b" → "Deferring step %d start b" | ~21 |
+| 22:17 | Edited src/WorkflowExecutor.lua | inline fix | ~28 |
+| 22:18 | Created tests/specs/WMStepDialog_spec.lua | — | ~2605 |
+| 22:18 | Edited tests/run_tests.lua | 2→3 lines | ~26 |
+| 22:18 | Edited src/gui/WMStepDialog.lua | 8→8 lines | ~79 |
+| 22:18 | Edited src/gui/WMStepDialog.lua | 5→5 lines | ~52 |
+| 22:18 | Edited src/gui/WMStepDialog.lua | 4→4 lines | ~52 |
+| 22:18 | Edited src/gui/WMStepDialog.lua | 4→4 lines | ~44 |
+| 22:19 | Edited src/gui/WMStepDialog.lua | inline fix | ~32 |
+| 22:19 | Edited src/gui/WMStepDialog.lua | 2→2 lines | ~26 |
+| 22:22 | Session end: 11 writes across 5 files (WorkflowExecutor_spec.lua, WorkflowExecutor.lua, WMStepDialog_spec.lua, run_tests.lua, WMStepDialog.lua) | 7 reads | ~61815 tok |
+
+## Session: 2026-06-23 22:23
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 22:29 | Edited tests/specs/WorkflowExecutor_spec.lua | expanded (+36 lines) | ~628 |
+| 22:29 | Edited tests/specs/WorkflowExecutor_spec.lua | expanded (+26 lines) | ~467 |
+| 22:29 | Edited tests/specs/WorkflowManagerSpec_spec.lua | expanded (+33 lines) | ~571 |
+| 22:30 | Edited tests/specs/WorkflowManager_spec.lua | expanded (+10 lines) | ~166 |
+| 22:30 | Edited tests/specs/WorkflowManager_spec.lua | expanded (+32 lines) | ~457 |
+| 22:31 | Edited src/WorkflowExecutor.lua | 32→35 lines | ~430 |
+| 22:31 | Edited src/WorkflowExecutor.lua | expanded (+6 lines) | ~321 |
+| 22:31 | Edited src/WorkflowManagerSpec.lua | modified WorkflowManagerSpec() | ~156 |
+| 22:32 | Edited src/WorkflowManager.lua | 4→4 lines | ~29 |
+| 22:32 | Edited tests/specs/WorkflowManager_spec.lua | 8→8 lines | ~100 |
+| 22:32 | Session end: 10 writes across 6 files (WorkflowExecutor_spec.lua, WorkflowManagerSpec_spec.lua, WorkflowManager_spec.lua, WorkflowExecutor.lua, WorkflowManagerSpec.lua) | 6 reads | ~85212 tok |
+
+## Session: 2026-06-24 08:18
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 08:25 | Edited tests/specs/WorkflowExecutor_spec.lua | modified makePendingFollowerExec() | ~876 |
+| 08:31 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~499 |
+| 08:31 | Edited src/WorkflowExecutor.lua | removed 29 lines | ~81 |
+| 08:31 | Edited src/WorkflowExecutor.lua | removed 23 lines | ~36 |
+| 08:33 | Session end: 4 writes across 2 files (WorkflowExecutor_spec.lua, WorkflowExecutor.lua) | 5 reads | ~67647 tok |
+
+## Session: 2026-06-24 08:49
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 08:59 | Edited tests/specs/WorkflowExecutor_spec.lua | expanded (+51 lines) | ~754 |
+| 09:11 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~83 |
+| 09:12 | Session end: 2 writes across 2 files (WorkflowExecutor_spec.lua, WorkflowExecutor.lua) | 2 reads | ~43339 tok |
+
+## Session: 2026-06-24 09:20
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 09:43 | Edited src/WorkflowExecutor.lua | 5→9 lines | ~99 |
+| 09:43 | Session end: 1 writes across 1 files (WorkflowExecutor.lua) | 1 reads | ~20078 tok |

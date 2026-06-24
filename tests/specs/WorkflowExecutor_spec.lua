@@ -322,6 +322,42 @@ describe("WMExecutor (real)", function()
             WMExecutor:pauseWorkflow(v)
             assert.is_true(fired)
         end)
+
+        it("returns true when pausing a WAITING_FOR_LEADER follower", function()
+            local leader   = makeVehicle("PL1")
+            local follower = makeVehicle("PF1")
+            WMExecutor:startWorkflow(makeLeaderWF("wf_pl1"), leader)
+            WMExecutor:startWorkflow(makeFollowerWF("wf_pf1"), follower, true, leader)
+            activeData(follower).currentStep = 2
+            activeData(follower).status = WorkflowManager.STATUS_RUNNING
+            WMExecutor:executeCurrentStep(activeData(follower))
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, activeData(follower).status)
+            assert.is_true(WMExecutor:pauseWorkflow(follower))
+        end)
+
+        it("sets status to PAUSED when pausing from WAITING_FOR_LEADER", function()
+            local leader   = makeVehicle("PL2")
+            local follower = makeVehicle("PF2")
+            WMExecutor:startWorkflow(makeLeaderWF("wf_pl2"), leader)
+            WMExecutor:startWorkflow(makeFollowerWF("wf_pf2"), follower, true, leader)
+            activeData(follower).currentStep = 2
+            activeData(follower).status = WorkflowManager.STATUS_RUNNING
+            WMExecutor:executeCurrentStep(activeData(follower))
+            WMExecutor:pauseWorkflow(follower)
+            assert.are.equal(WorkflowManager.STATUS_PAUSED, activeData(follower).status)
+        end)
+
+        it("records wasWaitingForLeader in pausedTrackingState", function()
+            local leader   = makeVehicle("PL3")
+            local follower = makeVehicle("PF3")
+            WMExecutor:startWorkflow(makeLeaderWF("wf_pl3"), leader)
+            WMExecutor:startWorkflow(makeFollowerWF("wf_pf3"), follower, true, leader)
+            activeData(follower).currentStep = 2
+            activeData(follower).status = WorkflowManager.STATUS_RUNNING
+            WMExecutor:executeCurrentStep(activeData(follower))
+            WMExecutor:pauseWorkflow(follower)
+            assert.is_true(activeData(follower).pausedTrackingState.wasWaitingForLeader)
+        end)
     end)
 
     -- =========================================================================
@@ -366,6 +402,32 @@ describe("WMExecutor (real)", function()
             end)
             WMExecutor:resumeWorkflow(v)
             assert.is_true(fired)
+        end)
+
+        it("restores WAITING_FOR_LEADER when wasWaitingForLeader was set on pause", function()
+            local leader   = makeVehicle("RL1")
+            local follower = makeVehicle("RF1")
+            WMExecutor:startWorkflow(makeLeaderWF("wf_rl1"), leader)
+            WMExecutor:startWorkflow(makeFollowerWF("wf_rf1"), follower, true, leader)
+            activeData(follower).currentStep = 2
+            activeData(follower).status = WorkflowManager.STATUS_RUNNING
+            WMExecutor:executeCurrentStep(activeData(follower))
+            WMExecutor:pauseWorkflow(follower)
+            WMExecutor:resumeWorkflow(follower)
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, activeData(follower).status)
+        end)
+
+        it("resumes wait poller when restoring WAITING_FOR_LEADER", function()
+            local leader   = makeVehicle("RL2")
+            local follower = makeVehicle("RF2")
+            WMExecutor:startWorkflow(makeLeaderWF("wf_rl2"), leader)
+            WMExecutor:startWorkflow(makeFollowerWF("wf_rf2"), follower, true, leader)
+            activeData(follower).currentStep = 2
+            activeData(follower).status = WorkflowManager.STATUS_RUNNING
+            WMExecutor:executeCurrentStep(activeData(follower))
+            WMExecutor:pauseWorkflow(follower)
+            WMExecutor:resumeWorkflow(follower)
+            assert.is_not_nil(WMExecutor.globalWaitPoller)
         end)
     end)
 
@@ -1187,10 +1249,11 @@ describe("WMExecutor (real)", function()
             local d = activeData(v)
             assert.are.equal(WorkflowManager.STEP_AUTODRIVE, d.currentStepType)
 
-            -- Simulate AD completing: step advances but execution is deferred 10s
+            -- Simulate AD completing: step advances but execution is deferred 2s
             WMExecutor:onStepCompleted(d)
             assert.are.equal(2, d.currentStep)
             assert.is_not_nil(d.pendingAutoStep)
+            assert.are.equal(g_currentMission.time + 2000, d.pendingAutoStep)
 
             -- Advance time past the deferred timer and poll
             g_currentMission.time = d.pendingAutoStep + 1
@@ -1593,6 +1656,118 @@ describe("WMExecutor (real)", function()
     end)
 
     -- =========================================================================
+    -- pending leader resolution: executeCurrentStep safety-net vs runWaitPoll
+    -- Both share the same loop; this section pins both paths against regression.
+    -- =========================================================================
+    describe("pending leader resolution", function()
+        -- Build a follower exec that mimics save/load restore when the leader
+        -- has not yet appeared in activeVehicles: leaderVehicle is nil and
+        -- pendingLeaderXmlIndex is set.  The follower is placed on step 1 (AD)
+        -- so executeCurrentStep can proceed after resolution without hitting a
+        -- wait_for_leader marker.
+        local function makePendingFollowerExec(follower, wf, xmlIndex)
+            local exec = {
+                workflow              = wf,
+                vehicle               = follower,
+                status                = WorkflowManager.STATUS_RUNNING,
+                currentStep           = 1,
+                isMainVehicle         = true,
+                waitingForCompletion  = false,
+                leaderVehicle         = nil,
+                pendingLeaderXmlIndex = xmlIndex,
+            }
+            follower.spec_workflowManagerSpec.wmExecution = exec
+            WMExecutor.activeVehicles[follower] = true
+            return exec
+        end
+
+        it("executeCurrentStep resolves pendingLeaderXmlIndex before the first poll tick", function()
+            local leader   = makeVehicle("Leader")
+            local follower = makeVehicle("Follower")
+            WMExecutor:startWorkflow(makeLeaderWF("wf_pend_exec_l"), leader)
+            leader.spec_workflowManagerSpec.wmXmlIndex = 77
+
+            local followerExec = makePendingFollowerExec(follower, makeFollowerWF("wf_pend_exec_f"), 77)
+
+            -- Simulate manual resume before any poll tick fires
+            WMExecutor:executeCurrentStep(followerExec)
+
+            assert.are.equal(leader, followerExec.leaderVehicle)
+            assert.is_nil(followerExec.pendingLeaderXmlIndex)
+        end)
+
+        it("runWaitPoll resolves pendingLeaderXmlIndex when leader loads after follower", function()
+            local leader   = makeVehicle("Leader")
+            local follower = makeVehicle("Follower")
+
+            -- Follower is waiting; leader not yet in activeVehicles
+            local followerExec = makePendingFollowerExec(follower, makeFollowerWF("wf_pend_poll_f"), 42)
+            followerExec.status = WorkflowManager.STATUS_WAITING_FOR_LEADER
+            WMExecutor:ensureWaitPollerActive()
+
+            -- Leader arrives with matching wmXmlIndex
+            WMExecutor:startWorkflow(makeLeaderWF("wf_pend_poll_l"), leader)
+            leader.spec_workflowManagerSpec.wmXmlIndex = 42
+
+            triggerPoll()
+
+            assert.are.equal(leader, followerExec.leaderVehicle)
+            assert.is_nil(followerExec.pendingLeaderXmlIndex)
+        end)
+
+        it("executeCurrentStep blocks at WAIT_FOR_LEADER when pendingLeaderXmlIndex is unresolved", function()
+            local follower = makeVehicle("Follower")
+            local wf = makeFollowerWF("wf_pend_block_f")
+            -- Follower at the wait_for_leader step (step 2) with unresolved leader
+            local followerExec = {
+                workflow              = wf,
+                vehicle               = follower,
+                status                = WorkflowManager.STATUS_RUNNING,
+                currentStep           = 2,
+                isMainVehicle         = true,
+                waitingForCompletion  = false,
+                leaderVehicle         = nil,
+                pendingLeaderXmlIndex = 99,
+            }
+            follower.spec_workflowManagerSpec.wmExecution = followerExec
+            WMExecutor.activeVehicles[follower] = true
+            -- No leader in activeVehicles — tryResolvePendingLeader will fail
+
+            WMExecutor:executeCurrentStep(followerExec)
+
+            -- Must block, not pass through the wait gate
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, followerExec.status)
+            assert.are.equal(2, followerExec.currentStep)
+            assert.are.equal(99, followerExec.pendingLeaderXmlIndex)
+        end)
+
+        it("runWaitPoll blocks WAITING_FOR_LEADER follower when pendingLeaderXmlIndex is still unresolved", function()
+            local follower = makeVehicle("Follower")
+            local wf = makeFollowerWF("wf_pend_poll_block_f")
+            local followerExec = {
+                workflow              = wf,
+                vehicle               = follower,
+                status                = WorkflowManager.STATUS_WAITING_FOR_LEADER,
+                currentStep           = 2,
+                isMainVehicle         = true,
+                waitingForCompletion  = false,
+                leaderVehicle         = nil,
+                pendingLeaderXmlIndex = 88,
+            }
+            follower.spec_workflowManagerSpec.wmExecution = followerExec
+            WMExecutor.activeVehicles[follower] = true
+            WMExecutor:ensureWaitPollerActive()
+            -- No leader in activeVehicles
+
+            triggerPoll()
+
+            -- Must stay blocked
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, followerExec.status)
+            assert.are.equal(2, followerExec.currentStep)
+        end)
+    end)
+
+    -- =========================================================================
     -- STATUS_WAITING_FOR_MAIN: global poller, poll-triggered resume, pause/resume
     -- =========================================================================
     describe("STATUS_WAITING_FOR_MAIN", function()
@@ -1718,6 +1893,19 @@ describe("WMExecutor (real)", function()
             WMExecutor:startWorkflow(wfAd, v)
             ADIntegration.clearCPHandoff = origFn
             assert.is_true(called)
+        end)
+
+        it("clearCPHandoff called even when startRoute fails", function()
+            local cleared = false
+            local origStart = ADIntegration.startRoute
+            local origClear = ADIntegration.clearCPHandoff
+            ADIntegration.startRoute   = function() return false end
+            ADIntegration.clearCPHandoff = function() cleared = true end
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfAd, v)
+            ADIntegration.startRoute   = origStart
+            ADIntegration.clearCPHandoff = origClear
+            assert.is_true(cleared)  -- must disarm setStartHelper even when AD route fails to start
         end)
     end)
 

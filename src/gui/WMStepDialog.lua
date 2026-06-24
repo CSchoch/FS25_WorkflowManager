@@ -168,7 +168,7 @@ function WMStepDialog:refreshTargetList()
     local editor = WorkflowManager.editorDialog
     self.targetItems = {}
 
-    if self.stepType == "autodrive" then
+    if self.stepType == WorkflowManager.STEP_AUTODRIVE then
         if editor then
             local dests = editor:getADDestinations()
             for _, dest in ipairs(dests) do
@@ -288,7 +288,7 @@ end
 
 ---Get available actions based on step type
 function WMStepDialog:getAvailableActions()
-    if self.stepType == "autodrive" then
+    if self.stepType == WorkflowManager.STEP_AUTODRIVE then
         return {"drive", "pickup_deliver", "deliver", "load", "unload"}
     else
         return {"fieldwork", "bale_collect"}
@@ -490,7 +490,7 @@ end
 
 ---Check if current action needs unload target
 function WMStepDialog:actionNeedsUnloadTarget()
-    if self.stepType ~= "autodrive" then
+    if self.stepType ~= WorkflowManager.STEP_AUTODRIVE then
         return false
     end
     return self.stepAction == "unload" or self.stepAction == "pickup_deliver" or self.stepAction == "load"
@@ -498,7 +498,7 @@ end
 
 ---Check if current action needs fill type
 function WMStepDialog:actionNeedsFillType()
-    if self.stepType ~= "autodrive" then
+    if self.stepType ~= WorkflowManager.STEP_AUTODRIVE then
         return false
     end
     return self.stepAction == "pickup_deliver" or self.stepAction == "load"
@@ -639,7 +639,7 @@ function WMStepDialog:onTypeChanged(element, state)
     end
 
     local types = self:getStepTypes()
-    local defaultActions = {autodrive = "drive", courseplay = "fieldwork"}
+    local defaultActions = {[WorkflowManager.STEP_AUTODRIVE] = "drive", [WorkflowManager.STEP_COURSEPLAY] = "fieldwork"}
 
     if type(state) == "number" and state > 0 and state <= #types then
         local newType = types[state]
@@ -793,7 +793,7 @@ function WMStepDialog:onClickConfirm()
         }
 
         -- Add AD-specific fields
-        if self.stepType == "autodrive" then
+        if self.stepType == WorkflowManager.STEP_AUTODRIVE then
             if self:actionNeedsUnloadTarget() and self.stepUnloadTarget ~= "" then
                 step.unloadTarget = self.stepUnloadTarget
             end

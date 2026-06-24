@@ -198,6 +198,13 @@ end
 ---@param usedModNames table Mod names that wrote data
 function WorkflowManagerSpec:saveToXMLFile(xmlFile, key, usedModNames)
     local spec = self.spec_workflowManagerSpec
+    -- Parse and cache this vehicle's XML index from the save key — same authoritative
+    -- source as onPostLoad. Ensures fresh-start vehicles (savegame == nil on load)
+    -- have wmXmlIndex set before any follower's saveToXMLFile reads it.
+    local selfXmlIndex = tonumber(key:match("vehicle%((%d+)%)"))
+    if selfXmlIndex ~= nil and spec ~= nil then
+        spec.wmXmlIndex = selfXmlIndex
+    end
     if spec == nil or spec.wmExecution == nil then return end
 
     local activeData = spec.wmExecution

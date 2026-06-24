@@ -25,6 +25,14 @@
 
 ## Do-Not-Repeat
 
+[2026-06-24] `isLeaderSyncSatisfied` returns true when `leaderVehicle == nil`, which means "no leader configured". But `pendingLeaderXmlIndex` / `pendingLeaderWorkflowId` set means "leader exists but not yet resolved". Always add the pending check FIRST so the follower blocks at WAIT_FOR_LEADER until the wait poller resolves the reference:
+```lua
+if activeData.pendingLeaderXmlIndex ~= nil or activeData.pendingLeaderWorkflowId ~= nil then return false end
+if activeData.leaderVehicle == nil then return true end
+```
+Without this, any tight race at map load (follower's onPostLoad runs before leader's) causes the follower to silently pass through its WAIT_FOR_LEADER gate.
+
+
 [2026-06-17] **SUPERSEDED — dummy hold replaced by global wait poller.** `startDummyHold` and `dummyHelperActive` are GONE. The vehicle-sleep problem is now solved by `WMExecutor.globalWaitPoller` registered with `g_currentMission:addUpdateable()`. This runs at mission level regardless of vehicle sleep state. Poller is created by `ensureWaitPollerActive()` and self-removes via `stopWaitPollerIfIdle()` when no vehicles are waiting. Do NOT reintroduce `stateModule:setActive()` calls for wait states — they cause AD to auto-start on reload.
 
 

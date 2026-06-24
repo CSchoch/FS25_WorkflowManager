@@ -219,6 +219,16 @@ describe("WorkflowManager", function()
         -- (also needed by startWorkflow stub, so define before it)
         WorkflowManager.modeSelectDialog = nil  -- not loaded in tests
 
+        -- showModeSelectDialog (mirrors src/WorkflowManager.lua)
+        WorkflowManager.showModeSelectDialog = function(self, workflowId, vehicle, callback)
+            if self.modeSelectDialog == nil then
+                if callback then callback(true) end
+                return
+            end
+            self.modeSelectDialog:setWorkflow(workflowId, vehicle, callback)
+            g_gui:showDialog("WMModeSelectDialog")
+        end
+
         -- showLeaderSelectDialog (mirrors src/WorkflowManager.lua) — must NOT open
         -- the dialog when there are no candidate vehicles (bug-038).
         WorkflowManager.showLeaderSelectDialog = function(self, currentVehicle, callback)
@@ -809,6 +819,38 @@ describe("WorkflowManager", function()
 
             assert.are.equal("NOT_SHOWN", shownDialog)
             assert.is_nil(callbackResult)
+        end)
+    end)
+
+    describe("showModeSelectDialog", function()
+        local shownDialog
+        local callbackResult
+
+        before_each(function()
+            shownDialog    = "NOT_SHOWN"
+            callbackResult = "NOT_CALLED"
+            _G.g_gui = { showDialog = function(_, name) shownDialog = name end }
+        end)
+
+        it("calls callback(true) when modeSelectDialog is nil", function()
+            WorkflowManager.modeSelectDialog = nil
+            WorkflowManager:showModeSelectDialog("wf_001", {}, function(r) callbackResult = r end)
+            assert.is_true(callbackResult)
+            assert.are.equal("NOT_SHOWN", shownDialog)
+        end)
+
+        it("does not crash when callback is nil and modeSelectDialog is nil", function()
+            WorkflowManager.modeSelectDialog = nil
+            assert.has_no.errors(function()
+                WorkflowManager:showModeSelectDialog("wf_001", {}, nil)
+            end)
+        end)
+
+        it("shows dialog and does not call callback when modeSelectDialog is loaded", function()
+            WorkflowManager.modeSelectDialog = { setWorkflow = function() end }
+            WorkflowManager:showModeSelectDialog("wf_001", {}, function(r) callbackResult = r end)
+            assert.are.equal("WMModeSelectDialog", shownDialog)
+            assert.are.equal("NOT_CALLED", callbackResult)
         end)
     end)
 end)
