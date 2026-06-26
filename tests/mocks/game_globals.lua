@@ -6,6 +6,7 @@
 -- Core game state
 _G.g_currentMission = {
     time = 12345678,
+    isRunning = true,
     controlledVehicle = nil,
     hud = {
         showBlinkingWarning = function(self, text, duration) end

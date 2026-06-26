@@ -57,10 +57,7 @@ function WMConsoleCommands:printVehicleState(vehicle)
     print(string.format("  pendingCPStart:    %s", tostring(ex.pendingCPStart)))
     print(string.format("  cpToCpTransition:  %s", tostring(ex.cpToCpTransition)))
     print(string.format("  cpHandedOffToAD:   %s", tostring(ex.cpHandedOffToAD)))
-    print(string.format("  willHandoffToCP:   %s", tostring(ex.willHandoffToCP)))
     print(string.format("  pauseState:        %s", pauseState))
-    local pollerCycles = WMExecutor.globalWaitPoller and WMExecutor.globalWaitPoller.cycles or 0
-    print(string.format("  waitPoller:        %s  (cycles: %d)", tostring(WMExecutor.globalWaitPoller ~= nil), pollerCycles))
     print(string.format("  waitForMainStep:   %s", tostring(ex.waitingForMainStepIndex)))
     print(string.format("  pendingLeaderIdx:  %s", tostring(ex.pendingLeaderXmlIndex)))
     print(string.format("  pendingLeaderWF:   %s", tostring(ex.pendingLeaderWorkflowId)))
@@ -81,8 +78,23 @@ function WMConsoleCommands:printVehicleState(vehicle)
             syncRequired = "waiting until leader finishes"
         end
     end
+    local blockedByLeader = nil
+    if ex.leaderVehicle and ex.syncSourceOrdinals and ex.currentStep then
+        local ordinal = ex.syncSourceOrdinals[ex.currentStep]
+        if ordinal then
+            local required = ex.syncTargets and ex.syncTargets[ordinal]
+            if required == nil then
+                local leaderWF = ex.linkedLeaderExecution and ex.linkedLeaderExecution.workflow
+                required = leaderWF and (#leaderWF.steps + 1) or 1
+            end
+            if leaderStep == nil or leaderStep < required then
+                blockedByLeader = string.format("need leader at step %d (currently at %s)", required, tostring(leaderStep))
+            end
+        end
+    end
     print(string.format("  leaderStep:        %s", tostring(leaderStep)))
     print(string.format("  syncRequired:      %s", tostring(syncRequired)))
+    print(string.format("  blockedByLeader:   %s", tostring(blockedByLeader)))
 
     -- Sync ordinals dump (only meaningful for followers)
     if ex.workflow and ex.syncSourceOrdinals then
@@ -218,7 +230,7 @@ function WMConsoleCommands:wmPrintWorkflow()
         else
             print(string.format("  LEADER  (%s)  — no active execution", lName))
         end
-    elseif ex.pendingLeaderWorkflowId then
+    elseif ex.pendingLeaderWorkflowId ~= nil or ex.pendingLeaderXmlIndex ~= nil then
         print(string.format("  LEADER  — pending (workflowId=%s  xmlIndex=%s)",
             tostring(ex.pendingLeaderWorkflowId), tostring(ex.pendingLeaderXmlIndex)))
     end

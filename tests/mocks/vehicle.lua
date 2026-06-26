@@ -69,6 +69,11 @@ function VehicleMock.createValid(name)
         -- AutoDrive methods
         stopAutoDrive = function(self)
             self._isADActive = false
+        end,
+
+        -- FS25 engine: prevent vehicle from entering physics sleep
+        raiseActive = function(self)
+            self._raiseActiveCalls = (self._raiseActiveCalls or 0) + 1
         end
     }
 

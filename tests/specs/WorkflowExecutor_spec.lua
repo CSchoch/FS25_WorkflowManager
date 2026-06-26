@@ -119,13 +119,11 @@ describe("WMExecutor (real)", function()
         }
     end
 
-    -- Fire the global wait poller once (bypasses throttle). Call after arranging
+    -- Fire one update tick (bypasses throttle). Call after arranging
     -- WAITING_FOR_LEADER / WAITING_FOR_MAIN state to simulate a poll tick.
     local function triggerPoll()
-        if WMExecutor.globalWaitPoller then
-            WMExecutor.globalWaitPoller.throttle = 0
-            WMExecutor.globalWaitPoller:update(1000)
-        end
+        WMExecutor.updateTimer = WMExecutor.UPDATE_INTERVAL
+        WMExecutor:update(0)
     end
 
     -- -------------------------------------------------------------------------
@@ -427,7 +425,7 @@ describe("WMExecutor (real)", function()
             WMExecutor:executeCurrentStep(activeData(follower))
             WMExecutor:pauseWorkflow(follower)
             WMExecutor:resumeWorkflow(follower)
-            assert.is_not_nil(WMExecutor.globalWaitPoller)
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, activeData(follower).status)
         end)
     end)
 
@@ -1377,7 +1375,6 @@ describe("WMExecutor (real)", function()
             activeData(follower).status = WorkflowManager.STATUS_RUNNING
             WMExecutor:executeCurrentStep(activeData(follower))
             assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, activeData(follower).status)
-            assert.is_not_nil(WMExecutor.globalWaitPoller)
         end)
 
         it("frees follower and resumes when leader stops", function()
@@ -1534,7 +1531,6 @@ describe("WMExecutor (real)", function()
             WMExecutor:startWorkflow(makeFollowerWF("wf_mc_poll_f"), follower, true, leader)
             activeData(follower).currentStep = 2
             activeData(follower).status = WorkflowManager.STATUS_WAITING_FOR_LEADER
-            WMExecutor:ensureWaitPollerActive()
             -- Leader still on step 1 (< unlock index 2) → stays waiting
             triggerPoll()
             assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, activeData(follower).status)
@@ -1596,7 +1592,6 @@ describe("WMExecutor (real)", function()
             WMExecutor:startWorkflow(makeLeaderWF("wf_rs_poll"), leader)
             local followerExec = makeRestoredFollower(makeFollowerWF("wf_rs_poll_f"), follower, activeData(leader))
             followerExec.status = WorkflowManager.STATUS_WAITING_FOR_LEADER
-            WMExecutor:ensureWaitPollerActive()
             triggerPoll()
             assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, followerExec.status)
             assert.is_not_nil(followerExec.syncSourceOrdinals)
@@ -1608,7 +1603,6 @@ describe("WMExecutor (real)", function()
             WMExecutor:startWorkflow(makeLeaderWF("wf_rs_unblock"), leader)
             local followerExec = makeRestoredFollower(makeFollowerWF("wf_rs_unblock_f"), follower, activeData(leader))
             followerExec.status = WorkflowManager.STATUS_WAITING_FOR_LEADER
-            WMExecutor:ensureWaitPollerActive()
             activeData(leader).currentStep = 2  -- reach unlock
             triggerPoll()
             assert.are.equal(WorkflowManager.STATUS_RUNNING, followerExec.status)
@@ -1703,7 +1697,6 @@ describe("WMExecutor (real)", function()
             -- Follower is waiting; leader not yet in activeVehicles
             local followerExec = makePendingFollowerExec(follower, makeFollowerWF("wf_pend_poll_f"), 42)
             followerExec.status = WorkflowManager.STATUS_WAITING_FOR_LEADER
-            WMExecutor:ensureWaitPollerActive()
 
             -- Leader arrives with matching wmXmlIndex
             WMExecutor:startWorkflow(makeLeaderWF("wf_pend_poll_l"), leader)
@@ -1756,7 +1749,6 @@ describe("WMExecutor (real)", function()
             }
             follower.spec_workflowManagerSpec.wmExecution = followerExec
             WMExecutor.activeVehicles[follower] = true
-            WMExecutor:ensureWaitPollerActive()
             -- No leader in activeVehicles
 
             triggerPoll()
@@ -1780,7 +1772,6 @@ describe("WMExecutor (real)", function()
             WMExecutor:startWorkflow(wf, vs, false)
             -- Main on step 1 (no sub-steps) → support should be in WAITING_FOR_MAIN
             assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_MAIN, activeData(vs).status)
-            assert.is_not_nil(WMExecutor.globalWaitPoller)
         end)
 
         it("poll triggers support to start sub-step when main advances to a step with sub-steps", function()
@@ -1823,7 +1814,6 @@ describe("WMExecutor (real)", function()
             assert.are.equal(WorkflowManager.STATUS_PAUSED, activeData(vs).status)
             WMExecutor:resumeWorkflow(vs)
             assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_MAIN, activeData(vs).status)
-            assert.is_not_nil(WMExecutor.globalWaitPoller)
         end)
 
         it("goToNextStep resumes from WAITING_FOR_MAIN to RUNNING", function()

@@ -91,7 +91,6 @@ describe("WorkflowManagerSpec", function()
         _G.WMExecutor = {
             activeVehicles        = {},
             stopWorkflow          = function() end,
-            ensureWaitPollerActive = function() end,
         }
 
         _G.WorkflowManager = {
@@ -581,27 +580,6 @@ describe("WorkflowManagerSpec", function()
             WorkflowManagerSpec.onPostLoad(v, sg)
 
             assert.is_nil(v.spec_workflowManagerSpec.wmExecution.autoResumeUntil)
-        end)
-
-        it("onPostLoad registers global wait poller when restored as WAITING_FOR_LEADER", function()
-            local wf = { id = "wf_wfl_dummy", name = "WFL Dummy", steps = {} }
-            _G.WorkflowManager.workflows = { wf }
-            local pollerCalls = 0
-            _G.WMExecutor.ensureWaitPollerActive = function() pollerCalls = pollerCalls + 1 end
-            local v = makeVehicle("Follower")
-            WorkflowManagerSpec.onLoad(v, nil)
-            local xml = makeSavegameXML({
-                [BASE_KEY .. "#workflowId"]   = "wf_wfl_dummy",
-                [BASE_KEY .. "#currentStep"]  = 1,
-                [BASE_KEY .. "#isMainVehicle"] = true,
-                [BASE_KEY .. "#status"]        = "waiting_for_leader",
-            })
-            local sg = { key = "vehicles.vehicle(0)", resetVehicles = false, xmlFile = xml }
-            WorkflowManagerSpec.onPostLoad(v, sg)
-
-            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER,
-                v.spec_workflowManagerSpec.wmExecution.status)
-            assert.is_true(pollerCalls > 0)
         end)
 
         it("onPostLoad still sets autoResumeUntil when no status saved (normal restore)", function()

@@ -28,17 +28,11 @@ WMExecutor.updateTimer = 0
 -- Callback tracking for AutoDrive completion
 WMExecutor.pendingADCallbacks = {}
 
--- Global mission-level updateable that polls waiting vehicles (WAITING_FOR_LEADER /
--- WAITING_FOR_MAIN) independently of the vehicle sleep state. Created on demand;
--- torn down when no vehicles are in a wait state.
-WMExecutor.globalWaitPoller = nil
-
 ---Initialize the executor
 function WMExecutor:init()
     self.activeVehicles = {}
     self.pendingADCallbacks = {}
     self.updateTimer = 0
-    self.globalWaitPoller = nil
     self.isInitialized = true
 
     -- Register for AutoDrive destination listener (global completion notifications)
@@ -293,8 +287,6 @@ function WMExecutor:isLeaderSyncSatisfied(activeData)
     end
 
     if leaderExec.currentStep < required then
-        WMLogger:debug("Waiting for leader: need leader at step %d (at %d), follower wait step %d",
-            required, leaderExec.currentStep, activeData.currentStep)
         return false
     end
     return true
@@ -345,10 +337,7 @@ function WMExecutor:pauseWorkflow(vehicle)
     -- This ensures we stay in the current step even if AD/CP finishes
     activeData.waitingForCompletion = false
 
-    -- Release wait poller if pausing from an idle wait state (no real AD/CP to pause)
-    if wasWaitingForMain or wasWaitingForLeader then
-        self:stopWaitPollerIfIdle()
-    else
+    if not wasWaitingForMain and not wasWaitingForLeader then
         self:pauseCurrentStep(activeData)
     end
 
@@ -403,12 +392,8 @@ function WMExecutor:resumeWorkflow(vehicle)
         -- Follower was waiting for leader sync — restore that state and restart poller.
         if wasWaitingForLeader then
             activeData.status = WorkflowManager.STATUS_WAITING_FOR_LEADER
-            self:ensureWaitPollerActive()
-        -- Support vehicle was idling (STATUS_WAITING_FOR_MAIN) before pause — restore that
-        -- state and restart the poller. No real AD/CP route to unpause.
         elseif activeData.isMainVehicle == false and activeData.waitingForMainStep then
             activeData.status = WorkflowManager.STATUS_WAITING_FOR_MAIN
-            self:ensureWaitPollerActive()
         else
             activeData.status = WorkflowManager.STATUS_RUNNING
             self:resumeCurrentStep(activeData)
@@ -473,7 +458,6 @@ function WMExecutor:executeCurrentStep(activeData)
             activeData.status = WorkflowManager.STATUS_WAITING_FOR_MAIN
             activeData.waitingForMainStep = true
             activeData.waitingForMainStepIndex = mainActiveData.currentStep
-            self:ensureWaitPollerActive()
             WorkflowManager:broadcastState(activeData.vehicle)
             return
         end
@@ -613,7 +597,6 @@ function WMExecutor:executeCurrentStep(activeData)
             self:onStepCompleted(activeData)
         else
             activeData.status = WorkflowManager.STATUS_WAITING_FOR_LEADER
-            self:ensureWaitPollerActive()
             WorkflowManager:broadcastState(activeData.vehicle)
         end
     else
@@ -694,97 +677,6 @@ function WMExecutor:tryResolvePendingLeader(activeData)
                 WMLogger:info("Resolved pending leader '%s' for follower at step %d",
                     candidate.getName and candidate:getName() or "?", activeData.currentStep)
                 break
-            end
-        end
-    end
-end
-
----Ensure the global wait-poller is registered with g_currentMission. The poller iterates
----all active vehicles every ~500 ms and calls runWaitPoll for those in a waiting status.
----This keeps polling alive even when FS25 puts distant vehicles to sleep.
-function WMExecutor:ensureWaitPollerActive()
-    if self.globalWaitPoller then return end
-    local executor = self
-    local poller = { throttle = 0, cycles = 0 }
-    function poller:update(dt)
-        if g_server == nil then return end
-        self.throttle = self.throttle - dt
-        if self.throttle > 0 then return end
-        self.throttle = 500
-        self.cycles = self.cycles + 1
-        local vehicles = {}
-        for vehicle, _ in pairs(executor.activeVehicles) do
-            vehicles[#vehicles + 1] = vehicle
-        end
-        for _, vehicle in ipairs(vehicles) do
-            local spec = vehicle.spec_workflowManagerSpec
-            local ad = spec and spec.wmExecution
-            if ad then executor:runWaitPoll(ad, vehicle) end
-        end
-        -- Self-cleanup: remove poller once no vehicles remain in a wait state.
-        -- Called at tick-end so status changes from runWaitPoll are already applied.
-        executor:stopWaitPollerIfIdle()
-    end
-    self.globalWaitPoller = poller
-    g_currentMission:addUpdateable(poller)
-    WMLogger:debug("Global wait poller started")
-end
-
----Remove the global wait poller if no vehicles remain in a wait status.
-function WMExecutor:stopWaitPollerIfIdle()
-    if not self.globalWaitPoller then return end
-    for vehicle, _ in pairs(self.activeVehicles) do
-        local spec = vehicle.spec_workflowManagerSpec
-        local ad = spec and spec.wmExecution
-        if ad and (ad.status == WorkflowManager.STATUS_WAITING_FOR_LEADER
-                or ad.status == WorkflowManager.STATUS_WAITING_FOR_MAIN
-                or ad.pendingLeaderXmlIndex ~= nil
-                or ad.pendingLeaderWorkflowId ~= nil) then
-            return
-        end
-    end
-    g_currentMission:removeUpdateable(self.globalWaitPoller)
-    self.globalWaitPoller = nil
-    WMLogger:debug("Global wait poller stopped (no vehicles waiting)")
-end
-
----Poll logic for a single vehicle in a wait state. Called by the global poller every ~500 ms.
----Covers: pending leader resolution, WAITING_FOR_LEADER unblock, WAITING_FOR_MAIN unblock.
----@param activeData table Per-vehicle execution state
----@param vehicle table Vehicle
-function WMExecutor:runWaitPoll(activeData, vehicle)
-    local workflow = activeData.workflow
-
-    -- Retry pending leader resolution (leader may load after follower during map load)
-    self:tryResolvePendingLeader(activeData)
-
-    -- Leader-follower poll: check if leader has advanced past our current step
-    if activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER then
-        -- isLeaderSyncSatisfied handles reference snapping, leader-gone detection
-        -- (frees the follower), and the ordinal-based unlock check.
-        if self:isLeaderSyncSatisfied(activeData) then
-            WMLogger:info("Sync condition met (poll) — follower advancing past wait step %d",
-                activeData.currentStep)
-            activeData.status = WorkflowManager.STATUS_RUNNING
-            self:executeCurrentStep(activeData)
-            WorkflowManager:broadcastState(activeData.vehicle)
-        end
-    end
-
-    -- Support vehicle idle polling: check if main has moved to a step with support sub-steps
-    if activeData.status == WorkflowManager.STATUS_WAITING_FOR_MAIN then
-        local mainActiveData = self:getMainActiveDataForWorkflow(workflow.id)
-        if mainActiveData == nil then
-            WMLogger:info("Support vehicle (idle): main stopped, stopping support")
-            self:stopWorkflow(vehicle)
-        else
-            local mainStep = workflow.steps[mainActiveData.currentStep]
-            local supportSteps = mainStep and mainStep.support or {}
-            local mainStepChanged = mainActiveData.currentStep ~= activeData.waitingForMainStepIndex
-            if #supportSteps > 0 and mainStepChanged then
-                WMLogger:info("Support vehicle (idle): main moved to step %d which has sub-steps",
-                    mainActiveData.currentStep)
-                self:onMainStepChanged(activeData, mainActiveData.currentStep)
             end
         end
     end
@@ -968,7 +860,6 @@ function WMExecutor:onStepCompleted(activeData)
             activeData.status = WorkflowManager.STATUS_WAITING_FOR_MAIN
             WMLogger:info("Support vehicle: all sub-steps done, waiting for main to advance (main step %d)",
                 mainActiveData.currentStep)
-            self:ensureWaitPollerActive()
             WorkflowManager:broadcastState(activeData.vehicle)
             return
         end
@@ -1042,6 +933,70 @@ function WMExecutor:handleStepError(activeData, errorMessage)
     self:stopWorkflow(activeData.vehicle)
 end
 
+---Resolve a pending CP start (AD fully stopped / CP cleanup done). Called from both
+---WMExecutor:update() (awake vehicles) and runWaitPoll (sleeping vehicles via addUpdateable).
+---@param activeData table Per-vehicle execution state
+---@param vehicle table Vehicle
+function WMExecutor:resolvePendingCPStart(activeData, vehicle)
+    activeData.pendingCPStartRetries = (activeData.pendingCPStartRetries or 0) + 1
+    local adRunning = ADIntegration:isRunning(vehicle)
+    local minWaitCycles = activeData.cpToCpTransition and 2 or 0
+    local readyToStart = not adRunning and activeData.pendingCPStartRetries >= minWaitCycles
+    if readyToStart then
+        local msg = activeData.cpToCpTransition and
+            "CP cleanup complete - starting deferred Courseplay step" or
+            "AutoDrive fully stopped - starting deferred Courseplay step"
+        WMLogger:info(msg)
+        activeData.pendingCPStart = nil
+        activeData.pendingCPStartRetries = nil
+        activeData.cpToCpTransition = nil
+        activeData.waitingForCompletion = false
+        local step = self:getCurrentStep(activeData)
+        if step then self:startCourseplayStep(activeData, vehicle, step) end
+    elseif activeData.pendingCPStartRetries > 20 then
+        WMLogger:warning("CP start deferred too long (20 cycles) - forcing start")
+        activeData.pendingCPStart = nil
+        activeData.pendingCPStartRetries = nil
+        activeData.cpToCpTransition = nil
+        activeData.waitingForCompletion = false
+        local step = self:getCurrentStep(activeData)
+        if step then self:startCourseplayStep(activeData, vehicle, step) end
+    elseif adRunning then
+        WMLogger:debug("Waiting for AD to stop before starting CP (%d/20)", activeData.pendingCPStartRetries)
+    else
+        WMLogger:debug("Waiting for CP cleanup before starting next step (%d/%d)",
+            activeData.pendingCPStartRetries, minWaitCycles)
+    end
+end
+
+---Resolve a pending AD start (previous AD route fully stopped). Called from both
+---WMExecutor:update() (awake vehicles) and runWaitPoll (sleeping vehicles via addUpdateable).
+---@param activeData table Per-vehicle execution state
+---@param vehicle table Vehicle
+function WMExecutor:resolvePendingADStart(activeData, vehicle)
+    activeData.pendingADStartRetries = (activeData.pendingADStartRetries or 0) + 1
+    local adRunning = ADIntegration:isRunning(vehicle)
+    local minWaitCycles = 2
+    local readyToStart = not adRunning and activeData.pendingADStartRetries >= minWaitCycles
+    if readyToStart then
+        WMLogger:debug("AD reset complete - starting deferred step")
+        activeData.pendingADStart = nil
+        activeData.pendingADStartRetries = nil
+        activeData.justStoppedAD = nil
+        activeData.waitingForCompletion = false
+        local step = self:getCurrentStep(activeData)
+        if step then self:startAutoDriveStep(activeData, vehicle, step) end
+    elseif activeData.pendingADStartRetries > 20 then
+        WMLogger:warning("AutoDrive did not stop after 10s - forcing AD start")
+        activeData.pendingADStart = nil
+        activeData.pendingADStartRetries = nil
+        activeData.justStoppedAD = nil
+        activeData.waitingForCompletion = false
+        local step = self:getCurrentStep(activeData)
+        if step then self:startAutoDriveStep(activeData, vehicle, step) end
+    end
+end
+
 ---Update function called every frame
 ---@param dt number Delta time in milliseconds
 function WMExecutor:update(dt)
@@ -1055,14 +1010,22 @@ function WMExecutor:update(dt)
         return
     end
 
-    -- Throttle update checks
+    -- Keep all active vehicles awake every frame. This prevents physics sleep so that
+    -- AD/CP internal update loops can run and so this function keeps firing for them.
+    for vehicle, _ in pairs(self.activeVehicles) do
+        if vehicle.raiseActive then vehicle:raiseActive() end
+    end
+
+    -- Throttle the rest: completion checks and wait-condition polling every 500 ms.
     self.updateTimer = self.updateTimer + dt
     if self.updateTimer < self.UPDATE_INTERVAL then
         return
     end
     self.updateTimer = 0
 
-    -- Check each active workflow for step completion
+    -- Vehicles to stop after iteration (deferred to avoid modifying activeVehicles mid-pairs)
+    local toStop = {}
+
     for vehicle, _ in pairs(self.activeVehicles) do
         local activeData = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
         if activeData ~= nil then
@@ -1113,86 +1076,43 @@ function WMExecutor:update(dt)
                 WorkflowManager:broadcastState(activeData.vehicle)
             end
 
-            -- Leader-follower poll and support-vehicle idle poll are handled by the global
-            -- wait poller (runWaitPoll via g_currentMission:addUpdateable), so they run
-            -- even when FS25 puts distant vehicles to sleep.
+            -- Retry pending leader resolution (leader may load after follower during map load)
+            self:tryResolvePendingLeader(activeData)
+
+            -- WAITING_FOR_LEADER: unblock when sync condition is satisfied
+            if activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER then
+                if self:isLeaderSyncSatisfied(activeData) then
+                    WMLogger:info("Sync condition met — follower advancing past wait step %d",
+                        activeData.currentStep)
+                    activeData.status = WorkflowManager.STATUS_RUNNING
+                    self:executeCurrentStep(activeData)
+                    WorkflowManager:broadcastState(activeData.vehicle)
+                end
+            end
+
+            -- WAITING_FOR_MAIN: unblock when main advances to a step with support sub-steps
+            if activeData.status == WorkflowManager.STATUS_WAITING_FOR_MAIN then
+                local mainActiveData = self:getMainActiveDataForWorkflow(workflow.id)
+                if mainActiveData == nil then
+                    WMLogger:info("Support vehicle (idle): main stopped, stopping support")
+                    table.insert(toStop, vehicle)
+                else
+                    local mainStep = workflow.steps[mainActiveData.currentStep]
+                    local supportSteps = mainStep and mainStep.support or {}
+                    local mainStepChanged = mainActiveData.currentStep ~= activeData.waitingForMainStepIndex
+                    if #supportSteps > 0 and mainStepChanged then
+                        WMLogger:info("Support vehicle (idle): main moved to step %d which has sub-steps",
+                            mainActiveData.currentStep)
+                        self:onMainStepChanged(activeData, mainActiveData.currentStep)
+                    end
+                end
+            end
 
             if activeData.status == WorkflowManager.STATUS_RUNNING and activeData.waitingForCompletion then
-            -- Handle deferred CP start: either AD was stopped (AD->CP) or previous step
-            -- was also CP (CP->CP transition needs cleanup time).
             if activeData.pendingCPStart then
-                activeData.pendingCPStartRetries = (activeData.pendingCPStartRetries or 0) + 1
-                local adRunning = ADIntegration:isRunning(vehicle)
-                -- CP->CP: wait at least 2 cycles (1 second) for previous CP job to clean up.
-                -- AD->CP: start as soon as AD stops (no minimum wait needed).
-                local minWaitCycles = activeData.cpToCpTransition and 2 or 0
-                local readyToStart = not adRunning and activeData.pendingCPStartRetries >= minWaitCycles
-                if readyToStart then
-                    local msg = activeData.cpToCpTransition and
-                        "CP cleanup complete - starting deferred Courseplay step" or
-                        "AutoDrive fully stopped - starting deferred Courseplay step"
-                    WMLogger:info(msg)
-                    activeData.pendingCPStart = nil
-                    activeData.pendingCPStartRetries = nil
-                    activeData.cpToCpTransition = nil
-                    activeData.waitingForCompletion = false
-                    local step = self:getCurrentStep(activeData)
-                    if step then
-                        self:startCourseplayStep(activeData, vehicle, step)
-                    end
-                else
-                    -- Give up after 20 checks (10 seconds) to avoid hanging
-                    if activeData.pendingCPStartRetries > 20 then
-                        WMLogger:warning("CP start deferred too long (20 cycles) - forcing start")
-                        activeData.pendingCPStart = nil
-                        activeData.pendingCPStartRetries = nil
-                        activeData.cpToCpTransition = nil
-                        activeData.waitingForCompletion = false
-                        local step = self:getCurrentStep(activeData)
-                        if step then
-                            self:startCourseplayStep(activeData, vehicle, step)
-                        end
-                    elseif adRunning then
-                        WMLogger:debug("Waiting for AD to stop before starting CP (%d/20)", activeData.pendingCPStartRetries)
-                    else
-                        WMLogger:debug("Waiting for CP cleanup before starting next step (%d/%d)",
-                            activeData.pendingCPStartRetries, minWaitCycles)
-                    end
-                end
-            -- Handle deferred AD start: AD was just stopped (from another AD step) and needs to restart
+                self:resolvePendingCPStart(activeData, vehicle)
             elseif activeData.pendingADStart then
-                -- Always increment retry counter first - we need at least one wait cycle
-                -- for AD to fully reset internally (even if isRunning returns false immediately)
-                activeData.pendingADStartRetries = (activeData.pendingADStartRetries or 0) + 1
-
-                local adRunning = ADIntegration:isRunning(vehicle)
-                -- Require at least 2 cycles (1 second) for AD to fully reset, or until AD stops running
-                local minWaitCycles = 2
-                local readyToStart = not adRunning and activeData.pendingADStartRetries >= minWaitCycles
-
-                if readyToStart then
-                    -- AD has fully stopped and we've waited enough, now start the new AD route
-                    WMLogger:debug("AD reset complete - starting deferred step")
-                    activeData.pendingADStart = nil
-                    activeData.pendingADStartRetries = nil
-                    activeData.justStoppedAD = nil
-                    activeData.waitingForCompletion = false
-                    local step = self:getCurrentStep(activeData)
-                    if step then
-                        self:startAutoDriveStep(activeData, vehicle, step)
-                    end
-                elseif activeData.pendingADStartRetries > 20 then
-                    -- Give up after 20 checks (10 seconds) to avoid hanging
-                    WMLogger:warning("AutoDrive did not stop after 10s - forcing AD start")
-                    activeData.pendingADStart = nil
-                    activeData.pendingADStartRetries = nil
-                    activeData.justStoppedAD = nil
-                    activeData.waitingForCompletion = false
-                    local step = self:getCurrentStep(activeData)
-                    if step then
-                        self:startAutoDriveStep(activeData, vehicle, step)
-                    end
-                end
+                self:resolvePendingADStart(activeData, vehicle)
             else
                 -- Normal completion check
                 local isComplete = false
@@ -1271,6 +1191,10 @@ function WMExecutor:update(dt)
             end  -- if pendingCPStart/pendingADStart/else
             end  -- if STATUS_RUNNING and waitingForCompletion
         end  -- if activeData ~= nil
+    end
+
+    for _, v in ipairs(toStop) do
+        self:stopWorkflow(v)
     end
 end
 

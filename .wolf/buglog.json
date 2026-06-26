@@ -1718,6 +1718,134 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-06-24T07:11:33.824Z"
+    },
+    {
+      "id": "bug-106",
+      "timestamp": "2026-06-24T19:46:17.249Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 19→24 lines (4 removed) | Also: -- Handle deferred CP start: either AD was stopped; -- was also CP (CP->CP transition needs cleanup ti",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-06-24T19:47:40.291Z"
+    },
+    {
+      "id": "bug-107",
+      "timestamp": "2026-06-24T20:28:12.569Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "12 lines replaced/restructured",
+      "fix": "Rewrote 19→8 lines (12 removed) | Also: -- Handle deferred AD/CP start for sleeping vehicl; -- WMExecutor:update() is called from the vehicle ",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-06-24T20:28:36.943Z"
+    },
+    {
+      "id": "bug-108",
+      "timestamp": "2026-06-24T20:34:58.664Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "9 lines replaced/restructured",
+      "fix": "Rewrote 20→9 lines (9 removed) | Also: -- Release wait poller if pausing from an idle wai; if wasWaitingForMain or wasWaitingForLeader then | Also: self:ensureWaitPollerActive(); -- Support vehicle was idling (STATUS_WAITING_FOR_ | Also: -- Wake a sleeping vehicle so AD's onUpdate can fi; vehicle:raiseActive() | Also: -- Throttle update checks; -- Check each active workflow for step completion | Also: -- Leader-follower poll and support-vehicle idle p; -- wait poller (runWaitPoll via g_currentMission:a",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 6,
+      "last_seen": "2026-06-24T20:40:34.088Z"
+    },
+    {
+      "id": "bug-109",
+      "timestamp": "2026-06-25T21:04:09.659Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 5→3 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-25T21:04:09.659Z"
+    },
+    {
+      "id": "bug-110",
+      "timestamp": "2026-06-26T07:22:10.089Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/dev/WMConsoleCommands.lua",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 6→3 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-26T07:22:10.089Z"
+    },
+    {
+      "id": "bug-111",
+      "timestamp": "2026-06-26T00:00:00.000Z",
+      "error_message": "attempt to call a nil value (method 'ensureWaitPollerActive') on savegame load",
+      "file": "src/WorkflowManagerSpec.lua",
+      "root_cause": "onPostLoad called WMExecutor:ensureWaitPollerActive() which was never implemented — the global wait poller infrastructure was planned but raiseActive() in the main update loop is sufficient to keep waiting vehicles awake",
+      "fix": "Removed the if-block calling ensureWaitPollerActive() at line 182; WMExecutor.activeVehicles registration on line 179 is sufficient; update loop handles waiting vehicles via raiseActive()",
+      "tags": ["crash", "nil-method", "savegame-restore", "poller"],
+      "related_bugs": ["bug-112"],
+      "occurrences": 1,
+      "last_seen": "2026-06-26T00:00:00.000Z"
+    },
+    {
+      "id": "bug-112",
+      "timestamp": "2026-06-26T00:00:00.000Z",
+      "error_message": "Test stub ensureWaitPollerActive masked production crash — CI green while map load crashes",
+      "file": "tests/specs/WorkflowManagerSpec_spec.lua",
+      "root_cause": "WMExecutor stub included ensureWaitPollerActive = function() end; tests always passed; production code called the nil method and crashed",
+      "fix": "Removed ensureWaitPollerActive from stub and removed the test that asserted it was called",
+      "tags": ["test-quality", "stub-masking", "poller"],
+      "related_bugs": ["bug-111"],
+      "occurrences": 1,
+      "last_seen": "2026-06-26T00:00:00.000Z"
+    },
+    {
+      "id": "bug-113",
+      "timestamp": "2026-06-26T00:00:00.000Z",
+      "error_message": "wmPrintState shows 'willHandoffToCP: nil' always — stale field from old rename",
+      "file": "src/dev/WMConsoleCommands.lua",
+      "root_cause": "printVehicleState printed ex.willHandoffToCP (removed field) instead of ex.cpHandedOffToAD (current field name). Line 59 already showed cpHandedOffToAD correctly; line 60 was a duplicate with wrong field name.",
+      "fix": "Removed line 60 (willHandoffToCP print); globalWaitPoller display lines also removed (poller never implemented, always nil)",
+      "tags": ["stale-field", "debug-output", "console-command"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-26T00:00:00.000Z"
+    },
+    {
+      "id": "bug-114",
+      "timestamp": "2026-06-26T00:00:00.000Z",
+      "error_message": "wmPrintWorkflow silently omits pending-leader info when only pendingLeaderXmlIndex is set",
+      "file": "src/dev/WMConsoleCommands.lua",
+      "root_cause": "elseif condition checked only pendingLeaderWorkflowId; primary save/restore path sets pendingLeaderXmlIndex only (pendingLeaderWorkflowId is nil until onReadStream); block was silently skipped",
+      "fix": "Changed condition to: pendingLeaderWorkflowId ~= nil or pendingLeaderXmlIndex ~= nil",
+      "tags": ["debug-output", "console-command", "pending-leader"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-26T00:00:00.000Z"
     }
   ]
 }

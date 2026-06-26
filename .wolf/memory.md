@@ -1,3 +1,4 @@
+| 00:00 | Code-review fixes (bug-111–114): removed nil-crash ensureWaitPollerActive call from onPostLoad; removed test stub masking it; removed stale willHandoffToCP + globalWaitPoller lines from WMConsoleCommands; fixed wmPrintWorkflow pendingLeaderXmlIndex-only case | WorkflowManagerSpec.lua, WorkflowManagerSpec_spec.lua, WMConsoleCommands.lua | 407/407 tests pass | ~120 tok |
 | 00:00 | TDD fix (bug-105/106): isLeaderSyncSatisfied returned true when leaderVehicle==nil but pendingLeaderXmlIndex was set — follower passed WAIT_FOR_LEADER gate without blocking. Fix: added pending check before nil-leader early-return. 2 new tests, 408/408 pass | WorkflowExecutor.lua, WorkflowExecutor_spec.lua | 408/408 tests pass | ~80 tok |
 | 00:00 | TDD refactor: extract tryResolvePendingLeader() from duplicate blocks in executeCurrentStep and runWaitPoll; added 2 tests pinning both paths; finding "dead code for followers" was imprecise (linked followers are main vehicles), but divergence risk was valid | WorkflowExecutor.lua, WorkflowExecutor_spec.lua | 406/406 tests pass | ~120 tok |
 | 00:00 | Fix 3 bugs (TDD): (1) pauseWorkflow now accepts STATUS_WAITING_FOR_LEADER + resume restores that state; (2) saveToXMLFile parses wmXmlIndex from key for fresh-start vehicles; (3) showModeSelectDialog nil-guards callback before calling it | WorkflowExecutor.lua, WorkflowManagerSpec.lua, WorkflowManager.lua, WorkflowExecutor_spec.lua, WorkflowManagerSpec_spec.lua, WorkflowManager_spec.lua | 404/404 tests pass | ~350 tok |
@@ -412,3 +413,78 @@
 |------|--------|---------|---------|--------|
 | 09:43 | Edited src/WorkflowExecutor.lua | 5→9 lines | ~99 |
 | 09:43 | Session end: 1 writes across 1 files (WorkflowExecutor.lua) | 1 reads | ~20078 tok |
+| 14:02 | Created ../../../../../.claude/plans/check-c-users-chef-documents-my-games-fa-shimmying-rainbow.md | — | ~959 |
+| 14:25 | Created ../../../../../.claude/plans/check-c-users-chef-documents-my-games-fa-shimmying-rainbow.md | — | ~1634 |
+| 21:45 | Edited src/WorkflowExecutor.lua | 4→8 lines | ~126 |
+| 21:46 | Edited src/WorkflowExecutor.lua | 5→6 lines | ~48 |
+| 21:46 | Edited src/WorkflowExecutor.lua | modified poller() | ~335 |
+| 21:46 | Edited src/WorkflowExecutor.lua | 6→8 lines | ~96 |
+| 21:46 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~206 |
+| 21:46 | Edited src/WorkflowExecutor.lua | stopWorkflow() → insert() | ~48 |
+| 21:46 | Edited src/WorkflowExecutor.lua | 6→9 lines | ~147 |
+| 21:47 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~85 |
+| 21:47 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~928 |
+| 21:47 | Edited src/WorkflowExecutor.lua | removed 77 lines | ~93 |
+| 21:59 | Edited src/WorkflowExecutor.lua | 2→2 lines | ~39 |
+| 21:59 | Edited src/WorkflowExecutor.lua | 2→2 lines | ~36 |
+| 21:59 | Edited src/WorkflowExecutor.lua | 3→3 lines | ~46 |
+| 22:01 | Edited tests/mocks/vehicle.lua | 8→13 lines | ~90 |
+| 22:01 | Edited tests/mocks/game_globals.lua | 3→4 lines | ~26 |
+| 22:02 | Edited src/WorkflowExecutor.lua | 9→14 lines | ~220 |
+| 22:26 | Edited src/WorkflowExecutor.lua | 10→14 lines | ~135 |
+| 22:26 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~582 |
+| 22:28 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~101 |
+| 22:28 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~49 |
+
+## Session: 2026-06-24 22:32
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 22:34 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~68 |
+| 22:35 | Edited src/WorkflowExecutor.lua | removed 5 lines | ~7 |
+| 22:36 | Edited src/WorkflowExecutor.lua | 6→3 lines | ~30 |
+| 22:36 | Edited src/WorkflowExecutor.lua | 9→5 lines | ~76 |
+| 22:36 | Edited src/WorkflowExecutor.lua | 9→8 lines | ~89 |
+| 22:36 | Edited src/WorkflowExecutor.lua | 5→4 lines | ~43 |
+| 22:36 | Edited src/WorkflowExecutor.lua | 5→4 lines | ~77 |
+| 22:37 | Edited src/WorkflowExecutor.lua | removed 95 lines | ~18 |
+| 22:38 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~49 |
+| 22:38 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~31 |
+| 22:39 | Edited src/WorkflowExecutor.lua | modified keeps() | ~315 |
+| 22:40 | Edited src/WorkflowExecutor.lua | modified info() | ~526 |
+| 22:40 | Edited src/WorkflowExecutor.lua | 7→11 lines | ~80 |
+| 22:41 | Edited tests/specs/WorkflowExecutor_spec.lua | once() → tick() | ~74 |
+| 22:42 | Edited tests/specs/WorkflowExecutor_spec.lua | 4→4 lines | ~56 |
+| 22:42 | Edited tests/specs/WorkflowExecutor_spec.lua | 5→4 lines | ~47 |
+| 22:42 | Edited tests/specs/WorkflowExecutor_spec.lua | 5→4 lines | ~48 |
+| 22:45 | Edited tests/specs/WorkflowExecutor_spec.lua | 5→4 lines | ~43 |
+| 22:49 | Edited tests/specs/WorkflowExecutor_spec.lua | 4→3 lines | ~58 |
+| 22:50 | Edited tests/specs/WorkflowExecutor_spec.lua | 4→3 lines | ~69 |
+| 22:50 | Edited tests/specs/WorkflowExecutor_spec.lua | 5→4 lines | ~63 |
+| 22:50 | Edited tests/specs/WorkflowExecutor_spec.lua | 4→3 lines | ~46 |
+| 22:51 | Edited tests/specs/WorkflowExecutor_spec.lua | 4→3 lines | ~46 |
+| 22:52 | Session end: 23 writes across 2 files (WorkflowExecutor.lua, WorkflowExecutor_spec.lua) | 2 reads | ~43492 tok |
+
+## Session: 2026-06-24 00:46
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 23:04 | Edited src/WorkflowExecutor.lua | 5→3 lines | ~20 |
+| 23:35 | Edited src/dev/WMConsoleCommands.lua | expanded (+15 lines) | ~248 |
+| 23:35 | Session end: 2 writes across 2 files (WorkflowExecutor.lua, WMConsoleCommands.lua) | 2 reads | ~21878 tok |
+
+## Session: 2026-06-25 23:36
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-06-25 23:49
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 09:21 | Edited src/WorkflowManagerSpec.lua | 6→2 lines | ~22 |
+| 09:21 | Edited tests/specs/WorkflowManagerSpec_spec.lua | 5→4 lines | ~34 |
+| 09:21 | Edited tests/specs/WorkflowManagerSpec_spec.lua | removed 22 lines | ~14 |
+| 09:22 | Edited src/dev/WMConsoleCommands.lua | 6→3 lines | ~63 |
+| 09:22 | Edited src/dev/WMConsoleCommands.lua | 3→3 lines | ~67 |
+| 09:24 | Session end: 5 writes across 3 files (WorkflowManagerSpec.lua, WorkflowManagerSpec_spec.lua, WMConsoleCommands.lua) | 3 reads | ~37344 tok |

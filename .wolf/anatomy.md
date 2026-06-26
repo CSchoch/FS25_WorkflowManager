@@ -1,11 +1,12 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-06-24T07:43:11.540Z
-> Files: 52 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-06-26T07:22:19.427Z
+> Files: 53 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
 - `add-function-to-log-parsed-yeti.md` — Plan: Add `wmPrintState` Developer Console Command (~687 tok)
+- `check-c-users-chef-documents-my-games-fa-shimmying-rainbow.md` — Plan: Fix AD/CP Not Starting on Sleeping Vehicles + Adapt to AISystem Pattern (~1532 tok)
 - `foamy-crafting-oasis.md` — Plan: Leader Vehicle — Save Persistence, MP Sync, Dialog Order (~1099 tok)
 - `i-think-we-should-drifting-hammock.md` — Plan: Replace Per-Step Sync Flags with "Wait for Leader" / "Unlock Follower" Step Types (~2785 tok)
 - `implement-milestone-11-tender-blum.md` — Milestone 11 — Multiple Fill Types & Synchronized Follower (~2937 tok)
@@ -47,14 +48,14 @@
 
 ## src/
 
-- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~20008 tok)
+- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~18859 tok)
 - `WorkflowManager.lua` — getStepTypeLabel, isMarkerStepType, init, loadDialogs, Callback (~14056 tok)
-- `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~7270 tok)
+- `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~7215 tok)
 - `WorkflowStorage.lua` — deepCopySupportStep, isMarkerStepType, parseFillTypes, init, getXmlPath (~4632 tok)
 
 ## src/dev/
 
-- `WMConsoleCommands.lua` — -@class WMConsoleCommands (~2685 tok)
+- `WMConsoleCommands.lua` — -@class WMConsoleCommands (~2823 tok)
 
 ## src/gui/
 
@@ -87,18 +88,18 @@
 
 ## tests/mocks/
 
-- `game_globals.lua` — getDate, addModEventListener (~2765 tok)
+- `game_globals.lua` — getDate, addModEventListener (~2771 tok)
 - `init.lua` — setupPackagePath, to, resetMocks, loadSource (~996 tok)
-- `vehicle.lua` — createValid, createADOnly, createCPOnly, createBasic, createNil (~1282 tok)
+- `vehicle.lua` — createValid, createADOnly, createCPOnly, createBasic, createNil (~1334 tok)
 
 ## tests/specs/
 
 - `WMHud_spec.lua` — makeVehicle (~2098 tok)
 - `WMLeaderVehicleSelectDialog_spec.lua` — makeVehicle, makeList, makeButton (~3135 tok)
 - `WMStepDialog_spec.lua` — makeDialog, makeStubDialog, confirm (~2605 tok)
-- `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport, makeLeaderWF (~23172 tok)
+- `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport, makeLeaderWF (~23049 tok)
 - `WorkflowManager_spec.lua` — Declares constants (~9570 tok)
-- `WorkflowManagerSpec_spec.lua` — makeVehicle, makeSavegameXML (~11001 tok)
+- `WorkflowManagerSpec_spec.lua` — makeVehicle, makeSavegameXML (~10691 tok)
 - `WorkflowStorage_spec.lua` — hasFormatVersion (~9832 tok)
 
 ## textures/

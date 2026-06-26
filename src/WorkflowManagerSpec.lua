@@ -177,10 +177,6 @@ function WorkflowManagerSpec:onPostLoad(savegame)
                 autoResumeUntil         = restoredAutoResume,
             }
             WMExecutor.activeVehicles[self] = true
-            if isWaitingForLeader or isWaitingForMain
-            or pendingLeaderXmlIndex ~= nil or pendingLeaderWorkflowId ~= nil then
-                WMExecutor:ensureWaitPollerActive()
-            end
             WMHud:show(self)
             WMLogger:info("Restored workflow '%s' step=%d isMain=%s on '%s' (paused)",
                 workflow.name, currentStep, tostring(isMainVehicle),
