@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-06-26T07:22:19.427Z
-> Files: 53 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-03T23:18:00.961Z
+> Files: 59 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -12,6 +12,10 @@
 - `implement-milestone-11-tender-blum.md` — Milestone 11 — Multiple Fill Types & Synchronized Follower (~2937 tok)
 - `resilient-noodling-pudding.md` — Fix: Follower AD Auto-Start After Save/Reload (~960 tok)
 - `what-was-te-idea-hidden-karp.md` — Plan: Per-Step Sync Checkboxes (Index-Based) (~2154 tok)
+
+## ../../../tmp/claude-0/-home-user-FS25-WorkflowManager/442c8c76-f882-5833-bcbb-d59df923d2a5/scratchpad/
+
+- `verify.mjs` — Declares ROOT (~1943 tok)
 
 ## ../FS25_WorkflowManager-docs/.github/workflows/
 
@@ -36,6 +40,7 @@
 
 ## .github/workflows/
 
+- `deploy-webeditor.yml` — CI: Deploy Web Editor to GitHub Pages (~176 tok)
 
 ## _art/
 
@@ -112,6 +117,13 @@
 
 - `translation_de.xml` (~2969 tok)
 - `translation_en.xml` (~2529 tok)
+
+## webeditor/
+
+- `app.js` — Web editor logic: i18n EN/DE, fill types, localStorage state, XML import/export mirroring WorkflowStorage.lua incl. v1 migrations, step modal, drag&drop (~16751 tok)
+- `index.html` — FS25 Workflow Manager — Web Editor (~3689 tok)
+- `README.md` — Project documentation (~554 tok)
+- `style.css` — Styles: 106 rules, 46 vars (~6041 tok)
 
 ## website/
 

@@ -1806,8 +1806,15 @@
       "file": "src/WorkflowManagerSpec.lua",
       "root_cause": "onPostLoad called WMExecutor:ensureWaitPollerActive() which was never implemented — the global wait poller infrastructure was planned but raiseActive() in the main update loop is sufficient to keep waiting vehicles awake",
       "fix": "Removed the if-block calling ensureWaitPollerActive() at line 182; WMExecutor.activeVehicles registration on line 179 is sufficient; update loop handles waiting vehicles via raiseActive()",
-      "tags": ["crash", "nil-method", "savegame-restore", "poller"],
-      "related_bugs": ["bug-112"],
+      "tags": [
+        "crash",
+        "nil-method",
+        "savegame-restore",
+        "poller"
+      ],
+      "related_bugs": [
+        "bug-112"
+      ],
       "occurrences": 1,
       "last_seen": "2026-06-26T00:00:00.000Z"
     },
@@ -1818,8 +1825,14 @@
       "file": "tests/specs/WorkflowManagerSpec_spec.lua",
       "root_cause": "WMExecutor stub included ensureWaitPollerActive = function() end; tests always passed; production code called the nil method and crashed",
       "fix": "Removed ensureWaitPollerActive from stub and removed the test that asserted it was called",
-      "tags": ["test-quality", "stub-masking", "poller"],
-      "related_bugs": ["bug-111"],
+      "tags": [
+        "test-quality",
+        "stub-masking",
+        "poller"
+      ],
+      "related_bugs": [
+        "bug-111"
+      ],
       "occurrences": 1,
       "last_seen": "2026-06-26T00:00:00.000Z"
     },
@@ -1830,7 +1843,11 @@
       "file": "src/dev/WMConsoleCommands.lua",
       "root_cause": "printVehicleState printed ex.willHandoffToCP (removed field) instead of ex.cpHandedOffToAD (current field name). Line 59 already showed cpHandedOffToAD correctly; line 60 was a duplicate with wrong field name.",
       "fix": "Removed line 60 (willHandoffToCP print); globalWaitPoller display lines also removed (poller never implemented, always nil)",
-      "tags": ["stale-field", "debug-output", "console-command"],
+      "tags": [
+        "stale-field",
+        "debug-output",
+        "console-command"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-06-26T00:00:00.000Z"
@@ -1842,10 +1859,47 @@
       "file": "src/dev/WMConsoleCommands.lua",
       "root_cause": "elseif condition checked only pendingLeaderWorkflowId; primary save/restore path sets pendingLeaderXmlIndex only (pendingLeaderWorkflowId is nil until onReadStream); block was silently skipped",
       "fix": "Changed condition to: pendingLeaderWorkflowId ~= nil or pendingLeaderXmlIndex ~= nil",
-      "tags": ["debug-output", "console-command", "pending-leader"],
+      "tags": [
+        "debug-output",
+        "console-command",
+        "pending-leader"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-06-26T00:00:00.000Z"
+    },
+    {
+      "id": "bug-115",
+      "timestamp": "2026-07-03T23:16:33.574Z",
+      "error_message": "Incorrect value in code",
+      "file": "webeditor/app.js",
+      "root_cause": "Had \"noMatches\"",
+      "fix": "Changed to \"noEntries\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T23:16:33.574Z"
+    },
+    {
+      "id": "bug-116",
+      "timestamp": "2026-07-03T23:18:54.391Z",
+      "error_message": "Web editor empty-state hero stayed visible above the workflow editor even when a workflow was selected",
+      "file": "webeditor/style.css",
+      "root_cause": "The hidden HTML attribute only applies UA display:none, which author CSS overrides; .empty-hero had display:flex so element.hidden=true had no visual effect",
+      "fix": "Added global rule `[hidden] { display: none !important; }` near the top of style.css",
+      "tags": [
+        "webeditor",
+        "css",
+        "hidden-attribute",
+        "ui"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T23:18:54.391Z"
     }
   ]
 }
