@@ -1870,6 +1870,39 @@
     },
     {
       "id": "bug-115",
+      "timestamp": "2026-07-03T23:16:33.574Z",
+      "error_message": "Incorrect value in code",
+      "file": "webeditor/app.js",
+      "root_cause": "Had \"noMatches\"",
+      "fix": "Changed to \"noEntries\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T23:16:33.574Z"
+    },
+    {
+      "id": "bug-116",
+      "timestamp": "2026-07-03T23:18:54.391Z",
+      "error_message": "Web editor empty-state hero stayed visible above the workflow editor even when a workflow was selected",
+      "file": "webeditor/style.css",
+      "root_cause": "The hidden HTML attribute only applies UA display:none, which author CSS overrides; .empty-hero had display:flex so element.hidden=true had no visual effect",
+      "fix": "Added global rule `[hidden] { display: none !important; }` near the top of style.css",
+      "tags": [
+        "webeditor",
+        "css",
+        "hidden-attribute",
+        "ui"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-03T23:18:54.391Z"
+    },
+    {
+      "id": "bug-117",
       "timestamp": "2026-07-03T22:49:49.961Z",
       "error_message": "Significant refactor of ",
       "file": "src/WorkflowExecutor.lua",
