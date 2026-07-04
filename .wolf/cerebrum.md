@@ -80,6 +80,8 @@ Without this, any tight race at map load (follower's onPostLoad runs before lead
 
 [2026-06-23] Storage needs `WorkflowManager#formatVersion` (absent=1, current=2) to migrate. The old save only wrote `isSyncTarget/isSyncSource` when `false`, so an all-default v1 workflow is byte-identical to a new no-marker v2 workflow — version is the only reliable "needs migration" signal. `migrateSyncFlagsToMarkers` inserts a wait marker before each former sync-source step and an unlock marker before each former sync-target step (default true). Migration tests for OTHER concerns (legacy `#fillType`, linked-workflow) must write `formatVersion=2` in their XML to isolate.
 
+[2026-07-04] Leader-gone detection (`isLeaderSyncSatisfied`'s "leader finished/stopped/restarted → free follower" branch) previously only ran when the follower was blocked at a `wait_for_leader` step. Extracted that branch into `WMExecutor:refreshLeaderLink(activeData)` and now call it unconditionally every poll tick (in `WMExecutor:update()`, alongside `tryResolvePendingLeader`) so a follower running its own step (not at a wait marker) also detaches `leaderVehicle`/`linkedLeaderExecution` promptly when the leader finishes, instead of only on its next wait-marker hit.
+
 ## Decision Log
 
 <!-- Significant technical decisions with rationale. Why X was chosen over Y. -->

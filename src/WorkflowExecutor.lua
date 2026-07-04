@@ -243,16 +243,16 @@ function WMExecutor:buildSyncMaps(activeData)
     activeData.syncTargets = syncTargets
 end
 
----Returns true if the follower may proceed past its current wait_for_leader step.
----Encapsulates: leader reference snapping, leader-gone detection (frees follower),
----and the ordinal-based sync check against the leader's unlock markers.
+---Snap the leader execution reference and detect a leader that has finished, stopped,
+---or restarted since being selected. Frees the follower (clears leaderVehicle) as soon
+---as this is detected, regardless of the follower's current step/status, so it becomes
+---standalone immediately rather than only when it next hits a wait-for-leader step.
 ---@param activeData table Follower's active execution state
----@return boolean satisfied
-function WMExecutor:isLeaderSyncSatisfied(activeData)
+function WMExecutor:refreshLeaderLink(activeData)
+    if activeData.leaderVehicle == nil then return end
     if activeData.pendingLeaderXmlIndex ~= nil or activeData.pendingLeaderWorkflowId ~= nil then
-        return false  -- leader reference not yet resolved; block until poller resolves it
+        return  -- leader reference not yet resolved
     end
-    if activeData.leaderVehicle == nil then return true end
 
     local leaderSpec = activeData.leaderVehicle.spec_workflowManagerSpec
     local leaderExec = leaderSpec and leaderSpec.wmExecution
@@ -265,16 +265,32 @@ function WMExecutor:isLeaderSyncSatisfied(activeData)
         self:buildSyncMaps(activeData)
     end
 
-    -- Leader finished, stopped, or restarted — free the follower
+    -- Leader finished, stopped, or restarted — free the follower to run standalone
     if leaderExec == nil or (activeData.linkedLeaderExecution ~= nil and leaderExec ~= activeData.linkedLeaderExecution) then
         local leaderName = activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?"
-        WMLogger:info("Leader '%s' %s — follower continuing freely",
-            leaderName, leaderExec == nil and "finished/stopped" or "restarted with new execution")
+        WMLogger:info("Leader '%s' %s — follower '%s' now standalone",
+            leaderName, leaderExec == nil and "finished/stopped" or "restarted with new execution",
+            activeData.vehicle and activeData.vehicle.getName and activeData.vehicle:getName() or "?")
         activeData.leaderVehicle = nil
         activeData.linkedLeaderExecution = nil
-        return true
     end
+end
 
+---Returns true if the follower may proceed past its current wait_for_leader step.
+---Encapsulates: leader reference snapping, leader-gone detection (frees follower),
+---and the ordinal-based sync check against the leader's unlock markers.
+---@param activeData table Follower's active execution state
+---@return boolean satisfied
+function WMExecutor:isLeaderSyncSatisfied(activeData)
+    if activeData.pendingLeaderXmlIndex ~= nil or activeData.pendingLeaderWorkflowId ~= nil then
+        return false  -- leader reference not yet resolved; block until poller resolves it
+    end
+    if activeData.leaderVehicle == nil then return true end
+
+    self:refreshLeaderLink(activeData)
+    if activeData.leaderVehicle == nil then return true end  -- freed by refreshLeaderLink
+
+    local leaderExec = activeData.linkedLeaderExecution
     local ordinal = activeData.syncSourceOrdinals
                     and activeData.syncSourceOrdinals[activeData.currentStep]
     if ordinal == nil then return true end  -- current step is not a paired wait marker
@@ -282,7 +298,7 @@ function WMExecutor:isLeaderSyncSatisfied(activeData)
     local required = activeData.syncTargets and activeData.syncTargets[ordinal]
     if required == nil then
         -- More wait markers than unlock markers: wait until the leader finishes
-        local leaderWF = activeData.linkedLeaderExecution and activeData.linkedLeaderExecution.workflow
+        local leaderWF = leaderExec.workflow
         required = leaderWF and (#leaderWF.steps + 1) or 1
     end
 
@@ -1078,6 +1094,10 @@ function WMExecutor:update(dt)
 
             -- Retry pending leader resolution (leader may load after follower during map load)
             self:tryResolvePendingLeader(activeData)
+
+            -- Detect a leader that finished/stopped/restarted and free the follower
+            -- even when it isn't currently blocked at a wait-for-leader step.
+            self:refreshLeaderLink(activeData)
 
             -- WAITING_FOR_LEADER: unblock when sync condition is satisfied
             if activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER then

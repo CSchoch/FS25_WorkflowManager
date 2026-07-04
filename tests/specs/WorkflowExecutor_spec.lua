@@ -1409,6 +1409,26 @@ describe("WMExecutor (real)", function()
             assert.is_nil(activeData(follower).leaderVehicle)
             assert.is_nil(activeData(follower).linkedLeaderExecution)
         end)
+
+        it("detaches leader and goes standalone when leader finishes while follower isn't blocked at a wait marker", function()
+            local leader   = makeVehicle("Leader")
+            local follower = makeVehicle("Follower")
+            WMExecutor:startWorkflow(makeLeaderWF("wf_finish_free"), leader)
+            WMExecutor:startWorkflow(makeFollowerWF("wf_f_finish_free"), follower, true, leader)
+            -- Follower is still on step 1 (running its own AutoDrive step), not at the wait marker
+            assert.are.equal(1, activeData(follower).currentStep)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
+            assert.are.equal(leader, activeData(follower).leaderVehicle)
+
+            WMExecutor:stopWorkflow(leader)
+            triggerPoll()
+
+            -- Follower keeps running its own step but is no longer tied to the leader
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(follower).status)
+            assert.are.equal(1, activeData(follower).currentStep)
+            assert.is_nil(activeData(follower).leaderVehicle)
+            assert.is_nil(activeData(follower).linkedLeaderExecution)
+        end)
     end)
 
     -- =========================================================================

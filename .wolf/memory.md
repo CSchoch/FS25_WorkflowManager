@@ -488,3 +488,14 @@
 | 09:22 | Edited src/dev/WMConsoleCommands.lua | 6→3 lines | ~63 |
 | 09:22 | Edited src/dev/WMConsoleCommands.lua | 3→3 lines | ~67 |
 | 09:24 | Session end: 5 writes across 3 files (WorkflowManagerSpec.lua, WorkflowManagerSpec_spec.lua, WMConsoleCommands.lua) | 3 reads | ~37344 tok |
+| 00:49 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~916 |
+| 00:49 | Edited src/WorkflowExecutor.lua | 4→8 lines | ~117 |
+| 00:50 | Edited tests/specs/WorkflowExecutor_spec.lua | expanded (+20 lines) | ~360 |
+| 00:55 | Follower now detaches finished leader even when not blocked at wait_for_leader: extracted refreshLeaderLink() from isLeaderSyncSatisfied, call it unconditionally every poll tick | WorkflowExecutor.lua, WorkflowExecutor_spec.lua | 408/408 tests pass | ~200 tok |
+| 00:51 | Session end: 8 writes across 5 files (WorkflowManagerSpec.lua, WorkflowManagerSpec_spec.lua, WMConsoleCommands.lua, WorkflowExecutor.lua, WorkflowExecutor_spec.lua) | 4 reads | ~19977 tok |
+| 00:59 | Session end: 8 writes across 5 files (WorkflowManagerSpec.lua, WorkflowManagerSpec_spec.lua, WMConsoleCommands.lua, WorkflowExecutor.lua, WorkflowExecutor_spec.lua) | 4 reads | ~12707 tok |
+
+## Session: 2026-07-04 20:46
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
