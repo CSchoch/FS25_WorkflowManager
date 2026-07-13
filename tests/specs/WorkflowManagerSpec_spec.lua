@@ -493,6 +493,112 @@ describe("WorkflowManagerSpec", function()
             assert.are.equal(2, d.currentStep)
         end)
 
+        it("saves leaderVehicleUniqueId when leaderVehicle has a uniqueId", function()
+            local wf = { id = "wf_lvu_save", name = "LVU Save", steps = {} }
+            local leaderV = makeVehicle("Leader")
+            leaderV.uniqueId = "vehicleABC123"
+            local followerV = makeVehicle("Follower")
+            WorkflowManagerSpec.onLoad(leaderV, nil)
+            WorkflowManagerSpec.onLoad(followerV, nil)
+            followerV.spec_workflowManagerSpec.wmExecution = {
+                workflow      = wf,
+                currentStep   = 1,
+                isMainVehicle = true,
+                leaderVehicle = leaderV,
+            }
+
+            local xml = makeSavegameXML()
+            WorkflowManagerSpec.saveToXMLFile(followerV, xml, BASE_KEY, {})
+
+            assert.are.equal("vehicleABC123", xml._data[BASE_KEY .. "#leaderVehicleUniqueId"])
+        end)
+
+        it("save/restore round-trip resolves leaderVehicle via uniqueId when leader is already active", function()
+            local wf = { id = "wf_lvu_rt", name = "LVU Round-Trip", steps = {} }
+            _G.WorkflowManager.workflows = { wf }
+            local leaderV = makeVehicle("Leader")
+            leaderV.uniqueId = "vehicleXYZ789"
+            local followerV = makeVehicle("Follower")
+
+            WorkflowManagerSpec.onLoad(leaderV, nil)
+            _G.WMExecutor.activeVehicles[leaderV] = true
+
+            WorkflowManagerSpec.onLoad(followerV, nil)
+            followerV.spec_workflowManagerSpec.wmExecution = {
+                workflow      = wf,
+                currentStep   = 2,
+                isMainVehicle = true,
+                leaderVehicle = leaderV,
+            }
+
+            local xml = makeSavegameXML()
+            WorkflowManagerSpec.saveToXMLFile(followerV, xml, BASE_KEY, {})
+
+            local v2 = makeVehicle("Reader")
+            WorkflowManagerSpec.onLoad(v2, nil)
+            local sg = { key = "vehicles.vehicle(0)", resetVehicles = false, xmlFile = xml }
+            WorkflowManagerSpec.onPostLoad(v2, sg)
+
+            local d = v2.spec_workflowManagerSpec.wmExecution
+            assert.are.equal(leaderV, d.leaderVehicle)
+            assert.is_nil(d.pendingLeaderUniqueId)
+        end)
+
+        it("defers to pendingLeaderUniqueId when the leader isn't active yet at restore time", function()
+            local wf = { id = "wf_lvu_pending", name = "LVU Pending", steps = {} }
+            _G.WorkflowManager.workflows = { wf }
+
+            -- Simulate a save where the leader's uniqueId was recorded but the leader
+            -- vehicle hasn't finished loading yet (onPostLoad ordering is not guaranteed).
+            local xml = makeSavegameXML({
+                [BASE_KEY .. "#workflowId"]           = wf.id,
+                [BASE_KEY .. "#currentStep"]           = 5,
+                [BASE_KEY .. "#leaderVehicleUniqueId"] = "vehicleNOTLOADEDYET",
+            })
+
+            local v2 = makeVehicle("Reader")
+            WorkflowManagerSpec.onLoad(v2, nil)
+            local sg = { key = "vehicles.vehicle(0)", resetVehicles = false, xmlFile = xml }
+            WorkflowManagerSpec.onPostLoad(v2, sg)
+
+            local d = v2.spec_workflowManagerSpec.wmExecution
+            assert.is_nil(d.leaderVehicle)
+            assert.are.equal("vehicleNOTLOADEDYET", d.pendingLeaderUniqueId)
+        end)
+
+        it("prefers leaderVehicleUniqueId over legacy leaderVehicleXmlIndex when both are present", function()
+            local wf = { id = "wf_lvu_priority", name = "LVU Priority", steps = {} }
+            _G.WorkflowManager.workflows = { wf }
+            local correctLeader = makeVehicle("CorrectLeader")
+            correctLeader.uniqueId = "vehicleCORRECT"
+            local staleLeader = makeVehicle("StaleLeader")
+            staleLeader.uniqueId = "vehicleSTALE"
+
+            WorkflowManagerSpec.onLoad(correctLeader, nil)
+            correctLeader.spec_workflowManagerSpec.wmXmlIndex = 5
+            _G.WMExecutor.activeVehicles[correctLeader] = true
+
+            WorkflowManagerSpec.onLoad(staleLeader, nil)
+            -- A different vehicle now occupies the xmlIndex that used to belong to the
+            -- real leader (mirrors the reported bug: vehicle list reordered between saves).
+            staleLeader.spec_workflowManagerSpec.wmXmlIndex = 199
+            _G.WMExecutor.activeVehicles[staleLeader] = true
+
+            local xml = makeSavegameXML({
+                [BASE_KEY .. "#workflowId"]             = wf.id,
+                [BASE_KEY .. "#currentStep"]             = 1,
+                [BASE_KEY .. "#leaderVehicleUniqueId"]   = "vehicleCORRECT",
+                [BASE_KEY .. "#leaderVehicleXmlIndex"]   = 199,
+            })
+
+            local v2 = makeVehicle("Reader")
+            WorkflowManagerSpec.onLoad(v2, nil)
+            local sg = { key = "vehicles.vehicle(0)", resetVehicles = false, xmlFile = xml }
+            WorkflowManagerSpec.onPostLoad(v2, sg)
+
+            assert.are.equal(correctLeader, v2.spec_workflowManagerSpec.wmExecution.leaderVehicle)
+        end)
+
         it("restores nil leaderVehicle when leaderWorkflowId is absent", function()
             local wf = { id = "wf_lv_nil", name = "LV Nil", steps = {} }
             _G.WorkflowManager.workflows = { wf }

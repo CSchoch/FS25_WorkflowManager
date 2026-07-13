@@ -1,14 +1,19 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-03T23:18:00.961Z
-> Files: 59 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-13T09:29:52.255Z
+> Files: 8 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
+- `there-was-again-an-delegated-kay.md` — Fix: leader-follower reference lost across save/load (stale XML vehicle index) (~1513 tok)
+
+## ../../../../../.claude/projects/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/memory/
+
+- `MEMORY.md` — FS25 WorkflowManager - Session Memory (~1273 tok)
+- `project_leader_uniqueid_fix.md` (~531 tok)
 
 ## ../../../tmp/claude-0/-home-user-FS25-WorkflowManager/442c8c76-f882-5833-bcbb-d59df923d2a5/scratchpad/
 
-- `verify.mjs` — Declares ROOT (~1943 tok)
 
 ## ../FS25_WorkflowManager-docs/.github/workflows/
 
@@ -27,7 +32,6 @@
 
 ## .github/workflows/
 
-- `deploy-webeditor.yml` — CI: Deploy Web Editor to GitHub Pages (~176 tok)
 
 ## _art/
 
@@ -40,10 +44,12 @@
 
 ## src/
 
-- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~19163 tok)
+- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~19244 tok)
+- `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~7766 tok)
 
 ## src/dev/
 
+- `WMConsoleCommands.lua` — -@class WMConsoleCommands (~2869 tok)
 
 ## src/gui/
 
@@ -71,7 +77,8 @@
 
 ## tests/specs/
 
-- `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport, makeLeaderWF (~23368 tok)
+- `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport, makeLeaderWF (~24257 tok)
+- `WorkflowManagerSpec_spec.lua` — makeVehicle, makeSavegameXML (~12060 tok)
 
 ## textures/
 
@@ -84,10 +91,6 @@
 
 ## webeditor/
 
-- `app.js` — Web editor logic: i18n EN/DE, fill types, localStorage state, XML import/export mirroring WorkflowStorage.lua incl. v1 migrations, step modal, drag&drop (~16751 tok)
-- `index.html` — FS25 Workflow Manager — Web Editor (~3689 tok)
-- `README.md` — Project documentation (~554 tok)
-- `style.css` — Styles: 106 rules, 46 vars (~6041 tok)
 
 ## website/
 

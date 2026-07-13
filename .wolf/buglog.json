@@ -1916,6 +1916,40 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-07-03T22:49:49.961Z"
+    },
+    {
+      "id": "bug-118",
+      "timestamp": "2026-07-13T09:26:31.760Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/dev/WMConsoleCommands.lua",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 4→4 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-13T09:26:31.760Z"
+    },
+    {
+      "id": "bug-119",
+      "timestamp": "2026-07-13T00:00:00.000Z",
+      "error_message": "User report: 'the Steyer tractor lost its leader' — follower permanently stuck in waiting_for_leader with leaderVehicle=nil after reload",
+      "file": "src/WorkflowManagerSpec.lua",
+      "root_cause": "Leader identity was persisted as leaderVehicleXmlIndex, a positional index parsed from savegame.key (\"vehicles.vehicle(N)\"). This index is only stable within one load — across separate save sessions, buying/selling a vehicle (or any change to vehicles.xml composition/order) shifts every later index. Log evidence: STEYR 'Absolut 6280 CVT' saved leaderVehicleXmlIndex=199 pointing to '8R 410' in one session; on the next load, xmlIndex 199 resolved to a completely different vehicle ('IDEAL 10T', which has no workflow at all), so tryResolvePendingLeader could never match it and the follower stayed blocked forever.",
+      "fix": "Added leaderVehicleUniqueId, persisted/matched via the vehicle's own engine-assigned uniqueId (vehicle.uniqueId, also visible as the uniqueId=\"...\" attribute on <vehicle> in vehicles.xml) instead of a positional index. uniqueId does not shift when other vehicles are added/removed/reordered. Kept leaderVehicleXmlIndex/legacy leaderVehicleIndex/leaderWorkflowId as read-only fallback for saves written before this fix. New pendingLeaderUniqueId field mirrors the existing pendingLeaderXmlIndex/pendingLeaderWorkflowId deferred-resolution mechanism in WorkflowExecutor.lua (tryResolvePendingLeader, isLeaderSyncSatisfied).",
+      "tags": [
+        "leader-follower",
+        "save-load",
+        "vehicle-identity",
+        "lua",
+        "user-reported"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-13T00:00:00.000Z"
     }
   ]
 }

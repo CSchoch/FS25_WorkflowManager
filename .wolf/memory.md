@@ -1,3 +1,4 @@
+| 00:00 | Fix bug-119 ("Steyer tractor lost its leader"): leaderVehicleXmlIndex (positional index) is stable only within one load — vehicle list reordering between save sessions caused it to resolve to a wrong/unrelated vehicle, permanently stranding the follower in waiting_for_leader. Replaced with leaderVehicleUniqueId keyed on vehicle.uniqueId (engine-assigned, save-stable); pendingLeaderUniqueId mirrors existing deferred-resolution pattern; old xmlIndex chain kept as legacy fallback | WorkflowManagerSpec.lua, WorkflowExecutor.lua, WMConsoleCommands.lua, WorkflowManagerSpec_spec.lua, WorkflowExecutor_spec.lua | 415/415 tests pass | ~600 tok |
 | 00:00 | Code-review fixes (bug-111–114): removed nil-crash ensureWaitPollerActive call from onPostLoad; removed test stub masking it; removed stale willHandoffToCP + globalWaitPoller lines from WMConsoleCommands; fixed wmPrintWorkflow pendingLeaderXmlIndex-only case | WorkflowManagerSpec.lua, WorkflowManagerSpec_spec.lua, WMConsoleCommands.lua | 407/407 tests pass | ~120 tok |
 | 00:00 | TDD fix (bug-105/106): isLeaderSyncSatisfied returned true when leaderVehicle==nil but pendingLeaderXmlIndex was set — follower passed WAIT_FOR_LEADER gate without blocking. Fix: added pending check before nil-leader early-return. 2 new tests, 408/408 pass | WorkflowExecutor.lua, WorkflowExecutor_spec.lua | 408/408 tests pass | ~80 tok |
 | 00:00 | TDD refactor: extract tryResolvePendingLeader() from duplicate blocks in executeCurrentStep and runWaitPoll; added 2 tests pinning both paths; finding "dead code for followers" was imprecise (linked followers are main vehicles), but divergence risk was valid | WorkflowExecutor.lua, WorkflowExecutor_spec.lua | 406/406 tests pass | ~120 tok |
@@ -513,3 +514,34 @@
 | 23:17 | Created ../../../tmp/claude-0/-home-user-FS25-WorkflowManager/442c8c76-f882-5833-bcbb-d59df923d2a5/scratchpad/verify.mjs | — | ~1943 |
 | 23:18 | Edited webeditor/style.css | CSS: display | ~20 |
 | 23:19 | Session end: 8 writes across 6 files (index.html, style.css, app.js, README.md, deploy-webeditor.yml) | 11 reads | ~78750 tok |
+
+## Session: 2026-07-04 21:16
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 11:11 | Created ../../../../../.claude/plans/there-was-again-an-delegated-kay.md | — | ~1563 |
+| 11:21 | Created ../../../../../.claude/plans/there-was-again-an-delegated-kay.md | — | ~1869 |
+| 11:23 | Created ../../../../../.claude/plans/there-was-again-an-delegated-kay.md | — | ~1614 |
+| 11:25 | Edited src/WorkflowManagerSpec.lua | expanded (+22 lines) | ~1150 |
+| 11:25 | Edited src/WorkflowManagerSpec.lua | 5→6 lines | ~104 |
+| 11:25 | Edited src/WorkflowManagerSpec.lua | 3→8 lines | ~144 |
+| 11:25 | Edited src/WorkflowManagerSpec.lua | 4→6 lines | ~144 |
+| 11:25 | Edited src/WorkflowExecutor.lua | 3→4 lines | ~65 |
+| 11:26 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~486 |
+| 11:26 | Edited src/dev/WMConsoleCommands.lua | 2→3 lines | ~71 |
+| 11:26 | Edited src/dev/WMConsoleCommands.lua | 4→4 lines | ~92 |
+| 11:27 | Edited tests/specs/WorkflowManagerSpec_spec.lua | expanded (+106 lines) | ~1364 |
+| 11:27 | Edited tests/specs/WorkflowExecutor_spec.lua | modified makePendingFollowerExecByUid() | ~944 |
+| 11:29 | Created ../../../../../.claude/projects/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/memory/project_leader_uniqueid_fix.md | — | ~545 |
+| 11:29 | Edited ../../../../../.claude/projects/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/memory/MEMORY.md | 1→6 lines | ~104 |
+| 11:30 | Session end: 15 writes across 8 files (there-was-again-an-delegated-kay.md, WorkflowManagerSpec.lua, WorkflowExecutor.lua, WMConsoleCommands.lua, WorkflowManagerSpec_spec.lua) | 10 reads | ~40636 tok |
+
+## Session: 2026-07-13 11:31
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-07-13 11:33
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|

@@ -1777,6 +1777,77 @@ describe("WMExecutor (real)", function()
             assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, followerExec.status)
             assert.are.equal(2, followerExec.currentStep)
         end)
+
+        -- Same coverage as pendingLeaderXmlIndex above, but keyed on the vehicle's own
+        -- engine-assigned uniqueId (stable across save/load, unlike a positional index).
+        local function makePendingFollowerExecByUid(follower, wf, uniqueId)
+            local exec = {
+                workflow              = wf,
+                vehicle               = follower,
+                status                = WorkflowManager.STATUS_RUNNING,
+                currentStep           = 1,
+                isMainVehicle         = true,
+                waitingForCompletion  = false,
+                leaderVehicle         = nil,
+                pendingLeaderUniqueId = uniqueId,
+            }
+            follower.spec_workflowManagerSpec.wmExecution = exec
+            WMExecutor.activeVehicles[follower] = true
+            return exec
+        end
+
+        it("executeCurrentStep resolves pendingLeaderUniqueId before the first poll tick", function()
+            local leader   = makeVehicle("Leader")
+            local follower = makeVehicle("Follower")
+            leader.uniqueId = "vehicleUID_A"
+            WMExecutor:startWorkflow(makeLeaderWF("wf_pend_uid_exec_l"), leader)
+
+            local followerExec = makePendingFollowerExecByUid(follower, makeFollowerWF("wf_pend_uid_exec_f"), "vehicleUID_A")
+
+            WMExecutor:executeCurrentStep(followerExec)
+
+            assert.are.equal(leader, followerExec.leaderVehicle)
+            assert.is_nil(followerExec.pendingLeaderUniqueId)
+        end)
+
+        it("runWaitPoll resolves pendingLeaderUniqueId when leader loads after follower", function()
+            local leader   = makeVehicle("Leader")
+            local follower = makeVehicle("Follower")
+
+            local followerExec = makePendingFollowerExecByUid(follower, makeFollowerWF("wf_pend_uid_poll_f"), "vehicleUID_B")
+            followerExec.status = WorkflowManager.STATUS_WAITING_FOR_LEADER
+
+            leader.uniqueId = "vehicleUID_B"
+            WMExecutor:startWorkflow(makeLeaderWF("wf_pend_uid_poll_l"), leader)
+
+            triggerPoll()
+
+            assert.are.equal(leader, followerExec.leaderVehicle)
+            assert.is_nil(followerExec.pendingLeaderUniqueId)
+        end)
+
+        it("executeCurrentStep blocks at WAIT_FOR_LEADER when pendingLeaderUniqueId is unresolved", function()
+            local follower = makeVehicle("Follower")
+            local wf = makeFollowerWF("wf_pend_uid_block_f")
+            local followerExec = {
+                workflow              = wf,
+                vehicle               = follower,
+                status                = WorkflowManager.STATUS_RUNNING,
+                currentStep           = 2,
+                isMainVehicle         = true,
+                waitingForCompletion  = false,
+                leaderVehicle         = nil,
+                pendingLeaderUniqueId = "vehicleUID_NOTFOUND",
+            }
+            follower.spec_workflowManagerSpec.wmExecution = followerExec
+            WMExecutor.activeVehicles[follower] = true
+
+            WMExecutor:executeCurrentStep(followerExec)
+
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, followerExec.status)
+            assert.are.equal(2, followerExec.currentStep)
+            assert.are.equal("vehicleUID_NOTFOUND", followerExec.pendingLeaderUniqueId)
+        end)
     end)
 
     -- =========================================================================

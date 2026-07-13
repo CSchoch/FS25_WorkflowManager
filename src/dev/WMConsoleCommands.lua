@@ -61,6 +61,7 @@ function WMConsoleCommands:printVehicleState(vehicle)
     print(string.format("  waitForMainStep:   %s", tostring(ex.waitingForMainStepIndex)))
     print(string.format("  pendingLeaderIdx:  %s", tostring(ex.pendingLeaderXmlIndex)))
     print(string.format("  pendingLeaderWF:   %s", tostring(ex.pendingLeaderWorkflowId)))
+    print(string.format("  pendingLeaderUid:  %s", tostring(ex.pendingLeaderUniqueId)))
     local leaderStep = ex.linkedLeaderExecution and ex.linkedLeaderExecution.currentStep
     local syncRequired = nil
     if ex.syncTargets then
@@ -230,9 +231,9 @@ function WMConsoleCommands:wmPrintWorkflow()
         else
             print(string.format("  LEADER  (%s)  — no active execution", lName))
         end
-    elseif ex.pendingLeaderWorkflowId ~= nil or ex.pendingLeaderXmlIndex ~= nil then
-        print(string.format("  LEADER  — pending (workflowId=%s  xmlIndex=%s)",
-            tostring(ex.pendingLeaderWorkflowId), tostring(ex.pendingLeaderXmlIndex)))
+    elseif ex.pendingLeaderWorkflowId ~= nil or ex.pendingLeaderXmlIndex ~= nil or ex.pendingLeaderUniqueId ~= nil then
+        print(string.format("  LEADER  — pending (workflowId=%s  xmlIndex=%s  uniqueId=%s)",
+            tostring(ex.pendingLeaderWorkflowId), tostring(ex.pendingLeaderXmlIndex), tostring(ex.pendingLeaderUniqueId)))
     end
 
     print(sep)

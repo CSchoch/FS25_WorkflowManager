@@ -282,7 +282,8 @@ end
 ---@param activeData table Follower's active execution state
 ---@return boolean satisfied
 function WMExecutor:isLeaderSyncSatisfied(activeData)
-    if activeData.pendingLeaderXmlIndex ~= nil or activeData.pendingLeaderWorkflowId ~= nil then
+    if activeData.pendingLeaderXmlIndex ~= nil or activeData.pendingLeaderWorkflowId ~= nil
+    or activeData.pendingLeaderUniqueId ~= nil then
         return false  -- leader reference not yet resolved; block until poller resolves it
     end
     if activeData.leaderVehicle == nil then return true end
@@ -670,18 +671,21 @@ function WMExecutor:stopCurrentStep(activeData)
     end
 end
 
----Resolve a pending leader reference (by xmlIndex or legacy workflowId) if the leader
----vehicle is now available in activeVehicles.  Called from executeCurrentStep (early-resume
----safety net) and runWaitPoll (normal deferred path after save/load).
+---Resolve a pending leader reference (by uniqueId, xmlIndex, or legacy workflowId) if the
+---leader vehicle is now available in activeVehicles.  Called from executeCurrentStep
+---(early-resume safety net) and runWaitPoll (normal deferred path after save/load).
 ---@param activeData table Per-vehicle execution state
 function WMExecutor:tryResolvePendingLeader(activeData)
     if activeData.leaderVehicle ~= nil then return end
-    if activeData.pendingLeaderWorkflowId == nil and activeData.pendingLeaderXmlIndex == nil then return end
+    if activeData.pendingLeaderWorkflowId == nil and activeData.pendingLeaderXmlIndex == nil
+    and activeData.pendingLeaderUniqueId == nil then return end
     for candidate, _ in pairs(self.activeVehicles) do
         if candidate ~= activeData.vehicle then
             local vSpec = candidate.spec_workflowManagerSpec
             local vExec = vSpec and vSpec.wmExecution
-            local matched = (activeData.pendingLeaderWorkflowId ~= nil
+            local matched = (activeData.pendingLeaderUniqueId ~= nil
+                and candidate.uniqueId == activeData.pendingLeaderUniqueId)
+                or (activeData.pendingLeaderWorkflowId ~= nil
                 and vExec and vExec.workflow and vExec.workflow.id == activeData.pendingLeaderWorkflowId)
                 or (activeData.pendingLeaderXmlIndex ~= nil
                 and vSpec and vSpec.wmXmlIndex == activeData.pendingLeaderXmlIndex)
@@ -690,6 +694,7 @@ function WMExecutor:tryResolvePendingLeader(activeData)
                 activeData.linkedLeaderExecution   = vExec
                 activeData.pendingLeaderWorkflowId = nil
                 activeData.pendingLeaderXmlIndex   = nil
+                activeData.pendingLeaderUniqueId   = nil
                 WMLogger:info("Resolved pending leader '%s' for follower at step %d",
                     candidate.getName and candidate:getName() or "?", activeData.currentStep)
                 break

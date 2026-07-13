@@ -81,54 +81,76 @@ function WorkflowManagerSpec:onPostLoad(savegame)
             local linkedLeaderExecution = nil
             local pendingLeaderXmlIndex = nil
             local pendingLeaderWorkflowId = nil
+            local pendingLeaderUniqueId = nil
 
-            local leaderXmlIdx = savegame.xmlFile:getValue(key .. "#leaderVehicleXmlIndex")
-            local leaderKeyUsed = leaderXmlIdx ~= nil and "#leaderVehicleXmlIndex" or nil
-            -- Backward compat: old save used 1-based Lua array index
-            if leaderXmlIdx == nil then
-                local legacyIdx = savegame.xmlFile:getValue(key .. "#leaderVehicleIndex")
-                if legacyIdx then
-                    leaderXmlIdx = legacyIdx - 1
-                    leaderKeyUsed = "#leaderVehicleIndex(legacy)"
-                end
-            end
-            WMLogger:debug("Restore leader: key=%s rawValue=%s", tostring(leaderKeyUsed), tostring(leaderXmlIdx))
-
-            if leaderXmlIdx ~= nil then
+            -- Primary identity: the vehicle's own engine-assigned uniqueId (stable across
+            -- save/load regardless of vehicle-list reordering, unlike a positional index).
+            local leaderUniqueId = savegame.xmlFile:getValue(key .. "#leaderVehicleUniqueId")
+            if leaderUniqueId ~= nil then
                 for v, _ in pairs(WMExecutor.activeVehicles) do
-                    if v ~= self then
-                        local vSpec = v.spec_workflowManagerSpec
-                        if vSpec and vSpec.wmXmlIndex == leaderXmlIdx then
-                            leaderVehicle = v
-                            linkedLeaderExecution = vSpec.wmExecution
-                            break
-                        end
+                    if v ~= self and v.uniqueId == leaderUniqueId then
+                        leaderVehicle = v
+                        linkedLeaderExecution = v.spec_workflowManagerSpec.wmExecution
+                        break
                     end
                 end
                 if leaderVehicle then
-                    WMLogger:debug("Restore leader: xmlIndex=%d → vehicle='%s'", leaderXmlIdx,
+                    WMLogger:debug("Restore leader: uniqueId=%s → vehicle='%s'", leaderUniqueId,
                         leaderVehicle.getName and leaderVehicle:getName() or "?")
                 else
-                    pendingLeaderXmlIndex = leaderXmlIdx
-                    -- Log which candidates were visible so mismatches are diagnosable
-                    local seen = {}
-                    for v, _ in pairs(WMExecutor.activeVehicles) do
-                        local vSpec = v.spec_workflowManagerSpec
-                        table.insert(seen, string.format("'%s'(idx=%s)",
-                            v.getName and v:getName() or "?",
-                            tostring(vSpec and vSpec.wmXmlIndex)))
-                    end
-                    WMLogger:debug("Restore leader: xmlIndex=%d → not found yet, deferred (activeVehicles: %s)",
-                        leaderXmlIdx, #seen > 0 and table.concat(seen, ", ") or "none")
+                    pendingLeaderUniqueId = leaderUniqueId
+                    WMLogger:debug("Restore leader: uniqueId=%s → not found yet, deferred", leaderUniqueId)
                 end
             else
-                -- Backward compat: even older saves used workflow ID
-                local legacyWfId = savegame.xmlFile:getValue(key .. "#leaderWorkflowId")
-                if legacyWfId then
-                    pendingLeaderWorkflowId = legacyWfId
-                    WMLogger:debug("Restore leader: legacy workflowId='%s' (deferred)", legacyWfId)
+                -- Backward compat: saves written before uniqueId-based leader tracking
+                local leaderXmlIdx = savegame.xmlFile:getValue(key .. "#leaderVehicleXmlIndex")
+                local leaderKeyUsed = leaderXmlIdx ~= nil and "#leaderVehicleXmlIndex" or nil
+                -- Backward compat: old save used 1-based Lua array index
+                if leaderXmlIdx == nil then
+                    local legacyIdx = savegame.xmlFile:getValue(key .. "#leaderVehicleIndex")
+                    if legacyIdx then
+                        leaderXmlIdx = legacyIdx - 1
+                        leaderKeyUsed = "#leaderVehicleIndex(legacy)"
+                    end
+                end
+                WMLogger:debug("Restore leader: key=%s rawValue=%s", tostring(leaderKeyUsed), tostring(leaderXmlIdx))
+
+                if leaderXmlIdx ~= nil then
+                    for v, _ in pairs(WMExecutor.activeVehicles) do
+                        if v ~= self then
+                            local vSpec = v.spec_workflowManagerSpec
+                            if vSpec and vSpec.wmXmlIndex == leaderXmlIdx then
+                                leaderVehicle = v
+                                linkedLeaderExecution = vSpec.wmExecution
+                                break
+                            end
+                        end
+                    end
+                    if leaderVehicle then
+                        WMLogger:debug("Restore leader: xmlIndex=%d → vehicle='%s'", leaderXmlIdx,
+                            leaderVehicle.getName and leaderVehicle:getName() or "?")
+                    else
+                        pendingLeaderXmlIndex = leaderXmlIdx
+                        -- Log which candidates were visible so mismatches are diagnosable
+                        local seen = {}
+                        for v, _ in pairs(WMExecutor.activeVehicles) do
+                            local vSpec = v.spec_workflowManagerSpec
+                            table.insert(seen, string.format("'%s'(idx=%s)",
+                                v.getName and v:getName() or "?",
+                                tostring(vSpec and vSpec.wmXmlIndex)))
+                        end
+                        WMLogger:debug("Restore leader: xmlIndex=%d → not found yet, deferred (activeVehicles: %s)",
+                            leaderXmlIdx, #seen > 0 and table.concat(seen, ", ") or "none")
+                    end
                 else
-                    WMLogger:debug("Restore leader: no leader key found in savegame")
+                    -- Backward compat: even older saves used workflow ID
+                    local legacyWfId = savegame.xmlFile:getValue(key .. "#leaderWorkflowId")
+                    if legacyWfId then
+                        pendingLeaderWorkflowId = legacyWfId
+                        WMLogger:debug("Restore leader: legacy workflowId='%s' (deferred)", legacyWfId)
+                    else
+                        WMLogger:debug("Restore leader: no leader key found in savegame")
+                    end
                 end
             end
 
@@ -172,6 +194,7 @@ function WorkflowManagerSpec:onPostLoad(savegame)
                 linkedLeaderExecution   = linkedLeaderExecution,
                 pendingLeaderXmlIndex   = pendingLeaderXmlIndex,
                 pendingLeaderWorkflowId = pendingLeaderWorkflowId,
+                pendingLeaderUniqueId   = pendingLeaderUniqueId,
                 waitingForMainStep      = restoredWaitingForMainStep,
                 waitingForMainStepIndex = restoredWaitingForMainStepIndex,
                 autoResumeUntil         = restoredAutoResume,
@@ -227,6 +250,11 @@ function WorkflowManagerSpec:saveToXMLFile(xmlFile, key, usedModNames)
         xmlFile:setValue(key .. "#waitingForMainStepIndex", activeData.waitingForMainStepIndex or 1)
     end
     if activeData.leaderVehicle then
+        if activeData.leaderVehicle.uniqueId then
+            xmlFile:setValue(key .. "#leaderVehicleUniqueId", activeData.leaderVehicle.uniqueId)
+            WMLogger:debug("Saved leaderVehicleUniqueId=%s for '%s'", activeData.leaderVehicle.uniqueId,
+                activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?")
+        end
         local leaderSpec = activeData.leaderVehicle.spec_workflowManagerSpec
         local leaderXmlIdx = leaderSpec and leaderSpec.wmXmlIndex
         local leaderIdxSource = "wmXmlIndex"
@@ -551,9 +579,11 @@ function WorkflowManagerSpec.initSpecialization()
         "true = main role, false = support role")
     schema:register(XMLValueType.INT,  key .. "#currentSupportStep",
         "Current support sub-step index (support vehicles only)")
+    schema:register(XMLValueType.STRING, key .. "#leaderVehicleUniqueId",
+        "Engine uniqueId of the leader vehicle (absent = no leader) — stable across save/load")
+    -- Legacy keys — read-only for backward compat with old saves; never written by new code
     schema:register(XMLValueType.INT, key .. "#leaderVehicleXmlIndex",
         "0-based XML vehicle index (vehicles.vehicle(N)) of the leader vehicle (absent = no leader)")
-    -- Legacy keys — read-only for backward compat with old saves; never written by new code
     schema:register(XMLValueType.INT,    key .. "#leaderVehicleIndex",  "Legacy: 1-based leader index")
     schema:register(XMLValueType.STRING, key .. "#leaderWorkflowId",    "Legacy: leader workflow ID")
     schema:register(XMLValueType.STRING, key .. "#status",
