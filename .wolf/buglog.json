@@ -1966,6 +1966,22 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-07-13T09:43:05.591Z"
+    },
+    {
+      "id": "bug-121",
+      "timestamp": "2026-07-13T11:17:22.805Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/gui/WMHud.lua",
+      "root_cause": "11 lines replaced/restructured",
+      "fix": "Rewrote 29→61 lines (11 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-13T11:17:22.805Z"
     }
   ]
 }

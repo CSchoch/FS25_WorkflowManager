@@ -1,3 +1,4 @@
+| 00:00 | HUD follow-up: leader/main vehicle name in "Waiting for leader/main" status lines is now clickable — jumps player into that vehicle via g_localPlayer:requestToEnterVehicle(vehicle) (same base-game API CP's CpHudInfoTexts:enterVehicle uses). Name rendered as separate text segment with its own click bounds (self.buttonBounds.leaderName/mainName + self.nameClickVehicles), cyan on hover, tooltip "Click to switch to this vehicle" (new wm_hud_tooltip_switch_vehicle key, en+de) | WMHud.lua, translation_en.xml, translation_de.xml | 412/412 tests pass | ~250 tok |
 | 00:00 | HUD follow-up: support vehicle's "Waiting for main" status line now appends the main vehicle's name too, via WMExecutor:getMainActiveDataForWorkflow(workflow.id).vehicle:getName() (mirrors the leader-name pattern) | WMHud.lua | 412/412 tests pass | ~80 tok |
 | 00:00 | HUD tweaks: removed vehicle name from HUD header (title only now); added leader's name to "Waiting for leader" status line via activeData.leaderVehicle:getName(); added [AD]/[CP]/[WM] step-type shortcut prefix to step info line (main + support branches) via new WorkflowManager:getStepTypeShortcut() | WMHud.lua, WorkflowManager.lua | 412/412 tests pass | ~180 tok |
 | 00:00 | Follow-up to bug-119: user asked to remove leaderVehicleXmlIndex from the save routine entirely (not just add uniqueId alongside it). Removed the xmlIndex-computation/write block from saveToXMLFile (self-caching wmXmlIndex for the debug log stays); onPostLoad still reads #leaderVehicleXmlIndex/#leaderVehicleIndex/#leaderWorkflowId read-only for old saves. Removed 2 tests pinning the now-removed write behavior + 1 duplicate | WorkflowManagerSpec.lua, WorkflowManagerSpec_spec.lua | 412/412 tests pass | ~150 tok |
@@ -566,3 +567,10 @@
 | 12:18 | Session end: 4 writes across 2 files (WorkflowManager.lua, WMHud.lua) | 2 reads | ~658 tok |
 | 13:12 | Edited src/gui/WMHud.lua | expanded (+8 lines) | ~173 |
 | 13:13 | Session end: 5 writes across 2 files (WorkflowManager.lua, WMHud.lua) | 2 reads | ~8492 tok |
+| 13:16 | Edited translations/translation_en.xml | 1→2 lines | ~41 |
+| 13:17 | Edited translations/translation_de.xml | 1→2 lines | ~42 |
+| 13:17 | Edited src/gui/WMHud.lua | expanded (+32 lines) | ~859 |
+| 13:17 | Edited src/gui/WMHud.lua | 3→5 lines | ~86 |
+| 13:17 | Edited src/gui/WMHud.lua | expanded (+19 lines) | ~289 |
+| 13:18 | Edited src/gui/WMHud.lua | modified WMHud() | ~88 |
+| 13:18 | Session end: 11 writes across 4 files (WorkflowManager.lua, WMHud.lua, translation_en.xml, translation_de.xml) | 5 reads | ~10893 tok |

@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-13T11:12:48.845Z
-> Files: 10 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-13T11:18:05.018Z
+> Files: 12 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -54,7 +54,7 @@
 
 ## src/gui/
 
-- `WMHud.lua` — ensureOverlays, createIconOverlays, updateOverlayPositions, init, show (~7765 tok)
+- `WMHud.lua` — ensureOverlays, createIconOverlays, updateOverlayPositions, init, show (~8626 tok)
 
 ## src/integration/
 
@@ -90,6 +90,8 @@
 
 ## translations/
 
+- `translation_de.xml` (~2995 tok)
+- `translation_en.xml` (~2554 tok)
 
 ## webeditor/
 

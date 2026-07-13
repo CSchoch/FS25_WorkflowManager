@@ -143,6 +143,7 @@
         <text name="wm_hud_tooltip_resume" text="Resume"/>
         <text name="wm_hud_tooltip_stop" text="Stop"/>
         <text name="wm_hud_tooltip_next" text="Next Step"/>
+        <text name="wm_hud_tooltip_switch_vehicle" text="Click to switch to this vehicle"/>
         <text name="wm_step_selected" text="Selected"/>
 
         <!-- Leader Vehicle Select Dialog -->

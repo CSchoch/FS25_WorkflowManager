@@ -413,6 +413,11 @@ function WMHud:draw()
 
     -- Vehicle state
     lineY = lineY - self.smallSize - my
+    self.buttonBounds.leaderName = nil
+    self.buttonBounds.mainName = nil
+    self.nameClickVehicles = self.nameClickVehicles or {}
+    self.nameClickVehicles.leaderName = nil
+    self.nameClickVehicles.mainName = nil
     if activeData and activeData.vehicle then
         local vehicle = activeData.vehicle
         local adRunning = ADIntegration:isRunning(vehicle)
@@ -420,25 +425,52 @@ function WMHud:draw()
 
         if activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER then
             setTextColor(1, 0.85, 0, 1)
-            local waitText = g_i18n:getText("wm_hud_waiting_for_leader")
+            local prefixText = g_i18n:getText("wm_hud_waiting_for_leader")
+            local leaderName = nil
             if activeData.leaderVehicle then
-                local ok, leaderName = pcall(function() return activeData.leaderVehicle:getName() end)
-                if ok and leaderName and leaderName ~= "" then
-                    waitText = waitText .. ": " .. leaderName
-                end
+                local ok, name = pcall(function() return activeData.leaderVehicle:getName() end)
+                if ok and name and name ~= "" then leaderName = name end
             end
-            renderText(x + mx, lineY, self.smallSize, waitText)
+            if leaderName then
+                renderText(x + mx, lineY, self.smallSize, prefixText .. ": ")
+                local prefixW = getTextWidth(self.smallSize, prefixText .. ": ")
+                if self.hoveredButton == "leaderName" then
+                    setTextColor(0.165, 0.757, 0.929, 1)
+                else
+                    setTextColor(1, 0.85, 0, 1)
+                end
+                renderText(x + mx + prefixW, lineY, self.smallSize, leaderName)
+                local nameW = getTextWidth(self.smallSize, leaderName)
+                self.buttonBounds.leaderName = { x = x + mx + prefixW, y = lineY, w = nameW, h = self.smallSize }
+                self.nameClickVehicles.leaderName = activeData.leaderVehicle
+            else
+                renderText(x + mx, lineY, self.smallSize, prefixText)
+            end
         elseif activeData.status == WorkflowManager.STATUS_WAITING_FOR_MAIN then
             setTextColor(1, 0.85, 0, 1)
-            local waitText = g_i18n:getText("wm_hud_waiting_for_main")
+            local prefixText = g_i18n:getText("wm_hud_waiting_for_main")
             local mainData = workflow and WMExecutor:getMainActiveDataForWorkflow(workflow.id)
-            if mainData and mainData.vehicle then
-                local ok, mainName = pcall(function() return mainData.vehicle:getName() end)
-                if ok and mainName and mainName ~= "" then
-                    waitText = waitText .. ": " .. mainName
-                end
+            local mainVehicle = mainData and mainData.vehicle
+            local mainName = nil
+            if mainVehicle then
+                local ok, name = pcall(function() return mainVehicle:getName() end)
+                if ok and name and name ~= "" then mainName = name end
             end
-            renderText(x + mx, lineY, self.smallSize, waitText)
+            if mainName then
+                renderText(x + mx, lineY, self.smallSize, prefixText .. ": ")
+                local prefixW = getTextWidth(self.smallSize, prefixText .. ": ")
+                if self.hoveredButton == "mainName" then
+                    setTextColor(0.165, 0.757, 0.929, 1)
+                else
+                    setTextColor(1, 0.85, 0, 1)
+                end
+                renderText(x + mx + prefixW, lineY, self.smallSize, mainName)
+                local nameW = getTextWidth(self.smallSize, mainName)
+                self.buttonBounds.mainName = { x = x + mx + prefixW, y = lineY, w = nameW, h = self.smallSize }
+                self.nameClickVehicles.mainName = mainVehicle
+            else
+                renderText(x + mx, lineY, self.smallSize, prefixText)
+            end
         elseif cpRunning then
             local progress = nil
             if vehicle.getCpFieldWorkProgress then
@@ -501,6 +533,8 @@ function WMHud:drawButtonTooltip(activeData)
         tooltipText = g_i18n:getText("wm_hud_tooltip_stop") or "Stop"
     elseif self.hoveredButton == "next" then
         tooltipText = g_i18n:getText("wm_hud_tooltip_next") or "Next Step"
+    elseif self.hoveredButton == "leaderName" or self.hoveredButton == "mainName" then
+        tooltipText = g_i18n:getText("wm_hud_tooltip_switch_vehicle") or "Click to switch to this vehicle"
     end
 
     if not tooltipText then return end
@@ -655,6 +689,25 @@ function WMHud:handleClick(posX, posY)
         return true
     end
 
+    -- Leader/main vehicle name click (jump to that vehicle)
+    if self.buttonBounds and self.nameClickVehicles then
+        local leaderNameBounds = self.buttonBounds.leaderName
+        if leaderNameBounds and self.nameClickVehicles.leaderName and
+            posX >= leaderNameBounds.x and posX <= leaderNameBounds.x + leaderNameBounds.w and
+            posY >= leaderNameBounds.y and posY <= leaderNameBounds.y + leaderNameBounds.h then
+            self:onClickVehicleName(self.nameClickVehicles.leaderName)
+            return true
+        end
+
+        local mainNameBounds = self.buttonBounds.mainName
+        if mainNameBounds and self.nameClickVehicles.mainName and
+            posX >= mainNameBounds.x and posX <= mainNameBounds.x + mainNameBounds.w and
+            posY >= mainNameBounds.y and posY <= mainNameBounds.y + mainNameBounds.h then
+            self:onClickVehicleName(self.nameClickVehicles.mainName)
+            return true
+        end
+    end
+
     -- Check icon button clicks
     if self.buttonBounds then
         local _, activeData = self:getActiveWorkflow()
@@ -724,6 +777,12 @@ function WMHud:onClickPauseResume()
         WorkflowManager:sendCommand(activeData.vehicle, "resume")
         WMLogger:info("Workflow resumed via HUD: %s", workflow.name)
     end
+end
+
+---Switch player control to the given vehicle (clicking a leader/main vehicle name in the HUD)
+function WMHud:onClickVehicleName(vehicle)
+    if vehicle == nil or g_localPlayer == nil or g_localPlayer.requestToEnterVehicle == nil then return end
+    g_localPlayer:requestToEnterVehicle(vehicle)
 end
 
 function WMHud:onClickStop()

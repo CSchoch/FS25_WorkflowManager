@@ -141,6 +141,7 @@
         <text name="wm_hud_tooltip_resume" text="Fortsetzen"/>
         <text name="wm_hud_tooltip_stop" text="Stoppen"/>
         <text name="wm_hud_tooltip_next" text="Naechster Schritt"/>
+        <text name="wm_hud_tooltip_switch_vehicle" text="Klicken zum Fahrzeugwechsel"/>
         <text name="wm_step_selected" text="Ausgewaehlt"/>
 
         <!-- Verknuepfte Workflow-Paare -->
