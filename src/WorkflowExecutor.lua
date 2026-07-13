@@ -1447,10 +1447,10 @@ function WMExecutor:goToPreviousStep(vehicle)
     local workflow = activeData.workflow
 
     -- Deferred auto-step window: navigate only; don't execute the step yet.
-    -- Restart the 10s timer so the player can navigate multiple steps.
+    -- Restart the 2s timer so the player can navigate multiple steps.
     if activeData.pendingAutoStep then
         activeData.currentStep = activeData.currentStep - 1
-        activeData.pendingAutoStep = g_currentMission.time + 10000
+        activeData.pendingAutoStep = g_currentMission.time + 2000
         WMLogger:info("Deferred: navigated to step %d, timer restarted", activeData.currentStep)
         if activeData.isMainVehicle ~= false then
             for _, sd in ipairs(self:getSupportActiveDataListForWorkflow(workflow.id)) do
@@ -1532,7 +1532,7 @@ function WMExecutor:goToNextStep(vehicle)
     -- Deferred auto-step window: navigate only; don't execute the step yet.
     if activeData.pendingAutoStep then
         activeData.currentStep = activeData.currentStep + 1
-        activeData.pendingAutoStep = g_currentMission.time + 10000
+        activeData.pendingAutoStep = g_currentMission.time + 2000   
         WMLogger:info("Deferred: navigated to step %d, timer restarted", activeData.currentStep)
         if activeData.isMainVehicle ~= false then
             for _, sd in ipairs(self:getSupportActiveDataListForWorkflow(workflow.id)) do

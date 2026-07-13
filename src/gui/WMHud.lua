@@ -430,7 +430,15 @@ function WMHud:draw()
             renderText(x + mx, lineY, self.smallSize, waitText)
         elseif activeData.status == WorkflowManager.STATUS_WAITING_FOR_MAIN then
             setTextColor(1, 0.85, 0, 1)
-            renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_waiting_for_main"))
+            local waitText = g_i18n:getText("wm_hud_waiting_for_main")
+            local mainData = workflow and WMExecutor:getMainActiveDataForWorkflow(workflow.id)
+            if mainData and mainData.vehicle then
+                local ok, mainName = pcall(function() return mainData.vehicle:getName() end)
+                if ok and mainName and mainName ~= "" then
+                    waitText = waitText .. ": " .. mainName
+                end
+            end
+            renderText(x + mx, lineY, self.smallSize, waitText)
         elseif cpRunning then
             local progress = nil
             if vehicle.getCpFieldWorkProgress then
