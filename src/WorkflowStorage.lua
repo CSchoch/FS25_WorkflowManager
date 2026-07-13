@@ -22,10 +22,14 @@ local function deepCopySupportStep(step)
     }
 end
 
---- True for sync marker step types (wait_for_leader/unlock_follower), which carry no target/action.
-local function isMarkerStepType(stepType)
+--- True for step types that carry no target/action: sync markers (wait_for_leader/
+--- unlock_follower) and Park (AD resolves its own destination from the park position).
+local function isTargetlessStepType(stepType)
     return stepType == WorkflowManager.STEP_WAIT_FOR_LEADER
         or stepType == WorkflowManager.STEP_UNLOCK_FOLLOWER
+        or stepType == WorkflowManager.STEP_PARK
+        or stepType == WorkflowManager.STEP_REFUEL
+        or stepType == WorkflowManager.STEP_REPAIR
 end
 
 --- Parse a comma-separated fill types string into an array. Returns nil if empty.
@@ -99,8 +103,8 @@ function WMStorage:saveWorkflows(workflows)
         for j, step in ipairs(workflow.steps) do
             local stepKey = string.format("%s.step(%d)", workflowKey, j - 1)
             xmlFile:setString(stepKey .. "#type", step.type)
-            -- Marker steps (wait_for_leader/unlock_follower) carry no target/action
-            if not isMarkerStepType(step.type) then
+            -- Marker steps (wait_for_leader/unlock_follower) and Park carry no target/action
+            if not isTargetlessStepType(step.type) then
                 xmlFile:setString(stepKey .. "#target", step.target)
                 xmlFile:setString(stepKey .. "#action", step.action or "default")
             end

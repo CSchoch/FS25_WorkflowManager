@@ -402,7 +402,7 @@ function WMHud:draw()
             local cs = activeData.currentStep or 1
             local step = workflow.steps[cs]
             if step then
-                local desc = WorkflowManager:isMarkerStepType(step.type)
+                local desc = WorkflowManager:isTargetlessStepType(step.type)
                     and WorkflowManager:getStepTypeLabel(step.type)
                     or (step.target or "?")
                 renderText(x + mx, lineY, self.smallSize,

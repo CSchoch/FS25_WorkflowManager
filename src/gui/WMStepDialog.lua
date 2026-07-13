@@ -252,12 +252,15 @@ function WMStepDialog:getStepTypes()
         WorkflowManager.STEP_COURSEPLAY,
         WorkflowManager.STEP_WAIT_FOR_LEADER,
         WorkflowManager.STEP_UNLOCK_FOLLOWER,
+        WorkflowManager.STEP_PARK,
+        WorkflowManager.STEP_REFUEL,
+        WorkflowManager.STEP_REPAIR,
     }
 end
 
----True if the currently selected step type is a sync marker (no target/action needed)
+---True if the currently selected step type has no target/action fields (sync marker, Park, Refuel, or Repair)
 function WMStepDialog:isMarkerStep()
-    return WorkflowManager:isMarkerStepType(self.stepType)
+    return WorkflowManager:isTargetlessStepType(self.stepType)
 end
 
 ---Refresh action dropdown options
@@ -445,7 +448,7 @@ end
 
 ---Update field visibility based on step type and action
 function WMStepDialog:updateFieldVisibility()
-    -- Marker steps (wait_for_leader/unlock_follower) need no action/target/unload/fill fields
+    -- Marker steps (wait_for_leader/unlock_follower) and Park need no action/target/unload/fill fields
     local isMarker = self:isMarkerStep()
     local needsUnloadTarget = not isMarker and self:actionNeedsUnloadTarget()
     local needsFillType = not isMarker and self:actionNeedsFillType()

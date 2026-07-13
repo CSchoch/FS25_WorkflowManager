@@ -1,3 +1,5 @@
+| 00:00 | Add new "Refuel" and "Repair" WM step types (drive to AD's nearest matching fuel station / nearest AD-reachable workshop). Both targetless like Park, but AD has no stored per-vehicle destination for either - resolved dynamically each time via ADTriggerManager.getClosestRefuelDestination(vehicle, true) and AutoDrive:getClosestRepairTrigger(vehicle). Refuel starts via AutoDrive:StartDriving(vehicle,-1,-2,...) after setting mode=DRIVETO + onRouteToRefuel=true (the -2 sentinel is a near no-op that relies on the caller pre-arming state, unlike -3/park which resolves its own marker). Repair has NO StartDriving sentinel at all - bootstrapped by calling vehicle:startAutoDrive() directly (verified safe: it only resets onRouteToPark, not onRouteToRefuel/onRouteToRepair) after setting onRouteToRepair=true. Both reuse Park's completion polling (RefuelTask/RepairTask:finished() confirmed to call vehicle:stopAutoDrive(), same as ParkTask). User-chosen fallback: Refuel's "no station" and "already fueled" cases are indistinguishable in AD -> treated as instant success (onStepCompleted), NOT a failure, unlike Park/Repair which fail via handleStepError. Introduced WorkflowManager:isAutoDriveTrackedStepType() (AUTODRIVE/PARK/REFUEL/REPAIR) replacing the ad-hoc "STEP_AUTODRIVE or STEP_PARK" OR-chains at every WorkflowExecutor tracking site (onADFinishedEvent, completion poll, pause/resume/stop dispatch, resolvePendingADStart) | WorkflowManager.lua, AutoDriveIntegration.lua, WorkflowExecutor.lua, WorkflowStorage.lua, WMStepDialog.lua, translation_en.xml, translation_de.xml, WorkflowExecutor_spec.lua, AutoDriveIntegration_spec.lua, WMStepDialog_spec.lua, WorkflowManager_spec.lua, game_globals.lua | 480/480 tests pass | ~3200 tok |
+| 00:00 | Add new "Park" WM step type: drives vehicle to its AutoDrive park position, checking the rear-attached implement's advd.parkDestination first then the vehicle's own, via new ADIntegration:startParkRoute (AutoDrive:StartDriving(vehicle,-1,-3,...), -3 = AD's park sentinel). Reuses all existing AD start/pause/resume/stop/poll machinery by widening every currentStepType==STEP_AUTODRIVE tracking check to also accept STEP_PARK, and by making resolvePendingADStart type-aware (dispatches to new startParkStep vs startAutoDriveStep). No park position on either object -> handleStepError (fails the step), per user decision. New WorkflowManager:isTargetlessStepType() (isMarkerStepType OR STEP_PARK) drives target/action hiding in storage+UI, kept separate from isMarkerStepType (which means "no AD/CP job" and stays accurate) | WorkflowManager.lua, AutoDriveIntegration.lua, WorkflowExecutor.lua, WorkflowStorage.lua, WMEditorDialog.lua, WMHud.lua, WMStepDialog.lua, translation_en.xml, translation_de.xml, WorkflowExecutor_spec.lua, AutoDriveIntegration_spec.lua (new), WMStepDialog_spec.lua, WorkflowManager_spec.lua, run_tests.lua | 443/443 tests pass | ~2200 tok |
 | 00:00 | HUD follow-up: leader/main vehicle name in "Waiting for leader/main" status lines is now clickable — jumps player into that vehicle via g_localPlayer:requestToEnterVehicle(vehicle) (same base-game API CP's CpHudInfoTexts:enterVehicle uses). Name rendered as separate text segment with its own click bounds (self.buttonBounds.leaderName/mainName + self.nameClickVehicles), cyan on hover, tooltip "Click to switch to this vehicle" (new wm_hud_tooltip_switch_vehicle key, en+de) | WMHud.lua, translation_en.xml, translation_de.xml | 412/412 tests pass | ~250 tok |
 | 00:00 | HUD follow-up: support vehicle's "Waiting for main" status line now appends the main vehicle's name too, via WMExecutor:getMainActiveDataForWorkflow(workflow.id).vehicle:getName() (mirrors the leader-name pattern) | WMHud.lua | 412/412 tests pass | ~80 tok |
 | 00:00 | HUD tweaks: removed vehicle name from HUD header (title only now); added leader's name to "Waiting for leader" status line via activeData.leaderVehicle:getName(); added [AD]/[CP]/[WM] step-type shortcut prefix to step info line (main + support branches) via new WorkflowManager:getStepTypeShortcut() | WMHud.lua, WorkflowManager.lua | 412/412 tests pass | ~180 tok |
@@ -574,3 +576,71 @@
 | 13:17 | Edited src/gui/WMHud.lua | expanded (+19 lines) | ~289 |
 | 13:18 | Edited src/gui/WMHud.lua | modified WMHud() | ~88 |
 | 13:18 | Session end: 11 writes across 4 files (WorkflowManager.lua, WMHud.lua, translation_en.xml, translation_de.xml) | 5 reads | ~10893 tok |
+| 15:01 | Session end: 11 writes across 4 files (WorkflowManager.lua, WMHud.lua, translation_en.xml, translation_de.xml) | 5 reads | ~10893 tok |
+| 15:04 | Session end: 11 writes across 4 files (WorkflowManager.lua, WMHud.lua, translation_en.xml, translation_de.xml) | 19 reads | ~44296 tok |
+| 15:30 | Created ../../../../../.claude/plans/id-like-a-wm-lucky-minsky.md | — | ~3978 |
+| 15:55 | Edited src/WorkflowManager.lua | 6→8 lines | ~116 |
+| 15:55 | Edited src/WorkflowManager.lua | modified WorkflowManager() | ~460 |
+| 15:55 | Edited src/integration/AutoDriveIntegration.lua | modified ADIntegration() | ~1012 |
+| 15:56 | Edited src/WorkflowExecutor.lua | 3→4 lines | ~72 |
+| 15:56 | Edited src/WorkflowExecutor.lua | expanded (+9 lines) | ~192 |
+| 15:56 | Edited src/WorkflowExecutor.lua | expanded (+18 lines) | ~285 |
+| 15:56 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~279 |
+| 15:57 | Edited src/WorkflowExecutor.lua | expanded (+12 lines) | ~262 |
+| 15:57 | Edited src/WorkflowExecutor.lua | 3→3 lines | ~63 |
+| 15:57 | Edited src/WorkflowExecutor.lua | 7→7 lines | ~91 |
+| 15:57 | Edited src/WorkflowExecutor.lua | 6→6 lines | ~69 |
+| 15:58 | Edited src/WorkflowExecutor.lua | 5→6 lines | ~115 |
+| 15:58 | Edited src/WorkflowStorage.lua | modified isTargetlessStepType() | ~104 |
+| 15:59 | Edited src/WorkflowStorage.lua | isMarkerStepType() → isTargetlessStepType() | ~40 |
+| 15:59 | Edited src/gui/WMEditorDialog.lua | isMarkerStepType() → isTargetlessStepType() | ~95 |
+| 15:59 | Edited src/gui/WMHud.lua | isMarkerStepType() → isTargetlessStepType() | ~51 |
+| 15:59 | Edited src/gui/WMStepDialog.lua | modified WMStepDialog() | ~125 |
+| 15:59 | Edited src/gui/WMStepDialog.lua | 2→2 lines | ~39 |
+| 16:00 | Edited translations/translation_de.xml | 2→3 lines | ~52 |
+| 16:00 | Edited translations/translation_en.xml | 2→3 lines | ~50 |
+| 16:02 | Edited tests/specs/WMStepDialog_spec.lua | 12→16 lines | ~202 |
+| 16:02 | Edited tests/mocks/game_globals.lua | 2→3 lines | ~55 |
+| 16:03 | Edited tests/specs/WorkflowExecutor_spec.lua | 5→6 lines | ~88 |
+| 16:03 | Edited tests/specs/WorkflowExecutor_spec.lua | expanded (+167 lines) | ~2089 |
+| 16:05 | Edited tests/specs/WorkflowExecutor_spec.lua | expanded (+8 lines) | ~260 |
+| 16:05 | Edited tests/specs/WorkflowExecutor_spec.lua | 25→26 lines | ~316 |
+| 16:07 | Created tests/specs/AutoDriveIntegration_spec.lua | — | ~2119 |
+| 16:07 | Edited tests/run_tests.lua | 3→4 lines | ~49 |
+| 16:08 | Edited tests/specs/WorkflowManager_spec.lua | 3→4 lines | ~41 |
+| 16:09 | Edited tests/specs/WorkflowManager_spec.lua | 4→5 lines | ~78 |
+| 16:09 | Edited tests/specs/WMStepDialog_spec.lua | expanded (+35 lines) | ~532 |
+| 16:09 | Edited tests/specs/AutoDriveIntegration_spec.lua | modified makeVehicle() | ~73 |
+| 16:10 | Edited tests/specs/AutoDriveIntegration_spec.lua | 10→13 lines | ~209 |
+| 16:12 | Session end: 45 writes across 16 files (WorkflowManager.lua, WMHud.lua, translation_en.xml, translation_de.xml, id-like-a-wm-lucky-minsky.md) | 28 reads | ~121692 tok |
+| 16:12 | Session end: 45 writes across 16 files (WorkflowManager.lua, WMHud.lua, translation_en.xml, translation_de.xml, id-like-a-wm-lucky-minsky.md) | 28 reads | ~121692 tok |
+| 17:50 | Session end: 45 writes across 16 files (WorkflowManager.lua, WMHud.lua, translation_en.xml, translation_de.xml, id-like-a-wm-lucky-minsky.md) | 30 reads | ~121692 tok |
+| 21:03 | Created ../../../../../.claude/plans/id-like-a-wm-lucky-minsky.md | — | ~4115 |
+| 21:18 | Edited src/WorkflowManager.lua | 2→6 lines | ~95 |
+| 21:18 | Edited src/WorkflowManager.lua | 3→5 lines | ~76 |
+| 21:18 | Edited src/WorkflowManager.lua | modified WorkflowManager() | ~418 |
+| 21:19 | Edited src/integration/AutoDriveIntegration.lua | modified ADIntegration() | ~1302 |
+| 21:19 | Edited src/WorkflowExecutor.lua | and() → isAutoDriveTrackedStepType() | ~54 |
+| 21:20 | Edited src/WorkflowExecutor.lua | expanded (+18 lines) | ~428 |
+| 21:20 | Edited src/WorkflowExecutor.lua | expanded (+34 lines) | ~504 |
+| 21:20 | Edited src/WorkflowExecutor.lua | 8→8 lines | ~124 |
+| 21:21 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~592 |
+| 21:21 | Edited src/WorkflowExecutor.lua | 7→7 lines | ~82 |
+| 21:21 | Edited src/WorkflowExecutor.lua | 6→6 lines | ~60 |
+| 21:21 | Edited src/WorkflowExecutor.lua | 7→11 lines | ~137 |
+| 21:22 | Edited src/WorkflowExecutor.lua | 4→3 lines | ~77 |
+| 21:22 | Edited src/WorkflowStorage.lua | modified isTargetlessStepType() | ~86 |
+| 21:22 | Edited src/gui/WMStepDialog.lua | modified WMStepDialog() | ~121 |
+| 21:23 | Edited translations/translation_en.xml | 1→3 lines | ~41 |
+| 21:23 | Edited translations/translation_de.xml | 1→3 lines | ~43 |
+| 21:23 | Edited tests/specs/WorkflowExecutor_spec.lua | expanded (+8 lines) | ~195 |
+| 21:24 | Edited tests/mocks/game_globals.lua | 2→4 lines | ~65 |
+| 21:25 | Edited tests/specs/WorkflowExecutor_spec.lua | expanded (+347 lines) | ~3965 |
+| 21:28 | Edited tests/specs/AutoDriveIntegration_spec.lua | modified makeVehicle() | ~970 |
+| 21:28 | Edited tests/specs/AutoDriveIntegration_spec.lua | expanded (+96 lines) | ~1248 |
+| 21:29 | Edited tests/specs/WMStepDialog_spec.lua | 8→13 lines | ~164 |
+| 21:29 | Edited tests/specs/WMStepDialog_spec.lua | expanded (+62 lines) | ~800 |
+| 21:29 | Edited tests/specs/WorkflowManager_spec.lua | 1→3 lines | ~28 |
+| 21:30 | Edited tests/specs/WorkflowManager_spec.lua | 3→5 lines | ~59 |
+| 21:31 | Session end: 72 writes across 16 files (WorkflowManager.lua, WMHud.lua, translation_en.xml, translation_de.xml, id-like-a-wm-lucky-minsky.md) | 39 reads | ~150630 tok |
+| 21:32 | Session end: 72 writes across 16 files (WorkflowManager.lua, WMHud.lua, translation_en.xml, translation_de.xml, id-like-a-wm-lucky-minsky.md) | 39 reads | ~150630 tok |

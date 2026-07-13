@@ -82,6 +82,9 @@
         <text name="wm_type_courseplay" text="Courseplay"/>
         <text name="wm_type_wait_for_leader" text="Auf Anfuehrer warten"/>
         <text name="wm_type_unlock_follower" text="Folger freigeben"/>
+        <text name="wm_type_park" text="Parken"/>
+        <text name="wm_type_refuel" text="Auftanken"/>
+        <text name="wm_type_repair" text="Reparieren"/>
 
         <!-- Actions / AutoDrive Modes -->
         <text name="wm_action_drive" text="Fahren zu"/>

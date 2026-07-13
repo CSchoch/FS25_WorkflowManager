@@ -68,7 +68,7 @@ function WMExecutor:onADFinishedEvent(eventData)
             local workflow = activeData.workflow
             if activeData.vehicle == eventData.vehicle and
                activeData.waitingForCompletion and
-               activeData.currentStepType == WorkflowManager.STEP_AUTODRIVE then
+               WorkflowManager:isAutoDriveTrackedStepType(activeData.currentStepType) then
 
                 WMLogger:info("AutoDrive step completed for workflow %s (via callback)", workflow.name)
                 activeData.waitingForCompletion = false
@@ -523,6 +523,33 @@ function WMExecutor:executeCurrentStep(activeData)
                 return
             end
             self:startCourseplayStep(activeData, vehicle, supportSubStep)
+        elseif supportSubStep.type == WorkflowManager.STEP_PARK then
+            if ADIntegration:isRunning(vehicle) or activeData.justStoppedAD then
+                activeData.waitingForCompletion = true
+                activeData.currentStepType = WorkflowManager.STEP_PARK
+                activeData.pendingADStart = true
+                activeData.pendingADStartRetries = 0
+                return
+            end
+            self:startParkStep(activeData, vehicle, supportSubStep)
+        elseif supportSubStep.type == WorkflowManager.STEP_REFUEL then
+            if ADIntegration:isRunning(vehicle) or activeData.justStoppedAD then
+                activeData.waitingForCompletion = true
+                activeData.currentStepType = WorkflowManager.STEP_REFUEL
+                activeData.pendingADStart = true
+                activeData.pendingADStartRetries = 0
+                return
+            end
+            self:startRefuelStep(activeData, vehicle, supportSubStep)
+        elseif supportSubStep.type == WorkflowManager.STEP_REPAIR then
+            if ADIntegration:isRunning(vehicle) or activeData.justStoppedAD then
+                activeData.waitingForCompletion = true
+                activeData.currentStepType = WorkflowManager.STEP_REPAIR
+                activeData.pendingADStart = true
+                activeData.pendingADStartRetries = 0
+                return
+            end
+            self:startRepairStep(activeData, vehicle, supportSubStep)
         else
             self:handleStepError(activeData, "Unknown support sub-step type: " .. tostring(supportSubStep.type))
         end
@@ -602,6 +629,58 @@ function WMExecutor:executeCurrentStep(activeData)
 
         self:startCourseplayStep(activeData, vehicle, step)
 
+    elseif step.type == WorkflowManager.STEP_PARK then
+        -- Park: AD resolves its own destination (rear-attached implement's park
+        -- position, falling back to the vehicle's own), so no target/action needed.
+        WMLogger:info("Starting Park step - vehicle: %s",
+            vehicle and (vehicle.getName and vehicle:getName() or "unknown") or "nil")
+
+        if ADIntegration:isRunning(vehicle) or activeData.justStoppedAD then
+            WMLogger:debug("Deferring park start for reset (isRunning=%s, justStopped=%s)",
+                tostring(ADIntegration:isRunning(vehicle)), tostring(activeData.justStoppedAD or false))
+            activeData.waitingForCompletion = true
+            activeData.currentStepType = WorkflowManager.STEP_PARK
+            activeData.pendingADStart = true
+            activeData.pendingADStartRetries = 0
+            return
+        end
+
+        self:startParkStep(activeData, vehicle, step)
+
+    elseif step.type == WorkflowManager.STEP_REFUEL then
+        -- Refuel: AD resolves the nearest matching station itself, so no target/action needed.
+        WMLogger:info("Starting Refuel step - vehicle: %s",
+            vehicle and (vehicle.getName and vehicle:getName() or "unknown") or "nil")
+
+        if ADIntegration:isRunning(vehicle) or activeData.justStoppedAD then
+            WMLogger:debug("Deferring refuel start for reset (isRunning=%s, justStopped=%s)",
+                tostring(ADIntegration:isRunning(vehicle)), tostring(activeData.justStoppedAD or false))
+            activeData.waitingForCompletion = true
+            activeData.currentStepType = WorkflowManager.STEP_REFUEL
+            activeData.pendingADStart = true
+            activeData.pendingADStartRetries = 0
+            return
+        end
+
+        self:startRefuelStep(activeData, vehicle, step)
+
+    elseif step.type == WorkflowManager.STEP_REPAIR then
+        -- Repair: AD resolves the nearest workshop-adjacent marker itself, so no target/action needed.
+        WMLogger:info("Starting Repair step - vehicle: %s",
+            vehicle and (vehicle.getName and vehicle:getName() or "unknown") or "nil")
+
+        if ADIntegration:isRunning(vehicle) or activeData.justStoppedAD then
+            WMLogger:debug("Deferring repair start for reset (isRunning=%s, justStopped=%s)",
+                tostring(ADIntegration:isRunning(vehicle)), tostring(activeData.justStoppedAD or false))
+            activeData.waitingForCompletion = true
+            activeData.currentStepType = WorkflowManager.STEP_REPAIR
+            activeData.pendingADStart = true
+            activeData.pendingADStartRetries = 0
+            return
+        end
+
+        self:startRepairStep(activeData, vehicle, step)
+
     elseif step.type == WorkflowManager.STEP_UNLOCK_FOLLOWER then
         -- Leader-side milestone: pure pass-through for the vehicle running it.
         WMLogger:info("Unlock Follower marker reached — passing through")
@@ -647,7 +726,7 @@ function WMExecutor:stopCurrentStep(activeData)
         return
     end
 
-    if step.type == WorkflowManager.STEP_AUTODRIVE then
+    if WorkflowManager:isAutoDriveTrackedStepType(step.type) then
         -- Resume AD first if it was paused (HoldDriving), then stop
         if activeData.status == WorkflowManager.STATUS_PAUSED then
             pcall(function() ADIntegration:resumeRoute(vehicle) end)
@@ -739,6 +818,78 @@ function WMExecutor:startAutoDriveStep(activeData, vehicle, step)
     end
 end
 
+---Start a Park step (extracted for reuse by deferred start)
+---@param activeData table Per-vehicle execution state
+---@param vehicle table Vehicle
+---@param step table Step data
+function WMExecutor:startParkStep(activeData, vehicle, step)
+    local workflow = activeData.workflow
+
+    ADIntegration:clearCPHandoff(vehicle)
+
+    local success = ADIntegration:startParkRoute(vehicle)
+    if success then
+        activeData.waitingForCompletion = true
+        activeData.currentStepType = WorkflowManager.STEP_PARK
+        activeData.pendingADStart = nil
+        activeData.pendingADStartRetries = nil
+        activeData.justStoppedAD = nil
+        ADIntegration:applyWorkflowSettings(vehicle, workflow.adSettings)
+        WMLogger:info("Park step started successfully, waiting for completion")
+    else
+        self:handleStepError(activeData, "No park position configured for vehicle or its rear-attached implement")
+    end
+end
+
+---Start a Refuel step (extracted for reuse by deferred start)
+---@param activeData table Per-vehicle execution state
+---@param vehicle table Vehicle
+---@param step table Step data
+function WMExecutor:startRefuelStep(activeData, vehicle, step)
+    local workflow = activeData.workflow
+
+    ADIntegration:clearCPHandoff(vehicle)
+
+    local success, skipped = ADIntegration:startRefuelRoute(vehicle)
+    if success then
+        activeData.waitingForCompletion = true
+        activeData.currentStepType = WorkflowManager.STEP_REFUEL
+        activeData.pendingADStart = nil
+        activeData.pendingADStartRetries = nil
+        activeData.justStoppedAD = nil
+        ADIntegration:applyWorkflowSettings(vehicle, workflow.adSettings)
+        WMLogger:info("Refuel step started successfully, waiting for completion")
+    elseif skipped then
+        WMLogger:info("Refuel step skipped - vehicle already fueled or no station reachable")
+        self:onStepCompleted(activeData)
+    else
+        self:handleStepError(activeData, "AutoDrive not available or vehicle missing AutoDrive specialization")
+    end
+end
+
+---Start a Repair step (extracted for reuse by deferred start)
+---@param activeData table Per-vehicle execution state
+---@param vehicle table Vehicle
+---@param step table Step data
+function WMExecutor:startRepairStep(activeData, vehicle, step)
+    local workflow = activeData.workflow
+
+    ADIntegration:clearCPHandoff(vehicle)
+
+    local success = ADIntegration:startRepairRoute(vehicle)
+    if success then
+        activeData.waitingForCompletion = true
+        activeData.currentStepType = WorkflowManager.STEP_REPAIR
+        activeData.pendingADStart = nil
+        activeData.pendingADStartRetries = nil
+        activeData.justStoppedAD = nil
+        ADIntegration:applyWorkflowSettings(vehicle, workflow.adSettings)
+        WMLogger:info("Repair step started successfully, waiting for completion")
+    else
+        self:handleStepError(activeData, "No repair station reachable for vehicle")
+    end
+end
+
 ---Start a Courseplay step (extracted for reuse by deferred start)
 ---@param activeData table Per-vehicle execution state
 ---@param vehicle table Vehicle
@@ -815,7 +966,7 @@ function WMExecutor:pauseCurrentStep(activeData)
         return
     end
 
-    if step.type == WorkflowManager.STEP_AUTODRIVE then
+    if WorkflowManager:isAutoDriveTrackedStepType(step.type) then
         ADIntegration:pauseRoute(vehicle)
     elseif step.type == WorkflowManager.STEP_COURSEPLAY then
         -- Use holdCourse for CP (temporary pause)
@@ -839,7 +990,7 @@ function WMExecutor:resumeCurrentStep(activeData)
         return
     end
 
-    if step.type == WorkflowManager.STEP_AUTODRIVE then
+    if WorkflowManager:isAutoDriveTrackedStepType(step.type) then
         ADIntegration:resumeRoute(vehicle)
     elseif step.type == WorkflowManager.STEP_COURSEPLAY then
         CPIntegration:resumeCourse(vehicle)
@@ -1006,7 +1157,17 @@ function WMExecutor:resolvePendingADStart(activeData, vehicle)
         activeData.justStoppedAD = nil
         activeData.waitingForCompletion = false
         local step = self:getCurrentStep(activeData)
-        if step then self:startAutoDriveStep(activeData, vehicle, step) end
+        if step then
+            if step.type == WorkflowManager.STEP_PARK then
+                self:startParkStep(activeData, vehicle, step)
+            elseif step.type == WorkflowManager.STEP_REFUEL then
+                self:startRefuelStep(activeData, vehicle, step)
+            elseif step.type == WorkflowManager.STEP_REPAIR then
+                self:startRepairStep(activeData, vehicle, step)
+            else
+                self:startAutoDriveStep(activeData, vehicle, step)
+            end
+        end
     elseif activeData.pendingADStartRetries > 20 then
         WMLogger:warning("AutoDrive did not stop after 10s - forcing AD start")
         activeData.pendingADStart = nil
@@ -1014,7 +1175,17 @@ function WMExecutor:resolvePendingADStart(activeData, vehicle)
         activeData.justStoppedAD = nil
         activeData.waitingForCompletion = false
         local step = self:getCurrentStep(activeData)
-        if step then self:startAutoDriveStep(activeData, vehicle, step) end
+        if step then
+            if step.type == WorkflowManager.STEP_PARK then
+                self:startParkStep(activeData, vehicle, step)
+            elseif step.type == WorkflowManager.STEP_REFUEL then
+                self:startRefuelStep(activeData, vehicle, step)
+            elseif step.type == WorkflowManager.STEP_REPAIR then
+                self:startRepairStep(activeData, vehicle, step)
+            else
+                self:startAutoDriveStep(activeData, vehicle, step)
+            end
+        end
     end
 end
 
@@ -1143,8 +1314,8 @@ function WMExecutor:update(dt)
                 local isComplete = false
 
                 -- Check completion based on current step type
-                if activeData.currentStepType == WorkflowManager.STEP_AUTODRIVE then
-                    -- AutoDrive: Check if route is complete (polling fallback, callbacks preferred)
+                if WorkflowManager:isAutoDriveTrackedStepType(activeData.currentStepType) then
+                    -- AutoDrive/Park/Refuel/Repair: Check if route is complete (polling fallback, callbacks preferred)
                     isComplete = ADIntegration:isRouteComplete(vehicle)
 
                 elseif activeData.currentStepType == WorkflowManager.STEP_COURSEPLAY then

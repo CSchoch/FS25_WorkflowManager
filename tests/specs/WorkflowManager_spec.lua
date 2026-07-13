@@ -28,6 +28,9 @@ describe("WorkflowManager", function()
             -- Step type constants
             STEP_AUTODRIVE = "autodrive",
             STEP_COURSEPLAY = "courseplay",
+            STEP_PARK = "park",
+            STEP_REFUEL = "refuel",
+            STEP_REPAIR = "repair",
 
             -- Internal state
             workflows = {},
@@ -774,6 +777,9 @@ describe("WorkflowManager", function()
         it("should have step type constants defined", function()
             assert.are.equal("autodrive", WorkflowManager.STEP_AUTODRIVE)
             assert.are.equal("courseplay", WorkflowManager.STEP_COURSEPLAY)
+            assert.are.equal("park", WorkflowManager.STEP_PARK)
+            assert.are.equal("refuel", WorkflowManager.STEP_REFUEL)
+            assert.are.equal("repair", WorkflowManager.STEP_REPAIR)
         end)
     end)
 

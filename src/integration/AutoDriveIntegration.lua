@@ -443,6 +443,203 @@ function ADIntegration:getFillTypeNames()
     return names
 end
 
+---Get the object attached at the rear of vehicle (first attached implement), or nil
+---@param vehicle table Vehicle
+---@return table|nil object The first attached implement/trailer object, or nil
+function ADIntegration:getRearAttachedObject(vehicle)
+    if vehicle == nil or vehicle.getAttachedImplements == nil then
+        return nil
+    end
+    local implements = vehicle:getAttachedImplements()
+    if implements == nil or implements[1] == nil then
+        return nil
+    end
+    return implements[1].object
+end
+
+---Get obj's configured AD park marker id, or nil if unset/stale
+---@param obj table|nil Vehicle or implement/trailer object
+---@return number|nil parkId Marker id, or nil if not configured or the marker no longer exists
+function ADIntegration:getObjectParkDestination(obj)
+    if obj == nil or obj.advd == nil then
+        return nil
+    end
+    local id = obj.advd.parkDestination
+    if id == nil or id < 1 then
+        return nil
+    end
+    if self:getDestinationById(id) == nil then
+        return nil  -- stale marker (deleted since park position was set)
+    end
+    return id
+end
+
+---Resolve which park position to drive to: rear-attached implement first, then vehicle
+---@param vehicle table Vehicle
+---@return number|nil parkId Marker id to park at, or nil if neither has one configured
+function ADIntegration:getVehicleParkDestinationId(vehicle)
+    local rearId = self:getObjectParkDestination(self:getRearAttachedObject(vehicle))
+    if rearId ~= nil then
+        return rearId
+    end
+    return self:getObjectParkDestination(vehicle)
+end
+
+---Start driving vehicle to its resolved AutoDrive park position
+---Uses AutoDrive:StartDriving() with unloadDestinationID = -3 (AD's "park" sentinel)
+---@param vehicle table Vehicle to control
+---@return boolean success True if the park route started successfully
+function ADIntegration:startParkRoute(vehicle)
+    if not self.isAvailable then
+        WMLogger:error("Cannot start park route - AutoDrive not available")
+        return false
+    end
+
+    if vehicle == nil or vehicle.ad == nil or vehicle.ad.stateModule == nil then
+        WMLogger:error("Cannot start park route - vehicle missing AutoDrive specialization")
+        return false
+    end
+
+    local parkId = self:getVehicleParkDestinationId(vehicle)
+    if parkId == nil then
+        WMLogger:warning("No AD park position configured for vehicle or its rear-attached implement")
+        return false
+    end
+
+    if self:isRunning(vehicle) then
+        WMLogger:info("AutoDrive already active - stopping current route to start park route")
+        self:stopRoute(vehicle)
+    end
+
+    vehicle.ad.stateModule:setParkDestinationAtJobFinished(parkId)
+
+    self.pendingCallbacks[vehicle] = true
+    local success, errorMsg = pcall(function()
+        AutoDrive:StartDriving(vehicle, -1, -3, ADIntegration, ADIntegration.onRouteCompleteCallback, vehicle)
+    end)
+
+    if not success then
+        WMLogger:error("AutoDrive:StartDriving (park) failed: %s", tostring(errorMsg))
+        self.pendingCallbacks[vehicle] = nil
+        return false
+    end
+
+    WMLogger:info("Park route started (markerID: %d)", parkId)
+    return true
+end
+
+---Start driving vehicle to the nearest AD refuel station for its needed fuel type(s)
+---AD has no per-vehicle stored refuel destination (unlike park) - it always resolves
+---the nearest matching station dynamically via ADTriggerManager.getClosestRefuelDestination.
+---@param vehicle table Vehicle to control
+---@return boolean success True if the refuel route started successfully
+---@return boolean skipped True if nothing needed to be done (already fueled, or no matching
+---station reachable - AD does not distinguish these two cases), not a failure
+function ADIntegration:startRefuelRoute(vehicle)
+    if not self.isAvailable then
+        WMLogger:error("Cannot start refuel route - AutoDrive not available")
+        return false, false
+    end
+
+    if vehicle == nil or vehicle.ad == nil or vehicle.ad.stateModule == nil then
+        WMLogger:error("Cannot start refuel route - vehicle missing AutoDrive specialization")
+        return false, false
+    end
+
+    if ADTriggerManager == nil or ADTriggerManager.getClosestRefuelDestination == nil then
+        WMLogger:error("Cannot start refuel route - ADTriggerManager not available")
+        return false, false
+    end
+
+    -- ignoreFillLevel=true matches AD's own input_refuelVehicle "force check" semantics.
+    -- Returns nil both when no station exists for the needed fuel type AND when the
+    -- vehicle doesn't need fuel at all (AD doesn't distinguish these) - treated as "skip".
+    local refuelDestination = ADTriggerManager.getClosestRefuelDestination(vehicle, true)
+    if refuelDestination == nil then
+        WMLogger:info("No refuel needed or no matching station reachable - skipping")
+        return false, true
+    end
+
+    if self:isRunning(vehicle) then
+        WMLogger:info("AutoDrive already active - stopping current route to start refuel route")
+        self:stopRoute(vehicle)
+    end
+
+    vehicle.ad.stateModule:setMode(AutoDrive.MODE_DRIVETO)
+    vehicle.ad.onRouteToRefuel = true
+
+    self.pendingCallbacks[vehicle] = true
+    local success, errorMsg = pcall(function()
+        AutoDrive:StartDriving(vehicle, -1, -2, ADIntegration, ADIntegration.onRouteCompleteCallback, vehicle)
+    end)
+
+    if not success then
+        WMLogger:error("AutoDrive:StartDriving (refuel) failed: %s", tostring(errorMsg))
+        self.pendingCallbacks[vehicle] = nil
+        return false, false
+    end
+
+    WMLogger:info("Refuel route started")
+    return true, false
+end
+
+---Start driving vehicle to the nearest AD-reachable workshop for repair
+---AD has no per-vehicle stored repair destination - it always resolves the nearest
+---workshop-adjacent AD marker dynamically via AutoDrive:getClosestRepairTrigger.
+---@param vehicle table Vehicle to control
+---@return boolean success True if the repair route started successfully
+function ADIntegration:startRepairRoute(vehicle)
+    if not self.isAvailable then
+        WMLogger:error("Cannot start repair route - AutoDrive not available")
+        return false
+    end
+
+    if vehicle == nil or vehicle.ad == nil or vehicle.ad.stateModule == nil then
+        WMLogger:error("Cannot start repair route - vehicle missing AutoDrive specialization")
+        return false
+    end
+
+    if AutoDrive.getClosestRepairTrigger == nil then
+        WMLogger:error("Cannot start repair route - AutoDrive:getClosestRepairTrigger not available")
+        return false
+    end
+
+    local repairDestination = AutoDrive:getClosestRepairTrigger(vehicle)
+    if repairDestination == nil then
+        WMLogger:warning("No AD-reachable repair station found for vehicle")
+        return false
+    end
+
+    if self:isRunning(vehicle) then
+        WMLogger:info("AutoDrive already active - stopping current route to start repair route")
+        self:stopRoute(vehicle)
+    end
+
+    vehicle.ad.stateModule:setMode(AutoDrive.MODE_DRIVETO)
+    vehicle.ad.onRouteToRepair = true
+
+    -- No StartDriving sentinel exists for repair (only -1/-2/-3 are handled) - bootstrap AD
+    -- directly the same way DriveToMode:start() does when not yet active. Set the callback
+    -- fields for parity with the other AD-driven steps; completion is actually detected via
+    -- polling isRouteComplete(), the same mechanism Park/Refuel rely on.
+    self.pendingCallbacks[vehicle] = true
+    vehicle.ad.callBackObject = ADIntegration
+    vehicle.ad.callBackFunction = ADIntegration.onRouteCompleteCallback
+    vehicle.ad.callBackArg = vehicle
+    local success, errorMsg = pcall(function()
+        vehicle:startAutoDrive()
+    end)
+
+    if not success then
+        WMLogger:error("vehicle:startAutoDrive (repair) failed: %s", tostring(errorMsg))
+        self.pendingCallbacks[vehicle] = nil
+        return false
+    end
+
+    WMLogger:info("Repair route started")
+    return true
+end
+
 ---Start an AutoDrive route for a vehicle
 ---Uses AutoDrive:StartDriving() from ExternalInterface.lua
 ---@param vehicle table Vehicle to control

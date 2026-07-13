@@ -29,9 +29,18 @@ describe("WMStepDialog", function()
             STEP_COURSEPLAY      = "courseplay",
             STEP_WAIT_FOR_LEADER = "wait_for_leader",
             STEP_UNLOCK_FOLLOWER = "unlock_follower",
+            STEP_PARK            = "park",
+            STEP_REFUEL          = "refuel",
+            STEP_REPAIR          = "repair",
             isMarkerStepType = function(self, stepType)
                 return stepType == self.STEP_WAIT_FOR_LEADER
                     or stepType == self.STEP_UNLOCK_FOLLOWER
+            end,
+            isTargetlessStepType = function(self, stepType)
+                return self:isMarkerStepType(stepType)
+                    or stepType == self.STEP_PARK
+                    or stepType == self.STEP_REFUEL
+                    or stepType == self.STEP_REPAIR
             end,
             getStepTypeLabel = function(self, stepType) return stepType end,
             editorDialog = nil,
@@ -231,6 +240,103 @@ describe("WMStepDialog", function()
             d.selectedFillTypes = {"wheat"}  -- must be ignored for CP
             local step = confirm(d)
             assert.is_nil(step.fillTypes)
+        end)
+    end)
+
+    -- =========================================================================
+    -- Park step type (line 250 getStepTypes, line 259 isMarkerStep, line 448
+    -- updateFieldVisibility, line 780 onClickConfirm in WMStepDialog.lua)
+    -- =========================================================================
+    describe("Park step type", function()
+        it("is included in getStepTypes()", function()
+            local d = makeDialog()
+            local types = d:getStepTypes()
+            local found = false
+            for _, t in ipairs(types) do
+                if t == WorkflowManager.STEP_PARK then found = true end
+            end
+            assert.is_true(found)
+        end)
+
+        it("isMarkerStep() returns true for STEP_PARK (no target/action fields)", function()
+            local d = makeDialog()
+            d.stepType = WorkflowManager.STEP_PARK
+            assert.is_true(d:isMarkerStep())
+        end)
+
+        it("onClickConfirm produces {type='park', target=''} with no validation gate", function()
+            local d = makeDialog()
+            d.stepType   = WorkflowManager.STEP_PARK
+            d.stepTarget = ""  -- Park needs no target; must not block confirm like AD/CP do
+            local result
+            d.callback = function(s) result = s end
+            d.close = function(self) end
+            WMStepDialog.onClickConfirm(d)
+            assert.is_not_nil(result)
+            assert.are.equal(WorkflowManager.STEP_PARK, result.type)
+            assert.are.equal("", result.target)
+        end)
+    end)
+
+    describe("Refuel step type", function()
+        it("is included in getStepTypes()", function()
+            local d = makeDialog()
+            local types = d:getStepTypes()
+            local found = false
+            for _, t in ipairs(types) do
+                if t == WorkflowManager.STEP_REFUEL then found = true end
+            end
+            assert.is_true(found)
+        end)
+
+        it("isMarkerStep() returns true for STEP_REFUEL (no target/action fields)", function()
+            local d = makeDialog()
+            d.stepType = WorkflowManager.STEP_REFUEL
+            assert.is_true(d:isMarkerStep())
+        end)
+
+        it("onClickConfirm produces {type='refuel', target=''} with no validation gate", function()
+            local d = makeDialog()
+            d.stepType   = WorkflowManager.STEP_REFUEL
+            d.stepTarget = ""
+            local result
+            d.callback = function(s) result = s end
+            d.close = function(self) end
+            WMStepDialog.onClickConfirm(d)
+            assert.is_not_nil(result)
+            assert.are.equal(WorkflowManager.STEP_REFUEL, result.type)
+            assert.are.equal("", result.target)
+        end)
+    end)
+
+    describe("Repair step type", function()
+        it("is included in getStepTypes()", function()
+            local d = makeDialog()
+            local types = d:getStepTypes()
+            local found = false
+            for _, t in ipairs(types) do
+                if t == WorkflowManager.STEP_REPAIR then found = true end
+            end
+            assert.is_true(found)
+        end)
+
+        it("isMarkerStep() returns true for STEP_REPAIR (no target/action fields)", function()
+            local d = makeDialog()
+            d.stepType = WorkflowManager.STEP_REPAIR
+            assert.is_true(d:isMarkerStep())
+        end)
+
+        it("onClickConfirm produces {type='repair', target=''} with no validation gate", function()
+            local d = makeDialog()
+            d.stepType   = WorkflowManager.STEP_REPAIR
+            d.stepTarget = ""
+            local result
+            d.callback = function(s) result = s end
+            d.close = function(self) end
+            WMStepDialog.onClickConfirm(d)
+            assert.is_not_nil(result)
+            assert.are.equal(WorkflowManager.STEP_REPAIR, result.type)
+            assert.are.equal("", result.target)
         end)
     end)
 

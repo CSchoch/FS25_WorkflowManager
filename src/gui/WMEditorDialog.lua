@@ -198,11 +198,11 @@ function WMEditorDialog:populateCellForItemInSection(list, section, index, cell)
         typeEl:setText(item.isMain and typeText or ("  " .. typeText))
     end
 
-    -- Action column (indent support steps; marker steps have no action)
+    -- Action column (indent support steps; marker/Park steps have no action)
     local actionEl = cell:getDescendantByName("stepAction")
     if actionEl then
         local actionText = ""
-        if not WorkflowManager:isMarkerStepType(step.type) then
+        if not WorkflowManager:isTargetlessStepType(step.type) then
             actionText = self:getActionDisplayName(step.action) or step.action or ""
         end
         actionEl:setText(item.isMain and actionText or ("  " .. actionText))

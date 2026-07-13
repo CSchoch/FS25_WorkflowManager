@@ -34,6 +34,15 @@ describe("WMExecutor (real)", function()
             STEP_COURSEPLAY           = "courseplay",
             STEP_WAIT_FOR_LEADER      = "wait_for_leader",
             STEP_UNLOCK_FOLLOWER      = "unlock_follower",
+            STEP_PARK                 = "park",
+            STEP_REFUEL               = "refuel",
+            STEP_REPAIR               = "repair",
+            isAutoDriveTrackedStepType = function(self, stepType)
+                return stepType == self.STEP_AUTODRIVE
+                    or stepType == self.STEP_PARK
+                    or stepType == self.STEP_REFUEL
+                    or stepType == self.STEP_REPAIR
+            end,
             broadcastState            = function() end,
         }
 
@@ -1987,6 +1996,529 @@ describe("WMExecutor (real)", function()
             ADIntegration.startRoute   = origStart
             ADIntegration.clearCPHandoff = origClear
             assert.is_true(cleared)  -- must disarm setStartHelper even when AD route fails to start
+        end)
+    end)
+
+    -- =========================================================================
+    -- Park step: drive to AD park position (reuses AD start/stop/pause/poll)
+    -- =========================================================================
+    describe("Park step", function()
+        local wfPark = {
+            id = "wf_park", name = "Park Workflow",
+            steps = {
+                { type = "park", target = "", support = {} },
+            },
+        }
+        local wfAdThenPark = {
+            id = "wf_ad_park", name = "AD then Park",
+            steps = {
+                { type = "autodrive", target = "Farm", action = "drive", support = {} },
+                { type = "park",      target = "",     support = {} },
+            },
+        }
+
+        it("startParkRoute called and currentStepType set to STEP_PARK on start", function()
+            local called = false
+            local origFn = ADIntegration.startParkRoute
+            ADIntegration.startParkRoute = function(_, _) called = true; return true end
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfPark, v)
+            ADIntegration.startParkRoute = origFn
+            local d = activeData(v)
+            assert.is_true(called)
+            assert.are.equal(WorkflowManager.STEP_PARK, d.currentStepType)
+            assert.is_true(d.waitingForCompletion)
+        end)
+
+        it("handleStepError (STATUS_ERROR) when no park position is configured", function()
+            -- Start a normal workflow first to obtain a valid activeData/vehicle pair,
+            -- then drive startParkStep directly so we can hold a reference to the
+            -- activeData table from before handleStepError->stopWorkflow clears it
+            -- off the vehicle spec (the table itself keeps its .status field).
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(makeWorkflow(), v)
+            local d = activeData(v)
+
+            local origFn = ADIntegration.startParkRoute
+            ADIntegration.startParkRoute = function(_, _) return false end
+            WMExecutor:startParkStep(d, v, { type = "park", target = "" })
+            ADIntegration.startParkRoute = origFn
+
+            assert.are.equal(WorkflowManager.STATUS_ERROR, d.status)
+            assert.is_nil(activeData(v))  -- wmExecution cleared by stopWorkflow
+        end)
+
+        it("clearCPHandoff called when Park step starts", function()
+            local called = false
+            local origFn = ADIntegration.clearCPHandoff
+            ADIntegration.clearCPHandoff = function() called = true end
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfPark, v)
+            ADIntegration.clearCPHandoff = origFn
+            assert.is_true(called)
+        end)
+
+        it("onADFinishedEvent completes a Park step (currentStepType == STEP_PARK)", function()
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfPark, v)
+            local d = activeData(v)
+            assert.is_true(d.waitingForCompletion)
+
+            WMExecutor:onADFinishedEvent({ vehicle = v })
+            -- wfPark is a single-step workflow, so completion clears wmExecution entirely
+            assert.is_nil(activeData(v))
+            assert.is_false(WMExecutor:isWorkflowActiveOnVehicle(v))
+        end)
+
+        it("completion poll (isRouteComplete) advances a Park step", function()
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfPark, v)
+
+            local origComplete = ADIntegration.isRouteComplete
+            ADIntegration.isRouteComplete = function() return true end
+            WMExecutor.updateTimer = 0
+            WMExecutor:update(500)
+            ADIntegration.isRouteComplete = origComplete
+
+            -- wfPark is a single-step workflow, so completion clears wmExecution entirely
+            assert.is_nil(activeData(v))
+            assert.is_false(WMExecutor:isWorkflowActiveOnVehicle(v))
+        end)
+
+        it("pauseCurrentStep calls ADIntegration:pauseRoute for a Park step", function()
+            local called = false
+            local origFn = ADIntegration.pauseRoute
+            ADIntegration.pauseRoute = function() called = true end
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfPark, v)
+            local d = activeData(v)
+            WMExecutor:pauseCurrentStep(d)
+            ADIntegration.pauseRoute = origFn
+            assert.is_true(called)
+        end)
+
+        it("resumeCurrentStep calls ADIntegration:resumeRoute for a Park step", function()
+            local called = false
+            local origFn = ADIntegration.resumeRoute
+            ADIntegration.resumeRoute = function() called = true end
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfPark, v)
+            local d = activeData(v)
+            WMExecutor:resumeCurrentStep(d)
+            ADIntegration.resumeRoute = origFn
+            assert.is_true(called)
+        end)
+
+        it("stopCurrentStep calls ADIntegration:stopRoute for a Park step", function()
+            local called = false
+            local origFn = ADIntegration.stopRoute
+            ADIntegration.stopRoute = function() called = true end
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfPark, v)
+            local d = activeData(v)
+            WMExecutor:stopCurrentStep(d)
+            ADIntegration.stopRoute = origFn
+            assert.is_true(called)
+        end)
+
+        it("starts Park directly via executeCurrentStep after AD completes", function()
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfAdThenPark, v)
+            local d = activeData(v)
+            assert.are.equal(WorkflowManager.STEP_AUTODRIVE, d.currentStepType)
+
+            -- Simulate AD completing: step advances but execution is deferred 2s
+            WMExecutor:onStepCompleted(d)
+            assert.are.equal(2, d.currentStep)
+            assert.is_not_nil(d.pendingAutoStep)
+
+            -- Advance time past the deferred timer and poll
+            g_currentMission.time = d.pendingAutoStep + 1
+            WMExecutor.updateTimer = 0
+            WMExecutor:update(500)
+
+            assert.are.equal(WorkflowManager.STEP_PARK, d.currentStepType)
+            assert.is_true(d.waitingForCompletion)
+        end)
+
+        it("resolvePendingADStart routes to startParkStep (not startAutoDriveStep) when deferred", function()
+            local adStillRunning = true
+            local origIsRunning = ADIntegration.isRunning
+            local origStartRoute = ADIntegration.startRoute
+            local parkStarted = false
+            local adStarted = false
+            ADIntegration.isRunning = function() return adStillRunning end
+            ADIntegration.startRoute = function() adStarted = true; return true end
+            local origStartPark = ADIntegration.startParkRoute
+            ADIntegration.startParkRoute = function() parkStarted = true; return true end
+
+            local v = makeVehicle()
+            -- AD reports running -> Park start is deferred via pendingADStart
+            WMExecutor:startWorkflow(wfPark, v)
+            local d = activeData(v)
+            assert.is_true(d.pendingADStart)
+            assert.is_false(parkStarted)
+
+            -- AD stops; two poll cycles should release the deferred Park start
+            adStillRunning = false
+            WMExecutor.updateTimer = 0
+            WMExecutor:update(500)
+            WMExecutor.updateTimer = 0
+            WMExecutor:update(500)
+
+            ADIntegration.isRunning = origIsRunning
+            ADIntegration.startRoute = origStartRoute
+            ADIntegration.startParkRoute = origStartPark
+
+            assert.is_true(parkStarted)
+            assert.is_false(adStarted)
+        end)
+    end)
+
+    -- =========================================================================
+    -- Refuel step: drive to AD's nearest matching fuel station (reuses AD machinery)
+    -- =========================================================================
+    describe("Refuel step", function()
+        local wfRefuel = {
+            id = "wf_refuel", name = "Refuel Workflow",
+            steps = {
+                { type = "refuel", target = "", support = {} },
+            },
+        }
+        local wfAdThenRefuel = {
+            id = "wf_ad_refuel", name = "AD then Refuel",
+            steps = {
+                { type = "autodrive", target = "Farm", action = "drive", support = {} },
+                { type = "refuel",    target = "",     support = {} },
+            },
+        }
+
+        it("startRefuelRoute called and currentStepType set to STEP_REFUEL on start", function()
+            local called = false
+            local origFn = ADIntegration.startRefuelRoute
+            ADIntegration.startRefuelRoute = function(_, _) called = true; return true, false end
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfRefuel, v)
+            ADIntegration.startRefuelRoute = origFn
+            local d = activeData(v)
+            assert.is_true(called)
+            assert.are.equal(WorkflowManager.STEP_REFUEL, d.currentStepType)
+            assert.is_true(d.waitingForCompletion)
+        end)
+
+        it("handleStepError (STATUS_ERROR) when AutoDrive is unavailable", function()
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(makeWorkflow(), v)
+            local d = activeData(v)
+
+            local origFn = ADIntegration.startRefuelRoute
+            ADIntegration.startRefuelRoute = function(_, _) return false, false end
+            WMExecutor:startRefuelStep(d, v, { type = "refuel", target = "" })
+            ADIntegration.startRefuelRoute = origFn
+
+            assert.are.equal(WorkflowManager.STATUS_ERROR, d.status)
+            assert.is_nil(activeData(v))
+        end)
+
+        it("skips (onStepCompleted, not handleStepError) when already fueled or no station reachable", function()
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(makeWorkflow(), v)
+            local d = activeData(v)
+
+            local origFn = ADIntegration.startRefuelRoute
+            ADIntegration.startRefuelRoute = function(_, _) return false, true end
+            WMExecutor:startRefuelStep(d, v, { type = "refuel", target = "" })
+            ADIntegration.startRefuelRoute = origFn
+
+            -- onStepCompleted advances currentStep rather than erroring
+            assert.are_not.equal(WorkflowManager.STATUS_ERROR, d.status)
+            assert.are.equal(2, d.currentStep)
+        end)
+
+        it("clearCPHandoff called when Refuel step starts", function()
+            local called = false
+            local origFn = ADIntegration.clearCPHandoff
+            ADIntegration.clearCPHandoff = function() called = true end
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfRefuel, v)
+            ADIntegration.clearCPHandoff = origFn
+            assert.is_true(called)
+        end)
+
+        it("onADFinishedEvent completes a Refuel step (currentStepType == STEP_REFUEL)", function()
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfRefuel, v)
+            local d = activeData(v)
+            assert.is_true(d.waitingForCompletion)
+
+            WMExecutor:onADFinishedEvent({ vehicle = v })
+            assert.is_nil(activeData(v))
+            assert.is_false(WMExecutor:isWorkflowActiveOnVehicle(v))
+        end)
+
+        it("completion poll (isRouteComplete) advances a Refuel step", function()
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfRefuel, v)
+
+            local origComplete = ADIntegration.isRouteComplete
+            ADIntegration.isRouteComplete = function() return true end
+            WMExecutor.updateTimer = 0
+            WMExecutor:update(500)
+            ADIntegration.isRouteComplete = origComplete
+
+            assert.is_nil(activeData(v))
+            assert.is_false(WMExecutor:isWorkflowActiveOnVehicle(v))
+        end)
+
+        it("pauseCurrentStep calls ADIntegration:pauseRoute for a Refuel step", function()
+            local called = false
+            local origFn = ADIntegration.pauseRoute
+            ADIntegration.pauseRoute = function() called = true end
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfRefuel, v)
+            local d = activeData(v)
+            WMExecutor:pauseCurrentStep(d)
+            ADIntegration.pauseRoute = origFn
+            assert.is_true(called)
+        end)
+
+        it("resumeCurrentStep calls ADIntegration:resumeRoute for a Refuel step", function()
+            local called = false
+            local origFn = ADIntegration.resumeRoute
+            ADIntegration.resumeRoute = function() called = true end
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfRefuel, v)
+            local d = activeData(v)
+            WMExecutor:resumeCurrentStep(d)
+            ADIntegration.resumeRoute = origFn
+            assert.is_true(called)
+        end)
+
+        it("stopCurrentStep calls ADIntegration:stopRoute for a Refuel step", function()
+            local called = false
+            local origFn = ADIntegration.stopRoute
+            ADIntegration.stopRoute = function() called = true end
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfRefuel, v)
+            local d = activeData(v)
+            WMExecutor:stopCurrentStep(d)
+            ADIntegration.stopRoute = origFn
+            assert.is_true(called)
+        end)
+
+        it("starts Refuel directly via executeCurrentStep after AD completes", function()
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfAdThenRefuel, v)
+            local d = activeData(v)
+            assert.are.equal(WorkflowManager.STEP_AUTODRIVE, d.currentStepType)
+
+            WMExecutor:onStepCompleted(d)
+            assert.are.equal(2, d.currentStep)
+            assert.is_not_nil(d.pendingAutoStep)
+
+            g_currentMission.time = d.pendingAutoStep + 1
+            WMExecutor.updateTimer = 0
+            WMExecutor:update(500)
+
+            assert.are.equal(WorkflowManager.STEP_REFUEL, d.currentStepType)
+            assert.is_true(d.waitingForCompletion)
+        end)
+
+        it("resolvePendingADStart routes to startRefuelStep (not startAutoDriveStep) when deferred", function()
+            local adStillRunning = true
+            local origIsRunning = ADIntegration.isRunning
+            local origStartRoute = ADIntegration.startRoute
+            local refuelStarted = false
+            local adStarted = false
+            ADIntegration.isRunning = function() return adStillRunning end
+            ADIntegration.startRoute = function() adStarted = true; return true end
+            local origStartRefuel = ADIntegration.startRefuelRoute
+            ADIntegration.startRefuelRoute = function() refuelStarted = true; return true, false end
+
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfRefuel, v)
+            local d = activeData(v)
+            assert.is_true(d.pendingADStart)
+            assert.is_false(refuelStarted)
+
+            adStillRunning = false
+            WMExecutor.updateTimer = 0
+            WMExecutor:update(500)
+            WMExecutor.updateTimer = 0
+            WMExecutor:update(500)
+
+            ADIntegration.isRunning = origIsRunning
+            ADIntegration.startRoute = origStartRoute
+            ADIntegration.startRefuelRoute = origStartRefuel
+
+            assert.is_true(refuelStarted)
+            assert.is_false(adStarted)
+        end)
+    end)
+
+    -- =========================================================================
+    -- Repair step: drive to AD's nearest reachable workshop (reuses AD machinery)
+    -- =========================================================================
+    describe("Repair step", function()
+        local wfRepair = {
+            id = "wf_repair", name = "Repair Workflow",
+            steps = {
+                { type = "repair", target = "", support = {} },
+            },
+        }
+        local wfAdThenRepair = {
+            id = "wf_ad_repair", name = "AD then Repair",
+            steps = {
+                { type = "autodrive", target = "Farm", action = "drive", support = {} },
+                { type = "repair",    target = "",     support = {} },
+            },
+        }
+
+        it("startRepairRoute called and currentStepType set to STEP_REPAIR on start", function()
+            local called = false
+            local origFn = ADIntegration.startRepairRoute
+            ADIntegration.startRepairRoute = function(_, _) called = true; return true end
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfRepair, v)
+            ADIntegration.startRepairRoute = origFn
+            local d = activeData(v)
+            assert.is_true(called)
+            assert.are.equal(WorkflowManager.STEP_REPAIR, d.currentStepType)
+            assert.is_true(d.waitingForCompletion)
+        end)
+
+        it("handleStepError (STATUS_ERROR) when no repair station is reachable", function()
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(makeWorkflow(), v)
+            local d = activeData(v)
+
+            local origFn = ADIntegration.startRepairRoute
+            ADIntegration.startRepairRoute = function(_, _) return false end
+            WMExecutor:startRepairStep(d, v, { type = "repair", target = "" })
+            ADIntegration.startRepairRoute = origFn
+
+            assert.are.equal(WorkflowManager.STATUS_ERROR, d.status)
+            assert.is_nil(activeData(v))
+        end)
+
+        it("clearCPHandoff called when Repair step starts", function()
+            local called = false
+            local origFn = ADIntegration.clearCPHandoff
+            ADIntegration.clearCPHandoff = function() called = true end
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfRepair, v)
+            ADIntegration.clearCPHandoff = origFn
+            assert.is_true(called)
+        end)
+
+        it("onADFinishedEvent completes a Repair step (currentStepType == STEP_REPAIR)", function()
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfRepair, v)
+            local d = activeData(v)
+            assert.is_true(d.waitingForCompletion)
+
+            WMExecutor:onADFinishedEvent({ vehicle = v })
+            assert.is_nil(activeData(v))
+            assert.is_false(WMExecutor:isWorkflowActiveOnVehicle(v))
+        end)
+
+        it("completion poll (isRouteComplete) advances a Repair step", function()
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfRepair, v)
+
+            local origComplete = ADIntegration.isRouteComplete
+            ADIntegration.isRouteComplete = function() return true end
+            WMExecutor.updateTimer = 0
+            WMExecutor:update(500)
+            ADIntegration.isRouteComplete = origComplete
+
+            assert.is_nil(activeData(v))
+            assert.is_false(WMExecutor:isWorkflowActiveOnVehicle(v))
+        end)
+
+        it("pauseCurrentStep calls ADIntegration:pauseRoute for a Repair step", function()
+            local called = false
+            local origFn = ADIntegration.pauseRoute
+            ADIntegration.pauseRoute = function() called = true end
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfRepair, v)
+            local d = activeData(v)
+            WMExecutor:pauseCurrentStep(d)
+            ADIntegration.pauseRoute = origFn
+            assert.is_true(called)
+        end)
+
+        it("resumeCurrentStep calls ADIntegration:resumeRoute for a Repair step", function()
+            local called = false
+            local origFn = ADIntegration.resumeRoute
+            ADIntegration.resumeRoute = function() called = true end
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfRepair, v)
+            local d = activeData(v)
+            WMExecutor:resumeCurrentStep(d)
+            ADIntegration.resumeRoute = origFn
+            assert.is_true(called)
+        end)
+
+        it("stopCurrentStep calls ADIntegration:stopRoute for a Repair step", function()
+            local called = false
+            local origFn = ADIntegration.stopRoute
+            ADIntegration.stopRoute = function() called = true end
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfRepair, v)
+            local d = activeData(v)
+            WMExecutor:stopCurrentStep(d)
+            ADIntegration.stopRoute = origFn
+            assert.is_true(called)
+        end)
+
+        it("starts Repair directly via executeCurrentStep after AD completes", function()
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfAdThenRepair, v)
+            local d = activeData(v)
+            assert.are.equal(WorkflowManager.STEP_AUTODRIVE, d.currentStepType)
+
+            WMExecutor:onStepCompleted(d)
+            assert.are.equal(2, d.currentStep)
+            assert.is_not_nil(d.pendingAutoStep)
+
+            g_currentMission.time = d.pendingAutoStep + 1
+            WMExecutor.updateTimer = 0
+            WMExecutor:update(500)
+
+            assert.are.equal(WorkflowManager.STEP_REPAIR, d.currentStepType)
+            assert.is_true(d.waitingForCompletion)
+        end)
+
+        it("resolvePendingADStart routes to startRepairStep (not startAutoDriveStep) when deferred", function()
+            local adStillRunning = true
+            local origIsRunning = ADIntegration.isRunning
+            local origStartRoute = ADIntegration.startRoute
+            local repairStarted = false
+            local adStarted = false
+            ADIntegration.isRunning = function() return adStillRunning end
+            ADIntegration.startRoute = function() adStarted = true; return true end
+            local origStartRepair = ADIntegration.startRepairRoute
+            ADIntegration.startRepairRoute = function() repairStarted = true; return true end
+
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfRepair, v)
+            local d = activeData(v)
+            assert.is_true(d.pendingADStart)
+            assert.is_false(repairStarted)
+
+            adStillRunning = false
+            WMExecutor.updateTimer = 0
+            WMExecutor:update(500)
+            WMExecutor.updateTimer = 0
+            WMExecutor:update(500)
+
+            ADIntegration.isRunning = origIsRunning
+            ADIntegration.startRoute = origStartRoute
+            ADIntegration.startRepairRoute = origStartRepair
+
+            assert.is_true(repairStarted)
+            assert.is_false(adStarted)
         end)
     end)
 

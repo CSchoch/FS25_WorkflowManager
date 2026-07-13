@@ -84,6 +84,9 @@
         <text name="wm_type_courseplay" text="Courseplay"/>
         <text name="wm_type_wait_for_leader" text="Wait for Leader"/>
         <text name="wm_type_unlock_follower" text="Unlock Follower"/>
+        <text name="wm_type_park" text="Park"/>
+        <text name="wm_type_refuel" text="Refuel"/>
+        <text name="wm_type_repair" text="Repair"/>
 
         <!-- Actions / AutoDrive Modes -->
         <text name="wm_action_drive" text="Drive To"/>

@@ -101,6 +101,12 @@ WorkflowManager.STEP_COURSEPLAY = "courseplay"
 -- Leader/follower sync marker steps (pass-through coordination steps, no AD/CP job)
 WorkflowManager.STEP_WAIT_FOR_LEADER = "wait_for_leader"
 WorkflowManager.STEP_UNLOCK_FOLLOWER = "unlock_follower"
+-- Drive to the vehicle's (or its rear-attached implement's) AutoDrive park position
+WorkflowManager.STEP_PARK = "park"
+-- Drive to the nearest AD-reachable fuel station for the vehicle's needed fuel type(s)
+WorkflowManager.STEP_REFUEL = "refuel"
+-- Drive to the nearest AD-reachable workshop and repair the vehicle
+WorkflowManager.STEP_REPAIR = "repair"
 
 -- Internal state
 WorkflowManager.workflows = {}
@@ -116,6 +122,9 @@ function WorkflowManager:getStepTypeLabel(stepType)
     if stepType == self.STEP_COURSEPLAY then return g_i18n:getText("wm_type_courseplay") end
     if stepType == self.STEP_WAIT_FOR_LEADER then return g_i18n:getText("wm_type_wait_for_leader") end
     if stepType == self.STEP_UNLOCK_FOLLOWER then return g_i18n:getText("wm_type_unlock_follower") end
+    if stepType == self.STEP_PARK then return g_i18n:getText("wm_type_park") end
+    if stepType == self.STEP_REFUEL then return g_i18n:getText("wm_type_refuel") end
+    if stepType == self.STEP_REPAIR then return g_i18n:getText("wm_type_repair") end
     return tostring(stepType)
 end
 
@@ -126,12 +135,38 @@ function WorkflowManager:isMarkerStepType(stepType)
     return stepType == self.STEP_WAIT_FOR_LEADER or stepType == self.STEP_UNLOCK_FOLLOWER
 end
 
+---Returns true if the step type has no user-editable target/action (auto-resolved).
+---Marker steps have no target because they're pass-through; Park/Refuel/Repair have no
+---target because AD resolves the destination itself (park position / nearest station).
+---@param stepType string Step type id
+---@return boolean
+function WorkflowManager:isTargetlessStepType(stepType)
+    return self:isMarkerStepType(stepType)
+        or stepType == self.STEP_PARK
+        or stepType == self.STEP_REFUEL
+        or stepType == self.STEP_REPAIR
+end
+
+---Returns true if the step type is an AutoDrive-driven job tracked via AD's own
+---start/pause/resume/stop/isActive machinery (as opposed to Courseplay or sync markers).
+---@param stepType string Step type id
+---@return boolean
+function WorkflowManager:isAutoDriveTrackedStepType(stepType)
+    return stepType == self.STEP_AUTODRIVE
+        or stepType == self.STEP_PARK
+        or stepType == self.STEP_REFUEL
+        or stepType == self.STEP_REPAIR
+end
+
 ---Get a short (AD/CP/WM) tag for a step type, for compact HUD display
 ---@param stepType string Step type id
----@return string shortcut "AD", "CP", or "WM" (internal/marker steps)
+---@return string shortcut "AD", "CP", "PARK", "REFUEL", "REPAIR", or "WM" (markers)
 function WorkflowManager:getStepTypeShortcut(stepType)
     if stepType == self.STEP_AUTODRIVE then return "AD" end
     if stepType == self.STEP_COURSEPLAY then return "CP" end
+    if stepType == self.STEP_PARK then return "PARK" end
+    if stepType == self.STEP_REFUEL then return "REFUEL" end
+    if stepType == self.STEP_REPAIR then return "REPAIR" end
     return "WM"
 end
 
