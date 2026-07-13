@@ -254,31 +254,8 @@ function WorkflowManagerSpec:saveToXMLFile(xmlFile, key, usedModNames)
             xmlFile:setValue(key .. "#leaderVehicleUniqueId", activeData.leaderVehicle.uniqueId)
             WMLogger:debug("Saved leaderVehicleUniqueId=%s for '%s'", activeData.leaderVehicle.uniqueId,
                 activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?")
-        end
-        local leaderSpec = activeData.leaderVehicle.spec_workflowManagerSpec
-        local leaderXmlIdx = leaderSpec and leaderSpec.wmXmlIndex
-        local leaderIdxSource = "wmXmlIndex"
-        if leaderXmlIdx == nil then
-            -- Fallback for vehicles started fresh this session (no prior savegame load).
-            -- FS25 saves vehicles in g_currentMission.vehicles order, so position - 1 = XML index.
-            local vehicles = g_currentMission and g_currentMission.vehicles
-            if vehicles then
-                for i, v in ipairs(vehicles) do
-                    if v == activeData.leaderVehicle then
-                        leaderXmlIdx = i - 1
-                        leaderIdxSource = "g_currentMission.vehicles fallback"
-                        break
-                    end
-                end
-            end
-        end
-        if leaderXmlIdx ~= nil then
-            xmlFile:setValue(key .. "#leaderVehicleXmlIndex", leaderXmlIdx)
-            WMLogger:debug("Saved leaderVehicleXmlIndex=%d for '%s' (source: %s)", leaderXmlIdx,
-                activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?",
-                leaderIdxSource)
         else
-            WMLogger:warning("Leader vehicle '%s' has no resolvable index — leader not saved",
+            WMLogger:warning("Leader vehicle '%s' has no uniqueId — leader not saved",
                 activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?")
         end
     end

@@ -1950,6 +1950,22 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-07-13T00:00:00.000Z"
+    },
+    {
+      "id": "bug-120",
+      "timestamp": "2026-07-13T09:43:05.591Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowManagerSpec.lua",
+      "root_cause": "19 lines replaced/restructured",
+      "fix": "Rewrote 33→10 lines (19 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-13T09:43:05.591Z"
     }
   ]
 }

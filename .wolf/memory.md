@@ -1,3 +1,4 @@
+| 00:00 | Follow-up to bug-119: user asked to remove leaderVehicleXmlIndex from the save routine entirely (not just add uniqueId alongside it). Removed the xmlIndex-computation/write block from saveToXMLFile (self-caching wmXmlIndex for the debug log stays); onPostLoad still reads #leaderVehicleXmlIndex/#leaderVehicleIndex/#leaderWorkflowId read-only for old saves. Removed 2 tests pinning the now-removed write behavior + 1 duplicate | WorkflowManagerSpec.lua, WorkflowManagerSpec_spec.lua | 412/412 tests pass | ~150 tok |
 | 00:00 | Fix bug-119 ("Steyer tractor lost its leader"): leaderVehicleXmlIndex (positional index) is stable only within one load — vehicle list reordering between save sessions caused it to resolve to a wrong/unrelated vehicle, permanently stranding the follower in waiting_for_leader. Replaced with leaderVehicleUniqueId keyed on vehicle.uniqueId (engine-assigned, save-stable); pendingLeaderUniqueId mirrors existing deferred-resolution pattern; old xmlIndex chain kept as legacy fallback | WorkflowManagerSpec.lua, WorkflowExecutor.lua, WMConsoleCommands.lua, WorkflowManagerSpec_spec.lua, WorkflowExecutor_spec.lua | 415/415 tests pass | ~600 tok |
 | 00:00 | Code-review fixes (bug-111–114): removed nil-crash ensureWaitPollerActive call from onPostLoad; removed test stub masking it; removed stale willHandoffToCP + globalWaitPoller lines from WMConsoleCommands; fixed wmPrintWorkflow pendingLeaderXmlIndex-only case | WorkflowManagerSpec.lua, WorkflowManagerSpec_spec.lua, WMConsoleCommands.lua | 407/407 tests pass | ~120 tok |
 | 00:00 | TDD fix (bug-105/106): isLeaderSyncSatisfied returned true when leaderVehicle==nil but pendingLeaderXmlIndex was set — follower passed WAIT_FOR_LEADER gate without blocking. Fix: added pending check before nil-leader early-return. 2 new tests, 408/408 pass | WorkflowExecutor.lua, WorkflowExecutor_spec.lua | 408/408 tests pass | ~80 tok |
@@ -542,6 +543,17 @@
 |------|--------|---------|---------|--------|
 
 ## Session: 2026-07-13 11:33
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 11:43 | Edited src/WorkflowManagerSpec.lua | reduced (-23 lines) | ~160 |
+| 11:43 | Edited tests/specs/WorkflowManagerSpec_spec.lua | removed 21 lines | ~30 |
+| 11:44 | Edited tests/specs/WorkflowManagerSpec_spec.lua | removed 21 lines | ~20 |
+| 11:44 | Edited tests/specs/WorkflowManagerSpec_spec.lua | 10→9 lines | ~124 |
+| 11:44 | Edited tests/specs/WorkflowManagerSpec_spec.lua | removed 32 lines | ~28 |
+| 11:45 | Session end: 5 writes across 2 files (WorkflowManagerSpec.lua, WorkflowManagerSpec_spec.lua) | 2 reads | ~19272 tok |
+
+## Session: 2026-07-13 12:13
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
