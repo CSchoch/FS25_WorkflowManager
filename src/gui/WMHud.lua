@@ -322,18 +322,8 @@ function WMHud:draw()
     local mx = self.marginX
     local my = self.marginY
 
-    -- === Header: title + vehicle name ===
-    local vehicleName = ""
-    if activeData and activeData.vehicle then
-        local v = activeData.vehicle
-        local ok, name = pcall(function() return v:getName() end)
-        if ok and name and name ~= "" then
-            -- Truncate to ~16 chars
-            if #name > 16 then name = string.sub(name, 1, 15) .. "\226\128\166" end  -- "…" U+2026
-            vehicleName = " | " .. name
-        end
-    end
-    local headerTitle = (g_i18n:getText("wm_hud_title") or "WorkflowManager") .. vehicleName
+    -- === Header: title ===
+    local headerTitle = g_i18n:getText("wm_hud_title") or "WorkflowManager"
 
     setTextBold(true)
     setTextColor(1, 1, 1, 1)
@@ -402,7 +392,8 @@ function WMHud:draw()
             local supStep = supSteps[css]
             if supStep then
                 renderText(x + mx, lineY, self.smallSize,
-                    string.format("Step %s.%d/%d: %s",
+                    string.format("[%s] Step %s.%d/%d: %s",
+                        WorkflowManager:getStepTypeShortcut(supStep.type),
                         mainData and tostring(mainData.currentStep) or "?",
                         css, tss, supStep.target or "?"))
             end
@@ -415,7 +406,7 @@ function WMHud:draw()
                     and WorkflowManager:getStepTypeLabel(step.type)
                     or (step.target or "?")
                 renderText(x + mx, lineY, self.smallSize,
-                    string.format("Step %d/%d: %s", cs, ts, desc))
+                    string.format("[%s] Step %d/%d: %s", WorkflowManager:getStepTypeShortcut(step.type), cs, ts, desc))
             end
         end
     end
@@ -429,7 +420,14 @@ function WMHud:draw()
 
         if activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER then
             setTextColor(1, 0.85, 0, 1)
-            renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_waiting_for_leader"))
+            local waitText = g_i18n:getText("wm_hud_waiting_for_leader")
+            if activeData.leaderVehicle then
+                local ok, leaderName = pcall(function() return activeData.leaderVehicle:getName() end)
+                if ok and leaderName and leaderName ~= "" then
+                    waitText = waitText .. ": " .. leaderName
+                end
+            end
+            renderText(x + mx, lineY, self.smallSize, waitText)
         elseif activeData.status == WorkflowManager.STATUS_WAITING_FOR_MAIN then
             setTextColor(1, 0.85, 0, 1)
             renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_waiting_for_main"))

@@ -126,6 +126,15 @@ function WorkflowManager:isMarkerStepType(stepType)
     return stepType == self.STEP_WAIT_FOR_LEADER or stepType == self.STEP_UNLOCK_FOLLOWER
 end
 
+---Get a short (AD/CP/WM) tag for a step type, for compact HUD display
+---@param stepType string Step type id
+---@return string shortcut "AD", "CP", or "WM" (internal/marker steps)
+function WorkflowManager:getStepTypeShortcut(stepType)
+    if stepType == self.STEP_AUTODRIVE then return "AD" end
+    if stepType == self.STEP_COURSEPLAY then return "CP" end
+    return "WM"
+end
+
 ---Initialize the WorkflowManager
 function WorkflowManager:init()
     if self.isInitialized then

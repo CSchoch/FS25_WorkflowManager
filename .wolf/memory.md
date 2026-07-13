@@ -1,3 +1,4 @@
+| 00:00 | HUD tweaks: removed vehicle name from HUD header (title only now); added leader's name to "Waiting for leader" status line via activeData.leaderVehicle:getName(); added [AD]/[CP]/[WM] step-type shortcut prefix to step info line (main + support branches) via new WorkflowManager:getStepTypeShortcut() | WMHud.lua, WorkflowManager.lua | 412/412 tests pass | ~180 tok |
 | 00:00 | Follow-up to bug-119: user asked to remove leaderVehicleXmlIndex from the save routine entirely (not just add uniqueId alongside it). Removed the xmlIndex-computation/write block from saveToXMLFile (self-caching wmXmlIndex for the debug log stays); onPostLoad still reads #leaderVehicleXmlIndex/#leaderVehicleIndex/#leaderWorkflowId read-only for old saves. Removed 2 tests pinning the now-removed write behavior + 1 duplicate | WorkflowManagerSpec.lua, WorkflowManagerSpec_spec.lua | 412/412 tests pass | ~150 tok |
 | 00:00 | Fix bug-119 ("Steyer tractor lost its leader"): leaderVehicleXmlIndex (positional index) is stable only within one load — vehicle list reordering between save sessions caused it to resolve to a wrong/unrelated vehicle, permanently stranding the follower in waiting_for_leader. Replaced with leaderVehicleUniqueId keyed on vehicle.uniqueId (engine-assigned, save-stable); pendingLeaderUniqueId mirrors existing deferred-resolution pattern; old xmlIndex chain kept as legacy fallback | WorkflowManagerSpec.lua, WorkflowExecutor.lua, WMConsoleCommands.lua, WorkflowManagerSpec_spec.lua, WorkflowExecutor_spec.lua | 415/415 tests pass | ~600 tok |
 | 00:00 | Code-review fixes (bug-111–114): removed nil-crash ensureWaitPollerActive call from onPostLoad; removed test stub masking it; removed stale willHandoffToCP + globalWaitPoller lines from WMConsoleCommands; fixed wmPrintWorkflow pendingLeaderXmlIndex-only case | WorkflowManagerSpec.lua, WorkflowManagerSpec_spec.lua, WMConsoleCommands.lua | 407/407 tests pass | ~120 tok |
@@ -557,3 +558,8 @@
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+| 12:17 | Edited src/WorkflowManager.lua | modified WorkflowManager() | ~177 |
+| 12:17 | Edited src/gui/WMHud.lua | removed 12 lines | ~28 |
+| 12:17 | Edited src/gui/WMHud.lua | 19→20 lines | ~258 |
+| 12:17 | Edited src/gui/WMHud.lua | expanded (+7 lines) | ~151 |
+| 12:18 | Session end: 4 writes across 2 files (WorkflowManager.lua, WMHud.lua) | 2 reads | ~658 tok |

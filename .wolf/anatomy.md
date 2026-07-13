@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-13T09:44:51.841Z
-> Files: 8 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-13T10:17:25.755Z
+> Files: 10 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -45,6 +45,7 @@
 ## src/
 
 - `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~19244 tok)
+- `WorkflowManager.lua` — getStepTypeLabel, isMarkerStepType, getStepTypeShortcut, init, loadDialogs (~14159 tok)
 - `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~7437 tok)
 
 ## src/dev/
@@ -53,6 +54,7 @@
 
 ## src/gui/
 
+- `WMHud.lua` — ensureOverlays, createIconOverlays, updateOverlayPositions, init, show (~7648 tok)
 
 ## src/integration/
 
