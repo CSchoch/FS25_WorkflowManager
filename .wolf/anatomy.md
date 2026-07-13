@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-13T20:24:20.245Z
-> Files: 27 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-13T20:35:35.043Z
+> Files: 28 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -111,7 +111,7 @@
 
 - `app.js` — Declares STEP_AUTODRIVE (~17974 tok)
 - `index.html` — FS25 Workflow Manager — Web Editor (~3851 tok)
-- `README.md` — Project documentation (~581 tok)
+- `README.md` — Project documentation (~592 tok)
 
 ## webeditor/.github/workflows/
 
@@ -119,6 +119,7 @@
 
 ## website/
 
+- `README.md` — Project documentation (~220 tok)
 
 ## website/.docusaurus/
 
