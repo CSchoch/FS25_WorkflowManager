@@ -6,8 +6,9 @@ no game running, no build step, no dependencies. Deployable as a GitHub Page.
 ## Features (parity with the in-game editor)
 
 - **Workflows**: create, rename, duplicate, delete, search
-- **Steps**: all four step types — AutoDrive, Courseplay, and the sync markers
-  *Wait for Leader* / *Unlock Follower* (quick-add buttons, no dialog needed)
+- **Steps**: all seven step types — AutoDrive, Courseplay, the sync markers
+  *Wait for Leader* / *Unlock Follower*, and the targetless AutoDrive actions
+  *Park* / *Refuel* / *Repair* (quick-add buttons, no dialog needed)
 - **AutoDrive modes**: Drive To, Pickup & Deliver, Deliver, Load, Unload — with the same
   dynamic target / second-target labels as the in-game step dialog
 - **Courseplay actions**: Field Work, Bale Collect

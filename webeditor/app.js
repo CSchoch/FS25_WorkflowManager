@@ -12,12 +12,18 @@ const STEP_AUTODRIVE = "autodrive";
 const STEP_COURSEPLAY = "courseplay";
 const STEP_WAIT_FOR_LEADER = "wait_for_leader";
 const STEP_UNLOCK_FOLLOWER = "unlock_follower";
+const STEP_PARK = "park";
+const STEP_REFUEL = "refuel";
+const STEP_REPAIR = "repair";
 
-const STEP_TYPES = [STEP_AUTODRIVE, STEP_COURSEPLAY, STEP_WAIT_FOR_LEADER, STEP_UNLOCK_FOLLOWER];
+const STEP_TYPES = [STEP_AUTODRIVE, STEP_COURSEPLAY, STEP_WAIT_FOR_LEADER, STEP_UNLOCK_FOLLOWER, STEP_PARK, STEP_REFUEL, STEP_REPAIR];
 const AD_ACTIONS = ["drive", "pickup_deliver", "deliver", "load", "unload"];
 const CP_ACTIONS = ["fieldwork", "bale_collect"];
 
-const isMarkerType = (t) => t === STEP_WAIT_FOR_LEADER || t === STEP_UNLOCK_FOLLOWER;
+// "Marker" here means "no target/action fields" (sync markers, plus Park/Refuel/Repair,
+// which AD resolves automatically) — mirrors WorkflowManager:isTargetlessStepType in-game.
+const isMarkerType = (t) => t === STEP_WAIT_FOR_LEADER || t === STEP_UNLOCK_FOLLOWER
+  || t === STEP_PARK || t === STEP_REFUEL || t === STEP_REPAIR;
 const actionNeedsUnloadTarget = (type, action) =>
   type === STEP_AUTODRIVE && (action === "unload" || action === "pickup_deliver" || action === "load");
 const actionNeedsFillType = (type, action) =>
@@ -43,6 +49,7 @@ const I18N = {
     steps: "Steps", addStep: "Add step", addSupport: "Add support step",
     noSteps: "No steps defined. Click “Add step” to create the first one.",
     typeAd: "AutoDrive", typeCp: "Courseplay", typeWait: "Wait for Leader", typeUnlock: "Unlock Follower",
+    typePark: "Park", typeRefuel: "Refuel", typeRepair: "Repair",
     type: "Type", mode: "Mode", action: "Action", target: "Target",
     pickup: "Pickup", loadAt: "Load At", unloadFirst: "Unload", deliverTo: "Deliver To", returnTo: "Return To",
     fillTypes: "Fill Types", fillSearchPh: "Search fill types…",
@@ -50,6 +57,9 @@ const I18N = {
     dialogAddSupport: "Add Support Step", dialogEditSupport: "Edit Support Step",
     markerWaitInfo: "Sync marker: the vehicle waits here until its leader passes the matching “Unlock Follower” marker. No target or action needed.",
     markerUnlockInfo: "Sync marker: passing this step releases followers waiting at their matching “Wait for Leader” marker. No target or action needed.",
+    parkInfo: "Drives to the vehicle's AutoDrive park position (checking its rear-attached implement first, then the vehicle itself). No target or action needed — configure the park position in AutoDrive.",
+    refuelInfo: "Drives to the nearest AutoDrive-reachable fuel station matching the vehicle's fuel type. No target or action needed. If the vehicle is already fueled or no station is reachable, the step completes immediately instead of failing.",
+    repairInfo: "Drives to the nearest AutoDrive-reachable workshop and repairs the vehicle. No target or action needed. Fails if no repair station is reachable.",
     actionNames: {
       drive: "Drive To", pickup_deliver: "Pickup and Deliver", deliver: "Deliver",
       load: "Load", unload: "Unload Combine", fieldwork: "Field Work", bale_collect: "Bale Collect",
@@ -99,6 +109,7 @@ const I18N = {
     steps: "Schritte", addStep: "Schritt hinzufügen", addSupport: "Unterstützungsschritt hinzufügen",
     noSteps: "Keine Schritte definiert. Klicke auf „Schritt hinzufügen“.",
     typeAd: "AutoDrive", typeCp: "Courseplay", typeWait: "Auf Anführer warten", typeUnlock: "Folger freigeben",
+    typePark: "Parken", typeRefuel: "Auftanken", typeRepair: "Reparieren",
     type: "Typ", mode: "Modus", action: "Aktion", target: "Ziel",
     pickup: "Abholung", loadAt: "Beladen bei", unloadFirst: "Entladen", deliverTo: "Liefern an", returnTo: "Zurück zu",
     fillTypes: "Fülltypen", fillSearchPh: "Fülltypen suchen…",
@@ -106,6 +117,9 @@ const I18N = {
     dialogAddSupport: "Unterstützungsschritt hinzufügen", dialogEditSupport: "Unterstützungsschritt bearbeiten",
     markerWaitInfo: "Sync-Marker: Das Fahrzeug wartet hier, bis sein Anführer den passenden „Folger freigeben“-Marker passiert. Kein Ziel/keine Aktion nötig.",
     markerUnlockInfo: "Sync-Marker: Beim Passieren dieses Schritts werden Folger freigegeben, die an ihrem „Auf Anführer warten“-Marker warten. Kein Ziel/keine Aktion nötig.",
+    parkInfo: "Fährt zur in AutoDrive konfigurierten Parkposition des Fahrzeugs (zuerst wird das rückseitig angehängte Gerät geprüft, dann das Fahrzeug selbst). Kein Ziel/keine Aktion nötig — die Parkposition wird in AutoDrive konfiguriert.",
+    refuelInfo: "Fährt zur nächsten über AutoDrive erreichbaren Tankstelle für den benötigten Kraftstofftyp. Kein Ziel/keine Aktion nötig. Ist das Fahrzeug bereits betankt oder keine Tankstelle erreichbar, wird der Schritt sofort abgeschlossen statt fehlzuschlagen.",
+    repairInfo: "Fährt zur nächsten über AutoDrive erreichbaren Werkstatt und repariert das Fahrzeug. Kein Ziel/keine Aktion nötig. Schlägt fehl, wenn keine Werkstatt erreichbar ist.",
     actionNames: {
       drive: "Fahren zu", pickup_deliver: "Abholen und Liefern", deliver: "Abladen",
       load: "Abholen", unload: "Drescher abfahren", fieldwork: "Feldarbeit", bale_collect: "Ballen sammeln",
@@ -250,7 +264,22 @@ function stepTypeLabel(type) {
     case STEP_COURSEPLAY: return t("typeCp");
     case STEP_WAIT_FOR_LEADER: return t("typeWait");
     case STEP_UNLOCK_FOLLOWER: return t("typeUnlock");
+    case STEP_PARK: return t("typePark");
+    case STEP_REFUEL: return t("typeRefuel");
+    case STEP_REPAIR: return t("typeRepair");
     default: return type;
+  }
+}
+
+/** Info text shown in the step dialog for targetless types (null for AD/CP). */
+function stepInfoKey(type) {
+  switch (type) {
+    case STEP_WAIT_FOR_LEADER: return "markerWaitInfo";
+    case STEP_UNLOCK_FOLLOWER: return "markerUnlockInfo";
+    case STEP_PARK: return "parkInfo";
+    case STEP_REFUEL: return "refuelInfo";
+    case STEP_REPAIR: return "repairInfo";
+    default: return null;
   }
 }
 
@@ -619,6 +648,9 @@ function applyI18nStatic() {
   $("langLabel").textContent = t("langName");
   $("btnQuickWait").title = t("typeWait");
   $("btnQuickUnlock").title = t("typeUnlock");
+  $("btnQuickPark").title = t("typePark");
+  $("btnQuickRefuel").title = t("typeRefuel");
+  $("btnQuickRepair").title = t("typeRepair");
 }
 
 function applyTheme() {
@@ -972,7 +1004,7 @@ function renderStepModal() {
   $("fieldAction").hidden = marker;
   $("fieldTarget").hidden = marker;
   if (marker) {
-    $("markerInfo").textContent = modal.type === STEP_WAIT_FOR_LEADER ? t("markerWaitInfo") : t("markerUnlockInfo");
+    $("markerInfo").textContent = t(stepInfoKey(modal.type));
     $("fieldUnloadTarget").hidden = true;
     $("fieldFillTypes").hidden = true;
     return;
@@ -1303,6 +1335,18 @@ function init() {
   $("btnQuickUnlock").addEventListener("click", () => {
     const wf = selectedWorkflow();
     if (wf) addMarkerStep(wf, STEP_UNLOCK_FOLLOWER);
+  });
+  $("btnQuickPark").addEventListener("click", () => {
+    const wf = selectedWorkflow();
+    if (wf) addMarkerStep(wf, STEP_PARK);
+  });
+  $("btnQuickRefuel").addEventListener("click", () => {
+    const wf = selectedWorkflow();
+    if (wf) addMarkerStep(wf, STEP_REFUEL);
+  });
+  $("btnQuickRepair").addEventListener("click", () => {
+    const wf = selectedWorkflow();
+    if (wf) addMarkerStep(wf, STEP_REPAIR);
   });
 
   // Step modal

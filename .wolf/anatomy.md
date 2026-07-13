@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-13T19:30:08.803Z
-> Files: 22 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-13T19:58:40.853Z
+> Files: 26 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -12,6 +12,10 @@
 
 - `MEMORY.md` — FS25 WorkflowManager - Session Memory (~1273 tok)
 - `project_leader_uniqueid_fix.md` (~531 tok)
+
+## ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/0e008aae-1437-47ea-92bf-f55f7ab67d82/scratchpad/
+
+- `webeditor_smoke.js` — Declares errors (~1179 tok)
 
 ## ../../../tmp/claude-0/-home-user-FS25-WorkflowManager/442c8c76-f882-5833-bcbb-d59df923d2a5/scratchpad/
 
@@ -105,6 +109,9 @@
 
 ## webeditor/
 
+- `app.js` — Declares STEP_AUTODRIVE (~17974 tok)
+- `index.html` — FS25 Workflow Manager — Web Editor (~3851 tok)
+- `README.md` — Project documentation (~581 tok)
 
 ## website/
 

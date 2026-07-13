@@ -2062,6 +2062,102 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-07-13T19:28:29.861Z"
+    },
+    {
+      "id": "bug-127",
+      "timestamp": "2026-07-13T19:50:10.432Z",
+      "error_message": "Significant refactor of ",
+      "file": "webeditor/app.js",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 10→16 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-13T19:50:10.432Z"
+    },
+    {
+      "id": "bug-128",
+      "timestamp": "2026-07-13T19:51:50.259Z",
+      "error_message": "Significant refactor of ",
+      "file": "webeditor/README.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 3→4 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-13T19:51:50.259Z"
+    },
+    {
+      "id": "bug-129",
+      "timestamp": "2026-07-13T19:55:41.604Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/0e008aae-1437-47ea-92bf-f55f7ab67d82/scratchpad/webeditor_smoke.js",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-13T19:55:41.604Z"
+    },
+    {
+      "id": "bug-130",
+      "timestamp": "2026-07-13T19:56:24.209Z",
+      "error_message": "Significant refactor of ",
+      "file": "../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/0e008aae-1437-47ea-92bf-f55f7ab67d82/scratchpad/webeditor_smoke.js",
+      "root_cause": "9 lines replaced/restructured",
+      "fix": "Rewrote 11→4 lines (9 removed) | Also: // Click \"Repair\" in the segmented control, verify; const idx = segLabels.findIndex((l) => l === \"Repa",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-07-13T19:56:43.719Z"
+    },
+    {
+      "id": "bug-131",
+      "timestamp": "2026-07-13T19:57:20.290Z",
+      "error_message": "Incorrect value in code",
+      "file": "../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/0e008aae-1437-47ea-92bf-f55f7ab67d82/scratchpad/webeditor_smoke.js",
+      "root_cause": "Had \"en\"",
+      "fix": "Changed to \"#langLabel\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-13T19:57:20.290Z"
+    },
+    {
+      "id": "bug-132",
+      "timestamp": "2026-07-13T19:58:40.897Z",
+      "error_message": "Missing await",
+      "file": "../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/0e008aae-1437-47ea-92bf-f55f7ab67d82/scratchpad/webeditor_smoke.js",
+      "root_cause": "Async call without await — returned Promise instead of value",
+      "fix": "Added await to async call",
+      "tags": [
+        "auto-detected",
+        "async-fix",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-13T19:58:40.897Z"
     }
   ]
 }
