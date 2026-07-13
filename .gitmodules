@@ -1,3 +1,6 @@
 [submodule "website"]
 	path = website
 	url = https://github.com/CSchoch/FS25_WorkflowManagerDocs.git
+[submodule "webeditor"]
+	path = webeditor
+	url = https://github.com/CSchoch/FS25_WorkflowManagerWebeditor.git
