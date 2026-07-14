@@ -25,58 +25,13 @@ WMExecutor.isInitialized = false
 WMExecutor.UPDATE_INTERVAL = 500  -- Check twice per second for responsiveness
 WMExecutor.updateTimer = 0
 
--- Callback tracking for AutoDrive completion
-WMExecutor.pendingADCallbacks = {}
-
 ---Initialize the executor
 function WMExecutor:init()
     self.activeVehicles = {}
-    self.pendingADCallbacks = {}
     self.updateTimer = 0
     self.isInitialized = true
 
-    -- Register for AutoDrive destination listener (global completion notifications)
-    if AutoDrive and AutoDrive.registerDestinationListener then
-        AutoDrive:registerDestinationListener(self, self.onADDestinationReached)
-        WMLogger:debug("Registered AutoDrive destination listener")
-    end
-
-    -- Subscribe to internal events
-    WMEventHandler:subscribe(WMEventHandler.EVENT_AUTODRIVE_FINISHED, self, self.onADFinishedEvent)
-
     WMLogger:debug("WorkflowExecutor initialized")
-end
-
----Callback when AutoDrive reaches destination (global listener)
----@param success boolean Whether the route completed successfully
-function WMExecutor:onADDestinationReached(success)
-    WMLogger:debug("AutoDrive destination reached (global), success: %s", tostring(success))
-    -- This is called for ALL AD completions, we handle specific ones via the callback system
-end
-
----Handle AutoDrive finished event from our integration
----@param eventData table Event data with vehicle and success
-function WMExecutor:onADFinishedEvent(eventData)
-    if eventData == nil or eventData.vehicle == nil then
-        return
-    end
-
-    -- Find the workflow that was waiting for this vehicle
-    for vehicle, _ in pairs(self.activeVehicles) do
-        local activeData = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
-        if activeData ~= nil then
-            local workflow = activeData.workflow
-            if activeData.vehicle == eventData.vehicle and
-               activeData.waitingForCompletion and
-               WorkflowManager:isAutoDriveTrackedStepType(activeData.currentStepType) then
-
-                WMLogger:info("AutoDrive step completed for workflow %s (via callback)", workflow.name)
-                activeData.waitingForCompletion = false
-                self:onStepCompleted(activeData)
-                return
-            end
-        end
-    end
 end
 
 ---Start executing a workflow on a vehicle
@@ -1314,8 +1269,17 @@ function WMExecutor:update(dt)
                 local isComplete = false
 
                 -- Check completion based on current step type
-                if WorkflowManager:isAutoDriveTrackedStepType(activeData.currentStepType) then
-                    -- AutoDrive/Park/Refuel/Repair: Check if route is complete (polling fallback, callbacks preferred)
+                if activeData.currentStepType == WorkflowManager.STEP_REFUEL then
+                    -- Refuel: isActive() can go true again right after finishing (AD resumes
+                    -- its current mode) - check the onRouteToRefuel flag instead.
+                    isComplete = ADIntegration:isRefuelRepairComplete(vehicle, "onRouteToRefuel")
+
+                elseif activeData.currentStepType == WorkflowManager.STEP_REPAIR then
+                    -- Repair: same reasoning as Refuel above.
+                    isComplete = ADIntegration:isRefuelRepairComplete(vehicle, "onRouteToRepair")
+
+                elseif WorkflowManager:isAutoDriveTrackedStepType(activeData.currentStepType) then
+                    -- AutoDrive/Park: Check if route is complete (polling fallback, callbacks preferred)
                     isComplete = ADIntegration:isRouteComplete(vehicle)
 
                 elseif activeData.currentStepType == WorkflowManager.STEP_COURSEPLAY then

@@ -17,9 +17,6 @@ ADIntegration.maxCheckAttempts = 10
 ADIntegration.checkInterval = 1000  -- ms between retry attempts
 ADIntegration.timeSinceLastCheck = 0
 
--- Callback tracking for completion detection
-ADIntegration.pendingCallbacks = {}
-
 ---Initialize the AutoDrive integration
 function ADIntegration:init()
     self.checkAttempts = 0
@@ -40,11 +37,6 @@ end
 ---Complete initialization when AutoDrive becomes available
 function ADIntegration:completeInitialization()
     WMLogger:info("AutoDrive integration initialized - AutoDrive is available")
-
-    -- Register as destination listener to get notifications when AD routes complete
-    if AutoDrive and AutoDrive.registerDestinationListener then
-        AutoDrive:registerDestinationListener(self, self.onDestinationReached)
-    end
 end
 
 ---Update function - checks for AutoDrive availability if not yet found
@@ -269,39 +261,6 @@ function ADIntegration:getDestinationById(id)
     return nil
 end
 
----Callback function when AutoDrive completes a route
----@param success boolean Whether the route completed successfully
-function ADIntegration:onDestinationReached(success)
-    WMLogger:debug("AutoDrive destination reached callback, success: %s", tostring(success))
-
-    -- Fire event for workflow manager to handle
-    WMEventHandler:fireEvent(WMEventHandler.EVENT_AUTODRIVE_FINISHED, {
-        success = success
-    })
-end
-
----Callback wrapper for AutoDrive StartDriving
----@param vehicle table Vehicle that completed
-function ADIntegration.onRouteCompleteCallback(vehicle)
-    WMLogger:debug("AutoDrive route complete callback for vehicle")
-
-    -- Only fire the completion event if this route was not already cancelled by stopRoute.
-    -- stopRoute clears pendingCallbacks[vehicle] before calling stopAutoDrive, so if the
-    -- callback fires synchronously (or late) after a manual stop, we silently discard it.
-    -- Without this guard, the callback fires unconditionally and triggers onStepCompleted
-    -- while goToNextStep is mid-execution, causing the sync-group loop to reset the step.
-    if vehicle and ADIntegration.pendingCallbacks[vehicle] then
-        ADIntegration.pendingCallbacks[vehicle] = nil
-
-        WMEventHandler:fireEvent(WMEventHandler.EVENT_AUTODRIVE_FINISHED, {
-            vehicle = vehicle,
-            success = true
-        })
-    else
-        WMLogger:debug("AutoDrive route complete callback ignored - route was cancelled")
-    end
-end
-
 ---Map action string to AutoDrive mode constant
 ---@param action string Action type: "drive", "pickup_deliver", "deliver", "load", "unload"
 ---@return number mode AutoDrive mode constant
@@ -513,14 +472,12 @@ function ADIntegration:startParkRoute(vehicle)
 
     vehicle.ad.stateModule:setParkDestinationAtJobFinished(parkId)
 
-    self.pendingCallbacks[vehicle] = true
     local success, errorMsg = pcall(function()
-        AutoDrive:StartDriving(vehicle, -1, -3, ADIntegration, ADIntegration.onRouteCompleteCallback, vehicle)
+        AutoDrive:StartDriving(vehicle, -1, -3)
     end)
 
     if not success then
         WMLogger:error("AutoDrive:StartDriving (park) failed: %s", tostring(errorMsg))
-        self.pendingCallbacks[vehicle] = nil
         return false
     end
 
@@ -568,14 +525,20 @@ function ADIntegration:startRefuelRoute(vehicle)
     vehicle.ad.stateModule:setMode(AutoDrive.MODE_DRIVETO)
     vehicle.ad.onRouteToRefuel = true
 
-    self.pendingCallbacks[vehicle] = true
+    -- Bootstrap directly via startAutoDrive(), same as startRepairRoute - do NOT route through
+    -- AutoDrive:StartDriving's -2 sentinel. That sentinel calls getCurrentMode():start()
+    -- (DriveToMode:start()) immediately, which queues a DriveToDestinationTask toward the
+    -- vehicle's unrelated, previously-configured AD destination (getFirstMarker()) if one is
+    -- set, before ADTaskModule ever gets a chance to enqueue the real RefuelTask. Calling
+    -- startAutoDrive() directly relies on ADTaskModule:RefuelIfNeeded() (its own idle-tick
+    -- check) to pick up onRouteToRefuel and enqueue the actual RefuelTask - the same mechanism
+    -- Repair already relies on.
     local success, errorMsg = pcall(function()
-        AutoDrive:StartDriving(vehicle, -1, -2, ADIntegration, ADIntegration.onRouteCompleteCallback, vehicle)
+        vehicle:startAutoDrive()
     end)
 
     if not success then
-        WMLogger:error("AutoDrive:StartDriving (refuel) failed: %s", tostring(errorMsg))
-        self.pendingCallbacks[vehicle] = nil
+        WMLogger:error("vehicle:startAutoDrive (refuel) failed: %s", tostring(errorMsg))
         return false, false
     end
 
@@ -619,20 +582,14 @@ function ADIntegration:startRepairRoute(vehicle)
     vehicle.ad.onRouteToRepair = true
 
     -- No StartDriving sentinel exists for repair (only -1/-2/-3 are handled) - bootstrap AD
-    -- directly the same way DriveToMode:start() does when not yet active. Set the callback
-    -- fields for parity with the other AD-driven steps; completion is actually detected via
-    -- polling isRouteComplete(), the same mechanism Park/Refuel rely on.
-    self.pendingCallbacks[vehicle] = true
-    vehicle.ad.callBackObject = ADIntegration
-    vehicle.ad.callBackFunction = ADIntegration.onRouteCompleteCallback
-    vehicle.ad.callBackArg = vehicle
+    -- directly the same way DriveToMode:start() does when not yet active. Completion is
+    -- detected via polling isRefuelRepairComplete(), the same mechanism Refuel relies on.
     local success, errorMsg = pcall(function()
         vehicle:startAutoDrive()
     end)
 
     if not success then
         WMLogger:error("vehicle:startAutoDrive (repair) failed: %s", tostring(errorMsg))
-        self.pendingCallbacks[vehicle] = nil
         return false
     end
 
@@ -767,20 +724,13 @@ function ADIntegration:startRoute(vehicle, targetName, action, unloadTargetName,
             end
         end
 
-        -- Track pending callback
-        self.pendingCallbacks[vehicle] = true
-
-        -- Start driving with callback for completion notification
-        WMLogger:debug("Calling AutoDrive:StartDriving(vehicle, %d, %d, callback...)",
+        WMLogger:debug("Calling AutoDrive:StartDriving(vehicle, %d, %d)",
             targetMarker.id, unloadDestinationID)
         local success, errorMsg = pcall(function()
             AutoDrive:StartDriving(
                 vehicle,
                 targetMarker.id,       -- destinationID (pickup/start location)
-                unloadDestinationID,   -- unloadDestinationID (-1=none, -2=refuel, -3=park, >0=marker)
-                ADIntegration,         -- callBackObject
-                ADIntegration.onRouteCompleteCallback, -- callBackFunction
-                vehicle                -- callBackArg
+                unloadDestinationID    -- unloadDestinationID (-1=none, -2=refuel, -3=park, >0=marker)
             )
         end)
 
@@ -804,7 +754,6 @@ function ADIntegration:startRoute(vehicle, targetName, action, unloadTargetName,
             return true
         else
             WMLogger:error("AutoDrive:StartDriving failed: %s", tostring(errorMsg))
-            self.pendingCallbacks[vehicle] = nil
             return false
         end
     end
@@ -838,9 +787,6 @@ function ADIntegration:stopRoute(vehicle)
 
     WMLogger:info("Stopping AutoDrive route")
     WMLogger:apiCall("AutoDrive", "stopRoute", vehicle)
-
-    -- Remove from pending callbacks
-    self.pendingCallbacks[vehicle] = nil
 
     local stopped = false
 
@@ -961,6 +907,35 @@ function ADIntegration:isRouteComplete(vehicle)
     if vehicle.ad.stateModule ~= nil and vehicle.ad.stateModule.isActive then
         local isActive = vehicle.ad.stateModule:isActive()
         return not isActive
+    end
+
+    return true
+end
+
+---Check if a Refuel or Repair route has completed. Unlike isRouteComplete (which checks
+---"not isActive()"), this checks AD's own onRouteToRefuel/onRouteToRepair flag going false.
+---RefuelTask:finished()/RepairTask:finished() both call stopAutoDrive() and then immediately
+---getCurrentMode():start() again, which re-activates AD and - if the vehicle has a stale
+---previously-configured AD destination (getFirstMarker()) - starts driving it there. That
+---means isActive() can already be true again by the time WM polls, so isRouteComplete never
+---reports completion for these two step types. The onRouteTo*/false flag is set at the top of
+---finished(), before that reactivation happens, so it is a reliable completion signal.
+---@param vehicle table Vehicle to check
+---@param flagName string "onRouteToRefuel" or "onRouteToRepair"
+---@return boolean complete True once AD has cleared the route flag
+function ADIntegration:isRefuelRepairComplete(vehicle, flagName)
+    if vehicle == nil or vehicle.ad == nil then
+        return true
+    end
+
+    if vehicle.ad[flagName] then
+        return false
+    end
+
+    -- The task's finished() handler already restarted AD toward a stale destination (if one
+    -- was configured) - cancel that now so WM (not AD) decides what happens next.
+    if self:isRunning(vehicle) then
+        self:stopRoute(vehicle)
     end
 
     return true

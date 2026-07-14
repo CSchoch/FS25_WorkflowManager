@@ -2058,18 +2058,6 @@ describe("WMExecutor (real)", function()
             assert.is_true(called)
         end)
 
-        it("onADFinishedEvent completes a Park step (currentStepType == STEP_PARK)", function()
-            local v = makeVehicle()
-            WMExecutor:startWorkflow(wfPark, v)
-            local d = activeData(v)
-            assert.is_true(d.waitingForCompletion)
-
-            WMExecutor:onADFinishedEvent({ vehicle = v })
-            -- wfPark is a single-step workflow, so completion clears wmExecution entirely
-            assert.is_nil(activeData(v))
-            assert.is_false(WMExecutor:isWorkflowActiveOnVehicle(v))
-        end)
-
         it("completion poll (isRouteComplete) advances a Park step", function()
             local v = makeVehicle()
             WMExecutor:startWorkflow(wfPark, v)
@@ -2245,26 +2233,15 @@ describe("WMExecutor (real)", function()
             assert.is_true(called)
         end)
 
-        it("onADFinishedEvent completes a Refuel step (currentStepType == STEP_REFUEL)", function()
-            local v = makeVehicle()
-            WMExecutor:startWorkflow(wfRefuel, v)
-            local d = activeData(v)
-            assert.is_true(d.waitingForCompletion)
-
-            WMExecutor:onADFinishedEvent({ vehicle = v })
-            assert.is_nil(activeData(v))
-            assert.is_false(WMExecutor:isWorkflowActiveOnVehicle(v))
-        end)
-
-        it("completion poll (isRouteComplete) advances a Refuel step", function()
+        it("completion poll (isRefuelRepairComplete) advances a Refuel step", function()
             local v = makeVehicle()
             WMExecutor:startWorkflow(wfRefuel, v)
 
-            local origComplete = ADIntegration.isRouteComplete
-            ADIntegration.isRouteComplete = function() return true end
+            local origComplete = ADIntegration.isRefuelRepairComplete
+            ADIntegration.isRefuelRepairComplete = function() return true end
             WMExecutor.updateTimer = 0
             WMExecutor:update(500)
-            ADIntegration.isRouteComplete = origComplete
+            ADIntegration.isRefuelRepairComplete = origComplete
 
             assert.is_nil(activeData(v))
             assert.is_false(WMExecutor:isWorkflowActiveOnVehicle(v))
@@ -2411,26 +2388,15 @@ describe("WMExecutor (real)", function()
             assert.is_true(called)
         end)
 
-        it("onADFinishedEvent completes a Repair step (currentStepType == STEP_REPAIR)", function()
-            local v = makeVehicle()
-            WMExecutor:startWorkflow(wfRepair, v)
-            local d = activeData(v)
-            assert.is_true(d.waitingForCompletion)
-
-            WMExecutor:onADFinishedEvent({ vehicle = v })
-            assert.is_nil(activeData(v))
-            assert.is_false(WMExecutor:isWorkflowActiveOnVehicle(v))
-        end)
-
-        it("completion poll (isRouteComplete) advances a Repair step", function()
+        it("completion poll (isRefuelRepairComplete) advances a Repair step", function()
             local v = makeVehicle()
             WMExecutor:startWorkflow(wfRepair, v)
 
-            local origComplete = ADIntegration.isRouteComplete
-            ADIntegration.isRouteComplete = function() return true end
+            local origComplete = ADIntegration.isRefuelRepairComplete
+            ADIntegration.isRefuelRepairComplete = function() return true end
             WMExecutor.updateTimer = 0
             WMExecutor:update(500)
-            ADIntegration.isRouteComplete = origComplete
+            ADIntegration.isRefuelRepairComplete = origComplete
 
             assert.is_nil(activeData(v))
             assert.is_false(WMExecutor:isWorkflowActiveOnVehicle(v))

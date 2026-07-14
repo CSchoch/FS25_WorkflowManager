@@ -1,3 +1,7 @@
+| 00:00 | Updated Development.md: added a "Latest batch (2026-07)" summary line to the Roadmap (Park/Refuel/Repair, queue marker refactor, leader uniqueId, HUD redesign, refuel/repair bug fixes, dead AD-callback removal, docs sweep) and checked off Park/Refuel/Repair under Milestone 11. Rewrote the Screenshots Needed table after actually opening each of the 10 existing screenshot files (not just checking they exist) — found hud-running.png, hud-support-main.png, and hud-support-vehicle.png all still show the pre-redesign HUD header ("Workflow Manager \| VehicleName", no [AD]/[CP] type tag), confirmed step-dialog-autodrive.png and main-dialog.png's prior "retake needed" flags are still accurate, and added 4 new screenshot requests for previously-untracked UI (step type dropdown with all 7 types, Waiting for Leader/Waiting for Main HUD states) that step-types.md/queue-system.md/hud-controls.md now describe in prose only since no image exists. Removed the old superseded table entirely rather than leaving both versions | Development.md | Manual visual verification of all 10 screenshot files via Read | ~1200 tok |
+| 00:00 | Updated docusaurus docs (website submodule) to catch up with all user-facing changes since the last real docs commit (1279a73, 2026-06-06) — 18 src commits' worth of drift. Biggest change: rewrote queue-system.md and step-types.md's sync section — the old per-step Sync Target/Sync Source Yes/No dropdowns (opt-out, on-by-default lockstep) were replaced back on 2026-06-23 by explicit Wait for Leader/Unlock Follower marker steps (opt-in, ordinal-paired) and the docs still described the old mechanism. Added full step-types.md sections for Park/Refuel/Repair (new AD utility steps) and Wait for Leader/Unlock Follower. Fixed hud-controls.md's header description (vehicle name removed, WorkflowManager-only) and step-target line (now shows [AD]/[CP]/[PARK]/[REFUEL]/[REPAIR]/[WM] type prefix) and added the Waiting for Leader/Waiting for Main clickable-name status lines. Named the "Waiting for Main" status explicitly in linked-workflows.md. Updated faq.md's queue-system Q&As and added a Park/Refuel/Repair entry. Added troubleshooting.md entries for Park/Repair/Refuel/stuck-follower. Verified with `npm run build` in website/ - zero broken links. Left intro.md/getting-started.md untouched (beginner tutorials, already link out to step-types.md for "more automation options"). Did not commit/push the website submodule - working tree only | website/docs/workflows/queue-system.md, step-types.md, linked-workflows.md, creating-workflows.md, website/docs/ui/hud-controls.md, website/docs/faq.md, website/docs/troubleshooting.md | npm run build: 0 broken links | ~4500 tok |
+| 00:00 | Remove dead code (bug-143, follow-up to bug-137): deleted the entire AD callback/listener completion pipeline confirmed non-functional - ADIntegration.pendingCallbacks, onRouteCompleteCallback, onDestinationReached (+ registerDestinationListener registration), WMExecutor.pendingADCallbacks, onADDestinationReached, onADFinishedEvent (+ its EVENT_AUTODRIVE_FINISHED subscription), and the now-unused EVENT_AUTODRIVE_FINISHED constant itself. All AD-tracked step completion was already carried entirely by isRouteComplete/isRefuelRepairComplete polling. Simplified AutoDrive:StartDriving call sites to drop the dead trailing callback args. Left EVENT_COURSEPLAY_FINISHED alone (separate pre-existing unused constant, out of scope - flagged for the user). Documented both AD findings in docs/API_Analysis.md so this isn't re-discovered later | AutoDriveIntegration.lua, WorkflowExecutor.lua, EventHandler.lua, API_Analysis.md, AutoDriveIntegration_spec.lua, WorkflowExecutor_spec.lua, EventHandler_spec.lua, tests/mocks/init.lua | 482/482 tests pass | ~1800 tok |
+| 00:00 | Fix bug-137: Refuel step never refueled (startRefuelRoute routed through AutoDrive:StartDriving's -2 sentinel, which calls DriveToMode:start() immediately and can hijack a stale getFirstMarker() destination before the real RefuelTask is ever queued) - fixed by bootstrapping via vehicle:startAutoDrive() directly, same as startRepairRoute already did. Repair worked but AD silently resumed driving to its previous target afterward and WM never advanced (RepairTask/RefuelTask:finished() in AD source both call getCurrentMode():start() right after stopAutoDrive(), reactivating AD before WM's isRouteComplete=not isActive() poll ever reads false) - fixed with new ADIntegration:isRefuelRepairComplete(vehicle, flagName) which polls AD's own onRouteToRefuel/onRouteToRepair flag (cleared at the top of finished(), before the reactivation) and explicitly cancels any stray restart via stopRoute(). Also confirmed vehicle.ad.callBackFunction is dead in this AD version (set but never invoked anywhere in FS25_AutoDrive source) - polling has always been the only real completion mechanism for AD-tracked steps | AutoDriveIntegration.lua, WorkflowExecutor.lua, AutoDriveIntegration_spec.lua, WorkflowExecutor_spec.lua, game_globals.lua | 485/485 tests pass | ~2800 tok |
 | 00:00 | Updated standalone web editor (webeditor/) to parity with the in-game editor's 3 new step types (Park/Refuel/Repair): added STEP_PARK/REFUEL/REPAIR constants to STEP_TYPES, widened the existing isMarkerType() predicate (already meant "no target/action fields", same concept as Lua's isTargetlessStepType) to cover all three so XML export/import, list rendering, dialog field-hiding, and target-suggestion harvesting all pick them up automatically with no per-site special-casing. Added quick-add chip buttons (mirroring the existing Wait for Leader/Unlock Follower pattern) plus a generalized stepInfoKey() lookup replacing the old hardcoded marker-only ternary for the dialog's info paragraph, with new en/de i18n copy per type. Verified end-to-end with a Playwright smoke test (python http.server + headless chromium): quick-add renders correct badges, Add Step dialog's 7-button segmented control includes all types with correct hide/show + info text, export produces exactly `<step type="park"/>` etc. (no target/action attrs), and re-importing that XML round-trips cleanly (migrated:false) with zero console errors | webeditor/app.js, webeditor/index.html, webeditor/README.md | Playwright smoke test: 0 console errors, export/import round-trip verified | ~900 tok |
 | 00:00 | Add new "Refuel" and "Repair" WM step types (drive to AD's nearest matching fuel station / nearest AD-reachable workshop). Both targetless like Park, but AD has no stored per-vehicle destination for either - resolved dynamically each time via ADTriggerManager.getClosestRefuelDestination(vehicle, true) and AutoDrive:getClosestRepairTrigger(vehicle). Refuel starts via AutoDrive:StartDriving(vehicle,-1,-2,...) after setting mode=DRIVETO + onRouteToRefuel=true (the -2 sentinel is a near no-op that relies on the caller pre-arming state, unlike -3/park which resolves its own marker). Repair has NO StartDriving sentinel at all - bootstrapped by calling vehicle:startAutoDrive() directly (verified safe: it only resets onRouteToPark, not onRouteToRefuel/onRouteToRepair) after setting onRouteToRepair=true. Both reuse Park's completion polling (RefuelTask/RepairTask:finished() confirmed to call vehicle:stopAutoDrive(), same as ParkTask). User-chosen fallback: Refuel's "no station" and "already fueled" cases are indistinguishable in AD -> treated as instant success (onStepCompleted), NOT a failure, unlike Park/Repair which fail via handleStepError. Introduced WorkflowManager:isAutoDriveTrackedStepType() (AUTODRIVE/PARK/REFUEL/REPAIR) replacing the ad-hoc "STEP_AUTODRIVE or STEP_PARK" OR-chains at every WorkflowExecutor tracking site (onADFinishedEvent, completion poll, pause/resume/stop dispatch, resolvePendingADStart) | WorkflowManager.lua, AutoDriveIntegration.lua, WorkflowExecutor.lua, WorkflowStorage.lua, WMStepDialog.lua, translation_en.xml, translation_de.xml, WorkflowExecutor_spec.lua, AutoDriveIntegration_spec.lua, WMStepDialog_spec.lua, WorkflowManager_spec.lua, game_globals.lua | 480/480 tests pass | ~3200 tok |
 | 00:00 | Add new "Park" WM step type: drives vehicle to its AutoDrive park position, checking the rear-attached implement's advd.parkDestination first then the vehicle's own, via new ADIntegration:startParkRoute (AutoDrive:StartDriving(vehicle,-1,-3,...), -3 = AD's park sentinel). Reuses all existing AD start/pause/resume/stop/poll machinery by widening every currentStepType==STEP_AUTODRIVE tracking check to also accept STEP_PARK, and by making resolvePendingADStart type-aware (dispatches to new startParkStep vs startAutoDriveStep). No park position on either object -> handleStepError (fails the step), per user decision. New WorkflowManager:isTargetlessStepType() (isMarkerStepType OR STEP_PARK) drives target/action hiding in storage+UI, kept separate from isMarkerStepType (which means "no AD/CP job" and stays accurate) | WorkflowManager.lua, AutoDriveIntegration.lua, WorkflowExecutor.lua, WorkflowStorage.lua, WMEditorDialog.lua, WMHud.lua, WMStepDialog.lua, translation_en.xml, translation_de.xml, WorkflowExecutor_spec.lua, AutoDriveIntegration_spec.lua (new), WMStepDialog_spec.lua, WorkflowManager_spec.lua, run_tests.lua | 443/443 tests pass | ~2200 tok |
@@ -684,3 +688,70 @@
 | 22:35 | Edited webeditor/README.md | 3→2 lines | ~48 |
 | 22:35 | Edited website/README.md | 3→5 lines | ~47 |
 | 22:35 | Session end: 5 writes across 2 files (deploy-webeditor.yml, README.md) | 3 reads | ~759 tok |
+
+## Session: 2026-07-13 22:47
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 22:58 | Edited src/integration/AutoDriveIntegration.lua | modified getCurrentMode() | ~355 |
+| 22:59 | Edited src/integration/AutoDriveIntegration.lua | modified ADIntegration() | ~389 |
+| 22:59 | Edited src/WorkflowExecutor.lua | expanded (+9 lines) | ~277 |
+| 23:00 | Edited tests/specs/WorkflowExecutor_spec.lua | 13→13 lines | ~156 |
+| 23:00 | Edited tests/specs/WorkflowExecutor_spec.lua | 13→13 lines | ~156 |
+| 23:00 | Edited tests/specs/AutoDriveIntegration_spec.lua | 13→11 lines | ~153 |
+| 23:00 | Edited tests/mocks/game_globals.lua | 1→2 lines | ~39 |
+| 23:01 | Edited tests/specs/AutoDriveIntegration_spec.lua | modified getCurrentMode() | ~556 |
+| 23:02 | Session end: 8 writes across 5 files (AutoDriveIntegration.lua, WorkflowExecutor.lua, WorkflowExecutor_spec.lua, AutoDriveIntegration_spec.lua, game_globals.lua) | 14 reads | ~72246 tok |
+| 23:11 | Edited src/integration/AutoDriveIntegration.lua | 6→3 lines | ~21 |
+| 23:11 | Edited src/integration/AutoDriveIntegration.lua | modified ADIntegration() | ~51 |
+| 23:11 | Edited src/integration/AutoDriveIntegration.lua | removed 34 lines | ~13 |
+| 23:11 | Edited src/integration/AutoDriveIntegration.lua | 12→10 lines | ~84 |
+| 23:11 | Edited src/integration/AutoDriveIntegration.lua | modified getCurrentMode() | ~246 |
+| 23:11 | Edited src/integration/AutoDriveIntegration.lua | isRouteComplete() → isRefuelRepairComplete() | ~135 |
+| 23:12 | Edited src/integration/AutoDriveIntegration.lua | reduced (-7 lines) | ~119 |
+| 23:12 | Edited src/integration/AutoDriveIntegration.lua | 6→5 lines | ~38 |
+| 23:12 | Edited src/integration/AutoDriveIntegration.lua | 7→4 lines | ~35 |
+| 23:12 | Edited src/WorkflowExecutor.lua | removed 55 lines | ~64 |
+| 23:12 | Edited src/utils/EventHandler.lua | 3→2 lines | ~31 |
+| 23:12 | Edited tests/specs/EventHandler_spec.lua | 4→3 lines | ~48 |
+| 23:13 | Edited tests/specs/WorkflowExecutor_spec.lua | removed 13 lines | ~22 |
+| 23:13 | Edited tests/specs/WorkflowExecutor_spec.lua | removed 12 lines | ~24 |
+| 23:13 | Edited tests/specs/WorkflowExecutor_spec.lua | removed 12 lines | ~24 |
+| 23:13 | Edited tests/specs/AutoDriveIntegration_spec.lua | 10→8 lines | ~95 |
+| 23:13 | Edited tests/specs/AutoDriveIntegration_spec.lua | 4→3 lines | ~29 |
+| 23:14 | Edited tests/mocks/init.lua | 7→6 lines | ~49 |
+| 23:14 | Edited docs/API_Analysis.md | 4→9 lines | ~203 |
+| 23:16 | Session end: 27 writes across 9 files (AutoDriveIntegration.lua, WorkflowExecutor.lua, WorkflowExecutor_spec.lua, AutoDriveIntegration_spec.lua, game_globals.lua) | 18 reads | ~73663 tok |
+| 23:21 | Edited website/docs/workflows/step-types.md | expanded (+12 lines) | ~173 |
+| 23:21 | Edited website/docs/workflows/step-types.md | step() → fixing() | ~599 |
+| 23:21 | Edited website/docs/workflows/step-types.md | expanded (+10 lines) | ~252 |
+| 23:22 | Edited website/docs/workflows/queue-system.md | 3→3 lines | ~26 |
+| 23:22 | Edited website/docs/workflows/queue-system.md | 26→24 lines | ~477 |
+| 23:23 | Edited website/docs/workflows/queue-system.md | work() → workflow() | ~468 |
+| 23:23 | Edited website/docs/workflows/queue-system.md | removed 67 lines | ~104 |
+| 23:23 | Edited website/docs/workflows/queue-system.md | 15→16 lines | ~381 |
+| 23:23 | Edited website/docs/workflows/linked-workflows.md | inline fix | ~91 |
+| 23:24 | Edited website/docs/workflows/linked-workflows.md | 7→7 lines | ~118 |
+| 23:24 | Edited website/docs/ui/hud-controls.md | step() → vehicle() | ~280 |
+| 23:24 | Edited website/docs/workflows/creating-workflows.md | 6→8 lines | ~141 |
+| 23:24 | Edited website/docs/workflows/creating-workflows.md | 2→2 lines | ~81 |
+| 23:24 | Edited website/docs/faq.md | 7→7 lines | ~270 |
+| 23:24 | Edited website/docs/faq.md | 3→3 lines | ~87 |
+| 23:25 | Edited website/docs/faq.md | 6→10 lines | ~158 |
+| 23:25 | Edited website/docs/troubleshooting.md | expanded (+24 lines) | ~421 |
+| 23:26 | Session end: 44 writes across 16 files (AutoDriveIntegration.lua, WorkflowExecutor.lua, WorkflowExecutor_spec.lua, AutoDriveIntegration_spec.lua, game_globals.lua) | 27 reads | ~97219 tok |
+| 07:14 | Edited Development.md | modified batch() | ~384 |
+| 07:14 | Edited Development.md | 4→5 lines | ~56 |
+| 07:15 | Edited Development.md | expanded (+25 lines) | ~740 |
+| 07:15 | Edited Development.md | removed 15 lines | ~61 |
+| 07:16 | Session end: 48 writes across 17 files (AutoDriveIntegration.lua, WorkflowExecutor.lua, WorkflowExecutor_spec.lua, AutoDriveIntegration_spec.lua, game_globals.lua) | 37 reads | ~99951 tok |
+
+## Session: 2026-07-14 15:06
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-07-14 15:06
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|

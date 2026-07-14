@@ -248,9 +248,14 @@ end
 ### Detecting Completion
 
 #### AutoDrive Completion
-1. **Callback method**: Pass callback to `StartDriving()`
-2. **Listener method**: Register via `registerDestinationListener()`
-3. **Polling method**: Check `vehicle.ad.stateModule:isActive()`
+1. **Callback method**: Pass callback to `StartDriving()` - **confirmed non-functional** in the
+   currently installed AD version: `vehicle.ad.callBackFunction` is assigned inside
+   `StartDriving` but never invoked anywhere else in the AD source. Do not rely on it.
+2. **Listener method**: Register via `registerDestinationListener()` - **not vehicle-completion
+   related**: `notifyDestinationListeners()` is only called when the AD road network (routes/
+   markers) changes (route upload, graph edits), never when a vehicle finishes driving.
+3. **Polling method**: Check `vehicle.ad.stateModule:isActive()` - the only method that actually
+   works; this is what WM uses (`ADIntegration:isRouteComplete`/`isRefuelRepairComplete`).
 
 #### Courseplay Completion
 1. **Event method**: Listen for `onCpFinished` event

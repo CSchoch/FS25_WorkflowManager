@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-13T20:35:35.043Z
-> Files: 28 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-14T05:15:50.539Z
+> Files: 40 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -25,6 +25,7 @@
 
 ## ./
 
+- `Development.md` — FS25 Workflow Manager — Development (~1402 tok)
 
 ## .claude/
 
@@ -46,10 +47,11 @@
 
 ## docs/
 
+- `API_Analysis.md` — AutoDrive & Courseplay API Analysis (~2128 tok)
 
 ## src/
 
-- `WorkflowExecutor.lua` — init, onADDestinationReached, onADFinishedEvent, startWorkflow, stopWorkflow (~21439 tok)
+- `WorkflowExecutor.lua` — init, startWorkflow, stopWorkflow, buildSyncMaps, refreshLeaderLink (~21066 tok)
 - `WorkflowManager.lua` — getStepTypeLabel, isMarkerStepType, isTargetlessStepType, isAutoDriveTrackedStepType, getStepTypeSho (~14647 tok)
 - `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~7437 tok)
 - `WorkflowStorage.lua` — deepCopySupportStep, isTargetlessStepType, parseFillTypes, init, getXmlPath (~4697 tok)
@@ -66,13 +68,14 @@
 
 ## src/integration/
 
-- `AutoDriveIntegration.lua` — init, completeInitialization, update, checkAvailability, getDestinations (~11563 tok)
+- `AutoDriveIntegration.lua` — init, completeInitialization, update, checkAvailability, getDestinations (~11332 tok)
 
 ## src/network/
 
 
 ## src/utils/
 
+- `EventHandler.lua` — init, Callback, to, addEventListener, removeEventListener (~1004 tok)
 
 ## testdata/
 
@@ -86,13 +89,15 @@
 
 ## tests/mocks/
 
-- `game_globals.lua` — getDate, addModEventListener (~2824 tok)
+- `game_globals.lua` — getDate, addModEventListener (~2846 tok)
+- `init.lua` — setupPackagePath, to, resetMocks, loadSource (~983 tok)
 
 ## tests/specs/
 
-- `AutoDriveIntegration_spec.lua` — makeVehicle (~3600 tok)
+- `AutoDriveIntegration_spec.lua` — makeVehicle (~4050 tok)
+- `EventHandler_spec.lua` — Declares gracefully (~2992 tok)
 - `WMStepDialog_spec.lua` — makeDialog, makeStubDialog, confirm (~3767 tok)
-- `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport, makeLeaderWF (~30383 tok)
+- `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport, makeLeaderWF (~30010 tok)
 - `WorkflowManager_spec.lua` — Declares constants (~9653 tok)
 - `WorkflowManagerSpec_spec.lua` — makeVehicle, makeSavegameXML (~11084 tok)
 
@@ -144,15 +149,22 @@
 
 ## website/docs/
 
+- `faq.md` — Frequently Asked Questions (~1670 tok)
+- `troubleshooting.md` — Troubleshooting (~1897 tok)
 
 ## website/docs/api/
 
 
 ## website/docs/ui/
 
+- `hud-controls.md` — HUD Controls (~1481 tok)
 
 ## website/docs/workflows/
 
+- `creating-workflows.md` — Creating Workflows (~1963 tok)
+- `linked-workflows.md` — Multi-Vehicle Workflows (~1681 tok)
+- `queue-system.md` — Queue System (~1311 tok)
+- `step-types.md` — Step Types (~2089 tok)
 
 ## website/src/components/HomepageFeatures/
 

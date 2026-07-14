@@ -275,7 +275,6 @@ describe("WMEventHandler", function()
         end)
 
         it("should have integration event constants defined", function()
-            assert.are.equal("autodriveFinished", WMEventHandler.EVENT_AUTODRIVE_FINISHED)
             assert.are.equal("courseplayFinished", WMEventHandler.EVENT_COURSEPLAY_FINISHED)
         end)
     end)

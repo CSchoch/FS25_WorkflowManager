@@ -21,12 +21,10 @@ describe("ADIntegration (park position)", function()
         -- getClosestRepairTrigger is likewise called via colon syntax in production.
         _G.AutoDrive = {
             MODE_DRIVETO = 3,
-            StartDriving = function(self, vehicle, destinationID, unloadDestinationID, callBackObject, callBackFunction, callBackArg)
+            StartDriving = function(self, vehicle, destinationID, unloadDestinationID)
                 _G.__lastStartDrivingCall = {
                     vehicle = vehicle, destinationID = destinationID,
                     unloadDestinationID = unloadDestinationID,
-                    callBackObject = callBackObject, callBackFunction = callBackFunction,
-                    callBackArg = callBackArg,
                 }
             end,
             getClosestRepairTrigger = function(self, vehicle)
@@ -46,7 +44,6 @@ describe("ADIntegration (park position)", function()
 
     before_each(function()
         ADIntegration.isAvailable = true
-        ADIntegration.pendingCallbacks = {}
         _G.__lastStartDrivingCall = nil
         _G.__refuelDestinationResult = nil
         _G.__repairTriggerResult = nil
@@ -242,7 +239,7 @@ describe("ADIntegration (park position)", function()
             assert.is_true(stopped)
         end)
 
-        it("sets mode/onRouteToRefuel and calls AutoDrive:StartDriving with -1, -2", function()
+        it("sets mode/onRouteToRefuel and calls vehicle:startAutoDrive (no StartDriving sentinel used)", function()
             _G.__refuelDestinationResult = 20
             local v = makeVehicle({})
             local success, skipped = ADIntegration:startRefuelRoute(v)
@@ -250,10 +247,8 @@ describe("ADIntegration (park position)", function()
             assert.is_false(skipped)
             assert.are.equal(AutoDrive.MODE_DRIVETO, v._mode)
             assert.is_true(v.ad.onRouteToRefuel)
-            assert.is_not_nil(_G.__lastStartDrivingCall)
-            assert.are.equal(v, _G.__lastStartDrivingCall.vehicle)
-            assert.are.equal(-1, _G.__lastStartDrivingCall.destinationID)
-            assert.are.equal(-2, _G.__lastStartDrivingCall.unloadDestinationID)
+            assert.is_true(v._startAutoDriveCalled)
+            assert.is_nil(_G.__lastStartDrivingCall)
         end)
     end)
 
@@ -297,6 +292,49 @@ describe("ADIntegration (park position)", function()
             assert.are.equal(AutoDrive.MODE_DRIVETO, v._mode)
             assert.is_true(v.ad.onRouteToRepair)
             assert.is_true(v._startAutoDriveCalled)
+        end)
+    end)
+
+    -- =========================================================================
+    -- isRefuelRepairComplete
+    -- =========================================================================
+    describe("isRefuelRepairComplete", function()
+        it("returns true when vehicle is nil", function()
+            assert.is_true(ADIntegration:isRefuelRepairComplete(nil, "onRouteToRefuel"))
+        end)
+
+        it("returns true when vehicle has no AutoDrive specialization", function()
+            assert.is_true(ADIntegration:isRefuelRepairComplete({}, "onRouteToRefuel"))
+        end)
+
+        it("returns false while the route flag is still set", function()
+            local v = makeVehicle({})
+            v.ad.onRouteToRefuel = true
+            assert.is_false(ADIntegration:isRefuelRepairComplete(v, "onRouteToRefuel"))
+        end)
+
+        it("returns true and does not stop the route when the flag is clear and AD is idle", function()
+            local v = makeVehicle({})
+            v.ad.onRouteToRepair = false
+            v._active = false
+            local stopped = false
+            local origStop = ADIntegration.stopRoute
+            ADIntegration.stopRoute = function(self, vehicle) stopped = true end
+            assert.is_true(ADIntegration:isRefuelRepairComplete(v, "onRouteToRepair"))
+            ADIntegration.stopRoute = origStop
+            assert.is_false(stopped)
+        end)
+
+        it("returns true and cancels AD's own mode-restart when the flag is clear but AD reactivated itself", function()
+            local v = makeVehicle({})
+            v.ad.onRouteToRepair = false
+            v._active = true -- RepairTask:finished() called getCurrentMode():start(), reactivating AD
+            local stopped = false
+            local origStop = ADIntegration.stopRoute
+            ADIntegration.stopRoute = function(self, vehicle) stopped = true end
+            assert.is_true(ADIntegration:isRefuelRepairComplete(v, "onRouteToRepair"))
+            ADIntegration.stopRoute = origStop
+            assert.is_true(stopped)
         end)
     end)
 

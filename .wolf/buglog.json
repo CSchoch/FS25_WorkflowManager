@@ -2190,6 +2190,222 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-07-13T20:35:33.866Z"
+    },
+    {
+      "id": "bug-135",
+      "timestamp": "2026-07-13T20:58:48.381Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/integration/AutoDriveIntegration.lua",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 17→28 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-13T20:58:48.381Z"
+    },
+    {
+      "id": "bug-136",
+      "timestamp": "2026-07-13T20:59:16.642Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 6→15 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-13T20:59:16.642Z"
+    },
+    {
+      "id": "bug-137",
+      "timestamp": "2026-07-13T21:30:00.000Z",
+      "error_message": "Refuel step never actually refuels the vehicle; Repair step repairs correctly but afterward AutoDrive silently resumes driving to its previous target and WM never advances to the next step",
+      "file": "src/integration/AutoDriveIntegration.lua, src/WorkflowExecutor.lua",
+      "root_cause": "Two related AD-source-confirmed issues (read directly from FS25_AutoDrive/scripts): (1) startRefuelRoute routed through AutoDrive:StartDriving(vehicle, -1, -2, ...). Per ExternalInterface.lua's StartDriving, the -2 branch calls vehicle.ad.stateModule:getCurrentMode():start() (DriveToMode:start()) IMMEDIATELY, before any RefuelTask exists. If the vehicle has a stale vehicle.ad.stateModule:getFirstMarker() left over from an earlier normal AD step, DriveToMode:start() queues a DriveToDestinationTask toward that unrelated old destination instead of letting ADTaskModule's own RefuelIfNeeded() idle-tick check enqueue the real RefuelTask - Repair never had this problem because startRepairRoute bootstraps via vehicle:startAutoDrive() directly, bypassing StartDriving/DriveToMode:start() entirely. (2) Both RepairTask:finished() and RefuelTask:finished() (FS25_AutoDrive/scripts/Tasks/RepairTask.lua, RefuelTask.lua) call vehicle:stopAutoDrive() and then unconditionally vehicle.ad.stateModule:getCurrentMode():start() again right after. Since WM sets mode=MODE_DRIVETO before starting repair/refuel, this re-triggers DriveToMode:start(), which reactivates AD (isActive()=true) and, if a stale first-marker destination is set, immediately starts driving there - so WM's polling completion check (ADIntegration:isRouteComplete = 'not isActive()') never sees AD go inactive and the step never completes. Also confirmed vehicle.ad.callBackFunction (set by WM before StartDriving/startAutoDrive) is never invoked anywhere in this AD version - the callback-based completion path (ADIntegration.onRouteCompleteCallback) is dead code for all AD-tracked step types, not just refuel/repair; polling is the only mechanism that actually works.",
+      "fix": "startRefuelRoute now bootstraps via vehicle:startAutoDrive() directly (mirrors startRepairRoute) instead of AutoDrive:StartDriving(-1,-2,...), avoiding the premature DriveToMode:start() call. Added ADIntegration:isRefuelRepairComplete(vehicle, flagName) which checks AD's own onRouteToRefuel/onRouteToRepair flag going false (set at the top of finished(), before the mode-restart happens) instead of isActive(), and explicitly calls stopRoute() to cancel any stray AD reactivation once the flag clears. WorkflowExecutor's completion poll now calls isRefuelRepairComplete for STEP_REFUEL/STEP_REPAIR instead of isRouteComplete.",
+      "tags": [
+        "autodrive",
+        "refuel",
+        "repair",
+        "completion-detection",
+        "DriveToMode",
+        "stale-destination",
+        "polling"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-13T21:30:00.000Z"
+    },
+    {
+      "id": "bug-138",
+      "timestamp": "2026-07-13T21:11:09.922Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/integration/AutoDriveIntegration.lua",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 6→3 lines (2 removed) | Also: -- Register as destination listener to get notific; if AutoDrive and AutoDrive.registerDestinationList | Also: self.pendingCallbacks[vehicle] = true; AutoDrive:StartDriving(vehicle, -1, -3, ADIntegrat | Also: -- directly the same way DriveToMode:start() does ; -- fields for parity with the other AD-driven step | Also: -- Track pending callback; self.pendingCallbacks[vehicle] = true | Also: -- Remove from pending callbacks; self.pendingCallbacks[vehicle] = nil",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 6,
+      "last_seen": "2026-07-13T21:12:18.823Z"
+    },
+    {
+      "id": "bug-139",
+      "timestamp": "2026-07-13T21:12:39.938Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "31 lines replaced/restructured",
+      "fix": "Rewrote 55→10 lines (31 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-13T21:12:39.938Z"
+    },
+    {
+      "id": "bug-140",
+      "timestamp": "2026-07-13T21:12:53.638Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/utils/EventHandler.lua",
+      "root_cause": "Had \"autodriveFinished\"",
+      "fix": "Changed to \"courseplayFinished\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-13T21:12:53.638Z"
+    },
+    {
+      "id": "bug-141",
+      "timestamp": "2026-07-13T21:13:52.656Z",
+      "error_message": "Significant refactor of ",
+      "file": "tests/specs/AutoDriveIntegration_spec.lua",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 10→8 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-13T21:13:52.656Z"
+    },
+    {
+      "id": "bug-142",
+      "timestamp": "2026-07-13T21:14:43.587Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/API_Analysis.md",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 4→9 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-13T21:14:43.588Z"
+    },
+    {
+      "id": "bug-143",
+      "timestamp": "2026-07-13T21:35:00.000Z",
+      "error_message": "N/A - proactive dead code removal following bug-137 investigation, not a reported error",
+      "file": "src/integration/AutoDriveIntegration.lua, src/WorkflowExecutor.lua, src/utils/EventHandler.lua, docs/API_Analysis.md",
+      "root_cause": "bug-137's investigation (reading FS25_AutoDrive source directly) confirmed vehicle.ad.callBackObject/callBackFunction/callBackArg (set by WM before every AutoDrive:StartDriving/startAutoDrive call) are never invoked anywhere in the installed AD version, and that AutoDrive:registerDestinationListener's notifyDestinationListeners() only fires on AD road-network changes (route upload, graph edits) - never on vehicle route completion. This made the entire callback/listener completion pipeline dead: ADIntegration.pendingCallbacks, ADIntegration.onRouteCompleteCallback, ADIntegration:onDestinationReached, WMExecutor.pendingADCallbacks, WMExecutor:onADDestinationReached, WMExecutor:onADFinishedEvent, and WMEventHandler.EVENT_AUTODRIVE_FINISHED all existed solely to support a notification path that never fires - completion detection has always been carried entirely by the isRouteComplete/isRefuelRepairComplete polling fallback in WMExecutor:update().",
+      "fix": "Removed ADIntegration.pendingCallbacks table and all reads/writes; removed vehicle.ad.callBackObject/callBackFunction/callBackArg assignments in startParkRoute/startRefuelRoute/startRepairRoute/startRoute; simplified AutoDrive:StartDriving calls to drop the now-unused trailing callback args; removed ADIntegration.onRouteCompleteCallback and ADIntegration:onDestinationReached (and its registerDestinationListener registration in completeInitialization); removed WMExecutor.pendingADCallbacks, WMExecutor:onADDestinationReached, WMExecutor:onADFinishedEvent, and their registrations in WMExecutor:init(); removed the now-fully-unused WMEventHandler.EVENT_AUTODRIVE_FINISHED constant. Left EVENT_COURSEPLAY_FINISHED alone (separate, unrelated pre-existing dead constant - out of scope, noted for the user). Updated docs/API_Analysis.md's 'Detecting Completion' section to record both findings so a future session doesn't re-attempt the callback/listener path. Removed 3 WorkflowExecutor_spec.lua tests that called the now-deleted onADFinishedEvent directly, updated EventHandler_spec.lua's constant-list test, and simplified the AutoDriveIntegration_spec.lua StartDriving mock signature/pendingCallbacks reset accordingly.",
+      "tags": [
+        "dead-code",
+        "cleanup",
+        "autodrive",
+        "callback",
+        "completion-detection"
+      ],
+      "related_bugs": [
+        "bug-137"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-07-13T21:35:00.000Z"
+    },
+    {
+      "id": "bug-144",
+      "timestamp": "2026-07-13T21:21:43.760Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/docs/workflows/step-types.md",
+      "root_cause": "7 lines replaced/restructured",
+      "fix": "Rewrote 12→26 lines (7 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-13T21:21:43.760Z"
+    },
+    {
+      "id": "bug-145",
+      "timestamp": "2026-07-13T21:23:17.505Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/docs/workflows/queue-system.md",
+      "root_cause": "5 lines replaced/restructured",
+      "fix": "Rewrote 20→33 lines (5 removed) | Also: ## Per-Step Sync Control; By default every step participates in synchronizat | Also: 1. Start the workflow on the **first vehicle** (no; 2. Enter the **second vehicle**, open Workflow Man",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-07-13T21:23:48.298Z"
+    },
+    {
+      "id": "bug-146",
+      "timestamp": "2026-07-13T21:24:16.735Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/docs/ui/hud-controls.md",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 10→13 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-13T21:24:16.735Z"
+    },
+    {
+      "id": "bug-147",
+      "timestamp": "2026-07-14T05:15:50.570Z",
+      "error_message": "Significant refactor of ",
+      "file": "Development.md",
+      "root_cause": "10 lines replaced/restructured",
+      "fix": "Rewrote 15→3 lines (10 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-14T05:15:50.570Z"
     }
   ]
 }

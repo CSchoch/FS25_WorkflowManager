@@ -256,6 +256,7 @@ _G.ADIntegration = {
     isAvailable = function() return true end,
     isRunning = function(self, vehicle) return false end,
     isRouteComplete = function(self, vehicle) return false end,
+    isRefuelRepairComplete = function(self, vehicle, flagName) return false end,
     startRoute = function(self, vehicle, target, action, unloadTarget, fillType) return true end,
     startParkRoute = function(self, vehicle) return true end,
     startRefuelRoute = function(self, vehicle) return true, false end,

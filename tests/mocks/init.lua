@@ -87,7 +87,6 @@ function resetMocks()
     -- Reset WMExecutor
     if _G.WMExecutor then
         _G.WMExecutor.activeWorkflows = {}
-        _G.WMExecutor.pendingADCallbacks = {}
         _G.WMExecutor.updateTimer = 0
         _G.WMExecutor.isInitialized = true
     end
