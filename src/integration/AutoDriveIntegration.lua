@@ -420,11 +420,33 @@ function ADIntegration:getObjectParkDestination(obj)
     return id
 end
 
+---Get obj's z-offset relative to vehicle, in AutoDrive's own local coordinate convention
+---(same primitives as AutoDrive.getVehicleLeadingEdge: positive diffZ = ahead of the vehicle,
+---negative = behind). Returns nil if it can't be determined (missing components, etc).
+---@param vehicle table Vehicle
+---@param obj table Implement/trailer object
+---@return number|nil diffZ
+function ADIntegration:getRelativeZOffset(vehicle, obj)
+    if obj == nil or obj.components == nil or obj.components[1] == nil then
+        return nil
+    end
+    local success, _, _, diffZ = pcall(function()
+        local x, y, z = getWorldTranslation(obj.components[1].node)
+        return AutoDrive.worldToLocal(vehicle, x, y, z)
+    end)
+    if not success then
+        return nil
+    end
+    return diffZ
+end
+
 ---Resolve which park position to drive to. AD stores the park marker on whichever vehicle
 ---or implement object was selected (Tab-cycled to) when the user pressed "Set Park Position"
----in AD's own UI - there is no front/rear concept, so every directly attached implement (no
----recursive chain-walking into implements-of-implements) is checked, in attach order, before
----falling back to the vehicle's own configured position.
+---in AD's own UI - there is no inherent front/rear concept, so every directly attached
+---implement (no recursive chain-walking into implements-of-implements) with a valid position
+---is a candidate. When more than one implement has one configured, the implement furthest
+---behind the vehicle is preferred (falls back to attach order if position can't be determined
+---for one of them); otherwise falls back to the vehicle's own configured position.
 ---@param vehicle table Vehicle
 ---@return number|nil parkId Marker id to park at, or nil if nothing has one configured
 function ADIntegration:getVehicleParkDestinationId(vehicle)
@@ -433,12 +455,24 @@ function ADIntegration:getVehicleParkDestinationId(vehicle)
     end
 
     if vehicle.getAttachedImplements ~= nil then
+        local candidates = {}
         for _, implement in ipairs(vehicle:getAttachedImplements()) do
             local id = self:getObjectParkDestination(implement.object)
             if id ~= nil then
-                WMLogger:debug("getVehicleParkDestinationId: resolved from attached implement, parkId=%d", id)
-                return id
+                table.insert(candidates, { id = id, diffZ = self:getRelativeZOffset(vehicle, implement.object) })
             end
+        end
+
+        if #candidates > 0 then
+            local best = candidates[1]
+            for i = 2, #candidates do
+                local c = candidates[i]
+                if best.diffZ ~= nil and c.diffZ ~= nil and c.diffZ < best.diffZ then
+                    best = c
+                end
+            end
+            WMLogger:debug("getVehicleParkDestinationId: resolved from attached implement, parkId=%d", best.id)
+            return best.id
         end
     end
 

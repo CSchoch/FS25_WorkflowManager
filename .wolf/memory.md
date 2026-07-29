@@ -792,3 +792,14 @@
 | 16:19 | Edited website/docs/workflows/step-types.md | inline fix | ~25 |
 | 17:00 | Reverted bug-151 geometry fix - AD has no front/rear concept, stores park marker on whichever object was selected; getVehicleParkDestinationId now scans all attached implements in order | src/integration/AutoDriveIntegration.lua, src/WorkflowExecutor.lua, src/WorkflowManager.lua, tests/specs/AutoDriveIntegration_spec.lua, website/docs | fixed, tests pass (479) | ~7k |
 | 16:21 | Session end: 22 writes across 6 files (AutoDriveIntegration.lua, AutoDriveIntegration_spec.lua, WorkflowExecutor.lua, WorkflowManager.lua, troubleshooting.md) | 9 reads | ~60628 tok |
+| 00:03 | Edited src/integration/AutoDriveIntegration.lua | modified ADIntegration() | ~725 |
+| 00:03 | Edited tests/specs/AutoDriveIntegration_spec.lua | expanded (+9 lines) | ~123 |
+| 00:04 | Edited tests/specs/AutoDriveIntegration_spec.lua | modified makeImplement() | ~660 |
+| 00:04 | Edited tests/specs/AutoDriveIntegration_spec.lua | expanded (+13 lines) | ~293 |
+| 15:00 | Added optional rear-preference tiebreak to getVehicleParkDestinationId when multiple attached implements have a configured park position (geometry only used as tiebreak, safe fallback to attach order) | src/integration/AutoDriveIntegration.lua, tests/specs/AutoDriveIntegration_spec.lua | added, tests pass (481) | ~4k |
+| 00:04 | Session end: 26 writes across 6 files (AutoDriveIntegration.lua, AutoDriveIntegration_spec.lua, WorkflowExecutor.lua, WorkflowManager.lua, troubleshooting.md) | 9 reads | ~62006 tok |
+
+## Session: 2026-07-29 23:09
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|

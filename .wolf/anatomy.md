@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-14T14:19:52.913Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-14T22:04:17.587Z
 > Files: 40 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
@@ -68,7 +68,7 @@
 
 ## src/integration/
 
-- `AutoDriveIntegration.lua` — init, completeInitialization, update, checkAvailability, getDestinations (~11454 tok)
+- `AutoDriveIntegration.lua` — init, completeInitialization, update, checkAvailability, getDestinations (~11852 tok)
 
 ## src/network/
 
@@ -94,7 +94,7 @@
 
 ## tests/specs/
 
-- `AutoDriveIntegration_spec.lua` — makeImplement, makeVehicle (~4157 tok)
+- `AutoDriveIntegration_spec.lua` — makeImplement, makeVehicle (~4616 tok)
 - `EventHandler_spec.lua` — Declares gracefully (~2992 tok)
 - `WMStepDialog_spec.lua` — makeDialog, makeStubDialog, confirm (~3767 tok)
 - `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport, makeLeaderWF (~30010 tok)

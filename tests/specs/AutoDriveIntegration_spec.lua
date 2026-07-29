@@ -39,6 +39,15 @@ describe("ADIntegration (park position)", function()
             end,
         }
 
+        -- Optional geometry mocks for the "prefer the rear implement" tiebreak. Mock nodes
+        -- carry a plain .z; worldToLocal reduces to (nodeZ - vehicle._zPos) for tests.
+        _G.getWorldTranslation = function(node)
+            return 0, 0, node.z or 0
+        end
+        _G.AutoDrive.worldToLocal = function(vehicle, _, _, z)
+            return 0, 0, z - (vehicle._zPos or 0)
+        end
+
         dofile("src/integration/AutoDriveIntegration.lua")
     end)
 
@@ -51,9 +60,14 @@ describe("ADIntegration (park position)", function()
     end)
 
     -- Build a mock implement with an optional configured park destination (false = unconfigured,
-    -- distinct from a nil array hole so ipairs can walk a list containing it).
-    local function makeImplement(parkId)
-        return { object = { advd = { parkDestination = parkId ~= false and parkId or nil } } }
+    -- distinct from a nil array hole so ipairs can walk a list containing it) and an optional
+    -- world z position (nil = no geometry data, matching a real implement with no components).
+    local function makeImplement(parkId, z)
+        local obj = { advd = { parkDestination = parkId ~= false and parkId or nil } }
+        if z ~= nil then
+            obj.components = { { node = { z = z } } }
+        end
+        return { object = obj }
     end
 
     -- Build a vehicle with an AD state module and (optionally) directly attached implements.
@@ -61,11 +75,14 @@ describe("ADIntegration (park position)", function()
     -- for successive attached implements, in the same order getAttachedImplements() returns -
     -- AD stores the configured park position on whichever object was selected when the user
     -- set it, so resolution must check every attached implement, not assume a fixed position.
+    -- opts.implementZs is a parallel list of world z positions (rear = negative), only needed
+    -- to exercise the "prefer the rear implement" tiebreak.
     local function makeVehicle(opts)
         opts = opts or {}
         local vehicle  -- declared first so stateModule closures capture it as an upvalue (Lua 5.1)
         vehicle = {
             _active = false,
+            _zPos = 0,
             advd = opts.vehicleParkId ~= nil and { parkDestination = opts.vehicleParkId } or nil,
             ad = {
                 stateModule = {
@@ -80,8 +97,9 @@ describe("ADIntegration (park position)", function()
             },
             getAttachedImplements = function(self)
                 local list = {}
-                for _, parkId in ipairs(opts.implementParkIds or {}) do
-                    table.insert(list, makeImplement(parkId))
+                for i, parkId in ipairs(opts.implementParkIds or {}) do
+                    local z = opts.implementZs and opts.implementZs[i] or nil
+                    table.insert(list, makeImplement(parkId, z))
                 end
                 return list
             end,
@@ -145,6 +163,19 @@ describe("ADIntegration (park position)", function()
             _G.ADGraphManager._markers[11] = { id = 11, name = "ParkSpotB" }
             local v = makeVehicle({ implementParkIds = { false, 10 }, vehicleParkId = 11 })
             assert.are.equal(10, ADIntegration:getVehicleParkDestinationId(v))
+        end)
+
+        it("prefers the implement furthest behind the vehicle when multiple have a park position configured", function()
+            _G.ADGraphManager._markers[11] = { id = 11, name = "ParkSpotB" }
+            -- implement 1 (front, z=5) has 11 configured; implement 2 (rear, z=-5) has 10 configured
+            local v = makeVehicle({ implementParkIds = { 11, 10 }, implementZs = { 5, -5 } })
+            assert.are.equal(10, ADIntegration:getVehicleParkDestinationId(v))
+        end)
+
+        it("keeps attach order when a candidate implement's position can't be determined", function()
+            _G.ADGraphManager._markers[11] = { id = 11, name = "ParkSpotB" }
+            local v = makeVehicle({ implementParkIds = { 11, 10 } })
+            assert.are.equal(11, ADIntegration:getVehicleParkDestinationId(v))
         end)
     end)
 
