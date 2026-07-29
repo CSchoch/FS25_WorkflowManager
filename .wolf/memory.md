@@ -1,3 +1,4 @@
+| 15:35 | Fix bug-148: Refuel step failed again with "ADTriggerManager not available" (in-game log, 2026-07-14). Root cause was a namespacing bug, not an AD API problem - startRefuelRoute checked bare global ADTriggerManager, but FS25 sandboxes AD's globals under FS25_AutoDrive; only AutoDrive itself gets bridged into a bare global via checkAvailability(). getDestinations() already had the correct ADGraphManager-or-FS25_AutoDrive.ADGraphManager fallback pattern but startRefuelRoute (added in bug-137 work) never got it. Unit tests couldn't catch this since the spec mocks _G.ADTriggerManager directly, bypassing namespace resolution. Fixed with `local triggerManager = ADTriggerManager or (FS25_AutoDrive and FS25_AutoDrive.ADTriggerManager)` | AutoDriveIntegration.lua | 482/482 tests pass | ~2500 tok |
 | 00:00 | Updated Development.md: added a "Latest batch (2026-07)" summary line to the Roadmap (Park/Refuel/Repair, queue marker refactor, leader uniqueId, HUD redesign, refuel/repair bug fixes, dead AD-callback removal, docs sweep) and checked off Park/Refuel/Repair under Milestone 11. Rewrote the Screenshots Needed table after actually opening each of the 10 existing screenshot files (not just checking they exist) — found hud-running.png, hud-support-main.png, and hud-support-vehicle.png all still show the pre-redesign HUD header ("Workflow Manager \| VehicleName", no [AD]/[CP] type tag), confirmed step-dialog-autodrive.png and main-dialog.png's prior "retake needed" flags are still accurate, and added 4 new screenshot requests for previously-untracked UI (step type dropdown with all 7 types, Waiting for Leader/Waiting for Main HUD states) that step-types.md/queue-system.md/hud-controls.md now describe in prose only since no image exists. Removed the old superseded table entirely rather than leaving both versions | Development.md | Manual visual verification of all 10 screenshot files via Read | ~1200 tok |
 | 00:00 | Updated docusaurus docs (website submodule) to catch up with all user-facing changes since the last real docs commit (1279a73, 2026-06-06) — 18 src commits' worth of drift. Biggest change: rewrote queue-system.md and step-types.md's sync section — the old per-step Sync Target/Sync Source Yes/No dropdowns (opt-out, on-by-default lockstep) were replaced back on 2026-06-23 by explicit Wait for Leader/Unlock Follower marker steps (opt-in, ordinal-paired) and the docs still described the old mechanism. Added full step-types.md sections for Park/Refuel/Repair (new AD utility steps) and Wait for Leader/Unlock Follower. Fixed hud-controls.md's header description (vehicle name removed, WorkflowManager-only) and step-target line (now shows [AD]/[CP]/[PARK]/[REFUEL]/[REPAIR]/[WM] type prefix) and added the Waiting for Leader/Waiting for Main clickable-name status lines. Named the "Waiting for Main" status explicitly in linked-workflows.md. Updated faq.md's queue-system Q&As and added a Park/Refuel/Repair entry. Added troubleshooting.md entries for Park/Repair/Refuel/stuck-follower. Verified with `npm run build` in website/ - zero broken links. Left intro.md/getting-started.md untouched (beginner tutorials, already link out to step-types.md for "more automation options"). Did not commit/push the website submodule - working tree only | website/docs/workflows/queue-system.md, step-types.md, linked-workflows.md, creating-workflows.md, website/docs/ui/hud-controls.md, website/docs/faq.md, website/docs/troubleshooting.md | npm run build: 0 broken links | ~4500 tok |
 | 00:00 | Remove dead code (bug-143, follow-up to bug-137): deleted the entire AD callback/listener completion pipeline confirmed non-functional - ADIntegration.pendingCallbacks, onRouteCompleteCallback, onDestinationReached (+ registerDestinationListener registration), WMExecutor.pendingADCallbacks, onADDestinationReached, onADFinishedEvent (+ its EVENT_AUTODRIVE_FINISHED subscription), and the now-unused EVENT_AUTODRIVE_FINISHED constant itself. All AD-tracked step completion was already carried entirely by isRouteComplete/isRefuelRepairComplete polling. Simplified AutoDrive:StartDriving call sites to drop the dead trailing callback args. Left EVENT_COURSEPLAY_FINISHED alone (separate pre-existing unused constant, out of scope - flagged for the user). Documented both AD findings in docs/API_Analysis.md so this isn't re-discovered later | AutoDriveIntegration.lua, WorkflowExecutor.lua, EventHandler.lua, API_Analysis.md, AutoDriveIntegration_spec.lua, WorkflowExecutor_spec.lua, EventHandler_spec.lua, tests/mocks/init.lua | 482/482 tests pass | ~1800 tok |
@@ -755,3 +756,39 @@
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+| 15:27 | Edited src/integration/AutoDriveIntegration.lua | 9→10 lines | ~177 |
+| 15:28 | Session end: 1 writes across 1 files (AutoDriveIntegration.lua) | 2 reads | ~15572 tok |
+
+## Session: 2026-07-14 15:39
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 15:41 | Edited src/integration/AutoDriveIntegration.lua | 6→7 lines | ~62 |
+| 16:00 | Fixed Park step false failure - getDestinationById missing FS25_AutoDrive.ADGraphManager fallback | src/integration/AutoDriveIntegration.lua | fixed, tests pass (482) | ~3k |
+| 15:42 | Session end: 1 writes across 1 files (AutoDriveIntegration.lua) | 2 reads | ~11424 tok |
+| 15:58 | Edited src/integration/AutoDriveIntegration.lua | modified ADIntegration() | ~363 |
+| 15:58 | Edited tests/specs/AutoDriveIntegration_spec.lua | expanded (+9 lines) | ~205 |
+| 15:59 | Edited tests/specs/AutoDriveIntegration_spec.lua | 3→3 lines | ~34 |
+| 15:59 | Edited tests/specs/AutoDriveIntegration_spec.lua | modified makeImplement() | ~556 |
+| 15:59 | Edited tests/specs/AutoDriveIntegration_spec.lua | expanded (+16 lines) | ~322 |
+| 15:59 | Edited tests/specs/AutoDriveIntegration_spec.lua | expanded (+8 lines) | ~205 |
+| 15:59 | Edited tests/specs/AutoDriveIntegration_spec.lua | 7→5 lines | ~95 |
+| 16:30 | Fixed Park step picking front-attached tool instead of rear trailer - getRearAttachedObject now resolves by world z-position (AutoDrive.worldToLocal) not list order | src/integration/AutoDriveIntegration.lua, tests/specs/AutoDriveIntegration_spec.lua | fixed, tests pass (485) | ~5k |
+| 16:00 | Session end: 8 writes across 2 files (AutoDriveIntegration.lua, AutoDriveIntegration_spec.lua) | 3 reads | ~17402 tok |
+| 16:12 | Edited src/integration/AutoDriveIntegration.lua | 14→17 lines | ~244 |
+| 16:12 | Edited src/integration/AutoDriveIntegration.lua | modified ADIntegration() | ~174 |
+| 16:45 | Added diagnostic debug logging to getRearAttachedObject/getVehicleParkDestinationId - spatial rear-fix still failing with trailer attached, need real diffZ values before another fix attempt | src/integration/AutoDriveIntegration.lua | instrumented, tests pass (485) | ~2k |
+| 16:17 | Edited src/integration/AutoDriveIntegration.lua | modified ADIntegration() | ~493 |
+| 16:17 | Edited tests/specs/AutoDriveIntegration_spec.lua | 5→5 lines | ~68 |
+| 16:18 | Edited tests/specs/AutoDriveIntegration_spec.lua | removed 10 lines | ~16 |
+| 16:18 | Edited tests/specs/AutoDriveIntegration_spec.lua | modified makeImplement() | ~552 |
+| 16:18 | Edited tests/specs/AutoDriveIntegration_spec.lua | 23→27 lines | ~441 |
+| 16:18 | Edited tests/specs/AutoDriveIntegration_spec.lua | 7→7 lines | ~104 |
+| 16:19 | Edited src/integration/AutoDriveIntegration.lua | "No AD park position confi" → "No AD park position confi" | ~26 |
+| 16:19 | Edited src/WorkflowExecutor.lua | 2→2 lines | ~47 |
+| 16:19 | Edited src/WorkflowExecutor.lua | "No park position configur" → "No park position configur" | ~30 |
+| 16:19 | Edited src/WorkflowManager.lua | "s (or its rear-attached i" → "s (or an attached impleme" | ~21 |
+| 16:19 | Edited website/docs/troubleshooting.md | inline fix | ~27 |
+| 16:19 | Edited website/docs/workflows/step-types.md | inline fix | ~25 |
+| 17:00 | Reverted bug-151 geometry fix - AD has no front/rear concept, stores park marker on whichever object was selected; getVehicleParkDestinationId now scans all attached implements in order | src/integration/AutoDriveIntegration.lua, src/WorkflowExecutor.lua, src/WorkflowManager.lua, tests/specs/AutoDriveIntegration_spec.lua, website/docs | fixed, tests pass (479) | ~7k |
+| 16:21 | Session end: 22 writes across 6 files (AutoDriveIntegration.lua, AutoDriveIntegration_spec.lua, WorkflowExecutor.lua, WorkflowManager.lua, troubleshooting.md) | 9 reads | ~60628 tok |

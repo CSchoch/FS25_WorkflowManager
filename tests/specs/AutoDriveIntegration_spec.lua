@@ -1,7 +1,7 @@
 --[[
     ADIntegration Unit Tests: AD "Park"/"Refuel"/"Repair" resolution and route start
-    Covers getRearAttachedObject, getObjectParkDestination, getVehicleParkDestinationId,
-    startParkRoute, startRefuelRoute, and startRepairRoute (Park/Refuel/Repair WM step types).
+    Covers getObjectParkDestination, getVehicleParkDestinationId, startParkRoute,
+    startRefuelRoute, and startRepairRoute (Park/Refuel/Repair WM step types).
 ]]
 
 describe("ADIntegration (park position)", function()
@@ -50,7 +50,17 @@ describe("ADIntegration (park position)", function()
         _G.ADGraphManager._markers = { [10] = { id = 10, name = "ParkSpotA" } }
     end)
 
-    -- Build a vehicle with an AD state module and (optionally) a rear-attached implement
+    -- Build a mock implement with an optional configured park destination (false = unconfigured,
+    -- distinct from a nil array hole so ipairs can walk a list containing it).
+    local function makeImplement(parkId)
+        return { object = { advd = { parkDestination = parkId ~= false and parkId or nil } } }
+    end
+
+    -- Build a vehicle with an AD state module and (optionally) directly attached implements.
+    -- opts.implementParkIds is an ordered list of park ids (or `false` for "no park id set")
+    -- for successive attached implements, in the same order getAttachedImplements() returns -
+    -- AD stores the configured park position on whichever object was selected when the user
+    -- set it, so resolution must check every attached implement, not assume a fixed position.
     local function makeVehicle(opts)
         opts = opts or {}
         local vehicle  -- declared first so stateModule closures capture it as an upvalue (Lua 5.1)
@@ -69,10 +79,11 @@ describe("ADIntegration (park position)", function()
                 },
             },
             getAttachedImplements = function(self)
-                if opts.rearParkId == nil and not opts.hasEmptyImplementList then
-                    return {}
+                local list = {}
+                for _, parkId in ipairs(opts.implementParkIds or {}) do
+                    table.insert(list, makeImplement(parkId))
                 end
-                return { { object = { advd = { parkDestination = opts.rearParkId } } } }
+                return list
             end,
             startAutoDrive = function(self)
                 vehicle._startAutoDriveCalled = true
@@ -80,31 +91,6 @@ describe("ADIntegration (park position)", function()
         }
         return vehicle
     end
-
-    -- =========================================================================
-    -- getRearAttachedObject
-    -- =========================================================================
-    describe("getRearAttachedObject", function()
-        it("returns nil when vehicle is nil", function()
-            assert.is_nil(ADIntegration:getRearAttachedObject(nil))
-        end)
-
-        it("returns nil when vehicle has no getAttachedImplements method", function()
-            assert.is_nil(ADIntegration:getRearAttachedObject({}))
-        end)
-
-        it("returns nil when no implements are attached", function()
-            local v = makeVehicle({})
-            assert.is_nil(ADIntegration:getRearAttachedObject(v))
-        end)
-
-        it("returns the first attached implement's object", function()
-            local v = makeVehicle({ rearParkId = 10 })
-            local obj = ADIntegration:getRearAttachedObject(v)
-            assert.is_not_nil(obj)
-            assert.are.equal(10, obj.advd.parkDestination)
-        end)
-    end)
 
     -- =========================================================================
     -- getObjectParkDestination
@@ -135,20 +121,30 @@ describe("ADIntegration (park position)", function()
     -- getVehicleParkDestinationId
     -- =========================================================================
     describe("getVehicleParkDestinationId", function()
-        it("prefers the rear-attached implement's park position over the vehicle's own", function()
+        it("prefers an attached implement's park position over the vehicle's own", function()
             _G.ADGraphManager._markers[11] = { id = 11, name = "ParkSpotB" }
-            local v = makeVehicle({ rearParkId = 10, vehicleParkId = 11 })
+            local v = makeVehicle({ implementParkIds = { 10 }, vehicleParkId = 11 })
             assert.are.equal(10, ADIntegration:getVehicleParkDestinationId(v))
         end)
 
-        it("falls back to the vehicle's own park position when the rear implement has none", function()
+        it("falls back to the vehicle's own park position when no implement has one", function()
             local v = makeVehicle({ vehicleParkId = 10 })
             assert.are.equal(10, ADIntegration:getVehicleParkDestinationId(v))
         end)
 
-        it("returns nil when neither the rear implement nor the vehicle has one configured", function()
+        it("returns nil when neither an attached implement nor the vehicle has one configured", function()
             local v = makeVehicle({})
             assert.is_nil(ADIntegration:getVehicleParkDestinationId(v))
+        end)
+
+        it("skips an attached implement with no park position configured and uses the next one that has one", function()
+            -- Regression: a vehicle can have multiple directly attached implements (e.g. a
+            -- front tool with nothing configured, plus a trailer the user actually set the
+            -- park position on via AD's own UI) - resolution must check all of them, not just
+            -- the first, since AD stores the position on whichever object was selected (bug-151).
+            _G.ADGraphManager._markers[11] = { id = 11, name = "ParkSpotB" }
+            local v = makeVehicle({ implementParkIds = { false, 10 }, vehicleParkId = 11 })
+            assert.are.equal(10, ADIntegration:getVehicleParkDestinationId(v))
         end)
     end)
 
@@ -193,9 +189,9 @@ describe("ADIntegration (park position)", function()
             assert.are.equal(-3, _G.__lastStartDrivingCall.unloadDestinationID)
         end)
 
-        it("prefers the rear-attached implement's park position over the vehicle's own", function()
+        it("prefers an attached implement's park position over the vehicle's own", function()
             _G.ADGraphManager._markers[11] = { id = 11, name = "ParkSpotB" }
-            local v = makeVehicle({ rearParkId = 10, vehicleParkId = 11 })
+            local v = makeVehicle({ implementParkIds = { 10 }, vehicleParkId = 11 })
             ADIntegration:startParkRoute(v)
             assert.are.equal(10, v._parkDestinationAtJobFinished)
         end)

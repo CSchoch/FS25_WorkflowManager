@@ -101,7 +101,7 @@ WorkflowManager.STEP_COURSEPLAY = "courseplay"
 -- Leader/follower sync marker steps (pass-through coordination steps, no AD/CP job)
 WorkflowManager.STEP_WAIT_FOR_LEADER = "wait_for_leader"
 WorkflowManager.STEP_UNLOCK_FOLLOWER = "unlock_follower"
--- Drive to the vehicle's (or its rear-attached implement's) AutoDrive park position
+-- Drive to the vehicle's (or an attached implement's) AutoDrive park position
 WorkflowManager.STEP_PARK = "park"
 -- Drive to the nearest AD-reachable fuel station for the vehicle's needed fuel type(s)
 WorkflowManager.STEP_REFUEL = "refuel"

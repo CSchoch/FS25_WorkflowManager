@@ -254,8 +254,9 @@ function ADIntegration:getDestinationById(id)
         return nil
     end
 
-    if ADGraphManager and ADGraphManager.getMapMarkerById then
-        return ADGraphManager:getMapMarkerById(id)
+    local graphManager = ADGraphManager or (FS25_AutoDrive and FS25_AutoDrive.ADGraphManager)
+    if graphManager and graphManager.getMapMarkerById then
+        return graphManager:getMapMarkerById(id)
     end
 
     return nil
@@ -402,20 +403,6 @@ function ADIntegration:getFillTypeNames()
     return names
 end
 
----Get the object attached at the rear of vehicle (first attached implement), or nil
----@param vehicle table Vehicle
----@return table|nil object The first attached implement/trailer object, or nil
-function ADIntegration:getRearAttachedObject(vehicle)
-    if vehicle == nil or vehicle.getAttachedImplements == nil then
-        return nil
-    end
-    local implements = vehicle:getAttachedImplements()
-    if implements == nil or implements[1] == nil then
-        return nil
-    end
-    return implements[1].object
-end
-
 ---Get obj's configured AD park marker id, or nil if unset/stale
 ---@param obj table|nil Vehicle or implement/trailer object
 ---@return number|nil parkId Marker id, or nil if not configured or the marker no longer exists
@@ -433,15 +420,31 @@ function ADIntegration:getObjectParkDestination(obj)
     return id
 end
 
----Resolve which park position to drive to: rear-attached implement first, then vehicle
+---Resolve which park position to drive to. AD stores the park marker on whichever vehicle
+---or implement object was selected (Tab-cycled to) when the user pressed "Set Park Position"
+---in AD's own UI - there is no front/rear concept, so every directly attached implement (no
+---recursive chain-walking into implements-of-implements) is checked, in attach order, before
+---falling back to the vehicle's own configured position.
 ---@param vehicle table Vehicle
----@return number|nil parkId Marker id to park at, or nil if neither has one configured
+---@return number|nil parkId Marker id to park at, or nil if nothing has one configured
 function ADIntegration:getVehicleParkDestinationId(vehicle)
-    local rearId = self:getObjectParkDestination(self:getRearAttachedObject(vehicle))
-    if rearId ~= nil then
-        return rearId
+    if vehicle == nil then
+        return nil
     end
-    return self:getObjectParkDestination(vehicle)
+
+    if vehicle.getAttachedImplements ~= nil then
+        for _, implement in ipairs(vehicle:getAttachedImplements()) do
+            local id = self:getObjectParkDestination(implement.object)
+            if id ~= nil then
+                WMLogger:debug("getVehicleParkDestinationId: resolved from attached implement, parkId=%d", id)
+                return id
+            end
+        end
+    end
+
+    local vehicleId = self:getObjectParkDestination(vehicle)
+    WMLogger:debug("getVehicleParkDestinationId: resolved from vehicle itself, parkId=%s", tostring(vehicleId))
+    return vehicleId
 end
 
 ---Start driving vehicle to its resolved AutoDrive park position
@@ -461,7 +464,7 @@ function ADIntegration:startParkRoute(vehicle)
 
     local parkId = self:getVehicleParkDestinationId(vehicle)
     if parkId == nil then
-        WMLogger:warning("No AD park position configured for vehicle or its rear-attached implement")
+        WMLogger:warning("No AD park position configured for vehicle or any attached implement")
         return false
     end
 
@@ -503,7 +506,8 @@ function ADIntegration:startRefuelRoute(vehicle)
         return false, false
     end
 
-    if ADTriggerManager == nil or ADTriggerManager.getClosestRefuelDestination == nil then
+    local triggerManager = ADTriggerManager or (FS25_AutoDrive and FS25_AutoDrive.ADTriggerManager)
+    if triggerManager == nil or triggerManager.getClosestRefuelDestination == nil then
         WMLogger:error("Cannot start refuel route - ADTriggerManager not available")
         return false, false
     end
@@ -511,7 +515,7 @@ function ADIntegration:startRefuelRoute(vehicle)
     -- ignoreFillLevel=true matches AD's own input_refuelVehicle "force check" semantics.
     -- Returns nil both when no station exists for the needed fuel type AND when the
     -- vehicle doesn't need fuel at all (AD doesn't distinguish these) - treated as "skip".
-    local refuelDestination = ADTriggerManager.getClosestRefuelDestination(vehicle, true)
+    local refuelDestination = triggerManager.getClosestRefuelDestination(vehicle, true)
     if refuelDestination == nil then
         WMLogger:info("No refuel needed or no matching station reachable - skipping")
         return false, true

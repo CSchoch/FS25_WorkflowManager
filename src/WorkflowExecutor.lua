@@ -585,7 +585,7 @@ function WMExecutor:executeCurrentStep(activeData)
         self:startCourseplayStep(activeData, vehicle, step)
 
     elseif step.type == WorkflowManager.STEP_PARK then
-        -- Park: AD resolves its own destination (rear-attached implement's park
+        -- Park: AD resolves its own destination (any directly attached implement's park
         -- position, falling back to the vehicle's own), so no target/action needed.
         WMLogger:info("Starting Park step - vehicle: %s",
             vehicle and (vehicle.getName and vehicle:getName() or "unknown") or "nil")
@@ -792,7 +792,7 @@ function WMExecutor:startParkStep(activeData, vehicle, step)
         ADIntegration:applyWorkflowSettings(vehicle, workflow.adSettings)
         WMLogger:info("Park step started successfully, waiting for completion")
     else
-        self:handleStepError(activeData, "No park position configured for vehicle or its rear-attached implement")
+        self:handleStepError(activeData, "No park position configured for vehicle or any attached implement")
     end
 end
 

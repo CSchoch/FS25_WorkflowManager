@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-14T05:15:50.539Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-14T14:19:52.913Z
 > Files: 40 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
@@ -52,7 +52,7 @@
 ## src/
 
 - `WorkflowExecutor.lua` — init, startWorkflow, stopWorkflow, buildSyncMaps, refreshLeaderLink (~21066 tok)
-- `WorkflowManager.lua` — getStepTypeLabel, isMarkerStepType, isTargetlessStepType, isAutoDriveTrackedStepType, getStepTypeSho (~14647 tok)
+- `WorkflowManager.lua` — getStepTypeLabel, isMarkerStepType, isTargetlessStepType, isAutoDriveTrackedStepType, getStepTypeSho (~14646 tok)
 - `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~7437 tok)
 - `WorkflowStorage.lua` — deepCopySupportStep, isTargetlessStepType, parseFillTypes, init, getXmlPath (~4697 tok)
 
@@ -68,7 +68,7 @@
 
 ## src/integration/
 
-- `AutoDriveIntegration.lua` — init, completeInitialization, update, checkAvailability, getDestinations (~11332 tok)
+- `AutoDriveIntegration.lua` — init, completeInitialization, update, checkAvailability, getDestinations (~11454 tok)
 
 ## src/network/
 
@@ -94,7 +94,7 @@
 
 ## tests/specs/
 
-- `AutoDriveIntegration_spec.lua` — makeVehicle (~4050 tok)
+- `AutoDriveIntegration_spec.lua` — makeImplement, makeVehicle (~4157 tok)
 - `EventHandler_spec.lua` — Declares gracefully (~2992 tok)
 - `WMStepDialog_spec.lua` — makeDialog, makeStubDialog, confirm (~3767 tok)
 - `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport, makeLeaderWF (~30010 tok)
@@ -150,7 +150,7 @@
 ## website/docs/
 
 - `faq.md` — Frequently Asked Questions (~1670 tok)
-- `troubleshooting.md` — Troubleshooting (~1897 tok)
+- `troubleshooting.md` — Troubleshooting (~1896 tok)
 
 ## website/docs/api/
 
@@ -164,7 +164,7 @@
 - `creating-workflows.md` — Creating Workflows (~1963 tok)
 - `linked-workflows.md` — Multi-Vehicle Workflows (~1681 tok)
 - `queue-system.md` — Queue System (~1311 tok)
-- `step-types.md` — Step Types (~2089 tok)
+- `step-types.md` — Step Types (~2087 tok)
 
 ## website/src/components/HomepageFeatures/
 

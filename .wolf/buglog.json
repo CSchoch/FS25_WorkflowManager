@@ -2406,6 +2406,217 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-07-14T05:15:50.570Z"
+    },
+    {
+      "id": "bug-148",
+      "timestamp": "2026-07-14T15:30:00.000Z",
+      "error_message": "Cannot start refuel route - ADTriggerManager not available",
+      "file": "src/integration/AutoDriveIntegration.lua",
+      "root_cause": "startRefuelRoute checked the bare global ADTriggerManager, but FS25 sandboxes each mod's globals under FS25_<ModName> - WM's environment never sees AutoDrive's ADTriggerManager as a bare global. Only AutoDrive itself gets bridged into a bare global, via ADIntegration:checkAvailability() explicitly assigning `AutoDrive = FS25_AutoDrive.AutoDrive`. getDestinations() already had the correct dual-check pattern for ADGraphManager (bare-global-or-FS25_AutoDrive.ADGraphManager fallback), but startRefuelRoute (added in bug-137/the Refuel step work) never got the same treatment. The unit test in AutoDriveIntegration_spec.lua mocks `_G.ADTriggerManager` directly, which bypasses namespace resolution entirely and could not catch this - passed in CI while broken in the real game.",
+      "fix": "Changed startRefuelRoute to resolve `local triggerManager = ADTriggerManager or (FS25_AutoDrive and FS25_AutoDrive.ADTriggerManager)`, mirroring the existing graphManager fallback pattern in getDestinations(), and use triggerManager for the availability check and the getClosestRefuelDestination call.",
+      "tags": [
+        "autodrive",
+        "refuel",
+        "namespacing",
+        "FS25_AutoDrive",
+        "global-scope",
+        "ADTriggerManager"
+      ],
+      "related_bugs": [
+        "bug-137"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-07-14T15:30:00.000Z"
+    },
+    {
+      "id": "bug-149",
+      "timestamp": "2026-07-14T13:41:41.099Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/integration/AutoDriveIntegration.lua",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 6→7 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-14T13:41:41.099Z"
+    },
+    {
+      "id": "bug-150",
+      "timestamp": "2026-07-14T16:00:00.000Z",
+      "error_message": "Park step always fails in-game with 'No AD park position configured for vehicle or its rear-attached implement' even though the vehicle has an AD park destination assigned",
+      "file": "src/integration/AutoDriveIntegration.lua",
+      "root_cause": "ADIntegration:getDestinationById() only checked the bare ADGraphManager global (`if ADGraphManager and ADGraphManager.getMapMarkerById`) with no FS25_AutoDrive.ADGraphManager fallback. In the real game ADGraphManager is not bridged into WM's sandboxed environment (same class of bug as bug-148/ADTriggerManager), so getDestinationById always returned nil. getObjectParkDestination treats a nil getDestinationById result as a stale/deleted marker and discards the configured parkDestination id, so startParkRoute always found no valid park position. getDestinations() (used by the editor's destination dropdown) already had the correct dual-check pattern, which is why the marker showed as 'assigned' in the UI while parking still failed at runtime.",
+      "fix": "Changed getDestinationById to resolve `local graphManager = ADGraphManager or (FS25_AutoDrive and FS25_AutoDrive.ADGraphManager)` before calling getMapMarkerById, matching the pattern already used in getDestinations() and in startRefuelRoute's ADTriggerManager fix (bug-148).",
+      "tags": [
+        "autodrive",
+        "park",
+        "namespacing",
+        "FS25_AutoDrive",
+        "global-scope",
+        "ADGraphManager"
+      ],
+      "related_bugs": [
+        "bug-148"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-07-14T16:00:00.000Z"
+    },
+    {
+      "id": "bug-151",
+      "timestamp": "2026-07-14T13:58:41.372Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/integration/AutoDriveIntegration.lua",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 13→30 lines (4 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-14T13:58:41.372Z"
+    },
+    {
+      "id": "bug-152",
+      "timestamp": "2026-07-14T13:59:16.551Z",
+      "error_message": "Significant refactor of ",
+      "file": "tests/specs/AutoDriveIntegration_spec.lua",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 30→44 lines (4 removed) | Also: local v = makeVehicle({ frontParkId = 10, vehicleP; -- The id resolved must have come from the vehicle",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-07-14T13:59:46.171Z"
+    },
+    {
+      "id": "bug-151",
+      "timestamp": "2026-07-14T16:30:00.000Z",
+      "error_message": "Park step drives to the wrong park position when a front-mounted tool (e.g. a front loader) is attached in addition to a rear trailer/implement",
+      "file": "src/integration/AutoDriveIntegration.lua",
+      "root_cause": "ADIntegration:getRearAttachedObject() picked vehicle:getAttachedImplements()[1] and treated it as 'the rear-attached implement', but getAttachedImplements() returns ALL directly attached implements in attacherJoint order, not spatial front-to-rear order. A vehicle with both a front-mounted tool and a rear trailer can return the front tool first, so WM read its advd.parkDestination (often unset or stale) instead of the rear trailer's actual configured park position.",
+      "fix": "Rewrote getRearAttachedObject to resolve 'rear' by world position instead of list order, mirroring AD's own convention in AutoDrive.getVehicleLeadingEdge (AutoDrive.worldToLocal diffZ sign): iterate all attached implements, compute each one's z-offset relative to the vehicle via getWorldTranslation + AutoDrive.worldToLocal, and pick the implement with the most-negative diffZ (furthest behind). Implements with diffZ >= 0 (front-attached) are ignored. If nothing is behind the vehicle, correctly falls through to the vehicle's own parkDestination.",
+      "tags": [
+        "autodrive",
+        "park",
+        "attached-implements",
+        "front-rear",
+        "spatial-resolution"
+      ],
+      "related_bugs": [
+        "bug-150"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-07-14T16:30:00.000Z"
+    },
+    {
+      "id": "bug-154",
+      "timestamp": "2026-07-14T14:17:11.982Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/integration/AutoDriveIntegration.lua",
+      "root_cause": "33 lines replaced/restructured",
+      "fix": "Rewrote 66→43 lines (33 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-14T14:17:11.982Z"
+    },
+    {
+      "id": "bug-155",
+      "timestamp": "2026-07-14T14:18:21.030Z",
+      "error_message": "Significant refactor of ",
+      "file": "tests/specs/AutoDriveIntegration_spec.lua",
+      "root_cause": "46 lines replaced/restructured",
+      "fix": "Rewrote 87→43 lines (46 removed) | Also: it(\"prefers the rear-attached implement's park pos; local v = makeVehicle({ rearParkId = 10, vehiclePa",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-07-14T14:18:32.452Z"
+    },
+    {
+      "id": "bug-156",
+      "timestamp": "2026-07-14T14:19:06.287Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/integration/AutoDriveIntegration.lua",
+      "root_cause": "Had \"No AD park position configured for vehicle or its",
+      "fix": "Changed to \"No AD park position configured for vehicle or any",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-14T14:19:06.287Z"
+    },
+    {
+      "id": "bug-157",
+      "timestamp": "2026-07-14T14:19:21.235Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "Had \"No park position configured for vehicle or its re",
+      "fix": "Changed to \"No park position configured for vehicle or any at",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-14T14:19:21.235Z"
+    },
+    {
+      "id": "bug-158",
+      "timestamp": "2026-07-14T14:19:33.373Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/WorkflowManager.lua",
+      "root_cause": "Had 's (or its rear-attached implement'",
+      "fix": "Changed to 's (or an attached implement'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-14T14:19:33.373Z"
+    },
+    {
+      "id": "bug-152",
+      "timestamp": "2026-07-14T17:00:00.000Z",
+      "error_message": "Park step still fails with 'No AD park position configured' even with a trailer attached, after the bug-151 spatial front/rear fix",
+      "file": "src/integration/AutoDriveIntegration.lua, tests/specs/AutoDriveIntegration_spec.lua",
+      "root_cause": "bug-151's fix assumed AutoDrive has a 'front vs rear' concept for park destinations and tried to detect it via world-position geometry (AutoDrive.worldToLocal diffZ sign), copying the sign convention from AD's unrelated getVehicleLeadingEdge() function without being able to verify it against the real GIANTS Engine Z-axis convention offline. User confirmed (after being asked directly) that the park position was set via AD's own UI while the trailer itself was the selected/active tool - AD's real model has NO front/rear concept at all: AutoDriveVehicleData:onEnterVehicle/onSelect show the marker id is written onto whichever object (vehicle or implement) was selected in-game when 'Set Park Position' was pressed. The geometry guess was therefore solving a problem that doesn't exist in AD's data model, and evidently had a sign or structural mismatch that excluded the correctly-configured trailer.",
+      "fix": "Removed getRearAttachedObject and its geometry/diffZ logic entirely. getVehicleParkDestinationId now iterates every directly-attached implement (vehicle:getAttachedImplements(), no recursive chain-walking) in attach order and returns the first one with a valid, non-stale advd.parkDestination, falling back to the vehicle's own only if none of the implements have one configured. Matches AD's actual 'whichever object was selected' semantics with no geometry involved. Rewrote AutoDriveIntegration_spec.lua's getVehicleParkDestinationId/startParkRoute tests around implementParkIds (ordered list, no spatial mocking needed) and removed the getRearAttachedObject describe block. Also updated user-facing strings ('rear-attached implement' -> 'any attached implement') in WorkflowExecutor.lua, WorkflowManager.lua, and website/docs (troubleshooting.md, step-types.md).",
+      "tags": [
+        "autodrive",
+        "park",
+        "attached-implements",
+        "data-model-correction",
+        "geometry-removed"
+      ],
+      "related_bugs": [
+        "bug-150",
+        "bug-151"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-07-14T17:00:00.000Z"
     }
   ]
 }
