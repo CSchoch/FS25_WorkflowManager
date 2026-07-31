@@ -43,6 +43,10 @@ describe("WMExecutor (real)", function()
                     or stepType == self.STEP_REFUEL
                     or stepType == self.STEP_REPAIR
             end,
+            isMarkerStepType = function(self, stepType)
+                return stepType == self.STEP_WAIT_FOR_LEADER
+                    or stepType == self.STEP_UNLOCK_FOLLOWER
+            end,
             broadcastState            = function() end,
         }
 
@@ -784,6 +788,85 @@ describe("WMExecutor (real)", function()
             local vs = makeVehicle("Support")
             WMExecutor:startWorkflow(wf, vm, true)
             WMExecutor:startWorkflow(wf, vs, false)
+            assert.are.equal(1, activeData(vs).currentSupportStep)
+        end)
+    end)
+
+    -- =========================================================================
+    -- Sync markers are invalid as support sub-steps (legacy data tolerance).
+    -- The step dialog no longer offers them, but workflows saved before that
+    -- restriction may contain one; it must pass through, not kill the workflow.
+    -- =========================================================================
+    describe("marker step as support sub-step", function()
+        -- Step 2 has [wait_for_leader, autodrive] as support sub-steps
+        local function makeWorkflowWithMarkerSupport()
+            return {
+                id   = "wf_marker_sup",
+                name = "Marker Support Workflow",
+                steps = {
+                    { type = "autodrive",  target = "Farm",   action = "drive",     support = {} },
+                    { type = "courseplay", target = "Field1", action = "fieldwork", support = {
+                        { type = "wait_for_leader", target = "" },
+                        { type = "autodrive",       target = "Silo", action = "deliver" },
+                    }},
+                },
+            }
+        end
+
+        it("passes through instead of stopping the workflow", function()
+            local wf = makeWorkflowWithMarkerSupport()
+            local vm = makeVehicle("Main")
+            local vs = makeVehicle("Support")
+            WMExecutor:startWorkflow(wf, vm, true)
+            WMExecutor:startWorkflow(wf, vs, false)
+
+            -- Main is on step 1 (no support sub-steps) -> support idles.
+            -- Advance main to step 2 so the support sub-step list becomes active.
+            activeData(vm).currentStep = 2
+            WMExecutor:onMainStepChanged(activeData(vs), 2)
+
+            -- Workflow must still be running: the marker was skipped, not treated as an error
+            assert.is_not_nil(activeData(vs))
+            assert.are_not.equal(WorkflowManager.STATUS_ERROR, activeData(vs).status)
+        end)
+
+        it("advances past the marker to the next real sub-step", function()
+            local wf = makeWorkflowWithMarkerSupport()
+            local vm = makeVehicle("Main")
+            local vs = makeVehicle("Support")
+            WMExecutor:startWorkflow(wf, vm, true)
+            WMExecutor:startWorkflow(wf, vs, false)
+
+            activeData(vm).currentStep = 2
+            WMExecutor:onMainStepChanged(activeData(vs), 2)
+
+            -- Sub-step 1 (marker) passed through, so sub-step 2 (autodrive) is now current
+            assert.are.equal(2, activeData(vs).currentSupportStep)
+            assert.are.equal(WorkflowManager.STEP_AUTODRIVE, activeData(vs).currentStepType)
+        end)
+
+        it("does not loop forever when every sub-step is a marker", function()
+            local wf = {
+                id   = "wf_all_markers",
+                name = "All Markers",
+                steps = {
+                    { type = "autodrive",  target = "Farm",   action = "drive",     support = {} },
+                    { type = "courseplay", target = "Field1", action = "fieldwork", support = {
+                        { type = "wait_for_leader", target = "" },
+                        { type = "unlock_follower", target = "" },
+                    }},
+                },
+            }
+            local vm = makeVehicle("Main")
+            local vs = makeVehicle("Support")
+            WMExecutor:startWorkflow(wf, vm, true)
+            WMExecutor:startWorkflow(wf, vs, false)
+
+            activeData(vm).currentStep = 2
+            WMExecutor:onMainStepChanged(activeData(vs), 2)
+
+            -- All sub-steps consumed -> back to waiting for main, sub-step index reset
+            assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_MAIN, activeData(vs).status)
             assert.are.equal(1, activeData(vs).currentSupportStep)
         end)
     end)

@@ -16,6 +16,8 @@ function WMStepDialog.new(target)
     self.step = nil
     self.callback = nil
     self.isEditMode = false
+    -- true when editing/adding a support sub-step (restricts the selectable type list)
+    self.isSupportStep = false
 
     -- Step data
     self.stepType = "autodrive"
@@ -123,9 +125,11 @@ end
 ---Set the step to edit (nil for new step)
 ---@param step table|nil Step to edit, or nil for new
 ---@param callback function Callback when done: callback(step) or callback(nil) if cancelled
-function WMStepDialog:setStep(step, callback)
+---@param isSupportStep boolean|nil true when this is a support sub-step (hides sync marker types)
+function WMStepDialog:setStep(step, callback, isSupportStep)
     self.callback = callback
     self.isEditMode = step ~= nil
+    self.isSupportStep = isSupportStep == true
 
     if step then
         self.step = step
@@ -245,17 +249,25 @@ function WMStepDialog:refreshTypeDropdown()
     self.typeDropdown:setState(currentIndex)
 end
 
----Ordered list of selectable step types (must match onTypeChanged indexing)
+---Ordered list of selectable step types (must match onTypeChanged indexing).
+---Sync markers are omitted for support sub-steps: leader/follower pairing is built from
+---workflow.steps only (see WMExecutor:buildSyncMaps), so a marker nested under a main step
+---has nothing to pair with and would abort the workflow at runtime.
 function WMStepDialog:getStepTypes()
-    return {
+    local types = {
         WorkflowManager.STEP_AUTODRIVE,
         WorkflowManager.STEP_COURSEPLAY,
-        WorkflowManager.STEP_WAIT_FOR_LEADER,
-        WorkflowManager.STEP_UNLOCK_FOLLOWER,
-        WorkflowManager.STEP_PARK,
-        WorkflowManager.STEP_REFUEL,
-        WorkflowManager.STEP_REPAIR,
     }
+    -- Exception: keep them listed when the step being edited already is a marker (data saved
+    -- before this restriction existed), so the dropdown reflects reality and can convert it.
+    if not self.isSupportStep or WorkflowManager:isMarkerStepType(self.stepType) then
+        table.insert(types, WorkflowManager.STEP_WAIT_FOR_LEADER)
+        table.insert(types, WorkflowManager.STEP_UNLOCK_FOLLOWER)
+    end
+    table.insert(types, WorkflowManager.STEP_PARK)
+    table.insert(types, WorkflowManager.STEP_REFUEL)
+    table.insert(types, WorkflowManager.STEP_REPAIR)
+    return types
 end
 
 ---True if the currently selected step type has no target/action fields (sync marker, Park, Refuel, or Repair)

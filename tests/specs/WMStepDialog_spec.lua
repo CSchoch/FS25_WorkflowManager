@@ -340,4 +340,80 @@ describe("WMStepDialog", function()
         end)
     end)
 
+    -- =========================================================================
+    -- Support sub-steps must not offer sync markers: leader/follower pairing is
+    -- built from workflow.steps only, so a nested marker has nothing to pair
+    -- with and the executor cannot run it as a real sub-step.
+    -- =========================================================================
+    describe("support sub-step type restrictions", function()
+        local function contains(list, value)
+            for _, v in ipairs(list) do
+                if v == value then return true end
+            end
+            return false
+        end
+
+        it("defaults to isSupportStep=false (main step behaviour)", function()
+            local d = makeDialog()
+            assert.is_false(d.isSupportStep)
+        end)
+
+        it("setStep(step, cb, true) marks the dialog as editing a support sub-step", function()
+            local d = makeDialog()
+            WMStepDialog.setStep(d, nil, function() end, true)
+            assert.is_true(d.isSupportStep)
+        end)
+
+        it("setStep without the flag leaves isSupportStep false", function()
+            local d = makeDialog()
+            WMStepDialog.setStep(d, nil, function() end)
+            assert.is_false(d.isSupportStep)
+        end)
+
+        it("omits both sync marker types for support sub-steps", function()
+            local d = makeDialog()
+            WMStepDialog.setStep(d, nil, function() end, true)
+            local types = d:getStepTypes()
+            assert.is_false(contains(types, WorkflowManager.STEP_WAIT_FOR_LEADER))
+            assert.is_false(contains(types, WorkflowManager.STEP_UNLOCK_FOLLOWER))
+        end)
+
+        it("still offers AD, CP, Park, Refuel and Repair for support sub-steps", function()
+            local d = makeDialog()
+            WMStepDialog.setStep(d, nil, function() end, true)
+            local types = d:getStepTypes()
+            assert.are.equal(5, #types)
+            assert.is_true(contains(types, WorkflowManager.STEP_AUTODRIVE))
+            assert.is_true(contains(types, WorkflowManager.STEP_COURSEPLAY))
+            assert.is_true(contains(types, WorkflowManager.STEP_PARK))
+            assert.is_true(contains(types, WorkflowManager.STEP_REFUEL))
+            assert.is_true(contains(types, WorkflowManager.STEP_REPAIR))
+        end)
+
+        it("keeps AD/CP at indices 1 and 2 so onTypeChanged indexing is unchanged", function()
+            local d = makeDialog()
+            WMStepDialog.setStep(d, nil, function() end, true)
+            local types = d:getStepTypes()
+            assert.are.equal(WorkflowManager.STEP_AUTODRIVE, types[1])
+            assert.are.equal(WorkflowManager.STEP_COURSEPLAY, types[2])
+        end)
+
+        it("still offers all 7 types for main steps", function()
+            local d = makeDialog()
+            WMStepDialog.setStep(d, nil, function() end, false)
+            assert.are.equal(7, #d:getStepTypes())
+        end)
+
+        it("re-lists markers when editing a support sub-step that already is one", function()
+            -- Legacy data: a marker saved as a support sub-step before this restriction.
+            -- The dropdown must show its real type rather than silently displaying AutoDrive.
+            local d = makeDialog()
+            WMStepDialog.setStep(d, { type = WorkflowManager.STEP_WAIT_FOR_LEADER, target = "" },
+                function() end, true)
+            local types = d:getStepTypes()
+            assert.is_true(contains(types, WorkflowManager.STEP_WAIT_FOR_LEADER))
+            assert.is_true(contains(types, WorkflowManager.STEP_UNLOCK_FOLLOWER))
+        end)
+    end)
+
 end)

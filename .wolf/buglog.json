@@ -2633,6 +2633,228 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-07-14T22:03:21.012Z"
+    },
+    {
+      "id": "bug-161",
+      "timestamp": "2026-07-30T05:43:54.827Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/gui/WMStepDialog.lua",
+      "root_cause": "7 lines replaced/restructured",
+      "fix": "Rewrote 12→18 lines (7 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-30T05:43:54.827Z"
+    },
+    {
+      "id": "bug-162",
+      "timestamp": "2026-07-30T05:45:00.463Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/gui/WMEditorDialog.lua",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 6→20 lines (2 removed) | Also: WorkflowManager:addSupportStep(self.workflow.id, s; local newSj = mainStep and mainStep.support and #m",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-07-30T05:45:15.253Z"
+    },
+    {
+      "id": "bug-163",
+      "timestamp": "2026-07-30T00:00:00.000Z",
+      "error_message": "Workflow editor 'Cancel' does not revert changes: added/removed/reordered/edited steps, renames and adSettings all persist and get written on the next saveWorkflows()",
+      "file": "src/gui/WMEditorDialog.lua",
+      "root_cause": "setWorkflow stored the live workflow table directly, so every step operation (table.insert/table.remove/in-place swap, onNameEnterPressed, onClickADSettings) mutated the real object immediately. onClickCancel only skipped WorkflowManager:saveWorkflows(), so the in-memory mutations survived and were persisted by any later save trigger (game save, HUD drag, delete confirm). onClickAddSupportStep additionally wrote through WorkflowManager:addSupportStep(), which resolves the workflow by id from WorkflowManager.workflows.",
+      "fix": "Added a file-local deepCopy(); setWorkflow now keeps the live table as self.sourceWorkflow and edits a copy in self.workflow. New commitToSource() writes name/steps/adSettings back IN PLACE (a running execution holds a reference via activeData.workflow, so the table identity must be preserved) and is called only from onClickSave. onClickCancel clears the buffer. onClickAddSupportStep appends to the buffer instead of calling addSupportStep. New tests/specs/WMEditorDialog_spec.lua (24 tests) covers commit vs discard, nested-table independence, in-place mutation and post-commit aliasing.",
+      "tags": [
+        "gui",
+        "editor",
+        "cancel",
+        "data-loss",
+        "deep-copy",
+        "lua"
+      ],
+      "related_bugs": [
+        "bug-162"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-07-30T00:00:00.000Z"
+    },
+    {
+      "id": "bug-164",
+      "timestamp": "2026-07-30T00:00:00.000Z",
+      "error_message": "Adding a 'Wait for Leader' / 'Unlock Follower' marker as a support sub-step aborts the whole workflow at runtime: 'Unknown support sub-step type: wait_for_leader'",
+      "file": "src/gui/WMStepDialog.lua",
+      "root_cause": "WMStepDialog:getStepTypes() returned the same 7 types regardless of context, so the marker types were offered when adding/editing a support sub-step. The executor's support branch in executeCurrentStep only handles AUTODRIVE/COURSEPLAY/PARK/REFUEL/REPAIR and fell through to handleStepError, which calls stopWorkflow and nils wmExecution. Markers are meaningless there anyway: buildSyncMaps derives leader/follower ordinal pairing from workflow.steps only and never inspects support arrays.",
+      "fix": "Threaded an isSupportStep flag through WorkflowManager:showStepDialog -> WMStepDialog:setStep; getStepTypes() omits both marker types when set (kept when the edited step already is a marker, so legacy data shows its real type). Tagged the two support call sites in WMEditorDialog (onClickEditStep support branch, onClickAddSupportStep). For workflows already saved with a marker sub-step, the executor support branch now treats isMarkerStepType as a pass-through (onStepCompleted + warning) instead of handleStepError. Mirrored isMarkerStepType into the WorkflowExecutor_spec WorkflowManager stub per the stub-parity rule. 9 new WMStepDialog tests + 3 new executor tests.",
+      "tags": [
+        "gui",
+        "step-types",
+        "sync-markers",
+        "support-steps",
+        "executor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-30T00:00:00.000Z"
+    },
+    {
+      "id": "bug-165",
+      "timestamp": "2026-07-30T05:49:17.413Z",
+      "error_message": "Significant refactor of ",
+      "file": "CLAUDE.md",
+      "root_cause": "10 lines replaced/restructured",
+      "fix": "Rewrote 10→16 lines (10 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-30T05:49:17.413Z"
+    },
+    {
+      "id": "bug-166",
+      "timestamp": "2026-07-31T22:21:30.580Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowManager.lua",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 18→41 lines (2 removed) | Also: function WorkflowManager:showEditorDialog(workflow; self.editorDialog:setWorkflow(workflow)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-07-31T22:21:32.777Z"
+    },
+    {
+      "id": "bug-167",
+      "timestamp": "2026-07-31T22:21:55.732Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/gui/WMMainDialog.lua",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 8→9 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-31T22:21:55.732Z"
+    },
+    {
+      "id": "bug-165",
+      "timestamp": "2026-08-01T00:00:00.000Z",
+      "error_message": "Cancelling a brand-new workflow still leaves an empty entry in the workflow list",
+      "file": "src/gui/WMMainDialog.lua",
+      "root_cause": "WMMainDialog:onClickNew called WorkflowManager:createWorkflow(), which table.inserts into WorkflowManager.workflows immediately, and only then opened the editor. The bug-163 edit buffer made step/name edits cancellable but could not undo that registration, because the workflow already existed in the list before the editor was handed anything.",
+      "fix": "Split creation from registration: new WorkflowManager:buildWorkflow(name) returns an unregistered workflow table, and WorkflowManager:registerWorkflow(workflow) appends it (no-op when a workflow with the same id is already present, so a repeated commit cannot duplicate it). createWorkflow is now buildWorkflow + insert, so the legacy WorkflowManagerGUI/WorkflowManagerMenuFrame callers are unchanged. onClickNew uses buildWorkflow and passes isNew=true through showEditorDialog -> WMEditorDialog:setWorkflow; commitToSource registers it on Save and onClickCancel drops it with the buffer. New tests/specs/WMMainDialog_spec.lua (7 tests) covers the New/Edit entry points; 9 tests added to WMEditorDialog_spec for the registration lifecycle.",
+      "tags": [
+        "gui",
+        "editor",
+        "cancel",
+        "workflow-list",
+        "lua"
+      ],
+      "related_bugs": [
+        "bug-163"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-08-01T00:00:00.000Z"
+    },
+    {
+      "id": "bug-169",
+      "timestamp": "2026-07-31T22:24:03.265Z",
+      "error_message": "Significant refactor of ",
+      "file": "CLAUDE.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 4→10 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-31T22:24:03.265Z"
+    },
+    {
+      "id": "bug-170",
+      "timestamp": "2026-07-31T22:28:50.718Z",
+      "error_message": "Missing error handling in CPIntegration",
+      "file": "src/integration/CourseplayIntegration.lua",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-31T22:28:50.718Z"
+    },
+    {
+      "id": "bug-171",
+      "timestamp": "2026-07-31T22:29:23.407Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/integration/CourseplayIntegration.lua",
+      "root_cause": "13 lines replaced/restructured",
+      "fix": "Rewrote 36→22 lines (13 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-31T22:29:23.407Z"
+    },
+    {
+      "id": "bug-172",
+      "timestamp": "2026-07-31T22:29:33.807Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/integration/CourseplayCoursesLoader.lua",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 8→20 lines (4 removed) | Also: -- Recurse into subdirectory; self:collectCoursesFromDirectoryView(entry, course",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-07-31T22:30:16.066Z"
+    },
+    {
+      "id": "bug-169",
+      "timestamp": "2026-08-01T00:00:00.000Z",
+      "error_message": "Courseplay course list in the WM editor is incomplete / a saved course fails to load ('Could not load course') depending on which folder the player last opened in Courseplay's own course manager",
+      "file": "src/integration/CourseplayCoursesLoader.lua",
+      "root_cause": "Both the enumeration side (CPCoursesLoader:extractCoursesFromFileSystem) and the load side (CPIntegration:loadCourseFromStorage) started from 'currentDirectoryView or rootDirectoryView'. currentDirectoryView tracks Courseplay's own GUI navigation, so (a) only courses under that folder were listed, (b) their names were recorded relative to it (bare 'Field B' instead of 'Farm2/Field B'), and (c) a stored path like 'Farm1/Course' was then looked up as a child of whatever folder CP happened to be in, so navigateToFolder failed. The two sides could disagree because CP's navigation state changed between authoring a workflow and running it.",
+      "fix": "Both sides now resolve from rootDirectoryView (currentDirectoryView kept only as a fallback when no root view exists, and in the loader only when the root walk yields zero courses). Added CPIntegration:findCourseEntry, which resolves the stored path from the root and then falls back to a depth-limited recursive search by base name, so course names recorded under the old behaviour (and courses moved between folders since) still load. Extracted CPIntegration:isDirectoryEntry/getEntryName/getSubView/getViewEntries/findEntryByName/findEntryByNameRecursive; isDirectoryEntry handles isDirectory-as-field, isDirectory-as-method and getIsDirectory(), because the loader previously only handled the method shape and would have enumerated folder names as courses now that scanning always walks the tree from the root. collectCoursesFromDirectoryView also resolves a subfolder's view via getSubView before recursing instead of recursing on the raw entry. The ~120-line load-attempt chain moved verbatim into CPIntegration:tryLoadEntry with no semantic change. New specs: CourseplayIntegration_spec.lua (27) and CourseplayCoursesLoader_spec.lua (13).",
+      "tags": [
+        "courseplay",
+        "integration",
+        "course-list",
+        "directory-view",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-01T00:00:00.000Z"
     }
   ]
 }

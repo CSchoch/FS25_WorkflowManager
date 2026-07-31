@@ -185,12 +185,13 @@ end
 function WMMainDialog:onClickNew()
     WMLogger:debug("WMMainDialog:onClickNew")
 
-    -- Create new workflow
-    local workflow = WorkflowManager:createWorkflow()
+    -- Build the workflow but do not register it yet: the editor adds it to the list on Save,
+    -- so cancelling out of the editor leaves no empty entry behind.
+    local workflow = WorkflowManager:buildWorkflow()
     if workflow then
         -- Close this dialog and open editor
         self:close()
-        WorkflowManager:showEditorDialog(workflow)
+        WorkflowManager:showEditorDialog(workflow, true)
     end
 end
 

@@ -43,16 +43,36 @@ After every code change:
 
 Individual runners: `tests\run_executor_spec.lua`, `tests\run_storage_spec.lua`, `tests\run_wm_spec.lua`
 
-| Spec file | Covers | Tests |
-| --- | --- | --- |
-| `EventHandler_spec.lua` | WMEventHandler (subscribe, fire, remove) | 23 |
-| `Logger_spec.lua` | WMLogger (levels, formatting, api/event/state helpers) | 30 |
-| `WorkflowStorage_spec.lua` | WMStorage save/load, adSettings, old-format migration | 31 |
-| `WorkflowManager_spec.lua` | CRUD, vehicle validation, network command dispatch | 58 |
-| `WorkflowExecutor_spec.lua` | Full state machine: start/stop/pause/resume/step nav, support vehicles, MP roles | 109 |
-| `WorkflowManagerSpec_spec.lua` | Vehicle spec: onLoad, onPostLoad, saveToXMLFile, onWriteStream/onReadStream, onDelete | 30 |
-| `WMHud_spec.lua` | HUD button handlers, vehicle targeting | 15 |
-| **Total** | | **296** |
+| Spec file | Covers |
+| --- | --- |
+| `EventHandler_spec.lua` | WMEventHandler (subscribe, fire, remove) |
+| `Logger_spec.lua` | WMLogger (levels, formatting, api/event/state helpers) |
+| `WorkflowStorage_spec.lua` | WMStorage save/load, adSettings, old-format migration |
+| `WorkflowManager_spec.lua` | CRUD, vehicle validation, network command dispatch |
+| `WorkflowExecutor_spec.lua` | Full state machine: start/stop/pause/resume/step nav, support vehicles, MP roles |
+| `AutoDriveIntegration_spec.lua` | AD destinations, park/refuel/repair route resolution |
+| `WorkflowManagerSpec_spec.lua` | Vehicle spec: onLoad, onPostLoad, saveToXMLFile, onWriteStream/onReadStream, onDelete |
+| `WMHud_spec.lua` | HUD button handlers, vehicle targeting |
+| `WMLeaderVehicleSelectDialog_spec.lua` | Leader candidate list building |
+| `WMStepDialog_spec.lua` | Step type/action branching, confirm payloads, support-step type restrictions |
+| `WMEditorDialog_spec.lua` | Edit-buffer contract: Save commits to the live workflow, Cancel discards; new-workflow registration |
+| `WMMainDialog_spec.lua` | New/Edit entry points: New hands the editor an unregistered workflow |
+| `CourseplayIntegration_spec.lua` | Course entry resolution from the root view, legacy-name fallback, folder navigation |
+| `CourseplayCoursesLoader_spec.lua` | Course enumeration from the root view, root-relative names |
+
+Current total: **571**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
+or they will not run.
+
+**Courseplay course paths:** course names are stored as **root-relative** paths
+(`"Farm1/Field A"`). Both enumeration (`CPCoursesLoader:extractCoursesFromFileSystem`) and lookup
+(`CPIntegration:findCourseEntry`) must start from `rootDirectoryView`. Never use
+`currentDirectoryView` as the primary — it follows Courseplay's own GUI navigation, so it hides
+courses outside the open folder and makes names resolve differently at author time vs. run time.
+
+**Workflow lifecycle:** `WorkflowManager:buildWorkflow(name)` returns an *unregistered* workflow;
+`registerWorkflow(wf)` adds it to the list (idempotent by id); `createWorkflow(name)` is both at once.
+The editor's New flow deliberately uses `buildWorkflow` and defers registration to Save, so Cancel
+leaves no trace — do not "simplify" it back to `createWorkflow`.
 
 **Test framework note**: `run_tests.lua` saves/restores `_G.print` and `_G.WMLogger` around every spec. Do NOT add `_G.print = ...` side-effects in `before_each` without a matching restore, and do NOT load real module files in `setup()` without resetting them in the runner.
 

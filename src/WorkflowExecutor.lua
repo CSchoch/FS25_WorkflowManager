@@ -505,6 +505,14 @@ function WMExecutor:executeCurrentStep(activeData)
                 return
             end
             self:startRepairStep(activeData, vehicle, supportSubStep)
+        elseif WorkflowManager:isMarkerStepType(supportSubStep.type) then
+            -- Leader/follower markers are paired from workflow.steps only, so a marker nested
+            -- under a main step has nothing to sync against. The step dialog no longer offers
+            -- them for support sub-steps; tolerate them in older saves as a pass-through
+            -- instead of aborting the whole workflow via handleStepError.
+            WMLogger:warning("Sync marker '%s' is not valid as a support sub-step — passing through",
+                tostring(supportSubStep.type))
+            self:onStepCompleted(activeData)
         else
             self:handleStepError(activeData, "Unknown support sub-step type: " .. tostring(supportSubStep.type))
         end

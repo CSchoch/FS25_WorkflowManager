@@ -12,9 +12,23 @@ WMEditorDialog = {}
 
 local WMEditorDialog_mt = Class(WMEditorDialog, DialogElement)
 
+---Deep-copy a workflow/step tree. Workflow definitions hold only strings, numbers, booleans
+---and nested arrays (no cycles, no functions), so a plain recursive copy is sufficient.
+local function deepCopy(value)
+    if type(value) ~= "table" then
+        return value
+    end
+    local copy = {}
+    for k, v in pairs(value) do
+        copy[k] = deepCopy(v)
+    end
+    return copy
+end
+
 function WMEditorDialog.new(target)
     local self = DialogElement.new(target, WMEditorDialog_mt)
-    self.workflow = nil
+    self.workflow = nil        -- edit buffer (a copy); all step operations mutate this
+    self.sourceWorkflow = nil  -- the live workflow table, written only by onClickSave
     -- Flat list for the SmoothList: each entry is {isMain, stepIndex, supportIndex}
     self.flatItems = {}
     self.selectedFlatIndex = 0
@@ -50,11 +64,35 @@ function WMEditorDialog:onClose()
     self:unregisterInputEvents()
 end
 
----Set the workflow to edit
-function WMEditorDialog:setWorkflow(workflow)
-    self.workflow = workflow
+---Set the workflow to edit.
+---Edits are applied to a private copy so Cancel can discard them; onClickSave commits the
+---copy back into the original table (see commitToSource).
+---@param workflow table|nil Workflow to edit
+---@param isNew boolean|nil  true for a workflow not yet in WorkflowManager.workflows; it is
+---                          registered on Save and simply dropped on Cancel
+function WMEditorDialog:setWorkflow(workflow, isNew)
+    self.sourceWorkflow = workflow
+    self.workflow = workflow ~= nil and deepCopy(workflow) or nil
+    self.isNewWorkflow = isNew == true
     self.flatItems = {}
     self.selectedFlatIndex = 0
+end
+
+---Write the edit buffer back into the live workflow table.
+---Mutates the original in place instead of replacing it: a running execution holds a direct
+---reference to it via activeData.workflow, as does WorkflowManager.workflows.
+---A workflow opened as new is added to the workflow list here, so it exists only once the
+---user confirms with Save.
+function WMEditorDialog:commitToSource()
+    local source, buffer = self.sourceWorkflow, self.workflow
+    if source == nil or buffer == nil then return end
+    source.name       = buffer.name
+    source.steps      = deepCopy(buffer.steps or {})
+    source.adSettings = deepCopy(buffer.adSettings)
+    if self.isNewWorkflow then
+        self.isNewWorkflow = false
+        WorkflowManager:registerWorkflow(source)
+    end
 end
 
 -- ============================================================
@@ -347,7 +385,7 @@ function WMEditorDialog:onClickEditStep()
                 end
                 self:refreshStepList()
             end
-        end)
+        end, true)
     end
 end
 
@@ -438,11 +476,15 @@ function WMEditorDialog:onClickAddSupportStep()
     WorkflowManager:showStepDialog(nil, function(supportStep)
         if supportStep and self.workflow then
             supportStep.support = nil
-            WorkflowManager:addSupportStep(self.workflow.id, si, supportStep)
+            -- Append to the edit buffer, not via WorkflowManager:addSupportStep (which resolves
+            -- the workflow by id and would write straight to the live table, bypassing Cancel).
+            local mainStep = self.workflow.steps[si]
+            if mainStep == nil then return end
+            if mainStep.support == nil then mainStep.support = {} end
+            table.insert(mainStep.support, supportStep)
             -- Select the newly added support row
             self:buildFlatList()
-            local mainStep = self.workflow.steps[si]
-            local newSj = mainStep and mainStep.support and #mainStep.support or 1
+            local newSj = #mainStep.support
             for i, fi in ipairs(self.flatItems) do
                 if not fi.isMain and fi.stepIndex == si and fi.supportIndex == newSj then
                     self.selectedFlatIndex = i
@@ -451,7 +493,7 @@ function WMEditorDialog:onClickAddSupportStep()
             end
             self:refreshStepList()
         end
-    end)
+    end, true)
 end
 
 -- ============================================================
@@ -462,6 +504,7 @@ function WMEditorDialog:onClickSave()
     if self.workflow and self.nameInput then
         self.workflow.name = self.nameInput.text or self.workflow.name
     end
+    self:commitToSource()
     if CPCoursesLoader then CPCoursesLoader:setGuiOpen(false) end
     if CPVehiclesLoader then CPVehiclesLoader:setGuiOpen(false) end
     WorkflowManager:saveWorkflows()
@@ -470,6 +513,13 @@ function WMEditorDialog:onClickSave()
 end
 
 function WMEditorDialog:onClickCancel()
+    -- Discard the edit buffer without committing: the live workflow was never touched, and a
+    -- workflow opened as new was never registered, so it disappears with the buffer.
+    self.workflow = nil
+    self.sourceWorkflow = nil
+    self.isNewWorkflow = false
+    self.flatItems = {}
+    self.selectedFlatIndex = 0
     if CPCoursesLoader then CPCoursesLoader:setGuiOpen(false) end
     if CPVehiclesLoader then CPVehiclesLoader:setGuiOpen(false) end
     self:close()

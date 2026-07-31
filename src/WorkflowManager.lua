@@ -712,20 +712,22 @@ end
 
 ---Show the workflow editor dialog
 ---@param workflow table Workflow to edit
-function WorkflowManager:showEditorDialog(workflow)
+---@param isNew boolean|nil true for an unregistered workflow (registered on Save, dropped on Cancel)
+function WorkflowManager:showEditorDialog(workflow, isNew)
     if self.editorDialog == nil then
         WMLogger:warning("Editor dialog not available")
         return
     end
 
-    self.editorDialog:setWorkflow(workflow)
+    self.editorDialog:setWorkflow(workflow, isNew)
     g_gui:showDialog("WMEditorDialog")
 end
 
 ---Show the step add/edit dialog
 ---@param step table|nil Step to edit, or nil for new step
 ---@param callback function Callback when done: callback(step) or callback(nil) if cancelled
-function WorkflowManager:showStepDialog(step, callback)
+---@param isSupportStep boolean|nil true when adding/editing a support sub-step
+function WorkflowManager:showStepDialog(step, callback, isSupportStep)
     if self.stepDialog == nil then
         WMLogger:warning("Step dialog not available")
         if callback then
@@ -734,15 +736,17 @@ function WorkflowManager:showStepDialog(step, callback)
         return
     end
 
-    self.stepDialog:setStep(step, callback)
+    self.stepDialog:setStep(step, callback, isSupportStep)
     g_gui:showDialog("WMStepDialog")
 end
 
----Create a new workflow
----@param name string Name of the workflow
----@return table workflow The created workflow
-function WorkflowManager:createWorkflow(name)
-    local workflow = {
+---Build a new workflow table WITHOUT adding it to the workflow list.
+---Use this when the workflow may still be discarded (e.g. the editor's New flow, where
+---Cancel must leave no trace); call registerWorkflow once it is confirmed.
+---@param name string|nil Name of the workflow
+---@return table workflow The new, unregistered workflow
+function WorkflowManager:buildWorkflow(name)
+    return {
         id = self:generateWorkflowId(),
         name = name or "New Workflow",
         -- Vehicle is detected at runtime when starting the workflow
@@ -750,6 +754,27 @@ function WorkflowManager:createWorkflow(name)
         steps = {},
         createdAt = getDate("%Y-%m-%d %H:%M:%S"),
     }
+end
+
+---Add a workflow to the workflow list. No-op if a workflow with the same id is already
+---present, so committing the same edit twice cannot duplicate it.
+---@param workflow table Workflow to register
+---@return boolean added True if it was added, false if it was already present
+function WorkflowManager:registerWorkflow(workflow)
+    if workflow == nil then return false end
+    if self:getWorkflowById(workflow.id) ~= nil then
+        return false
+    end
+    table.insert(self.workflows, workflow)
+    WMLogger:debug("Registered workflow: %s (ID: %s)", workflow.name, workflow.id)
+    return true
+end
+
+---Create a new workflow and add it to the workflow list
+---@param name string Name of the workflow
+---@return table workflow The created workflow
+function WorkflowManager:createWorkflow(name)
+    local workflow = self:buildWorkflow(name)
 
     table.insert(self.workflows, workflow)
     WMLogger:debug("Created workflow: %s (ID: %s)", workflow.name, workflow.id)

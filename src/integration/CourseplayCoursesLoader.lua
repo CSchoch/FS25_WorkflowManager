@@ -194,10 +194,22 @@ function CPCoursesLoader:extractCoursesFromFileSystem(fileSystem)
     local courses = {}
 
     -- Method 1: FileSystem with DirectoryView structure (Courseplay's actual structure)
-    -- FileSystem has rootDirectoryView and currentDirectoryView
-    local directoryView = fileSystem.currentDirectoryView or fileSystem.rootDirectoryView
-    if directoryView then
-        self:collectCoursesFromDirectoryView(directoryView, courses, 0, "")
+    -- FileSystem has rootDirectoryView and currentDirectoryView.
+    -- Always enumerate from the ROOT: currentDirectoryView follows whatever folder the player
+    -- last opened in Courseplay's own course manager, which would both hide every course
+    -- outside that folder and yield folder-relative names that CPIntegration:findCourseEntry
+    -- (which resolves from the root) could not find again when the step runs.
+    local rootView = fileSystem.rootDirectoryView
+    if rootView then
+        self:collectCoursesFromDirectoryView(rootView, courses, 0, "")
+    end
+
+    -- Only if the root view produced nothing (not populated in this Courseplay version) fall
+    -- back to the current view, accepting the folder-relative names that come with it.
+    local currentView = fileSystem.currentDirectoryView
+    if #courses == 0 and currentView ~= nil and currentView ~= rootView then
+        WMLogger:debug("Course scan: rootDirectoryView yielded no courses, falling back to currentDirectoryView")
+        self:collectCoursesFromDirectoryView(currentView, courses, 0, "")
     end
 
     -- Method 2: FileSystem with rootDirectory (raw Directory object)
@@ -315,8 +327,14 @@ function CPCoursesLoader:collectCoursesFromDirectoryView(directoryView, courses,
 
     for _, entry in pairs(entries) do
         if entry then
+            -- Courseplay exposes isDirectory as a method on some entry types and a boolean
+            -- field on others; CPIntegration:isDirectoryEntry handles both. Getting this wrong
+            -- means folders are enumerated as if they were courses - which now matters, since
+            -- scanning starts at the root and therefore always walks through folders.
             local isDir = false
-            if type(entry.isDirectory) == "function" then
+            if CPIntegration and CPIntegration.isDirectoryEntry then
+                isDir = CPIntegration:isDirectoryEntry(entry)
+            elseif type(entry.isDirectory) == "function" then
                 local success, result = pcall(entry.isDirectory, entry)
                 if success then
                     isDir = result
@@ -324,8 +342,14 @@ function CPCoursesLoader:collectCoursesFromDirectoryView(directoryView, courses,
             end
 
             if isDir then
-                -- Recurse into subdirectory
-                self:collectCoursesFromDirectoryView(entry, courses, depth + 1, newFolderPath)
+                -- Recurse into subdirectory. Resolve the entry's view first (getView() /
+                -- .directoryView); getSubView falls back to the entry itself when it is
+                -- already view-like, so this is never worse than recursing on the entry.
+                local subView = entry
+                if CPIntegration and CPIntegration.getSubView then
+                    subView = CPIntegration:getSubView(entry)
+                end
+                self:collectCoursesFromDirectoryView(subView, courses, depth + 1, newFolderPath)
             else
                 -- It's a file (course)
                 local name = nil

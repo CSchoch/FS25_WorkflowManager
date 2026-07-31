@@ -803,3 +803,53 @@
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+
+## Session: 2026-07-29 23:17
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 23:26 | Full code review of main repo (all 24 src/ files, 10.2k LoC) | src/**, translations/, create_release.ps1 | 481 tests pass; 27 findings logged (1 MP-architecture gap, 6 functional bugs, dead-code inventory ~1.1k LoC) | ~95k |
+| 07:43 | Edited src/gui/WMStepDialog.lua | 3→5 lines | ~51 |
+| 07:43 | Edited src/gui/WMStepDialog.lua | modified Callback() | ~123 |
+| 07:43 | Edited src/gui/WMStepDialog.lua | modified WMStepDialog() | ~220 |
+| 07:44 | Edited src/gui/WMStepDialog.lua | 4→6 lines | ~111 |
+| 07:44 | Edited src/WorkflowManager.lua | modified Callback() | ~152 |
+| 07:44 | Edited src/WorkflowExecutor.lua | expanded (+8 lines) | ~226 |
+| 07:44 | Edited src/gui/WMEditorDialog.lua | modified deepCopy() | ~194 |
+| 07:45 | Edited src/gui/WMEditorDialog.lua | modified WMEditorDialog() | ~246 |
+| 07:45 | Edited src/gui/WMEditorDialog.lua | modified WMEditorDialog() | ~226 |
+| 07:45 | Edited src/gui/WMEditorDialog.lua | 9→13 lines | ~193 |
+| 07:45 | Edited src/gui/WMEditorDialog.lua | 10→10 lines | ~120 |
+| 07:45 | Edited src/gui/WMEditorDialog.lua | 9→9 lines | ~83 |
+| 07:46 | Edited tests/specs/WorkflowExecutor_spec.lua | 7→11 lines | ~145 |
+| 07:46 | Edited tests/specs/WorkflowExecutor_spec.lua | modified makeWorkflowWithMarkerSupport() | ~1128 |
+| 07:46 | Edited tests/specs/WMStepDialog_spec.lua | modified contains() | ~1022 |
+| 07:47 | Created tests/specs/WMEditorDialog_spec.lua | — | ~3174 |
+| 07:47 | Edited tests/run_tests.lua | 3→4 lines | ~38 |
+| 07:49 | Edited CLAUDE.md | expanded (+6 lines) | ~310 |
+| 07:49 | Fix review #2 (editor Cancel discards via edit buffer) + #3 (sync markers barred from support sub-steps) | src/gui/WMEditorDialog.lua, src/gui/WMStepDialog.lua, src/WorkflowManager.lua, src/WorkflowExecutor.lua, tests/specs/WMEditorDialog_spec.lua (new), tests/specs/WMStepDialog_spec.lua, tests/specs/WorkflowExecutor_spec.lua, tests/run_tests.lua, CLAUDE.md | 514/514 pass (+33); each fix verified to fail its tests when reverted; bug-163/bug-164 logged | ~40k |
+| 07:49 | Session end: 18 writes across 9 files (WMStepDialog.lua, WorkflowManager.lua, WorkflowExecutor.lua, WMEditorDialog.lua, WorkflowExecutor_spec.lua) | 19 reads | ~122747 tok |
+| 00:21 | Edited src/WorkflowManager.lua | modified WorkflowManager() | ~462 |
+| 00:21 | Edited src/WorkflowManager.lua | modified WorkflowManager() | ~108 |
+| 00:21 | Edited src/gui/WMEditorDialog.lua | modified WMEditorDialog() | ~380 |
+| 00:21 | Edited src/gui/WMEditorDialog.lua | modified WMEditorDialog() | ~96 |
+| 00:21 | Edited src/gui/WMMainDialog.lua | createWorkflow() → buildWorkflow() | ~99 |
+| 00:22 | Edited tests/specs/WMEditorDialog_spec.lua | expanded (+17 lines) | ~317 |
+| 00:22 | Edited tests/specs/WMEditorDialog_spec.lua | modified makeNewWorkflow() | ~1086 |
+| 00:23 | Created tests/specs/WMMainDialog_spec.lua | — | ~1154 |
+| 00:23 | Edited tests/run_tests.lua | 3→4 lines | ~34 |
+| 00:23 | Fix: cancelling a new workflow no longer leaves an empty list entry (buildWorkflow/registerWorkflow split, deferred registration) | src/WorkflowManager.lua, src/gui/WMMainDialog.lua, src/gui/WMEditorDialog.lua, tests/specs/WMMainDialog_spec.lua (new), tests/specs/WMEditorDialog_spec.lua, tests/run_tests.lua, CLAUDE.md | 530/530 pass (+16); both revert checks fail as expected; bug-165 logged | ~25k |
+| 00:24 | Edited CLAUDE.md | expanded (+6 lines) | ~193 |
+| 00:24 | Session end: 28 writes across 11 files (WMStepDialog.lua, WorkflowManager.lua, WorkflowExecutor.lua, WMEditorDialog.lua, WorkflowExecutor_spec.lua) | 19 reads | ~126956 tok |
+| 00:28 | Edited src/integration/CourseplayIntegration.lua | added error handling | ~1965 |
+| 00:29 | Edited src/integration/CourseplayIntegration.lua | reduced (-14 lines) | ~146 |
+| 00:29 | Edited src/integration/CourseplayCoursesLoader.lua | expanded (+12 lines) | ~320 |
+| 00:30 | Edited src/integration/CourseplayCoursesLoader.lua | expanded (+6 lines) | ~271 |
+| 00:30 | Edited src/integration/CourseplayCoursesLoader.lua | expanded (+6 lines) | ~159 |
+| 00:31 | Created tests/specs/CourseplayIntegration_spec.lua | — | ~2987 |
+| 00:31 | Created tests/specs/CourseplayCoursesLoader_spec.lua | — | ~1901 |
+| 00:31 | Edited tests/run_tests.lua | 3→5 lines | ~50 |
+| 00:32 | Fix: CP course enumeration + loading now resolve from rootDirectoryView, not CP's transient currentDirectoryView; added by-name fallback for legacy course names | src/integration/CourseplayCoursesLoader.lua, src/integration/CourseplayIntegration.lua, tests/specs/CourseplayIntegration_spec.lua (new), tests/specs/CourseplayCoursesLoader_spec.lua (new), tests/run_tests.lua, CLAUDE.md | 571/571 pass (+41); reverting the view selection fails 9 tests incl. 'Expected 4, got 1' courses; bug-169 logged | ~35k |
+| 00:32 | Edited CLAUDE.md | 4→6 lines | ~119 |
+| 00:32 | Edited CLAUDE.md | expanded (+6 lines) | ~147 |
+| 00:33 | Session end: 38 writes across 15 files (WMStepDialog.lua, WorkflowManager.lua, WorkflowExecutor.lua, WMEditorDialog.lua, WorkflowExecutor_spec.lua) | 19 reads | ~144839 tok |
