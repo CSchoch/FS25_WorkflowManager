@@ -60,7 +60,7 @@ Individual runners: `tests\run_executor_spec.lua`, `tests\run_storage_spec.lua`,
 | `CourseplayIntegration_spec.lua` | Course entry resolution from the root view, legacy-name fallback, folder navigation |
 | `CourseplayCoursesLoader_spec.lua` | Course enumeration from the root view, root-relative names |
 
-Current total: **571**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
+Current total: **575**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
 or they will not run.
 
 **Courseplay course paths:** course names are stored as **root-relative** paths
@@ -68,6 +68,12 @@ or they will not run.
 (`CPIntegration:findCourseEntry`) must start from `rootDirectoryView`. Never use
 `currentDirectoryView` as the primary — it follows Courseplay's own GUI navigation, so it hides
 courses outside the open folder and makes names resolve differently at author time vs. run time.
+
+The real root view sits one level *above* Courseplay's `Singleplayer` folder, so names enumerated
+today read `Singleplayer/F34/Kalken`. Workflows authored before the root-view fix stored
+`F34/Kalken`. `findCourseEntry` therefore falls back to a **path-suffix** match on the collected
+candidates — matching by base name alone silently loaded `F09/Kalken` for a step asking for
+`F34/Kalken`.
 
 **Workflow lifecycle:** `WorkflowManager:buildWorkflow(name)` returns an *unregistered* workflow;
 `registerWorkflow(wf)` adds it to the list (idempotent by id); `createWorkflow(name)` is both at once.

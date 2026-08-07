@@ -853,3 +853,75 @@
 | 00:32 | Edited CLAUDE.md | 4→6 lines | ~119 |
 | 00:32 | Edited CLAUDE.md | expanded (+6 lines) | ~147 |
 | 00:33 | Session end: 38 writes across 15 files (WMStepDialog.lua, WorkflowManager.lua, WorkflowExecutor.lua, WMEditorDialog.lua, WorkflowExecutor_spec.lua) | 19 reads | ~144839 tok |
+| 00:48 | Created docs/MultiplayerConcept.md | — | ~3162 |
+| 00:48 | Investigated MP architecture gap (review #1); studied AutoDriveSync Object pattern + CP CpJoinEvent/CoursesEvent; wrote design doc | docs/MultiplayerConcept.md (new), .wolf/cerebrum.md | 9 defects catalogued (M1-M9), 4-layer solution, 4 phases; no code changed, 571/571 still pass | ~45k |
+| 00:48 | Session end: 39 writes across 16 files (WMStepDialog.lua, WorkflowManager.lua, WorkflowExecutor.lua, WMEditorDialog.lua, WorkflowExecutor_spec.lua) | 19 reads | ~148227 tok |
+| 00:50 | Edited docs/MultiplayerConcept.md | 3→4 lines | ~131 |
+| 00:51 | Edited docs/MultiplayerConcept.md | modified WMCommandEvent() | ~1357 |
+| 00:51 | Session end: 41 writes across 16 files (WMStepDialog.lua, WorkflowManager.lua, WorkflowExecutor.lua, WMEditorDialog.lua, WorkflowExecutor_spec.lua) | 19 reads | ~149821 tok |
+| 01:05 | Edited docs/MultiplayerConcept.md | modified that() | ~1289 |
+| 01:05 | Full client/server sweep of all modules (beyond sync+rights): found M11-M15 + dead WMExecutor:resetWorkflow | docs/MultiplayerConcept.md | 15 defects total, 8 clean areas documented; no code changed | ~30k |
+| 01:06 | Session end: 42 writes across 16 files (WMStepDialog.lua, WorkflowManager.lua, WorkflowExecutor.lua, WMEditorDialog.lua, WorkflowExecutor_spec.lua) | 19 reads | ~151202 tok |
+| 01:16 | Edited docs/MultiplayerConcept.md | expanded (+48 lines) | ~906 |
+| 01:17 | Verified MP design against GIANTS sources: found sdk/debugger/gameSource.zip (93k lines base-game Lua) + scriptBinding.xml + GDN LUADOC; confirmed hireAssistant/broadcastEvent/register; found M16 (SP data bleed) | docs/MultiplayerConcept.md, .wolf/cerebrum.md | 6 claims confirmed, 4 still need live session, 1 new defect | ~35k |
+| 01:17 | Session end: 43 writes across 16 files (WMStepDialog.lua, WorkflowManager.lua, WorkflowExecutor.lua, WMEditorDialog.lua, WorkflowExecutor_spec.lua) | 20 reads | ~152172 tok |
+| 01:26 | Edited docs/MultiplayerConcept.md | 1→2 lines | ~63 |
+| 01:26 | Edited docs/MultiplayerConcept.md | expanded (+34 lines) | ~586 |
+| 01:26 | Located user's GDN LuaDoc scrape (Downloads/FS25_LuaDoc_Markdown.zip, 65 classes, v1.15); confirmed Farm.PERMISSION model; established GDN documents NO Object/Server/Connection/MissionInfo so 4 open items need a live session | docs/MultiplayerConcept.md, .wolf/cerebrum.md | corroborated \u00a76; no new defects | ~20k |
+| 01:27 | Session end: 45 writes across 16 files (WMStepDialog.lua, WorkflowManager.lua, WorkflowExecutor.lua, WMEditorDialog.lua, WorkflowExecutor_spec.lua) | 20 reads | ~152867 tok |
+| 01:28 | Edited docs/MultiplayerConcept.md | modified AISystem() | ~726 |
+| 01:28 | Edited docs/MultiplayerConcept.md | expanded (+28 lines) | ~442 |
+| 01:29 | Revised MP permission design after source verification: split into access+hireAssistant axes (stop/pause ungated, matching AISystem:stopJob), added getIsInUse check, switched UI gating to 1-arg local form + base-game ai_startStateNoPermission i18n | docs/MultiplayerConcept.md, .wolf/cerebrum.md | 3 corrections to \u00a76; no code changed | ~20k |
+| 01:29 | Session end: 47 writes across 16 files (WMStepDialog.lua, WorkflowManager.lua, WorkflowExecutor.lua, WMEditorDialog.lua, WorkflowExecutor_spec.lua) | 20 reads | ~154118 tok |
+
+## Session: 2026-08-07 17:47
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-07 17:48
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-07 17:53
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-07 17:53
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-07 17:53
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-07 19:48
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-07 19:48
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-07 19:48
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-07 19:48
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 19:51 | Edited src/integration/CourseplayIntegration.lua | modified CPIntegration() | ~986 |
+| 19:51 | Edited src/integration/CourseplayIntegration.lua | — | ~0 |
+| 19:52 | Edited tests/specs/CourseplayIntegration_spec.lua | modified makeLegacyStorage() | ~626 |
+| 19:52 | Edited CLAUDE.md | 571 → 575 | ~7 |
+| 19:52 | Edited CLAUDE.md | expanded (+6 lines) | ~130 |
+| 20:05 | Fixed wrong-folder course load (F34/Kalken -> F09/Kalken): suffix path matching in findCourseEntry | CourseplayIntegration.lua, CourseplayIntegration_spec.lua, CLAUDE.md, cerebrum.md, buglog.json | 575 tests pass | ~4500 |
+| 19:53 | Session end: 5 writes across 3 files (CourseplayIntegration.lua, CourseplayIntegration_spec.lua, CLAUDE.md) | 4 reads | ~18881 tok |

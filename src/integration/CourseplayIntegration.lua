@@ -316,30 +316,30 @@ function CPIntegration:findEntryByName(view, name)
     return nil
 end
 
----Depth-limited recursive search for a non-folder entry with the given name.
+---Collect every non-folder entry named `name` in the tree, each paired with the root-relative
+---folder path it was found in, so an ambiguous base name can be disambiguated by path.
 ---@param view table|nil Directory view to search from
 ---@param name string Entry name to match
 ---@param depth number Current recursion depth
----@return table|nil entry
-function CPIntegration:findEntryByNameRecursive(view, name, depth)
+---@param folderPath string Root-relative path of `view` ("" for the root itself)
+---@param matches table Accumulator of { entry = ..., folderPath = ... }
+function CPIntegration:collectEntriesByName(view, name, depth, folderPath, matches)
     if view == nil or depth > 10 then
-        return nil
+        return
     end
     local entries = self:getViewEntries(view)
     if entries == nil then
-        return nil
+        return
     end
     for _, entry in pairs(entries) do
         if self:isDirectoryEntry(entry) then
-            local found = self:findEntryByNameRecursive(self:getSubView(entry), name, depth + 1)
-            if found ~= nil then
-                return found
-            end
+            local entryName = self:getEntryName(entry)
+            local subPath = folderPath == "" and entryName or (folderPath .. "/" .. entryName)
+            self:collectEntriesByName(self:getSubView(entry), name, depth + 1, subPath, matches)
         elseif self:getEntryName(entry) == name then
-            return entry
+            table.insert(matches, { entry = entry, folderPath = folderPath })
         end
     end
-    return nil
 end
 
 ---Locate a course entry, starting from the ROOT directory view.
@@ -367,7 +367,32 @@ function CPIntegration:findCourseEntry(rootView, folderPath, baseName)
         WMLogger:debug("Course '%s' not found at root level - searching all folders", baseName)
     end
 
-    return self:findEntryByNameRecursive(rootView, baseName, 0)
+    local matches = {}
+    self:collectEntriesByName(rootView, baseName, 0, "", matches)
+    if #matches == 0 then
+        return nil
+    end
+
+    -- Prefer a match whose real folder path ENDS WITH the stored one. Names recorded before
+    -- enumeration moved to the root view are missing the leading segment(s) - "F34/Kalken" for
+    -- what the root view calls "Singleplayer/F34/Kalken" - and taking the first same-named file
+    -- instead silently loads a course from a completely different field.
+    if folderPath ~= "" then
+        local suffix = "/" .. folderPath
+        for _, match in ipairs(matches) do
+            if match.folderPath == folderPath or match.folderPath:sub(-#suffix) == suffix then
+                WMLogger:debug("Course '%s' resolved by path suffix '%s' -> '%s'",
+                    baseName, folderPath, match.folderPath)
+                return match.entry
+            end
+        end
+    end
+
+    if #matches > 1 then
+        WMLogger:warning("Course '%s' is ambiguous - %d files share this name and none sits under '%s'; using the one in '%s'",
+            baseName, #matches, folderPath ~= "" and folderPath or "<root>", matches[1].folderPath)
+    end
+    return matches[1].entry
 end
 
 ---Load a course from the Courseplay file storage

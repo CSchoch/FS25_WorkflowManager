@@ -175,6 +175,46 @@ describe("CPIntegration (course resolution)", function()
             assert.is_not_nil(entry)
             assert.are.equal("Root Course", entry.name)
         end)
+
+        -- Names recorded before enumeration moved to the root view are missing the leading
+        -- segment ("F34/Kalken" for what the root view calls "Singleplayer/F34/Kalken").
+        -- The folder walk fails, and the fallback must NOT grab the first same-named file.
+        --  root/
+        --    Singleplayer/
+        --      F09/ Kalken     <- sorted first, the wrong one
+        --      F34/ Kalken
+        local function makeLegacyStorage()
+            local f09  = folder("F09", { file("Kalken") })
+            local f34  = folder("F34", { file("Kalken") })
+            local sp   = folder("Singleplayer", { f09, f34 })
+            local root = view({ sp })
+            return root, f09.getEntries()[1], f34.getEntries()[1]
+        end
+
+        it("resolves a legacy path by matching the folder path suffix", function()
+            local root, _, wanted = makeLegacyStorage()
+            local entry = CPIntegration:findCourseEntry(root, "F34", "Kalken")
+            assert.are.equal(wanted, entry)
+        end)
+
+        it("still resolves the same course by its full current path", function()
+            local root, _, wanted = makeLegacyStorage()
+            local entry = CPIntegration:findCourseEntry(root, "Singleplayer/F34", "Kalken")
+            assert.are.equal(wanted, entry)
+        end)
+
+        it("matches the suffix on a multi-segment legacy path", function()
+            local root, _, wanted = makeLegacyStorage()
+            local entry = CPIntegration:findCourseEntry(root, "Singleplayer/F34", "Kalken")
+            assert.are.equal(wanted, entry)
+            assert.are.equal(wanted, CPIntegration:findCourseEntry(root, "F34", "Kalken"))
+        end)
+
+        it("does not treat a partial folder-name match as a suffix", function()
+            -- "34" is not the folder "F34"; with no real suffix match it falls back by name
+            local root, first = makeLegacyStorage()
+            assert.are.equal(first, CPIntegration:findCourseEntry(root, "34", "Kalken"))
+        end)
     end)
 
     -- =========================================================================

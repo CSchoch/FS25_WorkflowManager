@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-31T22:32:43.472Z
-> Files: 48 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-08-07T17:52:40.658Z
+> Files: 49 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -25,7 +25,7 @@
 
 ## ./
 
-- `CLAUDE.md` — FS25 Workflow Manager (~1723 tok)
+- `CLAUDE.md` — FS25 Workflow Manager (~1820 tok)
 - `Development.md` — FS25 Workflow Manager — Development (~1402 tok)
 
 ## .claude/
@@ -49,6 +49,7 @@
 ## docs/
 
 - `API_Analysis.md` — AutoDrive & Courseplay API Analysis (~2128 tok)
+- `MultiplayerConcept.md` — Multiplayer Concept (~8008 tok)
 
 ## src/
 
@@ -72,7 +73,7 @@
 
 - `AutoDriveIntegration.lua` — init, completeInitialization, update, checkAvailability, getDestinations (~11852 tok)
 - `CourseplayCoursesLoader.lua` — init, getCourseplayObject, scanCourses, logCourseplayStructure, extractCoursesFromStorage (~5496 tok)
-- `CourseplayIntegration.lua` — init, completeInitialization, update, checkAvailability, hasSpec (~8524 tok)
+- `CourseplayIntegration.lua` — init, completeInitialization, update, checkAvailability, hasSpec (~8931 tok)
 
 ## src/network/
 
@@ -100,7 +101,7 @@
 
 - `AutoDriveIntegration_spec.lua` — makeImplement, makeVehicle (~4616 tok)
 - `CourseplayCoursesLoader_spec.lua` — file, folder, view, makeFileSystem, contains (~1901 tok)
-- `CourseplayIntegration_spec.lua` — file, folder, view, makeStorage, makeVehicle (~2987 tok)
+- `CourseplayIntegration_spec.lua` — file, folder, view, makeStorage, makeVehicle (~3524 tok)
 - `EventHandler_spec.lua` — Declares gracefully (~2992 tok)
 - `WMEditorDialog_spec.lua` — makeWorkflow, makeDialog (~4423 tok)
 - `WMMainDialog_spec.lua` — makeDialog (~1154 tok)

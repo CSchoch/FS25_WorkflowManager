@@ -2855,6 +2855,72 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-08-01T00:00:00.000Z"
+    },
+    {
+      "id": "bug-174",
+      "timestamp": "2026-07-31T23:26:30.175Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/MultiplayerConcept.md",
+      "root_cause": "5 lines replaced/restructured",
+      "fix": "Rewrote 6→40 lines (5 removed) | Also: **UI gating** (cosmetic but worth having) — grey o; Start/Stop with `g_currentMission.accessHandler:ca",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-07-31T23:28:58.565Z"
+    },
+    {
+      "id": "bug-175",
+      "timestamp": "2026-07-31T23:28:44.871Z",
+      "error_message": "Missing error handling in AISystem",
+      "file": "docs/MultiplayerConcept.md",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-31T23:28:44.871Z"
+    },
+    {
+      "id": "bug-176",
+      "timestamp": "2026-08-07T17:52:31.973Z",
+      "error_message": "Wrong reference: 571 should be 575",
+      "file": "CLAUDE.md",
+      "root_cause": "Used \"571\" instead of \"575\"",
+      "fix": "Changed 571 → 575",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-07T17:52:31.973Z"
+    },
+    {
+      "id": "bug-cp-wrong-folder-course",
+      "timestamp": "2026-08-07T18:00:00.000Z",
+      "error_message": "Step asked for course 'F34/Kalken' but Courseplay loaded 'F09/Kalken'. Log: \"Course 'Kalken' not found in folder 'F34' - searching all folders\" -> \"Found course entry: Kalken\" (level 3, i.e. root/Singleplayer/F09/Kalken)",
+      "file": "src/integration/CourseplayIntegration.lua",
+      "root_cause": "Courseplay's rootDirectoryView sits one level ABOVE the 'Singleplayer' folder, so enumeration from the root now yields 'Singleplayer/F34/Kalken'. Workflows authored before the root-view fix stored the folder-relative 'F34/Kalken'. navigateToFolder(root, 'F34') found no 'F34' among the root's entries (only 'Singleplayer'), so findCourseEntry fell through to findEntryByNameRecursive, which returned the FIRST file named 'Kalken' in traversal order - the one in F09 - and loaded a course for the wrong field with no error.",
+      "fix": "Replaced findEntryByNameRecursive with collectEntriesByName, which gathers every same-named file together with its root-relative folder path. findCourseEntry now prefers a candidate whose real folder path equals or ENDS WITH the stored path ('Singleplayer/F34' ends with 'F34'), only falling back to the first name match when no path matches - and logging a warning when that fallback is ambiguous.",
+      "tags": [
+        "courseplay",
+        "course-resolution",
+        "wrong-course-loaded",
+        "path-prefix",
+        "silent-failure"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-07T18:00:00.000Z"
     }
   ]
 }
