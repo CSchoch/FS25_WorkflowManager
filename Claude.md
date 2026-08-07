@@ -60,7 +60,7 @@ Individual runners: `tests\run_executor_spec.lua`, `tests\run_storage_spec.lua`,
 | `CourseplayIntegration_spec.lua` | Course entry resolution from the root view, legacy-name fallback, folder navigation |
 | `CourseplayCoursesLoader_spec.lua` | Course enumeration from the root view, root-relative names |
 
-Current total: **575**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
+Current total: **576**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
 or they will not run.
 
 **Courseplay course paths:** course names are stored as **root-relative** paths

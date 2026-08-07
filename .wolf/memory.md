@@ -925,3 +925,20 @@
 | 19:52 | Edited CLAUDE.md | expanded (+6 lines) | ~130 |
 | 20:05 | Fixed wrong-folder course load (F34/Kalken -> F09/Kalken): suffix path matching in findCourseEntry | CourseplayIntegration.lua, CourseplayIntegration_spec.lua, CLAUDE.md, cerebrum.md, buglog.json | 575 tests pass | ~4500 |
 | 19:53 | Session end: 5 writes across 3 files (CourseplayIntegration.lua, CourseplayIntegration_spec.lua, CLAUDE.md) | 4 reads | ~18881 tok |
+
+## Session: 2026-08-07 20:20
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 20:20 | Edited tests/specs/CourseplayIntegration_spec.lua | expanded (+10 lines) | ~265 |
+| 20:20 | Edited CLAUDE.md | 575 → 576 | ~7 |
+| 20:20 | Edited docs/MultiplayerConcept.md | 1→2 lines | ~113 |
+| 20:21 | Edited docs/MultiplayerConcept.md | expanded (+48 lines) | ~761 |
+| 20:20 | Verified course-suffix fix is MP-mode-agnostic; documented M17 (client picks course, server resolves it) | CourseplayIntegration_spec.lua, docs/MultiplayerConcept.md, CLAUDE.md | 576 tests pass | ~3200 |
+| 20:21 | Session end: 4 writes across 3 files (CourseplayIntegration_spec.lua, CLAUDE.md, MultiplayerConcept.md) | 0 reads | ~1227 tok |
+| 20:44 | Session end: 4 writes across 3 files (CourseplayIntegration_spec.lua, CLAUDE.md, MultiplayerConcept.md) | 0 reads | ~1227 tok |
+
+## Session: 2026-08-07 00:52
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|

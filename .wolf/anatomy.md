@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-08-07T17:52:40.658Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-08-07T18:21:12.573Z
 > Files: 49 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
@@ -49,7 +49,7 @@
 ## docs/
 
 - `API_Analysis.md` — AutoDrive & Courseplay API Analysis (~2128 tok)
-- `MultiplayerConcept.md` — Multiplayer Concept (~8008 tok)
+- `MultiplayerConcept.md` — Multiplayer Concept (~8782 tok)
 
 ## src/
 
@@ -101,7 +101,7 @@
 
 - `AutoDriveIntegration_spec.lua` — makeImplement, makeVehicle (~4616 tok)
 - `CourseplayCoursesLoader_spec.lua` — file, folder, view, makeFileSystem, contains (~1901 tok)
-- `CourseplayIntegration_spec.lua` — file, folder, view, makeStorage, makeVehicle (~3524 tok)
+- `CourseplayIntegration_spec.lua` — file, folder, view, makeStorage, makeVehicle (~3699 tok)
 - `EventHandler_spec.lua` — Declares gracefully (~2992 tok)
 - `WMEditorDialog_spec.lua` — makeWorkflow, makeDialog (~4423 tok)
 - `WMMainDialog_spec.lua` — makeDialog (~1154 tok)

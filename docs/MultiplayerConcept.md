@@ -66,6 +66,7 @@ Fixing the sync alone is not sufficient. The complete set:
 | M14 | Executor mutators are unguarded while its update loop is guarded | `WorkflowExecutor.lua` |
 | M15 | HUD is shown for every restored vehicle, not the occupied one | `WorkflowManagerSpec:onPostLoad` |
 | M16 | `savegameDirectory` is nil before a game's first save, so the M12 fallback bleeds workflows between **single-player** savegames too | `WorkflowStorage:getXmlPath` |
+| M17 | Course names are *picked* against the client's local Courseplay library but *resolved* against the server's — the two are different folders on different machines | `CPCoursesLoader` (client) vs `CPIntegration:loadCourseFromStorage` (server) |
 
 M3 and M4 are why this cannot be fixed by "just adding a sync event": once definitions
 become server-owned, client-side saving must stop, and the HUD position must be extracted
@@ -466,6 +467,54 @@ execution.
 
 Recommend one shared guard (e.g. an early `if not WMExecutor:isAuthoritative() then` in each
 public mutator) rather than relying on every future caller knowing the rule.
+
+### M17 — the course library a step names is not the one that resolves it
+
+Courseplay's course storage is **per machine**, not per savegame and not synced:
+
+```lua
+-- Courseplay.lua:19
+self.baseDir = getUserProfileAppPath() .. "modSettings/" .. Courseplay.MOD_NAME .. "/"
+-- Courseplay.lua:251-253
+self.courseDir = self.baseDir .. "Courses"
+self.courseStorage = FileSystem(self.courseDir, g_currentMission.missionInfo.mapId)
+```
+
+`Courseplay:load()` runs on every peer, so every peer builds a `FileSystem` over *its own*
+`modSettings` folder. §4 already notes CP never ships the library to clients; the consequence
+for WM is a split that no other defect in this list has:
+
+| Phase | Runs on | Reads |
+| --- | --- | --- |
+| Authoring — `CPCoursesLoader:scanCourses` fills the step dialog's course list | the **client** with the GUI open | that client's `modSettings` courses |
+| Execution — `CPIntegration:loadCourseFromStorage` | the **server** (`WMExecutor:update` is `g_server`-guarded; `startCourseplayStep` is reached only from there) | the server's `modSettings` courses |
+
+So a client can only pick a course the server may not have, and the stored string is the
+sole link between the two. On a dedicated server the server-side library is typically empty,
+in which case `loadCourseFromStorage` returns false and `loadCourse` falls through to
+`vehicle.loadCpCourse` / `setCpCourse`.
+
+Note this is **not** made worse by the bug-`cp-wrong-folder-course` fix. That fix only
+re-orders which candidate wins among same-named files and still falls back to the first
+name match when no path matches, so it is strictly tighter than the previous
+"first file with this base name anywhere" behaviour. But it does not — and cannot — help
+when the file simply is not on the resolving machine.
+
+Options, none of them free:
+
+- **A. Sync the name only** (status quo). Works when both peers keep matching course folders,
+  which is what a listen-server host with one player already satisfies. Document the
+  requirement rather than pretending it holds.
+- **B. Resolve on the client, ship the resolved course.** Mirrors CP's own `CoursesEvent`,
+  which syncs the course *loaded onto a vehicle* rather than the library. Most faithful to
+  CP's design, but WM's execution is server-driven and would have to await a client round-trip
+  mid-step — and the authoring client may be offline by then.
+- **C. Ship the library.** Rejected for the same reason CP rejected it: unbounded size, and it
+  makes WM the owner of another mod's data.
+
+Recommendation: **A** for now, plus a diagnostic — when `loadCourseFromStorage` finds nothing,
+log the server-side course count so the failure reads as "this server has 0 courses" instead
+of a silent fall-through. Revisit B only if MP course execution becomes a real use case.
 
 ### M15 — HUD show-on-restore is indiscriminate (minor)
 

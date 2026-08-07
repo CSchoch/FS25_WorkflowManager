@@ -215,6 +215,16 @@ describe("CPIntegration (course resolution)", function()
             local root, first = makeLegacyStorage()
             assert.are.equal(first, CPIntegration:findCourseEntry(root, "34", "Kalken"))
         end)
+
+        -- The suffix match must not depend on the root child being named "Singleplayer".
+        -- Courseplay hardcodes that name, but the resolution rule is about path shape, not
+        -- about any particular prefix, and must survive Courseplay renaming it.
+        it("is independent of what the root-level folder is called", function()
+            local f09  = folder("F09", { file("Kalken") })
+            local f34  = folder("F34", { file("Kalken") })
+            local root = view({ folder("SomeOtherRootName", { f09, f34 }) })
+            assert.are.equal(f34.getEntries()[1], CPIntegration:findCourseEntry(root, "F34", "Kalken"))
+        end)
     end)
 
     -- =========================================================================

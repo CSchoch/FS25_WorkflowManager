@@ -2921,6 +2921,38 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-08-07T18:00:00.000Z"
+    },
+    {
+      "id": "bug-178",
+      "timestamp": "2026-08-07T18:20:45.332Z",
+      "error_message": "Wrong reference: 575 should be 576",
+      "file": "CLAUDE.md",
+      "root_cause": "Used \"575\" instead of \"576\"",
+      "fix": "Changed 575 → 576",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-07T18:20:45.332Z"
+    },
+    {
+      "id": "bug-179",
+      "timestamp": "2026-08-07T18:21:12.607Z",
+      "error_message": "Missing await",
+      "file": "docs/MultiplayerConcept.md",
+      "root_cause": "Async call without await — returned Promise instead of value",
+      "fix": "Added await to async call",
+      "tags": [
+        "auto-detected",
+        "async-fix",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-07T18:21:12.607Z"
     }
   ]
 }
