@@ -1302,7 +1302,7 @@ function WorkflowManager:deleteMap()
         end
     end)
 
-    -- Cleanup in-vehicle HUD
+    -- Cleanup in-vehicle HUD (also releases the mouse cursor if WM forced it on)
     pcall(function()
         if WMHud and WMHud.delete then
             WMHud:delete()

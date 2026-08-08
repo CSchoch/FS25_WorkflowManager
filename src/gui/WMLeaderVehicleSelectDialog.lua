@@ -40,6 +40,7 @@ end
 function WMLeaderVehicleSelectDialog:onOpen()
     WMLeaderVehicleSelectDialog:superClass().onOpen(self)
     WMLogger:debug("WMLeaderVehicleSelectDialog:onOpen")
+    WMHud:onDialogOpened()
 
     if self.vehicleList then
         self.vehicleList:setDataSource(self)
@@ -54,6 +55,7 @@ end
 function WMLeaderVehicleSelectDialog:onClose()
     WMLeaderVehicleSelectDialog:superClass().onClose(self)
     WMLogger:debug("WMLeaderVehicleSelectDialog:onClose")
+    WMHud:onDialogClosed()
 end
 
 ---Configure the dialog before showing it.

@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-08-07T18:21:12.573Z
-> Files: 49 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-08-08T00:36:18.061Z
+> Files: 55 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -54,7 +54,7 @@
 ## src/
 
 - `WorkflowExecutor.lua` — init, startWorkflow, stopWorkflow, buildSyncMaps, refreshLeaderLink (~21235 tok)
-- `WorkflowManager.lua` — getStepTypeLabel, isMarkerStepType, isTargetlessStepType, isAutoDriveTrackedStepType, getStepTypeSho (~14996 tok)
+- `WorkflowManager.lua` — getStepTypeLabel, isMarkerStepType, isTargetlessStepType, isAutoDriveTrackedStepType, getStepTypeSho (~15010 tok)
 - `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~7437 tok)
 - `WorkflowStorage.lua` — deepCopySupportStep, isTargetlessStepType, parseFillTypes, init, getXmlPath (~4697 tok)
 
@@ -64,10 +64,14 @@
 
 ## src/gui/
 
-- `WMEditorDialog.lua` — deepCopy, new, onCreate, onOpen, onClose (~5963 tok)
-- `WMHud.lua` — ensureOverlays, createIconOverlays, updateOverlayPositions, init, show (~8627 tok)
-- `WMMainDialog.lua` — new, onCreate, onOpen, onClose, refreshWorkflowList (~3590 tok)
-- `WMStepDialog.lua` — new, onCreate, onOpen, onClose, keyEvent (~7891 tok)
+- `WMADSettingsDialog.lua` — new, onCreate, onOpen, onClose, Called (~755 tok)
+- `WMEditorDialog.lua` — deepCopy, new, onCreate, onOpen, onClose (~5983 tok)
+- `WMHud.lua` — ensureOverlays, createIconOverlays, updateOverlayPositions, init, show (~9271 tok)
+- `WMLeaderVehicleSelectDialog.lua` — new, onCreate, buildVehicleList, onOpen, onClose (~1169 tok)
+- `WMMainDialog.lua` — new, onCreate, onOpen, onClose, refreshWorkflowList (~3695 tok)
+- `WMModeSelectDialog.lua` — new, onCreate, onOpen, onClose, Called (~577 tok)
+- `WMStepDialog.lua` — new, onCreate, onOpen, onClose, keyEvent (~7911 tok)
+- `WMTextInputDialog.lua` — new, onCreate, onOpen, onClose, setTitle (~805 tok)
 
 ## src/integration/
 
@@ -104,7 +108,9 @@
 - `CourseplayIntegration_spec.lua` — file, folder, view, makeStorage, makeVehicle (~3699 tok)
 - `EventHandler_spec.lua` — Declares gracefully (~2992 tok)
 - `WMEditorDialog_spec.lua` — makeWorkflow, makeDialog (~4423 tok)
-- `WMMainDialog_spec.lua` — makeDialog (~1154 tok)
+- `WMHud_spec.lua` — makeVehicle (~3652 tok)
+- `WMLeaderVehicleSelectDialog_spec.lua` — makeVehicle, makeList, makeButton (~3207 tok)
+- `WMMainDialog_spec.lua` — makeDialog, makeStartDialog (~1861 tok)
 - `WMStepDialog_spec.lua` — makeDialog, makeStubDialog, confirm (~4739 tok)
 - `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport, makeLeaderWF (~31083 tok)
 - `WorkflowManager_spec.lua` — Declares constants (~9653 tok)

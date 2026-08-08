@@ -25,6 +25,7 @@ end
 function WMModeSelectDialog:onOpen()
     WMModeSelectDialog:superClass().onOpen(self)
     WMLogger:debug("WMModeSelectDialog:onOpen")
+    WMHud:onDialogOpened()
 
     -- Set title to workflow name
     if self.titleElement and self.workflowId then
@@ -38,6 +39,7 @@ end
 function WMModeSelectDialog:onClose()
     WMModeSelectDialog:superClass().onClose(self)
     WMLogger:debug("WMModeSelectDialog:onClose")
+    WMHud:onDialogClosed()
 end
 
 ---Configure the dialog before showing it.

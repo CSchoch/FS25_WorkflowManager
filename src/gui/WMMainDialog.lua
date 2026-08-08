@@ -27,6 +27,7 @@ end
 function WMMainDialog:onOpen()
     WMMainDialog:superClass().onOpen(self)
     WMLogger:debug("WMMainDialog:onOpen")
+    WMHud:onDialogOpened()
 
     -- Register custom input events
     self:registerInputEvents()
@@ -54,6 +55,7 @@ end
 function WMMainDialog:onClose()
     WMMainDialog:superClass().onClose(self)
     WMLogger:debug("WMMainDialog:onClose")
+    WMHud:onDialogClosed()
 
     -- Unregister custom input events
     self:unregisterInputEvents()
@@ -240,12 +242,16 @@ function WMMainDialog:onClickStart()
         if success then
             g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_OK,
                 string.format(g_i18n:getText("wm_workflow_started") or "Workflow started: %s", workflow.name))
+            -- Workflow is running: get out of the way so the player can watch the vehicle
+            self:close()
+            -- Closing the dialog hides the cursor; hand it to the HUD, which releases it
+            -- again when it is closed or the workflow ends
+            WMHud:setMouseCursorActive(true)
         else
             g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_CRITICAL,
                 g_i18n:getText("wm_workflow_error") or "Failed to start workflow")
+            self:refreshWorkflowList()
         end
-
-        self:refreshWorkflowList()
     end
 end
 

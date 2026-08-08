@@ -2953,6 +2953,267 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-08-07T18:21:12.607Z"
+    },
+    {
+      "id": "bug-180",
+      "timestamp": "2026-08-07T22:56:29.852Z",
+      "error_message": "Wrong reference: 576 should be 580",
+      "file": "CLAUDE.md",
+      "root_cause": "Used \"576\" instead of \"580\"",
+      "fix": "Changed 576 → 580",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-07T22:56:29.852Z"
+    },
+    {
+      "id": "bug-181",
+      "timestamp": "2026-08-07T23:07:49.019Z",
+      "error_message": "Wrong reference: 580 should be 581",
+      "file": "CLAUDE.md",
+      "root_cause": "Used \"580\" instead of \"581\"",
+      "fix": "Changed 580 → 581",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-07T23:07:49.019Z"
+    },
+    {
+      "id": "bug-182",
+      "timestamp": "2026-08-08T00:00:00.000Z",
+      "error_message": "the mouse arrow disappears now if i klick start",
+      "file": "src/gui/WMMainDialog.lua",
+      "root_cause": "Auto-closing the main dialog after a successful start let g_gui restore the gameplay cursor state (hidden), so the mouse-driven WMHud could no longer be clicked or dragged",
+      "fix": "onClickStart calls g_inputBinding:setShowMouseCursor(true) after self:close(), matching AutoDrive's Hud.lua idiom for a mouse-interactive in-game HUD",
+      "tags": [
+        "gui",
+        "mouse-cursor",
+        "hud",
+        "dialog"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-08T00:00:00.000Z"
+    },
+    {
+      "id": "bug-183",
+      "timestamp": "2026-08-08T00:14:52.084Z",
+      "error_message": "Wrong reference: 581 should be 584",
+      "file": "CLAUDE.md",
+      "root_cause": "Used \"581\" instead of \"584\"",
+      "fix": "Changed 581 → 584",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-08-08T00:18:35.509Z"
+    },
+    {
+      "id": "bug-184",
+      "timestamp": "2026-08-08T02:08:49.654Z",
+      "error_message": "Error: Running LUA method 'mouseEvent'. dataS/scripts/FSBaseMission.lua:1881: attempt to index nil with 'mouseEvent' (on quit to menu / soft restart)",
+      "file": "src/WorkflowManager.lua, src/gui/WMHud.lua",
+      "root_cause": "Raised inside the base game, not the mod: FSBaseMission:mouseEvent dispatches one more mouse event after the mission tore down its player/HUD. Known FS25 quit-to-menu race, also reported against Courseplay/manualAttach. WorkflowManager:mouseEvent already returns early (isInitialized=false, isShuttingDown) and the error appears ~0.4s AFTER 'WorkflowManager cleanup completed'. Mod-side contributors: WM forces the mouse cursor on for its HUD and never released it on unload, and WMHud:delete() left isVisible/vehicle/isDragging set so a soft reset kept stale HUD state",
+      "fix": "deleteMap now calls g_inputBinding:setShowMouseCursor(false); WMHud:delete() clears isVisible/vehicle/isDragging. Does NOT remove the base-game error itself - it fires once during teardown and is harmless",
+      "tags": [
+        "shutdown",
+        "mouse-cursor",
+        "hud",
+        "base-game",
+        "not-our-error"
+      ],
+      "related_bugs": [
+        "bug-182"
+      ],
+      "occurrences": 2,
+      "last_seen": "2026-08-08T02:08:49.654Z"
+    },
+    {
+      "id": "bug-185",
+      "timestamp": "2026-08-08T00:17:51.786Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowManager.lua",
+      "root_cause": "5 lines replaced/restructured",
+      "fix": "Rewrote 14→6 lines (5 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-08T00:17:51.786Z"
+    },
+    {
+      "id": "bug-186",
+      "timestamp": "2026-08-08T00:18:07.719Z",
+      "error_message": "Significant refactor of ",
+      "file": "tests/specs/WMMainDialog_spec.lua",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 5→6 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-08T00:18:07.720Z"
+    },
+    {
+      "id": "bug-187",
+      "timestamp": "2026-08-08T00:18:13.425Z",
+      "error_message": "Incorrect value in code",
+      "file": "tests/specs/WMMainDialog_spec.lua",
+      "root_cause": "Had \"keeps the mouse cursor so the HUD stays clickable",
+      "fix": "Changed to \"hands the mouse cursor to the HUD so it stays cli",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-08T00:18:13.426Z"
+    },
+    {
+      "id": "bug-188",
+      "timestamp": "2026-08-08T00:27:45.679Z",
+      "error_message": "Wrong reference: end should be WorkflowManager",
+      "file": "src/gui/WMADSettingsDialog.lua",
+      "root_cause": "Used \"end\" instead of \"WorkflowManager\"",
+      "fix": "Changed end → WorkflowManager",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-08T00:27:45.679Z"
+    },
+    {
+      "id": "bug-189",
+      "timestamp": "2026-08-08T00:27:59.469Z",
+      "error_message": "Wrong reference: end should be WorkflowManager",
+      "file": "src/gui/WMLeaderVehicleSelectDialog.lua",
+      "root_cause": "Used \"end\" instead of \"WorkflowManager\"",
+      "fix": "Changed end → WorkflowManager",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-08T00:27:59.469Z"
+    },
+    {
+      "id": "bug-190",
+      "timestamp": "2026-08-08T00:28:03.336Z",
+      "error_message": "Wrong reference: end should be WorkflowManager",
+      "file": "src/gui/WMModeSelectDialog.lua",
+      "root_cause": "Used \"end\" instead of \"WorkflowManager\"",
+      "fix": "Changed end → WorkflowManager",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-08T00:28:03.336Z"
+    },
+    {
+      "id": "bug-191",
+      "timestamp": "2026-08-08T00:28:06.701Z",
+      "error_message": "Wrong reference: end should be WorkflowManager",
+      "file": "src/gui/WMTextInputDialog.lua",
+      "root_cause": "Used \"end\" instead of \"WorkflowManager\"",
+      "fix": "Changed end → WorkflowManager",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-08T00:28:06.701Z"
+    },
+    {
+      "id": "bug-192",
+      "timestamp": "2026-08-08T00:28:27.082Z",
+      "error_message": "Significant refactor of ",
+      "file": "tests/specs/WMHud_spec.lua",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 5→9 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-08T00:28:27.082Z"
+    },
+    {
+      "id": "bug-193",
+      "timestamp": "2026-08-08T00:29:56.912Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/gui/WMHud.lua",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 22→38 lines (4 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-08T00:29:56.912Z"
+    },
+    {
+      "id": "bug-194",
+      "timestamp": "2026-08-08T00:31:06.211Z",
+      "error_message": "Wrong reference: 590 should be 595",
+      "file": "CLAUDE.md",
+      "root_cause": "Used \"590\" instead of \"595\"",
+      "fix": "Changed 590 → 595",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-08T00:31:06.211Z"
+    },
+    {
+      "id": "bug-195",
+      "timestamp": "2026-08-08T00:36:18.096Z",
+      "error_message": "Wrong reference: 595 should be 597",
+      "file": "CLAUDE.md",
+      "root_cause": "Used \"595\" instead of \"597\"",
+      "fix": "Changed 595 → 597",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-08T00:36:18.096Z"
     }
   ]
 }

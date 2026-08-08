@@ -32,6 +32,8 @@ describe("WMMainDialog", function()
 
     -- Records what onClickNew / onClickEdit did, without touching the real manager
     local shown
+    local notifications
+    local mouseCursorShown
 
     before_each(function()
         shown = nil
@@ -53,12 +55,32 @@ describe("WMMainDialog", function()
                 shown = { workflow = workflow, isNew = isNew }
             end,
             getWorkflows = function(self) return self.workflows end,
+            getVehicleWorkflowState = function() return nil end,
+            startWorkflow = function(self, id) return self.startResult end,
+            startResult = true,
+        }
+
+        notifications = {}
+        _G.FSBaseMission = { INGAME_NOTIFICATION_OK = 1, INGAME_NOTIFICATION_CRITICAL = 2 }
+        _G.g_currentMission = {
+            controlledVehicle = nil,
+            addIngameNotification = function(self, kind, text)
+                table.insert(notifications, { kind = kind, text = text })
+            end,
+        }
+        _G.g_i18n = { getText = function(self, key) return key end }
+
+        -- The dialog hands the cursor to the HUD, which owns it from there on
+        mouseCursorShown = false
+        _G.WMHud = {
+            setMouseCursorActive = function(_, active) mouseCursorShown = active end,
         }
     end)
 
     local function makeDialog()
         local d = WMMainDialog.new()
-        d.close = function() end
+        d.closed = false
+        d.close = function(self) self.closed = true end
         d.workflowList = nil   -- refreshWorkflowList early-returns without a list
         return d
     end
@@ -118,6 +140,54 @@ describe("WMMainDialog", function()
             d.selectedWorkflowIndex = 0
             d:onClickEdit()
             assert.is_nil(shown)
+        end)
+    end)
+
+    describe("onClickStart", function()
+        local function makeStartDialog()
+            local d = makeDialog()
+            d.workflows = { { id = "wf_1", name = "Harvest", steps = {} } }
+            d.selectedWorkflowIndex = 1
+            return d
+        end
+
+        it("closes the dialog once the workflow is running", function()
+            WorkflowManager.startResult = true
+            local d = makeStartDialog()
+            d:onClickStart()
+            assert.is_true(d.closed)
+        end)
+
+        it("still notifies the player that the workflow started", function()
+            WorkflowManager.startResult = true
+            local d = makeStartDialog()
+            d:onClickStart()
+            assert.are.equal(1, #notifications)
+            assert.are.equal(FSBaseMission.INGAME_NOTIFICATION_OK, notifications[1].kind)
+        end)
+
+        it("hands the mouse cursor to the HUD so it stays clickable", function()
+            WorkflowManager.startResult = true
+            local d = makeStartDialog()
+            d:onClickStart()
+            assert.is_true(mouseCursorShown)
+        end)
+
+        it("stays open when the start fails", function()
+            WorkflowManager.startResult = false
+            local d = makeStartDialog()
+            d:onClickStart()
+            assert.is_false(d.closed)
+            assert.are.equal(FSBaseMission.INGAME_NOTIFICATION_CRITICAL, notifications[1].kind)
+        end)
+
+        it("does nothing without a selection", function()
+            local d = makeDialog()
+            d.workflows = {}
+            d.selectedWorkflowIndex = 0
+            d:onClickStart()
+            assert.is_false(d.closed)
+            assert.are.equal(0, #notifications)
         end)
     end)
 

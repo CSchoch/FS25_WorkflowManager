@@ -52,6 +52,7 @@ end
 function WMStepDialog:onOpen()
     WMStepDialog:superClass().onOpen(self)
     WMLogger:debug("WMStepDialog:onOpen")
+    WMHud:onDialogOpened()
 
     -- Manually set callbacks for dropdowns (XML callback binding doesn't work for MultiTextOption)
     if self.typeDropdown ~= nil then
@@ -112,6 +113,7 @@ end
 function WMStepDialog:onClose()
     WMStepDialog:superClass().onClose(self)
     WMLogger:debug("WMStepDialog:onClose")
+    WMHud:onDialogClosed()
     self.ctrlPressed = false
 end
 
@@ -379,7 +381,7 @@ function WMStepDialog:populateCellForItemInSection(list, section, index, cell)
                 for _, name in ipairs(self.selectedFillTypes) do
                     if name == item.name then isSelected = true; break end
                 end
-                textElement:setText((isSelected and "✓ " or "  ") .. item.display)
+                textElement:setText((isSelected and "âœ“ " or "  ") .. item.display)
                 if isSelected then
                     textElement:setTextColor(0.0, 0.85, 0.17, 1)
                 else

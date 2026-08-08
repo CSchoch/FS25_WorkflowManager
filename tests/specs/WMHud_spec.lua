@@ -195,4 +195,153 @@ describe("WMHud", function()
             assert.are.equal(vehicle2,    sentCommands[1].vehicle)
         end)
     end)
+
+    -- =========================================================================
+    -- Mouse cursor ownership
+    -- =========================================================================
+    describe("setMouseCursorActive", function()
+        local cursorCalls
+
+        before_each(function()
+            cursorCalls = {}
+            WMHud.mouseCursorForced = false
+            WMHud.openDialogCount = 0
+            _G.g_inputBinding = {
+                setShowMouseCursor = function(_, show) table.insert(cursorCalls, show) end,
+            }
+        end)
+
+        it("turns the cursor on and remembers that WM owns it", function()
+            WMHud:setMouseCursorActive(true)
+            assert.are.same({ true }, cursorCalls)
+            assert.is_true(WMHud.mouseCursorForced)
+        end)
+
+        it("releases the cursor it turned on", function()
+            WMHud:setMouseCursorActive(true)
+            WMHud:setMouseCursorActive(false)
+            assert.are.same({ true, false }, cursorCalls)
+            assert.is_false(WMHud.mouseCursorForced)
+        end)
+
+        it("does not switch off a cursor another mod turned on", function()
+            WMHud:setMouseCursorActive(false)
+            assert.are.equal(0, #cursorCalls)
+        end)
+
+        it("does not re-enable an already forced cursor", function()
+            WMHud:setMouseCursorActive(true)
+            WMHud:setMouseCursorActive(true)
+            assert.are.same({ true }, cursorCalls)
+        end)
+
+        -- The HUD auto-hides a few seconds after a workflow ends; taking the cursor with it
+        -- would yank it away mid-use. Release is tied to the dialog chain instead
+        -- (WorkflowManager:onDialogClosed).
+        it("keeps the cursor when the HUD hides", function()
+            WMHud:setMouseCursorActive(true)
+            WMHud:hide()
+            assert.are.same({ true }, cursorCalls)
+            assert.is_true(WMHud.mouseCursorForced)
+        end)
+
+        it("releases the cursor when the player closes the HUD (X button / toggle key)", function()
+            WMHud:setMouseCursorActive(true)
+            WMHud:closeManually()
+            assert.are.same({ true, false }, cursorCalls)
+            assert.is_false(WMHud.isVisible)
+        end)
+
+        it("releases the cursor on manual close even while a dialog is counted open", function()
+            WMHud:onDialogOpened()
+            WMHud:setMouseCursorActive(true)
+            WMHud:closeManually()
+            assert.are.same({ true, false }, cursorCalls)
+        end)
+
+        it("releases the cursor on delete", function()
+            WMHud:setMouseCursorActive(true)
+            WMHud:delete()
+            assert.are.same({ true, false }, cursorCalls)
+        end)
+    end)
+
+    -- =========================================================================
+    -- Dialog chain — the cursor is handed back when the last WM dialog closes
+    -- =========================================================================
+    describe("onDialogOpened / onDialogClosed", function()
+        local cursorCalls
+
+        before_each(function()
+            cursorCalls = {}
+            WMHud.mouseCursorForced = false
+            WMHud.openDialogCount = 0
+            _G.g_inputBinding = {
+                setShowMouseCursor = function(_, show) table.insert(cursorCalls, show) end,
+            }
+        end)
+
+        it("releases the cursor when the last dialog closes", function()
+            WMHud:onDialogOpened()
+            WMHud:setMouseCursorActive(true)
+            WMHud:onDialogClosed()
+            assert.are.same({ true, false }, cursorCalls)
+        end)
+
+        it("keeps the cursor while another dialog in the chain is still open", function()
+            -- main -> editor: editor opens before main is counted out
+            WMHud:onDialogOpened()
+            WMHud:onDialogOpened()
+            WMHud:setMouseCursorActive(true)
+            WMHud:onDialogClosed()
+            assert.are.same({ true }, cursorCalls)
+            assert.is_true(WMHud.mouseCursorForced)
+
+            WMHud:onDialogClosed()
+            assert.are.same({ true, false }, cursorCalls)
+        end)
+
+        it("never counts below zero", function()
+            WMHud:onDialogClosed()
+            WMHud:onDialogClosed()
+            assert.are.equal(0, WMHud.openDialogCount)
+        end)
+
+        it("does not touch the cursor when WM never forced it on", function()
+            WMHud:onDialogOpened()
+            WMHud:onDialogClosed()
+            assert.are.equal(0, #cursorCalls)
+        end)
+
+        it("resets the count on delete so a soft reset starts clean", function()
+            WMHud:onDialogOpened()
+            WMHud:delete()
+            assert.are.equal(0, WMHud.openDialogCount)
+        end)
+    end)
+
+    -- =========================================================================
+    -- delete (map unload / soft reset)
+    -- =========================================================================
+    describe("delete", function()
+        it("clears the visible state so a soft reset does not resurrect the HUD", function()
+            WMHud.isVisible = true
+            WMHud.vehicle = vehicle2
+            WMHud:delete()
+            assert.is_false(WMHud.isVisible)
+            assert.is_nil(WMHud.vehicle)
+        end)
+
+        it("ignores mouse events once deleted", function()
+            WMHud.isVisible = true
+            WMHud:delete()
+            assert.is_false(WMHud:mouseEvent(0.5, 0.5, true, false, 1))
+        end)
+
+        it("cancels an in-progress drag", function()
+            WMHud.isDragging = true
+            WMHud:delete()
+            assert.is_false(WMHud.isDragging)
+        end)
+    end)
 end)

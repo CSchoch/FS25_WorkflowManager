@@ -30,6 +30,12 @@ describe("WMLeaderVehicleSelectDialog", function()
             end
         }
 
+        -- Every WM dialog reports open/close so WMHud can release the mouse cursor
+        -- when the last dialog in the chain is gone
+        _G.WMHud = _G.WMHud or {}
+        _G.WMHud.onDialogOpened = function() end
+        _G.WMHud.onDialogClosed = function() end
+
         dofile("src/gui/WMLeaderVehicleSelectDialog.lua")
     end)
 

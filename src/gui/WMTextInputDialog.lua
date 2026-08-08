@@ -25,6 +25,7 @@ end
 function WMTextInputDialog:onOpen()
     WMTextInputDialog:superClass().onOpen(self)
     WMLogger:debug("WMTextInputDialog:onOpen")
+    WMHud:onDialogOpened()
 
     if self.textInputElement then
         self.textInputElement.blockTime = 0
@@ -36,6 +37,7 @@ end
 function WMTextInputDialog:onClose()
     WMTextInputDialog:superClass().onClose(self)
     WMLogger:debug("WMTextInputDialog:onClose")
+    WMHud:onDialogClosed()
 end
 
 ---Set the dialog title

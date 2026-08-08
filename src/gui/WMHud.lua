@@ -21,6 +21,12 @@ WMHud.hoveredButton = nil
 -- Auto-hide after workflow completion
 WMHud.autoHideAt = nil             -- absolute g_currentMission.time when HUD should hide, nil = inactive
 
+-- true while WM is the one forcing the mouse cursor on (see setMouseCursorActive)
+WMHud.mouseCursorForced = false
+
+-- Number of WM dialogs currently open (main -> editor -> step -> ... chain)
+WMHud.openDialogCount = 0
+
 -- Drag state
 WMHud.isDragging = false
 WMHud.dragOffsetX = 0
@@ -195,9 +201,56 @@ function WMHud:hide()
     WMLogger:debug("WMHud hidden")
 end
 
+---Player closed the HUD on purpose (X button / toggle key). The HUD was the only reason WM
+---held the cursor, so it always goes back with it -- unlike the auto-hide in update(), which
+---uses hide() and leaves the cursor where it is.
+function WMHud:closeManually()
+    self:hide()
+    self:setMouseCursorActive(false)
+end
+
+---Own the mouse cursor while the HUD is the interaction surface.
+---Turned on when a workflow is started from the main dialog (the dialog closes, so the HUD
+---takes over the clicking); released by onDialogClosed when the last WM dialog closes --
+---deliberately NOT by hide(), because the HUD auto-hides a few seconds after a workflow ends
+---and must not take the cursor with it. The flag makes sure we never switch off a cursor
+---another mod (AutoDrive, Courseplay) turned on.
+---@param active boolean
+function WMHud:setMouseCursorActive(active)
+    if g_inputBinding == nil then
+        return
+    end
+
+    if active then
+        if not self.mouseCursorForced then
+            self.mouseCursorForced = true
+            g_inputBinding:setShowMouseCursor(true)
+        end
+    elseif self.mouseCursorForced then
+        self.mouseCursorForced = false
+        g_inputBinding:setShowMouseCursor(false)
+    end
+end
+
+---Called by every WM dialog from onOpen
+function WMHud:onDialogOpened()
+    self.openDialogCount = self.openDialogCount + 1
+end
+
+---Called by every WM dialog from onClose. Dialogs hand over to each other (main -> editor
+----> step), so only the last one closing brings the count to zero -- that is when the
+---cursor WM forced on is handed back to the game.
+function WMHud:onDialogClosed()
+    self.openDialogCount = math.max(0, self.openDialogCount - 1)
+
+    if self.openDialogCount == 0 then
+        self:setMouseCursorActive(false)
+    end
+end
+
 function WMHud:toggle(vehicle)
     if self.isVisible then
-        self:hide()
+        self:closeManually()
     else
         self:show(vehicle)
     end
@@ -685,7 +738,7 @@ function WMHud:handleClick(posX, posY)
 
     -- Close button (top-right corner of header)
     if posX > x + w - mx * 4 and posY > y + h - self.headerH then
-        self:hide()
+        self:closeManually()
         return true
     end
 
@@ -832,6 +885,14 @@ function WMHud:delete()
     end
     self.buttonBounds = nil
     self.hoveredButton = nil
+
+    -- Drop the visible/vehicle state too: a soft reset (quit to menu) keeps this module
+    -- loaded, so a stale isVisible would let mouseEvent/draw run against deleted overlays
+    self.isVisible = false
+    self.vehicle = nil
+    self.isDragging = false
+    self.openDialogCount = 0
+    self:setMouseCursorActive(false)
 end
 
 WMLogger:info("WMHud module loaded")

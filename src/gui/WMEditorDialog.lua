@@ -2,7 +2,7 @@
     WorkflowManager - Editor Dialog
     Allows editing workflow name and managing steps.
     The step list is a flat, nested view: main steps are shown with their support
-    sub-steps indented below them (  ↳ 1  AutoDrive  Field1  Unload).
+    sub-steps indented below them (  â†³ 1  AutoDrive  Field1  Unload).
 
     Author: WorkflowManager Team
 ]]
@@ -43,6 +43,7 @@ end
 function WMEditorDialog:onOpen()
     WMEditorDialog:superClass().onOpen(self)
     WMLogger:debug("WMEditorDialog:onOpen")
+    WMHud:onDialogOpened()
 
     self:registerInputEvents()
 
@@ -61,6 +62,7 @@ end
 function WMEditorDialog:onClose()
     WMEditorDialog:superClass().onClose(self)
     WMLogger:debug("WMEditorDialog:onClose")
+    WMHud:onDialogClosed()
     self:unregisterInputEvents()
 end
 
@@ -223,7 +225,7 @@ function WMEditorDialog:populateCellForItemInSection(list, section, index, cell)
     end
     if step == nil then return end
 
-    -- # column: step number for main rows, "└" for support sub-steps
+    -- # column: step number for main rows, "â””" for support sub-steps
     local numEl = cell:getDescendantByName("stepNum")
     if numEl then
         numEl:setText(item.isMain and tostring(item.stepIndex) or (tostring(item.stepIndex) .. "." .. tostring(item.supportIndex)))

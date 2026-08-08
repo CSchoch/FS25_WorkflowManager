@@ -942,3 +942,84 @@
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+
+## Session: 2026-08-07 00:52
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-07 00:52
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 00:55 | Edited src/gui/WMMainDialog.lua | 11→12 lines | ~175 |
+| 00:55 | Edited tests/specs/WMMainDialog_spec.lua | modified makeDialog() | ~69 |
+| 00:56 | Edited tests/specs/WMMainDialog_spec.lua | expanded (+13 lines) | ~182 |
+| 00:56 | Edited tests/specs/WMMainDialog_spec.lua | 2→3 lines | ~33 |
+| 00:56 | Edited tests/specs/WMMainDialog_spec.lua | modified makeStartDialog() | ~460 |
+| 00:56 | Edited CLAUDE.md | 576 → 580 | ~7 |
+| 00:56 | Main dialog now closes on successful workflow start (stays open on failure) + 4 specs | src/gui/WMMainDialog.lua, tests/specs/WMMainDialog_spec.lua | 580 tests pass | ~12k |
+| 00:56 | Session end: 6 writes across 3 files (WMMainDialog.lua, WMMainDialog_spec.lua, CLAUDE.md) | 3 reads | ~5736 tok |
+| 01:07 | Edited src/gui/WMMainDialog.lua | 2→6 lines | ~85 |
+| 01:07 | Edited tests/specs/WMMainDialog_spec.lua | 2→7 lines | ~63 |
+| 01:07 | Edited tests/specs/WMMainDialog_spec.lua | 2→3 lines | ~18 |
+| 01:07 | Edited tests/specs/WMMainDialog_spec.lua | expanded (+7 lines) | ~82 |
+| 01:07 | Edited CLAUDE.md | 580 → 581 | ~7 |
+| 01:08 | Keep mouse cursor visible after Start closes the main dialog (HUD stays clickable) | src/gui/WMMainDialog.lua, tests/specs/WMMainDialog_spec.lua | 581 tests pass | ~8k |
+| 01:08 | Session end: 11 writes across 3 files (WMMainDialog.lua, WMMainDialog_spec.lua, CLAUDE.md) | 6 reads | ~29631 tok |
+| 02:14 | Edited src/gui/WMHud.lua | expanded (+6 lines) | ~86 |
+| 02:14 | Edited src/WorkflowManager.lua | expanded (+8 lines) | ~122 |
+| 02:14 | Edited tests/specs/WMHud_spec.lua | expanded (+25 lines) | ~323 |
+| 02:14 | Edited CLAUDE.md | 581 → 584 | ~7 |
+| 02:15 | Investigated FSBaseMission:1881 mouseEvent nil error at quit (base-game teardown race, not ours); released forced cursor + reset HUD state on map unload | src/WorkflowManager.lua, src/gui/WMHud.lua, tests/specs/WMHud_spec.lua | 584 tests pass | ~25k |
+| 02:15 | Session end: 15 writes across 6 files (WMMainDialog.lua, WMMainDialog_spec.lua, CLAUDE.md, WMHud.lua, WorkflowManager.lua) | 7 reads | ~30207 tok |
+| 02:17 | Edited src/gui/WMHud.lua | 2→5 lines | ~42 |
+| 02:17 | Edited src/gui/WMHud.lua | modified WMHud() | ~238 |
+| 02:17 | Edited src/gui/WMHud.lua | 6→7 lines | ~80 |
+| 02:17 | Edited src/gui/WMMainDialog.lua | setShowMouseCursor() → setMouseCursorActive() | ~52 |
+| 02:17 | Edited src/WorkflowManager.lua | setShowMouseCursor() → HUD() | ~51 |
+| 02:18 | Edited tests/specs/WMMainDialog_spec.lua | 5→6 lines | ~64 |
+| 02:18 | Edited tests/specs/WMMainDialog_spec.lua | "keeps the mouse cursor so" → "hands the mouse cursor to" | ~22 |
+| 02:18 | Edited tests/specs/WMHud_spec.lua | expanded (+51 lines) | ~558 |
+| 02:18 | Edited CLAUDE.md | 584 → 590 | ~7 |
+| 02:19 | Cursor ownership: WMHud:setMouseCursorActive() - on when Start closes the dialog, off on HUD hide/close/delete | src/gui/WMHud.lua, src/gui/WMMainDialog.lua, src/WorkflowManager.lua, 2 specs | 590 tests pass | ~15k |
+| 02:19 | Session end: 24 writes across 6 files (WMMainDialog.lua, WMMainDialog_spec.lua, CLAUDE.md, WMHud.lua, WorkflowManager.lua) | 7 reads | ~31731 tok |
+| 02:26 | Edited src/WorkflowManager.lua | 2→4 lines | ~50 |
+| 02:27 | Edited src/WorkflowManager.lua | modified WorkflowManager() | ~216 |
+| 02:27 | Edited src/gui/WMHud.lua | modified WMHud() | ~163 |
+| 02:27 | Edited src/gui/WMEditorDialog.lua | 3→4 lines | ~30 |
+| 02:27 | Edited src/gui/WMEditorDialog.lua | 2→3 lines | ~31 |
+| 02:27 | Edited src/gui/WMMainDialog.lua | 3→4 lines | ~31 |
+| 02:27 | Edited src/gui/WMMainDialog.lua | 3→4 lines | ~32 |
+| 02:27 | Edited src/gui/WMStepDialog.lua | 2→3 lines | ~22 |
+| 02:27 | Edited src/gui/WMStepDialog.lua | 2→3 lines | ~29 |
+| 02:27 | Edited src/gui/WMADSettingsDialog.lua | 2→3 lines | ~23 |
+| 02:27 | Edited src/gui/WMADSettingsDialog.lua | 2→3 lines | ~24 |
+| 02:27 | Edited src/gui/WMLeaderVehicleSelectDialog.lua | 2→3 lines | ~26 |
+| 02:27 | Edited src/gui/WMLeaderVehicleSelectDialog.lua | 2→3 lines | ~27 |
+| 02:28 | Edited src/gui/WMModeSelectDialog.lua | 2→3 lines | ~23 |
+| 02:28 | Edited src/gui/WMModeSelectDialog.lua | 2→3 lines | ~24 |
+| 02:28 | Edited src/gui/WMTextInputDialog.lua | 2→3 lines | ~23 |
+| 02:28 | Edited src/gui/WMTextInputDialog.lua | 2→3 lines | ~24 |
+| 02:28 | Edited src/WorkflowManager.lua | 2→3 lines | ~24 |
+| 02:28 | Edited tests/specs/WMHud_spec.lua | 5→9 lines | ~125 |
+| 02:29 | Edited tests/specs/WMLeaderVehicleSelectDialog_spec.lua | expanded (+6 lines) | ~103 |
+| 02:29 | Edited src/WorkflowManager.lua | removed 19 lines | ~10 |
+| 02:29 | Edited src/WorkflowManager.lua | 3→1 lines | ~10 |
+| 02:29 | Edited src/WorkflowManager.lua | 3→2 lines | ~16 |
+| 02:29 | Edited src/gui/WMHud.lua | 2→5 lines | ~59 |
+| 02:29 | Edited src/gui/WMHud.lua | modified WMHud() | ~391 |
+| 02:30 | Edited src/gui/WMHud.lua | 3→4 lines | ~26 |
+| 02:30 | Edited tests/specs/WMLeaderVehicleSelectDialog_spec.lua | 6→6 lines | ~72 |
+| 02:30 | Edited tests/specs/WMHud_spec.lua | 7→8 lines | ~79 |
+| 02:30 | Edited tests/specs/WMHud_spec.lua | expanded (+54 lines) | ~595 |
+| 02:31 | Edited CLAUDE.md | 590 → 595 | ~7 |
+| 02:31 | Cursor release moved from HUD hide to last-dialog-closed (WMHud:onDialogOpened/Closed, all 7 dialogs) | src/gui/WM*Dialog.lua, src/gui/WMHud.lua, tests/specs/WMHud_spec.lua | 595 tests pass | ~20k |
+| 02:31 | Session end: 54 writes across 13 files (WMMainDialog.lua, WMMainDialog_spec.lua, CLAUDE.md, WMHud.lua, WorkflowManager.lua) | 16 reads | ~58774 tok |
+| 02:35 | Edited src/gui/WMHud.lua | hide() → closeManually() | ~46 |
+| 02:35 | Edited src/gui/WMHud.lua | modified WMHud() | ~110 |
+| 02:36 | Edited src/gui/WMHud.lua | hide() → closeManually() | ~26 |
+| 02:36 | Edited tests/specs/WMHud_spec.lua | expanded (+14 lines) | ~169 |
+| 02:36 | Edited CLAUDE.md | 595 → 597 | ~7 |
+| 02:36 | Manual HUD close (X/toggle) always releases the cursor via WMHud:closeManually(); auto-hide still leaves it | src/gui/WMHud.lua, tests/specs/WMHud_spec.lua | 597 tests pass | ~8k |
+| 02:36 | Session end: 59 writes across 13 files (WMMainDialog.lua, WMMainDialog_spec.lua, CLAUDE.md, WMHud.lua, WorkflowManager.lua) | 16 reads | ~59311 tok |

@@ -25,10 +25,11 @@ end
 function WMADSettingsDialog:onOpen()
     WMADSettingsDialog:superClass().onOpen(self)
     WMLogger:debug("WMADSettingsDialog:onOpen")
+    WMHud:onDialogOpened()
 
     local s = self.adSettings or {}
 
-    -- unloadFillLevel is stored as 0.0–1.0 internally; displayed as 0–100 %
+    -- unloadFillLevel is stored as 0.0â€“1.0 internally; displayed as 0â€“100 %
     if self.unloadFillInput then
         local v = s.unloadFillLevel
         self.unloadFillInput:setText(v ~= nil and tostring(math.floor(v * 100 + 0.5)) or "")
@@ -45,6 +46,7 @@ end
 function WMADSettingsDialog:onClose()
     WMADSettingsDialog:superClass().onClose(self)
     WMLogger:debug("WMADSettingsDialog:onClose")
+    WMHud:onDialogClosed()
 end
 
 ---Prepare the dialog before showing it.
@@ -60,7 +62,7 @@ function WMADSettingsDialog:onClickConfirm()
         return el and tonumber(el.text) or nil
     end
 
-    -- unloadFillLevel and preCallLevel: user enters 0–100 %, store as 0.0–1.0
+    -- unloadFillLevel and preCallLevel: user enters 0â€“100 %, store as 0.0â€“1.0
     local fillPct    = parseNum(self.unloadFillInput)
     local preCallPct = parseNum(self.preCallInput)
     local settings = {
