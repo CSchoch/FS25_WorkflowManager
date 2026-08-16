@@ -164,15 +164,27 @@ Ctrl+Click multi-select is easy to miss and hard to describe.
 
 ---
 
-### 15. `web-editor.png` — nice to have
+### 15. `web-editor.png` — **done**
 
 **Used in:** `web-editor.md`
 
-The Web Editor page currently has no image, so there's nothing showing what the tool looks like before someone clicks through.
+**Show:** The full editor — workflow list on one side, the step table with nested sub-steps visible, and the Import/Export buttons in frame.
 
-**Setup:** Open <https://cschoch.github.io/FS25_WorkflowManagerWebeditor/> in a browser. Load or build a workflow with 5–6 steps including a main step with support sub-steps nested under it. Use **dark mode** to match the docs site default.
+This one needs no game, so it was captured headlessly rather than by hand. To regenerate it after a
+web editor UI change:
 
-**Show:** The full editor — workflow list on one side, the step table with nested sub-steps visible, and the Import/Export buttons in frame. Browser chrome can be cropped out.
+1. Copy `webeditor/` (`index.html`, `app.js`, `style.css`) to a scratch directory.
+2. Add a `seed.js` that writes a `fs25wm.webeditor.v1` key to `localStorage` with a couple of
+   workflows — one needs support sub-steps and a fill-type selection so the nesting and the
+   chips are visible — and `lang: "en"`, `theme: "dark"`.
+3. Insert `<script src="seed.js"></script>` **before** the `app.js` tag in the copied `index.html`.
+4. Serve the scratch directory (`python -m http.server 8098`) and run
+   `openwolf designqc --url http://127.0.0.1:8098/`.
+5. Convert `.wolf/designqc-captures/__desktop_top.jpg` to PNG into
+   `website/static/img/screenshots/web-editor.png`.
+
+Seed a scratch copy rather than the real `webeditor/` — the editor autosaves to `localStorage`,
+so seeding the live page would overwrite whatever workflows you had open in that browser.
 
 ---
 
@@ -194,9 +206,13 @@ The Web Editor page currently has no image, so there's nothing showing what the 
 | 12 | `hud-waiting-leader.png` | required | [ ] |
 | 13 | `step-dialog-targetless.png` | nice to have | [ ] |
 | 14 | `step-dialog-filltypes.png` | nice to have | [ ] |
-| 15 | `web-editor.png` | nice to have | [ ] |
+| 15 | `web-editor.png` | nice to have | [x] |
 
-Items 1–10 are already present in `website/static/img/screenshots/`.
+Items 1–10 and 15 are present in `website/static/img/screenshots/`.
+
+**11–14 need the game running** and can only be captured in-game by hand — there is no headless
+path to them. Until they exist, do **not** add their `![...](...)` tags to the doc pages: a
+missing file renders as a broken image with no fallback. Add the tag in the same commit as the PNG.
 
 **Note:** the Console Commands page (`website/docs/api/console-commands.md`) deliberately uses **text code blocks** rather than screenshots — console output is copy-pasteable, searchable, and stays legible at any zoom. Don't screenshot it.
 
