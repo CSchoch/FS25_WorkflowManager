@@ -127,6 +127,7 @@
         <text name="wm_warning_incompatible_vehicle" text="Fahrzeug '%s' benoetigt AutoDrive + Courseplay"/>
         <text name="wm_warning_vehicle_busy" text="Fahrzeug fuehrt bereits einen Workflow aus"/>
         <text name="wm_warning_workflow_running" text="Speichern nicht moeglich: Workflow laeuft gerade. Bitte zuerst stoppen."/>
+        <text name="wm_warning_no_target" text="Bitte zuerst ein Ziel auswaehlen"/>
 
         <!-- HUD texts -->
         <text name="wm_hud_title" text="Workflow Manager"/>

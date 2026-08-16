@@ -328,28 +328,6 @@ _G.CPVehiclesLoader = {
 }
 
 -- GUI mocks
-_G.WMManagerGUI = {
-    init = function() end,
-    show = function() end,
-    hide = function() end,
-    update = function(self, dt) end,
-    draw = function() end,
-    cleanup = function() end,
-    onMouseEvent = function(self, posX, posY, isDown, isUp, button) end,
-    isVisible = false,
-    selectedWorkflowIndex = 0
-}
-
-_G.WMEditorGUI = {
-    init = function() end,
-    update = function(self, dt) end,
-    draw = function() end,
-    cleanup = function() end,
-    onMouseEvent = function(self, posX, posY, isDown, isUp, button) end,
-    onScrollEvent = function(self, direction) return false end,
-    isVisible = false
-}
-
 _G.WMHud = {
     init = function() end,
     update = function(self, dt) end,

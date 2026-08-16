@@ -3504,6 +3504,432 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-08-15T22:10:00"
+    },
+    {
+      "id": "bug-213",
+      "timestamp": "2026-08-16T20:37:10.948Z",
+      "error_message": "Significant refactor of ",
+      "file": "webeditor/app.js",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 4→6 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-16T20:37:10.948Z"
+    },
+    {
+      "id": "bug-214",
+      "timestamp": "2026-08-16T20:37:18.601Z",
+      "error_message": "Null/undefined access in ",
+      "file": "webeditor/app.js",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check) | Also: /** Selectable step types for the currently open dialog (mir; *  Sync markers are omitted for support sub-steps: leader/fo",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-08-16T20:37:33.522Z"
+    },
+    {
+      "id": "bug-215",
+      "timestamp": "2026-08-16T20:37:47.335Z",
+      "error_message": "Incorrect value in code",
+      "file": "webeditor/app.js",
+      "root_cause": "Had \"Fährt zur in AutoDrive konfigurierten Parkpositio",
+      "fix": "Changed to \"Fährt zur in AutoDrive konfigurierten Parkpositio",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-16T20:37:47.335Z"
+    },
+    {
+      "id": "bug-216",
+      "timestamp": "2026-08-16T20:45:00.000Z",
+      "error_message": "Web editor import ballooned pre-sync legacy workflows: every step got a wait_for_leader + unlock_follower marker inserted (6 steps -> 18)",
+      "file": "webeditor/app.js",
+      "root_cause": "migrateSyncFlagsToMarkers ported the pre-fix Lua logic: isSyncTarget/isSyncSource were parsed with a default of true, so a formatVersion-1 file from before the sync feature existed (no flags written at all) looked like a flag-era file with every flag true. Same bug that was fixed in WorkflowStorage.lua on the QueueSystem branch; the JS mirror was never updated.",
+      "fix": "parseStepEl now reads the two legacy flags with no default (absent = null), and migrateSyncFlagsToMarkers gates on hasAnySyncFlag before inserting any markers — mirroring WMStorage:migrateSyncFlagsToMarkers.",
+      "tags": [
+        "webeditor",
+        "migration",
+        "sync-markers",
+        "parity",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-16T20:45:00.000Z"
+    },
+    {
+      "id": "bug-217",
+      "timestamp": "2026-08-16T20:48:51.469Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/docs/troubleshooting.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 14→32 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-16T20:48:51.469Z"
+    },
+    {
+      "id": "bug-218",
+      "timestamp": "2026-08-16T20:49:44.025Z",
+      "error_message": "Incorrect value in code",
+      "file": "website/package.json",
+      "root_cause": "Had \"~5.6.2\"",
+      "fix": "Changed to \"~5.9.3\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "json"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-16T20:49:44.025Z"
+    },
+    {
+      "id": "bug-219",
+      "timestamp": "2026-08-16T21:00:26.078Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/docs/ui/main-dialog.md",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 7→10 lines (3 removed) | Also: These settings are applied automatically every tim; ## Per-Workflow AD Settings",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-08-16T21:00:37.035Z"
+    },
+    {
+      "id": "bug-220",
+      "timestamp": "2026-08-16T21:00:43.520Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/docs/ui/editor-dialog.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 3→3 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-16T21:00:43.520Z"
+    },
+    {
+      "id": "bug-221",
+      "timestamp": "2026-08-16T21:09:10.499Z",
+      "error_message": "Null/undefined access in ",
+      "file": "webeditor/app.js",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-16T21:09:10.499Z"
+    },
+    {
+      "id": "bug-222",
+      "timestamp": "2026-08-16T21:09:18.496Z",
+      "error_message": "Significant refactor of ",
+      "file": "webeditor/app.js",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 8→17 lines (4 removed) | Also: return \"marker\";; class: `step-row${isSupport ? \" support-row\" : \"\"} | Also: const item = el(\"button\", { class: `wf-item${wf.id; el(\"div\", { class: \"wf-item-main\" },",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-08-16T21:10:40.490Z"
+    },
+    {
+      "id": "bug-223",
+      "timestamp": "2026-08-16T21:10:19.755Z",
+      "error_message": "Wrong condition in logic",
+      "file": "webeditor/app.js",
+      "root_cause": "Condition was: if (!marker)",
+      "fix": "Changed to: if (strandedMarker)",
+      "tags": [
+        "auto-detected",
+        "logic-fix",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-16T21:10:19.755Z"
+    },
+    {
+      "id": "bug-224",
+      "timestamp": "2026-08-16T21:10:24.803Z",
+      "error_message": "Incorrect value in code",
+      "file": "webeditor/app.js",
+      "root_cause": "Had \"t-ad\"",
+      "fix": "Changed to `t-${typeBadgeClass(type)}`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-16T21:10:24.803Z"
+    },
+    {
+      "id": "bug-225",
+      "timestamp": "2026-08-16T21:10:50.546Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "webeditor/index.html",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "html"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-16T21:10:50.547Z"
+    },
+    {
+      "id": "bug-226",
+      "timestamp": "2026-08-16T21:11:01.627Z",
+      "error_message": "Incorrect value in code",
+      "file": "webeditor/index.html",
+      "root_cause": "Had \"btn chip-btn marker sm\"",
+      "fix": "Changed to \"btn chip-btn auto sm\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "html"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-08-16T21:11:07.109Z"
+    },
+    {
+      "id": "bug-227",
+      "timestamp": "2026-08-16T21:11:04.699Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowManager.lua",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 7→4 lines (2 removed) | Also: -- Load Text Input Dialog; self.textInputDialog = WMTextInputDialog.new() | Also: WMLogger:warning(\"Main dialog not available, falli; self.guiVisible = not self.guiVisible | Also: WMManagerGUI:update(dt); WMEditorGUI:update(dt) | Also: -- Draw GUI; WMManagerGUI:draw() | Also: -- Forward mouse events to in-vehicle HUD first; if WMHud:mouseEvent(posX, posY, isDown, isUp, butt",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 6,
+      "last_seen": "2026-08-16T21:12:59.462Z"
+    },
+    {
+      "id": "bug-228",
+      "timestamp": "2026-08-16T21:11:22.519Z",
+      "error_message": "CSS fix: Theme",
+      "file": "webeditor/style.css",
+      "root_cause": "Theme: CSS variables, light + dark via [data-theme] with prefers-color-scheme fallback. */ → CSS variables, light + dark selected by [data-theme] on <html>. That attribute is",
+      "fix": "Changed Theme: CSS variables, light + dark via [data-theme] with prefers-color-scheme fallback. */ → CSS variables, light + dark selected by [data-theme] on <html>. That attribute is",
+      "tags": [
+        "auto-detected",
+        "style-fix",
+        "css"
+      ],
+      "related_bugs": [],
+      "occurrences": 8,
+      "last_seen": "2026-08-16T21:13:28.614Z"
+    },
+    {
+      "id": "bug-229",
+      "timestamp": "2026-08-16T21:12:03.903Z",
+      "error_message": "Wrong reference: block should be row",
+      "file": "webeditor/style.css",
+      "root_cause": "Used \"block\" instead of \"row\"",
+      "fix": "Changed block → row",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "css"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-16T21:12:03.903Z"
+    },
+    {
+      "id": "bug-230",
+      "timestamp": "2026-08-16T21:13:49.333Z",
+      "error_message": "Wrong reference: 625 should be 630",
+      "file": "CLAUDE.md",
+      "root_cause": "Used \"625\" instead of \"630\"",
+      "fix": "Changed 625 → 630",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-16T21:13:49.333Z"
+    },
+    {
+      "id": "bug-230",
+      "timestamp": "2026-08-16T23:55:00Z",
+      "error_message": "Step Dialog OK button does nothing when no target is selected (silent early return reads as a broken dialog)",
+      "file": "src/gui/WMStepDialog.lua",
+      "root_cause": "onClickConfirm validated `self.stepTarget == \"\"` with a bare `return` - no warning, no log, dialog stays open, so the user gets no feedback about what is wrong",
+      "fix": "Show a blinking HUD warning via new i18n key wm_warning_no_target (en+de) and log a WMLogger:warning before returning. Added 5 specs in WMStepDialog_spec covering block/warn for AD and CP, no warning once a target is set, and targetless types still confirming",
+      "tags": [
+        "gui",
+        "step-dialog",
+        "validation",
+        "ux",
+        "i18n"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-16T23:55:00Z"
+    },
+    {
+      "id": "bug-232",
+      "timestamp": "2026-08-16T21:14:28.163Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/SCREENSHOTS.md",
+      "root_cause": "Had `ui/editor-dialog.md`",
+      "fix": "Changed to `ui/step-dialog.md`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-08-16T21:14:29.653Z"
+    },
+    {
+      "id": "bug-233",
+      "timestamp": "2026-08-16T21:14:59.679Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/SCREENSHOTS.md",
+      "root_cause": "12 lines replaced/restructured",
+      "fix": "Rewrote 25→111 lines (12 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-16T21:14:59.679Z"
+    },
+    {
+      "id": "bug-233",
+      "timestamp": "2026-08-16T23:20:00.000Z",
+      "error_message": "Web editor course suggestions could resolve to another field's course in-game",
+      "file": "webeditor/app.js",
+      "root_cause": "importCpCourseFiles used only the file's base name (Kalken), but Courseplay course names are root-relative paths (Singleplayer/F34/Kalken) and CPIntegration:findCourseEntry matches the folder part as a path SUFFIX. With no folder part the lookup falls through to matches[1] and silently loads a same-named course from a different field.",
+      "fix": "Added courseNameFromFile(): derives the name from webkitRelativePath, keeping the path from the 'Singleplayer' segment on, so the result is the same whichever folder level the user picks. #fileCpCourses is now a webkitdirectory input; non-xml entries are skipped.",
+      "tags": [
+        "webeditor",
+        "courseplay",
+        "course-path",
+        "parity",
+        "silent-wrong-result"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-16T23:20:00.000Z"
+    },
+    {
+      "id": "bug-234",
+      "timestamp": "2026-08-16T23:20:00.000Z",
+      "error_message": "Escape in the web editor's target autocomplete closed the whole step dialog and discarded the edit",
+      "file": "webeditor/app.js",
+      "root_cause": "setupCombo's Escape branch called only stopPropagation(). Closing a <dialog> on Escape is the key's DEFAULT ACTION, which propagation control does not cancel.",
+      "fix": "Added e.preventDefault() alongside stopPropagation() so the first Escape only dismisses the suggestion list.",
+      "tags": [
+        "webeditor",
+        "dialog",
+        "keyboard",
+        "default-action"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-16T23:20:00.000Z"
+    },
+    {
+      "id": "bug-235",
+      "timestamp": "2026-08-16T23:20:00.000Z",
+      "error_message": "Web editor import silently replaced every workflow, with no undo",
+      "file": "webeditor/app.js",
+      "root_cause": "handleWorkflowFile assigned state.workflows = result.workflows and committed immediately, which also overwrote localStorage. Any accidental drop on the page destroyed unexported work.",
+      "fix": "Split out applyImport(); import now goes through askConfirm when workflows already exist. askConfirm takes an i18n key for its action button (the confirm dialog previously always read 'Delete').",
+      "tags": [
+        "webeditor",
+        "data-loss",
+        "import",
+        "ux"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-16T23:20:00.000Z"
+    },
+    {
+      "id": "bug-236",
+      "timestamp": "2026-08-16T23:20:00.000Z",
+      "error_message": "Web editor accepted duplicate workflow ids and a stale selectedId",
+      "file": "webeditor/app.js",
+      "root_cause": "importWorkflowsXml never checked id uniqueness, and loadState restored selectedId without verifying it still resolves. Both this editor and the game look workflows up by id, so a repeated id hides one of them; an unresolvable selectedId shows the empty hero next to a full sidebar.",
+      "fix": "generateWorkflowId(taken) now retries against a Set of used ids; import reassigns blank/duplicate ids after normalization; loadState falls back to the first workflow when selectedId does not resolve.",
+      "tags": [
+        "webeditor",
+        "import",
+        "identity",
+        "state"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-16T23:20:00.000Z"
+    },
+    {
+      "id": "bug-237",
+      "timestamp": "2026-08-16T23:20:00.000Z",
+      "error_message": "Sync markers nested as support sub-steps were rendered as valid in the web editor",
+      "file": "webeditor/app.js",
+      "root_cause": "modalStepTypes blocks CREATING them (mirroring WMStepDialog:getStepTypes), but files written before that restriction can still contain them. buildSyncMaps pairs markers from workflow.steps only, so a nested one can never be satisfied at runtime.",
+      "fix": "stepRow now marks a sync-marker sub-step invalid and prints a warning line (validationMarkerInSupport, en+de).",
+      "tags": [
+        "webeditor",
+        "validation",
+        "queue-system",
+        "parity"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-16T23:20:00.000Z"
     }
   ]
 }

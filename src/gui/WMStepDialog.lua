@@ -805,8 +805,15 @@ function WMStepDialog:onClickConfirm()
         -- Sync marker: only the type matters (no target/action)
         step = { type = self.stepType, target = "" }
     else
-        -- Validate - target is required for AD/CP steps
+        -- Validate - target is required for AD/CP steps. Warn instead of returning silently:
+        -- a dead OK button reads as a broken dialog.
         if self.stepTarget == "" then
+            local warningText = g_i18n:getText("wm_warning_no_target")
+                or "Select a target before confirming the step."
+            if g_currentMission and g_currentMission.hud and g_currentMission.hud.showBlinkingWarning then
+                g_currentMission.hud:showBlinkingWarning(warningText, 2000)
+            end
+            WMLogger:warning("Step confirm blocked: no target selected for type '%s'", tostring(self.stepType))
             return
         end
 

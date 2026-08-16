@@ -56,13 +56,7 @@ source(Utils.getFilename("src/integration/CourseplayIntegration.lua", g_currentM
 source(Utils.getFilename("src/integration/CourseplayCoursesLoader.lua", g_currentModDirectory))
 source(Utils.getFilename("src/integration/CourseplayVehiclesLoader.lua", g_currentModDirectory))
 
--- 5. GUI modules (legacy draw-based - kept for reference)
-source(Utils.getFilename("src/gui/WorkflowManagerGUI.lua", g_currentModDirectory))
-source(Utils.getFilename("src/gui/WorkflowEditorGUI.lua", g_currentModDirectory))
-source(Utils.getFilename("src/gui/WorkflowManagerMenuFrame.lua", g_currentModDirectory))
-source(Utils.getFilename("src/gui/WMTextInputDialog.lua", g_currentModDirectory))
-
--- 6. New dialog-based GUI (proper input blocking)
+-- 5. Dialog-based GUI (proper input blocking)
 source(Utils.getFilename("src/gui/WMMainDialog.lua", g_currentModDirectory))
 source(Utils.getFilename("src/gui/WMEditorDialog.lua", g_currentModDirectory))
 source(Utils.getFilename("src/gui/WMStepDialog.lua", g_currentModDirectory))
@@ -70,11 +64,11 @@ source(Utils.getFilename("src/gui/WMModeSelectDialog.lua", g_currentModDirectory
 source(Utils.getFilename("src/gui/WMADSettingsDialog.lua", g_currentModDirectory))
 source(Utils.getFilename("src/gui/WMLeaderVehicleSelectDialog.lua", g_currentModDirectory))
 
--- 7. In-vehicle HUD
+-- 6. In-vehicle HUD
 source(Utils.getFilename("src/gui/WMHudElements.lua", g_currentModDirectory))
 source(Utils.getFilename("src/gui/WMHud.lua", g_currentModDirectory))
 
--- 8. Developer console commands
+-- 7. Developer console commands
 source(Utils.getFilename("src/dev/WMConsoleCommands.lua", g_currentModDirectory))
 
 -- Initialize logger from dev config immediately after loading
@@ -193,10 +187,6 @@ function WorkflowManager:init()
     CPVehiclesLoader:init()
     WMDebugUtil:init()
 
-    -- Initialize legacy GUI (kept for fallback)
-    WMManagerGUI:init()
-    WMEditorGUI:init()
-
     -- Initialize in-vehicle HUD
     local hudSuccess, hudErr = pcall(function()
         WMHud:init()
@@ -213,9 +203,6 @@ function WorkflowManager:init()
 
     -- Load new dialog-based GUI (proper input blocking)
     self:loadDialogs()
-
-    -- Setup InGameMenu integration
-    self:setupInGameMenu()
 
     -- Register input actions (fallback for direct access)
     self:registerInputActions()
@@ -247,23 +234,10 @@ function WorkflowManager:loadDialogs()
     g_gui:loadProfiles(profilesPath)
     WMLogger:debug("Loaded GUI profiles from: %s", profilesPath)
 
-    -- Load Text Input Dialog
-    self.textInputDialog = WMTextInputDialog.new()
-    local xmlPath = Utils.getFilename("xml/gui/TextInputDialog.xml", self.modDirectory)
-    local success, result = pcall(function()
-        g_gui:loadGui(xmlPath, "WMTextInputDialog", self.textInputDialog)
-    end)
-    if success then
-        WMLogger:info("Text input dialog loaded successfully")
-    else
-        WMLogger:warning("Failed to load text input dialog: %s", tostring(result))
-        self.textInputDialog = nil
-    end
-
     -- Load Main Dialog
     self.mainDialog = WMMainDialog.new()
-    xmlPath = Utils.getFilename("xml/gui/WMMainDialog.xml", self.modDirectory)
-    success, result = pcall(function()
+    local xmlPath = Utils.getFilename("xml/gui/WMMainDialog.xml", self.modDirectory)
+    local success, result = pcall(function()
         g_gui:loadGui(xmlPath, "WMMainDialog", self.mainDialog)
     end)
     if success then
@@ -339,27 +313,6 @@ function WorkflowManager:loadDialogs()
     end
 end
 
----Show the text input dialog
----@param title string Dialog title
----@param text string Initial text value
----@param callback function Callback function(text, confirmed)
----@param target table Callback target object (optional)
-function WorkflowManager:showTextInputDialog(title, text, callback, target)
-    if self.textInputDialog == nil then
-        WMLogger:warning("Text input dialog not available")
-        if callback then
-            callback(text, false)
-        end
-        return
-    end
-
-    self.textInputDialog:setTitle(title)
-    self.textInputDialog:setText(text)
-    self.textInputDialog:setCallback(callback, target)
-
-    g_gui:showDialog("WMTextInputDialog")
-end
-
 ---Show the AD/CP settings dialog
 ---@param adSettings table|nil  Current workflow.adSettings
 ---@param callback   function   Called with settings table on OK, nil on cancel
@@ -370,156 +323,6 @@ function WorkflowManager:showADSettingsDialog(adSettings, callback)
     end
     self.adSettingsDialog:setSettings(adSettings, callback)
     g_gui:showDialog("WMADSettingsDialog")
-end
-
----Setup InGameMenu integration
----Adds a "Workflow Manager" tab to the ESC menu
----NOTE: Currently disabled due to cleanup issues causing errors with other mods
-function WorkflowManager:setupInGameMenu()
-    -- DISABLED: InGameMenu integration causes state corruption during cleanup
-    -- that triggers errors in other mods like Courseplay.
-    -- Use standalone GUI (Alt+W) instead.
-    -- TODO: Re-enable when proper page registration/unregistration is implemented
-    WMLogger:info("InGameMenu integration disabled - use Alt+W to open GUI")
-    return
-
-    --[[ Original implementation preserved for future use:
-    WMLogger:debug("Setting up InGameMenu integration...")
-
-    -- Check if required GUI classes exist
-    if g_gui == nil then
-        WMLogger:warning("g_gui not available, skipping InGameMenu integration")
-        return
-    end
-
-    -- Create the menu frame instance (with error handling)
-    local success, result = pcall(function()
-        return WMMenuFrame.new()
-    end)
-
-    if not success then
-        WMLogger:error("Failed to create menu frame: %s", tostring(result))
-        WMLogger:info("InGameMenu integration disabled - using standalone GUI only")
-        return
-    end
-
-    self.menuFrame = result
-
-    -- Load the GUI from XML
-    local xmlPath = Utils.getFilename("xml/gui/WorkflowManagerMenuFrame.xml", self.modDirectory)
-    success, result = pcall(function()
-        g_gui:loadGui(xmlPath, "WorkflowManagerMenuFrame", self.menuFrame)
-    end)
-
-    if not success then
-        WMLogger:error("Failed to load menu frame XML: %s", tostring(result))
-        WMLogger:info("InGameMenu integration disabled - using standalone GUI only")
-        self.menuFrame = nil
-        return
-    end
-
-    WMLogger:info("Menu frame loaded successfully")
-
-    -- Register to add tab to InGameMenu when it's ready
-    -- We need to wait until after the InGameMenu is initialized
-    if g_inGameMenu ~= nil then
-        self:addPageToInGameMenu()
-    else
-        -- Schedule for later when InGameMenu becomes available
-        WMLogger:debug("InGameMenu not ready, will add page later")
-        self.pendingMenuRegistration = true
-    end
-    --]]
-end
-
----Add the Workflow Manager page to the InGameMenu
-function WorkflowManager:addPageToInGameMenu()
-    if g_inGameMenu == nil then
-        WMLogger:warning("Cannot add page to InGameMenu - g_inGameMenu is nil")
-        return false
-    end
-
-    if self.menuFrame == nil then
-        WMLogger:warning("Cannot add page to InGameMenu - menuFrame is nil")
-        return false
-    end
-
-    WMLogger:info("Adding Workflow Manager page to InGameMenu...")
-
-    -- Debug: Log available methods on g_inGameMenu
-    WMLogger:debug("InGameMenu type: %s", type(g_inGameMenu))
-    if type(g_inGameMenu) == "table" then
-        local methods = {}
-        for k, v in pairs(g_inGameMenu) do
-            if type(v) == "function" then
-                table.insert(methods, k)
-            end
-        end
-        WMLogger:debug("InGameMenu methods: %s", table.concat(methods, ", "):sub(1, 200))
-    end
-
-    local success, err = pcall(function()
-        local inGameMenu = g_inGameMenu
-
-        -- Check what methods are available
-        local hasRegisterPage = inGameMenu.registerPage ~= nil
-        local hasAddPageTab = inGameMenu.addPageTab ~= nil
-        local hasPagingElement = inGameMenu.pagingElement ~= nil
-
-        WMLogger:debug("InGameMenu capabilities: registerPage=%s, addPageTab=%s, pagingElement=%s",
-            tostring(hasRegisterPage), tostring(hasAddPageTab), tostring(hasPagingElement))
-
-        if not hasRegisterPage or not hasAddPageTab then
-            WMLogger:warning("InGameMenu missing required methods, cannot add page")
-            return
-        end
-
-        -- Add frame to the paging element
-        if hasPagingElement and inGameMenu.pagingElement.addElement then
-            inGameMenu.pagingElement:addElement(self.menuFrame)
-        end
-
-        -- Register the page (position at end, always available)
-        local pageIndex = 99  -- Use high number to add at end
-        if inGameMenu.getNumPages then
-            pageIndex = inGameMenu:getNumPages() + 1
-        elseif hasPagingElement and inGameMenu.pagingElement.getPageCount then
-            pageIndex = inGameMenu.pagingElement:getPageCount() + 1
-        end
-
-        local alwaysAvailable = function() return true end
-        inGameMenu:registerPage(self.menuFrame, pageIndex, alwaysAvailable)
-
-        -- Add a tab for the page with icon
-        -- Use our white.dds texture as a placeholder icon
-        local iconPath = Utils.getFilename("textures/white.dds", self.modDirectory)
-        local uvs = GuiUtils.getUVs({0, 0, 1, 1})
-        inGameMenu:addPageTab(self.menuFrame, iconPath, uvs)
-
-        -- Update the page mapping
-        if hasPagingElement then
-            if inGameMenu.pagingElement.updateAbsolutePosition then
-                inGameMenu.pagingElement:updateAbsolutePosition()
-            end
-            if inGameMenu.pagingElement.updatePageMapping then
-                inGameMenu.pagingElement:updatePageMapping()
-            end
-        end
-
-        -- Rebuild tab list
-        if inGameMenu.rebuildTabList ~= nil then
-            inGameMenu:rebuildTabList()
-        end
-    end)
-
-    if success then
-        WMLogger:info("Successfully added Workflow Manager page to InGameMenu")
-        self.menuPageAdded = true
-        return true
-    else
-        WMLogger:error("Failed to add page to InGameMenu: %s", tostring(err))
-        return false
-    end
 end
 
 ---Register input action bindings
@@ -697,13 +500,7 @@ end
 ---Show the main workflow list dialog
 function WorkflowManager:showMainDialog()
     if self.mainDialog == nil then
-        WMLogger:warning("Main dialog not available, falling back to legacy GUI")
-        self.guiVisible = not self.guiVisible
-        if self.guiVisible then
-            WMManagerGUI:show()
-        else
-            WMManagerGUI:hide()
-        end
+        WMLogger:warning("Main dialog not available")
         return
     end
 
@@ -1290,30 +1087,6 @@ function WorkflowManager:deleteMap()
         self:saveWorkflows()
     end)
 
-    -- Cleanup GUI resources (mark overlays as nil so they won't be used)
-    pcall(function()
-        if WMManagerGUI and WMManagerGUI.cleanup then
-            WMManagerGUI:cleanup()
-        end
-    end)
-
-    pcall(function()
-        if WMEditorGUI and WMEditorGUI.cleanup then
-            WMEditorGUI:cleanup()
-        end
-    end)
-
-    -- Cleanup menu frame if it exists (currently disabled, but kept for future use)
-    pcall(function()
-        if self.menuFrame ~= nil then
-            WMLogger:debug("Cleaning up menu frame...")
-            if self.menuFrame.delete then
-                self.menuFrame:delete()
-            end
-            self.menuFrame = nil
-        end
-    end)
-
     -- Cleanup new dialog-based GUI
     pcall(function()
         if self.mainDialog ~= nil then
@@ -1348,8 +1121,6 @@ function WorkflowManager:deleteMap()
 
     -- Reset remaining state
     self.guiVisible = false
-    self.menuPageAdded = false
-    self.pendingMenuRegistration = false
     self.globalActionsRegistered = false
     self.isShuttingDown = false
 
@@ -1363,12 +1134,6 @@ function WorkflowManager:update(dt)
         return
     end
 
-    -- Check for pending InGameMenu registration
-    if self.pendingMenuRegistration and g_inGameMenu ~= nil then
-        self.pendingMenuRegistration = false
-        self:addPageToInGameMenu()
-    end
-
     -- Update integrations (retry detection if not yet available)
     ADIntegration:update(dt)
     CPIntegration:update(dt)
@@ -1377,8 +1142,6 @@ function WorkflowManager:update(dt)
 
     WMExecutor:update(dt)
     WMDebugUtil:update(dt)
-    WMManagerGUI:update(dt)
-    WMEditorGUI:update(dt)
 
     -- Update in-vehicle HUD
     WMHud:update(dt)
@@ -1392,10 +1155,6 @@ function WorkflowManager:draw()
 
     -- Draw debug overlay (if enabled)
     WMDebugUtil:draw()
-
-    -- Draw GUI
-    WMManagerGUI:draw()
-    WMEditorGUI:draw()
 
     -- Draw in-vehicle HUD
     WMHud:draw()
@@ -1411,28 +1170,8 @@ function WorkflowManager:mouseEvent(posX, posY, isDown, isUp, button)
         return
     end
 
-    -- Forward mouse events to in-vehicle HUD first
-    if WMHud:mouseEvent(posX, posY, isDown, isUp, button) then
-        return  -- HUD consumed the event
-    end
-
-    -- Handle scroll wheel (button 4 = scroll up, button 5 = scroll down in some systems)
-    -- In FS25, scroll is often communicated via isDown with specific button values
-    if button == 4 and isDown then
-        -- Scroll up
-        if WMEditorGUI.isVisible and WMEditorGUI:onScrollEvent(1) then
-            return
-        end
-    elseif button == 5 and isDown then
-        -- Scroll down
-        if WMEditorGUI.isVisible and WMEditorGUI:onScrollEvent(-1) then
-            return
-        end
-    end
-
-    -- Forward mouse events to GUI
-    WMManagerGUI:onMouseEvent(posX, posY, isDown, isUp, button)
-    WMEditorGUI:onMouseEvent(posX, posY, isDown, isUp, button)
+    -- Forward mouse events to in-vehicle HUD
+    WMHud:mouseEvent(posX, posY, isDown, isUp, button)
 end
 
 -- Register as mod event listener

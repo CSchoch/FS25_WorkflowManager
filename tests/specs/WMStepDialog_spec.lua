@@ -439,4 +439,87 @@ describe("WMStepDialog", function()
         end)
     end)
 
+    -- =========================================================================
+    -- onClickConfirm – missing target must warn, not fail silently
+    -- =========================================================================
+    describe("onClickConfirm target validation", function()
+        local warnings
+
+        before_each(function()
+            warnings = {}
+            -- Replace the global outright rather than mutating the shared mock's insides:
+            -- the runner's per-file _G snapshot restores replaced globals, but not tables
+            -- that a spec has reached into and modified.
+            _G.g_currentMission = {
+                hud = {
+                    showBlinkingWarning = function(_, text, duration)
+                        table.insert(warnings, { text = text, duration = duration })
+                    end
+                }
+            }
+        end)
+
+        ---Confirm and report both the produced step and whether the dialog closed.
+        local function confirm(d)
+            local result, closed = nil, false
+            d.callback = function(s) result = s end
+            d.close = function() closed = true end
+            WMStepDialog.onClickConfirm(d)
+            return result, closed
+        end
+
+        it("does not confirm or close an AutoDrive step with no target", function()
+            local d = makeDialog()
+            d.stepType   = WorkflowManager.STEP_AUTODRIVE
+            d.stepAction = "drive"
+            d.stepTarget = ""
+            local step, closed = confirm(d)
+            assert.is_nil(step)
+            assert.is_false(closed)
+        end)
+
+        it("warns the player instead of doing nothing", function()
+            local d = makeDialog()
+            d.stepType   = WorkflowManager.STEP_AUTODRIVE
+            d.stepAction = "drive"
+            d.stepTarget = ""
+            confirm(d)
+            assert.are.equal(1, #warnings)
+            assert.are.equal("wm_warning_no_target", warnings[1].text)
+        end)
+
+        it("blocks a Courseplay step with no course selected", function()
+            local d = makeDialog()
+            d.stepType   = WorkflowManager.STEP_COURSEPLAY
+            d.stepAction = "fieldwork"
+            d.stepTarget = ""
+            local step, closed = confirm(d)
+            assert.is_nil(step)
+            assert.is_false(closed)
+            assert.are.equal(1, #warnings)
+        end)
+
+        it("confirms without warning once a target is set", function()
+            local d = makeDialog()
+            d.stepType   = WorkflowManager.STEP_COURSEPLAY
+            d.stepAction = "fieldwork"
+            d.stepTarget = "Singleplayer/F34/Kalken"
+            local step, closed = confirm(d)
+            assert.are.equal("Singleplayer/F34/Kalken", step.target)
+            assert.is_true(closed)
+            assert.are.equal(0, #warnings)
+        end)
+
+        it("confirms a targetless step type with an empty target", function()
+            -- Park/Refuel/Repair and the sync markers legitimately carry no target.
+            local d = makeDialog()
+            d.stepType   = WorkflowManager.STEP_PARK
+            d.stepTarget = ""
+            local step, closed = confirm(d)
+            assert.are.equal(WorkflowManager.STEP_PARK, step.type)
+            assert.is_true(closed)
+            assert.are.equal(0, #warnings)
+        end)
+    end)
+
 end)
