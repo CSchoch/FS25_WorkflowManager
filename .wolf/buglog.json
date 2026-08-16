@@ -3930,6 +3930,22 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-08-16T23:20:00.000Z"
+    },
+    {
+      "id": "bug-239",
+      "timestamp": "2026-08-16T21:21:03.594Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/SCREENSHOTS.md",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 9→21 lines (4 removed) | Also: | 15 | `web-editor.png` | nice to have | [ ] |; Items 1–10 are already present in `website/static/",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-08-16T21:21:10.386Z"
     }
   ]
 }

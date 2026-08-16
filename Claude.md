@@ -61,7 +61,7 @@ Individual runners: `tests\run_executor_spec.lua`, `tests\run_storage_spec.lua`,
 | `CourseplayCoursesLoader_spec.lua` | Course enumeration from the root view, root-relative names |
 | `WMConsoleCommands_spec.lua` | Console command registration/removal; wmPrintState reports the executor's real sync gate |
 
-Current total: **625**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
+Current total: **630**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
 or they will not run.
 
 **Courseplay course paths:** course names are stored as **root-relative** paths

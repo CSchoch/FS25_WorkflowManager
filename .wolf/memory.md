@@ -1138,3 +1138,143 @@
 | 22:10 | Editor Up/Down/Add-Support states stale on row switch: FS25 never raises onSelectionChanged for stepList, so update() now polls stepList.selectedIndex | src/gui/WMEditorDialog.lua, tests/specs/WMEditorDialog_spec.lua | 625 tests pass (+8) | ~12k |
 | 21:58 | Session end: 15 writes across 6 files (WorkflowManager.lua, WMMainDialog.lua, WMMainDialog_spec.lua, CLAUDE.md, WMEditorDialog.lua) | 9 reads | ~55743 tok |
 | 22:11 | Session end: 15 writes across 6 files (WorkflowManager.lua, WMMainDialog.lua, WMMainDialog_spec.lua, CLAUDE.md, WMEditorDialog.lua) | 10 reads | ~56320 tok |
+
+## Session: 2026-08-16 21:15
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 22:37 | Edited webeditor/app.js | 4→6 lines | ~122 |
+| 22:37 | Edited webeditor/app.js | added 1 condition(s) | ~264 |
+| 22:37 | Edited webeditor/app.js | 4→6 lines | ~146 |
+| 22:37 | Edited webeditor/app.js | added 1 condition(s) | ~252 |
+| 22:37 | Edited webeditor/app.js | inline fix | ~70 |
+| 22:37 | Edited webeditor/app.js | "Fährt zur in AutoDrive ko" → "Fährt zur in AutoDrive ko" | ~80 |
+| 22:37 | Edited webeditor/README.md | 2→3 lines | ~59 |
+| 22:40 | Created ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/44e09300-6189-4e50-8b16-e5ae9eec80d1/scratchpad/webeditor_check.js | — | ~1219 |
+| 22:40 | Edited ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/44e09300-6189-4e50-8b16-e5ae9eec80d1/scratchpad/webeditor_check.js | modified setItem() | ~25 |
+| 22:40 | Edited ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/44e09300-6189-4e50-8b16-e5ae9eec80d1/scratchpad/webeditor_check.js | expanded (+6 lines) | ~354 |
+| 20:45 | Updated webeditor to parity with the QueueSystem-branch Lua: ported the migration-marker-explosion fix (legacy sync flags now parsed with no default + hasAnySyncFlag gate, so pre-sync v1 files import unchanged instead of gaining 2 markers per step), mirrored WMStepDialog's support-sub-step restriction (sync markers no longer offered for support steps, still listed when the edited sub-step already is one), refreshed the Park info text (en+de) for the new multi-implement/rearmost park resolution, README note | webeditor/app.js, webeditor/README.md | Node VM smoke check 14/14 ok; Lua suite 625/625 | ~1200 tok |
+| 22:41 | Session end: 10 writes across 3 files (app.js, README.md, webeditor_check.js) | 4 reads | ~38001 tok |
+
+## Session: 2026-08-16 22:42
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 22:47 | Created website/docs/api/console-commands.md | — | ~1576 |
+| 22:47 | Created website/docs/web-editor.md | — | ~1021 |
+| 22:48 | Edited website/sidebars.ts | 4→5 lines | ~23 |
+| 22:48 | Edited website/sidebars.ts | 4→5 lines | ~34 |
+| 22:48 | Edited website/docusaurus.config.ts | 7→12 lines | ~90 |
+| 22:48 | Edited website/docusaurus.config.ts | 5→9 lines | ~66 |
+| 22:48 | Edited website/docs/workflows/step-types.md | expanded (+13 lines) | ~273 |
+| 22:48 | Edited website/docs/ui/hud-controls.md | expanded (+15 lines) | ~249 |
+| 22:48 | Edited website/docs/troubleshooting.md | expanded (+16 lines) | ~296 |
+| 22:48 | Edited website/docs/troubleshooting.md | expanded (+18 lines) | ~335 |
+| 22:49 | Edited website/docs/intro.md | 7→11 lines | ~318 |
+| 22:49 | Edited website/docs/intro.md | 5→8 lines | ~181 |
+| 22:49 | Edited website/package.json | inline fix | ~8 |
+| 23:05 | Website sync: console-commands + web-editor pages, course-path/cursor docs, deps bump, build OK | website/ (10 files) | committed 3bedb71 on docs QueueSystem, NOT pushed (deploy fires on main only) | ~14k |
+| 22:54 | Session end: 13 writes across 9 files (console-commands.md, web-editor.md, sidebars.ts, docusaurus.config.ts, step-types.md) | 9 reads | ~14998 tok |
+
+## Session: 2026-08-16 22:56
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-16 22:56
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 22:59 | Created website/docs/ui/step-dialog.md | — | ~1144 |
+| 22:59 | Created website/docs/ui/ad-settings-dialog.md | — | ~536 |
+| 23:00 | Created website/docs/ui/mode-dialog.md | — | ~642 |
+| 23:00 | Created website/docs/ui/leader-select-dialog.md | — | ~669 |
+| 23:00 | Edited website/docs/ui/main-dialog.md | 7→10 lines | ~94 |
+| 23:00 | Edited website/docs/ui/main-dialog.md | 23→19 lines | ~194 |
+| 23:00 | Edited website/docs/ui/editor-dialog.md | 3→3 lines | ~63 |
+| 23:00 | Edited website/docs/ui/editor-dialog.md | reduced (-13 lines) | ~408 |
+| 23:01 | Edited website/sidebars.ts | 4→8 lines | ~60 |
+| 23:01 | Edited website/docs/ui/hud-controls.md | 3→3 lines | ~15 |
+| 23:01 | Edited website/docs/workflows/queue-system.md | 1→2 lines | ~44 |
+| 23:01 | Edited website/docs/workflows/step-types.md | 1→2 lines | ~32 |
+| 23:01 | Created ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/1037a215-6a2c-40b9-a327-f060402d1506/scratchpad/wecheck.js | — | ~3333 |
+| 23:40 | UI docs: added step/ad-settings/mode/leader-select dialog pages; fixed stale New-flow + editor save semantics | website/docs/ui/ | committed e38132a, not pushed; in-game menu page confirmed dead by user | ~12k |
+| 23:02 | Session end: 13 writes across 11 files (step-dialog.md, ad-settings-dialog.md, mode-dialog.md, leader-select-dialog.md, main-dialog.md) | 11 reads | ~50068 tok |
+| 23:03 | Created ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/1037a215-6a2c-40b9-a327-f060402d1506/scratchpad/csscheck.js | — | ~289 |
+| 23:10 | Reviewed webeditor (app.js/index.html/style.css) vs Lua: parity verified with headless node+vm harness (24 checks, all pass) | webeditor/ | 12 findings, none fixed yet; CP course import strips folder path = top issue | ~40k |
+| 23:05 | Session end: 14 writes across 12 files (step-dialog.md, ad-settings-dialog.md, mode-dialog.md, leader-select-dialog.md, main-dialog.md) | 13 reads | ~50976 tok |
+| 23:08 | Edited webeditor/app.js | 5→5 lines | ~133 |
+| 23:08 | Edited webeditor/app.js | added 1 import(s) | ~99 |
+| 23:08 | Edited webeditor/app.js | 3→4 lines | ~91 |
+| 23:08 | Edited webeditor/app.js | 2→3 lines | ~72 |
+| 23:08 | Edited webeditor/app.js | 4→4 lines | ~122 |
+| 23:08 | Edited webeditor/app.js | added 1 import(s) | ~103 |
+| 23:08 | Edited webeditor/app.js | 3→4 lines | ~101 |
+| 23:08 | Edited src/gui/WMStepDialog.lua | expanded (+7 lines) | ~177 |
+| 23:09 | Edited webeditor/app.js | 2→3 lines | ~75 |
+| 23:09 | Edited translations/translation_en.xml | 1→2 lines | ~56 |
+| 23:09 | Edited webeditor/app.js | added optional chaining | ~150 |
+| 23:09 | Edited translations/translation_de.xml | 1→2 lines | ~57 |
+| 23:09 | Edited webeditor/app.js | modified generateWorkflowId() | ~195 |
+| 23:09 | Edited webeditor/app.js | 2→2 lines | ~25 |
+| 23:09 | Edited webeditor/app.js | added 1 condition(s) | ~193 |
+| 23:09 | Edited webeditor/app.js | added 1 condition(s) | ~399 |
+| 23:09 | Edited webeditor/app.js | modified askConfirm() | ~88 |
+| 23:09 | Edited webeditor/app.js | added 1 condition(s) | ~304 |
+| 23:10 | Edited webeditor/app.js | modified if() | ~90 |
+| 23:10 | Edited webeditor/app.js | modified typeBadgeClass() | ~299 |
+| 23:10 | Edited webeditor/app.js | added 1 condition(s) | ~70 |
+| 23:10 | Edited webeditor/app.js | "t-ad" → "t-${typeBadgeClass(type)}" | ~13 |
+| 23:10 | Edited tests/specs/WMStepDialog_spec.lua | modified confirm() | ~1078 |
+| 23:10 | Edited webeditor/app.js | 6→11 lines | ~154 |
+| 23:10 | Edited webeditor/app.js | 9→12 lines | ~234 |
+| 23:10 | Edited webeditor/index.html | added error handling | ~148 |
+| 23:10 | Edited webeditor/index.html | inline fix | ~43 |
+| 23:11 | Edited webeditor/index.html | 3→3 lines | ~92 |
+| 23:11 | Edited src/WorkflowManager.lua | removed 7 lines | ~13 |
+| 23:11 | Edited src/WorkflowManager.lua | 7→4 lines | ~38 |
+| 23:11 | Edited webeditor/index.html | files() → folder() | ~100 |
+| 23:11 | Edited webeditor/index.html | 1→2 lines | ~42 |
+| 23:11 | Edited src/WorkflowManager.lua | reduced (-13 lines) | ~52 |
+| 23:11 | Edited webeditor/index.html | 1→2 lines | ~43 |
+| 23:11 | Edited src/WorkflowManager.lua | removed 22 lines | ~9 |
+| 23:11 | Edited webeditor/style.css | 2→4 lines | ~92 |
+| 23:11 | Edited webeditor/style.css | CSS: Repair, auto, chip-btn | ~131 |
+| 23:11 | Edited webeditor/style.css | CSS: box-shadow | ~54 |
+| 23:11 | Edited webeditor/style.css | modified targetless() | ~78 |
+| 23:11 | Edited webeditor/style.css | 3→3 lines | ~67 |
+| 23:11 | Edited webeditor/style.css | 1→2 lines | ~61 |
+| 23:11 | Edited webeditor/style.css | 3→6 lines | ~81 |
+| 23:12 | Edited src/WorkflowManager.lua | removed 25 lines | ~10 |
+| 23:12 | Edited src/WorkflowManager.lua | 4→2 lines | ~19 |
+| 23:12 | Edited webeditor/style.css | 3→2 lines | ~11 |
+| 23:12 | Edited src/WorkflowManager.lua | reduced (-6 lines) | ~18 |
+| 23:12 | Edited src/WorkflowManager.lua | 5→5 lines | ~54 |
+| 23:12 | Edited ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/1037a215-6a2c-40b9-a327-f060402d1506/scratchpad/wecheck.js | expanded (+33 lines) | ~562 |
+| 23:12 | Edited src/WorkflowManager.lua | 5→1 lines | ~9 |
+| 23:12 | Edited src/WorkflowManager.lua | modified WorkflowManager() | ~52 |
+| 23:12 | Edited src/WorkflowManager.lua | 6→4 lines | ~22 |
+| 23:12 | Edited src/WorkflowManager.lua | 8→4 lines | ~24 |
+| 23:12 | Edited webeditor/README.md | 2→4 lines | ~97 |
+| 23:12 | Edited src/WorkflowManager.lua | removed 23 lines | ~28 |
+| 23:13 | Edited tests/mocks/game_globals.lua | removed 24 lines | ~7 |
+| 23:13 | Edited webeditor/style.css | 4→6 lines | ~89 |
+| 23:13 | Edited webeditor/app.js | modified if() | ~49 |
+| 23:13 | Edited CLAUDE.md | 625 → 630 | ~7 |
+| 23:14 | Edited docs/SCREENSHOTS.md | 3→3 lines | ~32 |
+| 23:14 | Edited docs/SCREENSHOTS.md | 3→3 lines | ~32 |
+| 23:14 | Edited docs/SCREENSHOTS.md | expanded (+86 lines) | ~1375 |
+| 23:15 | Edited docs/SCREENSHOTS.md | 3→1 lines | ~64 |
+| 23:25 | Fixed all 12 webeditor review findings (CP course paths, import confirm+id dedupe, Esc in combo, stranded markers, badges, a11y, FOUC) | webeditor/{app.js,index.html,style.css,README.md} | committed 65be12b in submodule, pointer bump 1c51d77 in parent; 28/28 harness checks + 630 Lua tests pass | ~55k |
+| 00:10 | Step Dialog missing-target now warns (wm_warning_no_target, +5 specs); deleted ~3.5k lines dead GUI (WorkflowManagerGUI/EditorGUI/MenuFrame/TextInputDialog + XML) | src/, xml/, tests/, translations/ | 630 tests pass; committed 3ffa607 | ~18k |
+| 00:12 | SCREENSHOTS.md: documented existing ad-settings entry, fixed stale Used-in paths, specified 5 new shots (2 required) | docs/SCREENSHOTS.md | committed 3ffa607 | ~3k |
+| 23:15 | Session end: 76 writes across 24 files (step-dialog.md, ad-settings-dialog.md, mode-dialog.md, leader-select-dialog.md, main-dialog.md) | 16 reads | ~75159 tok |
+| 23:16 | Session end: 76 writes across 24 files (step-dialog.md, ad-settings-dialog.md, mode-dialog.md, leader-select-dialog.md, main-dialog.md) | 16 reads | ~75159 tok |
+| 23:17 | designqc: captured 2 screenshots (62KB, ~5000 tok) | / | ready for eval | ~0 |
+| 23:18 | Created ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/cf0cd88e-1fb2-4e57-8d56-7a5d7bf9a788/scratchpad/shot/seed.js | — | ~594 |
+| 23:18 | designqc: captured 2 screenshots (88KB, ~5000 tok) | / | ready for eval | ~0 |
+| 23:19 | Edited website/docs/web-editor.md | 4→6 lines | ~72 |
+| 23:21 | Edited docs/SCREENSHOTS.md | expanded (+12 lines) | ~317 |
+| 23:21 | Edited docs/SCREENSHOTS.md | 3→7 lines | ~108 |
+| 00:35 | Captured web-editor.png headlessly (seeded localStorage copy + openwolf designqc), wired into web-editor.md, recipe in SCREENSHOTS.md | website/static/img/screenshots/, docs/SCREENSHOTS.md | docs b759815, mod 1662f61; 4 in-game shots still need the user | ~9k |
+| 23:21 | Session end: 80 writes across 26 files (step-dialog.md, ad-settings-dialog.md, mode-dialog.md, leader-select-dialog.md, main-dialog.md) | 16 reads | ~76286 tok |
