@@ -222,13 +222,24 @@ function WMHud:setMouseCursorActive(active)
     end
 
     if active then
+        -- A WM dialog chain is still open (e.g. leader/mode select stacked on the start
+        -- flow): granting now would be revoked the moment that dialog closes and drives
+        -- openDialogCount to 0. Defer the grant; onDialogClosed materializes it when the
+        -- chain fully closes.
+        if (self.openDialogCount or 0) > 0 then
+            self.pendingCursorGrant = true
+            return
+        end
         if not self.mouseCursorForced then
             self.mouseCursorForced = true
             g_inputBinding:setShowMouseCursor(true)
         end
-    elseif self.mouseCursorForced then
-        self.mouseCursorForced = false
-        g_inputBinding:setShowMouseCursor(false)
+    else
+        self.pendingCursorGrant = nil
+        if self.mouseCursorForced then
+            self.mouseCursorForced = false
+            g_inputBinding:setShowMouseCursor(false)
+        end
     end
 end
 
@@ -244,7 +255,14 @@ function WMHud:onDialogClosed()
     self.openDialogCount = math.max(0, self.openDialogCount - 1)
 
     if self.openDialogCount == 0 then
-        self:setMouseCursorActive(false)
+        if self.pendingCursorGrant then
+            -- The start flow handed the cursor to the HUD while its dialog chain was still
+            -- closing; grant it now that the last dialog is gone.
+            self.pendingCursorGrant = nil
+            self:setMouseCursorActive(true)
+        else
+            self:setMouseCursorActive(false)
+        end
     end
 end
 
@@ -473,81 +491,82 @@ function WMHud:draw()
     self.nameClickVehicles.mainName = nil
     if activeData and activeData.vehicle then
         local vehicle = activeData.vehicle
-        local adRunning = ADIntegration:isRunning(vehicle)
-        local cpRunning = CPIntegration:isRunning(vehicle)
 
+        -- Render "<prefix>: <clickable vehicle name>" for the two waiting states.
+        -- Shared by both branches; keeps allocations low in this per-frame path
+        -- (closure-free pcall, single concat).
+        local function renderWaitingLine(prefixText, namedVehicle, boundsKey)
+            setTextColor(1, 0.85, 0, 1)
+            local name = nil
+            if namedVehicle and namedVehicle.getName then
+                local ok, n = pcall(namedVehicle.getName, namedVehicle)
+                if ok and n and n ~= "" then name = n end
+            end
+            if name then
+                local prefix = prefixText .. ": "
+                renderText(x + mx, lineY, self.smallSize, prefix)
+                local prefixW = getTextWidth(self.smallSize, prefix)
+                if self.hoveredButton == boundsKey then
+                    setTextColor(0.165, 0.757, 0.929, 1)
+                else
+                    setTextColor(1, 0.85, 0, 1)
+                end
+                renderText(x + mx + prefixW, lineY, self.smallSize, name)
+                local nameW = getTextWidth(self.smallSize, name)
+                self.buttonBounds[boundsKey] = { x = x + mx + prefixW, y = lineY, w = nameW, h = self.smallSize }
+                self.nameClickVehicles[boundsKey] = namedVehicle
+            else
+                renderText(x + mx, lineY, self.smallSize, prefixText)
+            end
+        end
+
+        -- The two waiting branches need no AD/CP state; compute those lazily below.
         if activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER then
-            setTextColor(1, 0.85, 0, 1)
-            local prefixText = g_i18n:getText("wm_hud_waiting_for_leader")
-            local leaderName = nil
-            if activeData.leaderVehicle then
-                local ok, name = pcall(function() return activeData.leaderVehicle:getName() end)
-                if ok and name and name ~= "" then leaderName = name end
-            end
-            if leaderName then
-                renderText(x + mx, lineY, self.smallSize, prefixText .. ": ")
-                local prefixW = getTextWidth(self.smallSize, prefixText .. ": ")
-                if self.hoveredButton == "leaderName" then
-                    setTextColor(0.165, 0.757, 0.929, 1)
-                else
-                    setTextColor(1, 0.85, 0, 1)
+            -- MP client mirror: the leader may not have existed yet when onReadStream ran;
+            -- resolve its network object id lazily once the vehicle has streamed in.
+            if activeData.leaderVehicle == nil and activeData.pendingLeaderObjectId ~= nil
+            and NetworkUtil ~= nil and NetworkUtil.getObject ~= nil then
+                local obj = NetworkUtil.getObject(activeData.pendingLeaderObjectId)
+                if obj ~= nil then
+                    activeData.leaderVehicle = obj
+                    activeData.pendingLeaderObjectId = nil
                 end
-                renderText(x + mx + prefixW, lineY, self.smallSize, leaderName)
-                local nameW = getTextWidth(self.smallSize, leaderName)
-                self.buttonBounds.leaderName = { x = x + mx + prefixW, y = lineY, w = nameW, h = self.smallSize }
-                self.nameClickVehicles.leaderName = activeData.leaderVehicle
-            else
-                renderText(x + mx, lineY, self.smallSize, prefixText)
             end
+            renderWaitingLine(g_i18n:getText("wm_hud_waiting_for_leader"),
+                activeData.leaderVehicle, "leaderName")
         elseif activeData.status == WorkflowManager.STATUS_WAITING_FOR_MAIN then
-            setTextColor(1, 0.85, 0, 1)
-            local prefixText = g_i18n:getText("wm_hud_waiting_for_main")
             local mainData = workflow and WMExecutor:getMainActiveDataForWorkflow(workflow.id)
-            local mainVehicle = mainData and mainData.vehicle
-            local mainName = nil
-            if mainVehicle then
-                local ok, name = pcall(function() return mainVehicle:getName() end)
-                if ok and name and name ~= "" then mainName = name end
-            end
-            if mainName then
-                renderText(x + mx, lineY, self.smallSize, prefixText .. ": ")
-                local prefixW = getTextWidth(self.smallSize, prefixText .. ": ")
-                if self.hoveredButton == "mainName" then
-                    setTextColor(0.165, 0.757, 0.929, 1)
-                else
-                    setTextColor(1, 0.85, 0, 1)
-                end
-                renderText(x + mx + prefixW, lineY, self.smallSize, mainName)
-                local nameW = getTextWidth(self.smallSize, mainName)
-                self.buttonBounds.mainName = { x = x + mx + prefixW, y = lineY, w = nameW, h = self.smallSize }
-                self.nameClickVehicles.mainName = mainVehicle
-            else
-                renderText(x + mx, lineY, self.smallSize, prefixText)
-            end
-        elseif cpRunning then
-            local progress = nil
-            if vehicle.getCpFieldWorkProgress then
-                local ok, p = pcall(vehicle.getCpFieldWorkProgress, vehicle)
-                if ok and type(p) == "number" then
-                    progress = p
-                end
-            end
-            setTextColor(0.4, 0.8, 1, 1)
-            if progress then
-                renderText(x + mx, lineY, self.smallSize,
-                    string.format(g_i18n:getText("wm_hud_cp_active_progress"), progress * 100))
-            else
-                renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_cp_active"))
-            end
-        elseif adRunning then
-            setTextColor(0.4, 0.8, 1, 1)
-            renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_ad_active"))
-        elseif activeData.status == WorkflowManager.STATUS_PAUSED then
-            setTextColor(1, 0.6, 0, 1)
-            renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_paused"))
+            renderWaitingLine(g_i18n:getText("wm_hud_waiting_for_main"),
+                mainData and mainData.vehicle, "mainName")
         else
-            setTextColor(0.6, 0.6, 0.6, 1)
-            renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_idle"))
+            local adRunning = ADIntegration:isRunning(vehicle)
+            local cpRunning = CPIntegration:isRunning(vehicle)
+
+            if cpRunning then
+                local progress = nil
+                if vehicle.getCpFieldWorkProgress then
+                    local ok, p = pcall(vehicle.getCpFieldWorkProgress, vehicle)
+                    if ok and type(p) == "number" then
+                        progress = p
+                    end
+                end
+                setTextColor(0.4, 0.8, 1, 1)
+                if progress then
+                    renderText(x + mx, lineY, self.smallSize,
+                        string.format(g_i18n:getText("wm_hud_cp_active_progress"), progress * 100))
+                else
+                    renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_cp_active"))
+                end
+            elseif adRunning then
+                setTextColor(0.4, 0.8, 1, 1)
+                renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_ad_active"))
+            elseif activeData.status == WorkflowManager.STATUS_PAUSED then
+                setTextColor(1, 0.6, 0, 1)
+                renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_paused"))
+            else
+                setTextColor(0.6, 0.6, 0.6, 1)
+                renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_idle"))
+            end
         end
     elseif not workflow then
         setTextColor(0.6, 0.6, 0.6, 1)
@@ -629,7 +648,9 @@ function WMHud:drawIconButtons(activeData)
         self.iconOverlays.play:render()
     else
         local pauseColor = self.ICON_DISABLED
-        if hasWorkflow and activeData.status == WorkflowManager.STATUS_RUNNING then
+        if hasWorkflow and (activeData.status == WorkflowManager.STATUS_RUNNING
+                or activeData.status == WorkflowManager.STATUS_WAITING_FOR_MAIN
+                or activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER) then
             pauseColor = self.hoveredButton == "pauseResume" and self.ICON_HOVER or self.ICON_NORMAL
         end
         self.iconOverlays.pause:setColor(unpack(pauseColor))
@@ -823,7 +844,12 @@ function WMHud:onClickPauseResume()
     local workflow, activeData = self:getActiveWorkflow()
     if activeData == nil then return end
 
-    if activeData.status == WorkflowManager.STATUS_RUNNING then
+    -- The executor accepts pausing WAITING_FOR_MAIN / WAITING_FOR_LEADER too (and restores
+    -- the wait state on resume) — a waiting vehicle must be pausable so it does not drive
+    -- off the moment its leader/main unblocks it.
+    if activeData.status == WorkflowManager.STATUS_RUNNING
+    or activeData.status == WorkflowManager.STATUS_WAITING_FOR_MAIN
+    or activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER then
         WorkflowManager:sendCommand(activeData.vehicle, "pause")
         WMLogger:info("Workflow paused via HUD: %s", workflow.name)
     elseif activeData.status == WorkflowManager.STATUS_PAUSED then

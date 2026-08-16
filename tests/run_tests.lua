@@ -210,7 +210,8 @@ local testFiles = {
     "tests/specs/WMEditorDialog_spec.lua",
     "tests/specs/WMMainDialog_spec.lua",
     "tests/specs/CourseplayIntegration_spec.lua",
-    "tests/specs/CourseplayCoursesLoader_spec.lua"
+    "tests/specs/CourseplayCoursesLoader_spec.lua",
+    "tests/specs/WMConsoleCommands_spec.lua"
 }
 
 for _, testFile in ipairs(testFiles) do
@@ -220,19 +221,25 @@ for _, testFile in ipairs(testFiles) do
 
     currentBeforeEach = nil  -- Reset before each file
 
-    -- Save globals that individual specs may clobber as a side-effect
-    -- (e.g. Logger_spec replaces _G.WMLogger with the real module and overrides print)
-    local savedPrint    = _G.print
-    local savedWMLogger = _G.WMLogger
+    -- Snapshot ALL globals: specs may dofile real modules in setup() (replacing shared
+    -- mocks like _G.ADIntegration/_G.CPIntegration) or install their own stubs
+    -- (_G.WorkflowManager, _G.g_currentMission, ...). Nothing may leak into the next
+    -- spec file (CLAUDE.md test framework note), so restore the full global table.
+    local savedGlobals = {}
+    for k, v in pairs(_G) do savedGlobals[k] = v end
 
     local success, err = pcall(function()
         dofile(testFile)
     end)
 
-    -- Restore globals unconditionally so later specs see the mocks
-    _G.print = savedPrint
-    if savedWMLogger ~= nil then
-        _G.WMLogger = savedWMLogger
+    -- Remove globals the spec added, restore the ones it replaced
+    for k in pairs(_G) do
+        if savedGlobals[k] == nil then
+            _G[k] = nil
+        end
+    end
+    for k, v in pairs(savedGlobals) do
+        _G[k] = v
     end
 
     if not success then

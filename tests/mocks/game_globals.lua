@@ -249,6 +249,16 @@ _G.WMLogger = {
     end
 }
 
+-- Network object registry mock (object ids for MP streams).
+-- Register a mock vehicle with: obj._networkObjectId = id; NetworkUtil._objects[id] = obj
+_G.NetworkUtil = { _objects = {} }
+function _G.NetworkUtil.getObjectId(object)
+    return object and object._networkObjectId
+end
+function _G.NetworkUtil.getObject(objectId)
+    return _G.NetworkUtil._objects[objectId]
+end
+
 -- Integration mocks (minimal)
 _G.ADIntegration = {
     init = function() end,

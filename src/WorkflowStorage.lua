@@ -22,14 +22,11 @@ local function deepCopySupportStep(step)
     }
 end
 
---- True for step types that carry no target/action: sync markers (wait_for_leader/
---- unlock_follower) and Park (AD resolves its own destination from the park position).
+--- True for step types that carry no target/action field. Delegates to the shared
+--- classifier so storage can never disagree with the editor/HUD/step dialog about
+--- which step types are targetless (a second list here silently drifted before).
 local function isTargetlessStepType(stepType)
-    return stepType == WorkflowManager.STEP_WAIT_FOR_LEADER
-        or stepType == WorkflowManager.STEP_UNLOCK_FOLLOWER
-        or stepType == WorkflowManager.STEP_PARK
-        or stepType == WorkflowManager.STEP_REFUEL
-        or stepType == WorkflowManager.STEP_REPAIR
+    return WorkflowManager:isTargetlessStepType(stepType)
 end
 
 --- Parse a comma-separated fill types string into an array. Returns nil if empty.
@@ -263,6 +260,29 @@ function WMStorage:migrateSyncFlagsToMarkers(workflows, formatVersion)
         return workflows
     end
 
+    -- Distinguish two generations of version-less (v1) files:
+    --  * flag-era files (intermediate QueueSystem format) wrote isSyncTarget/isSyncSource,
+    --    but ONLY when false — within such a file, an absent flag means true.
+    --  * pre-sync-era files (main branch) never wrote the flags at all — sync did not exist,
+    --    so no markers must be inserted. Without this check every legacy workflow would get
+    --    two markers before every step (a 6-step workflow ballooned to 18).
+    local hasAnySyncFlag = false
+    for _, wf in ipairs(workflows) do
+        for _, step in ipairs(wf.steps) do
+            if step.isSyncTarget ~= nil or step.isSyncSource ~= nil then
+                hasAnySyncFlag = true
+                break
+            end
+        end
+        if hasAnySyncFlag then break end
+    end
+
+    if not hasAnySyncFlag then
+        WMLogger:info("Pre-sync legacy file (formatVersion %s, no sync flags) — no markers to migrate",
+            tostring(formatVersion))
+        return workflows
+    end
+
     WMLogger:info("Old per-step sync flags detected (formatVersion %s) — migrating to wait/unlock marker steps...",
         tostring(formatVersion))
 
@@ -363,9 +383,11 @@ function WMStorage:loadWorkflows()
                                or parseFillTypes(xmlFile:getString(stepKey .. "#fillType")),
                 -- Legacy syncGroup read for migration only
                 syncGroup    = xmlFile:getInt(stepKey .. "#syncGroup"),
-                -- Legacy sync flags read for marker migration only (formatVersion 1 -> 2)
-                isSyncTarget = xmlFile:getBool(stepKey .. "#isSyncTarget", true),
-                isSyncSource = xmlFile:getBool(stepKey .. "#isSyncSource", true),
+                -- Legacy sync flags read for marker migration only (formatVersion 1 -> 2).
+                -- No default: nil (absent) vs false must stay distinguishable — the flag era
+                -- only wrote them when false, and pre-sync-era files never wrote them at all.
+                isSyncTarget = xmlFile:getBool(stepKey .. "#isSyncTarget"),
+                isSyncSource = xmlFile:getBool(stepKey .. "#isSyncSource"),
                 support      = {},
             }
 

@@ -27,6 +27,17 @@ describe("WMStorage", function()
         _G.WorkflowManager.STEP_COURSEPLAY = "courseplay"
         _G.WorkflowManager.STEP_WAIT_FOR_LEADER = "wait_for_leader"
         _G.WorkflowManager.STEP_UNLOCK_FOLLOWER = "unlock_follower"
+        _G.WorkflowManager.STEP_PARK   = "park"
+        _G.WorkflowManager.STEP_REFUEL = "refuel"
+        _G.WorkflowManager.STEP_REPAIR = "repair"
+        -- Mirrors the production classifier; WMStorage delegates to it at save time
+        _G.WorkflowManager.isTargetlessStepType = function(self, stepType)
+            return stepType == self.STEP_WAIT_FOR_LEADER
+                or stepType == self.STEP_UNLOCK_FOLLOWER
+                or stepType == self.STEP_PARK
+                or stepType == self.STEP_REFUEL
+                or stepType == self.STEP_REPAIR
+        end
 
         -- WMHud stub for HUD position save/restore
         _G.WMHud = { x = nil, y = nil }
@@ -224,6 +235,32 @@ describe("WMStorage", function()
             -- migrated work steps no longer carry the legacy flags
             assert.is_nil(steps[3].isSyncTarget)
             assert.is_nil(steps[3].isSyncSource)
+        end)
+
+        it("does not insert markers for a pre-sync legacy file (no formatVersion, no sync flags)", function()
+            -- A workflows.xml written by main: no formatVersion attribute and no
+            -- isSyncTarget/isSyncSource anywhere. Sync did not exist in that format,
+            -- so migration must NOT invent markers (regression: a 2-step workflow
+            -- ballooned to 6 steps because absent flags defaulted to true).
+            local xmlPath = WMStorage:getXmlPath()
+            local f = XMLFile.create("wm_presync_migrate", xmlPath, "WorkflowManager")
+            local base = "WorkflowManager.workflows.workflow(0)"
+            f:setString(base .. "#id", "wf_presync")
+            f:setString(base .. "#name", "Pre Sync")
+            f:setString(base .. ".step(0)#type", "autodrive")
+            f:setString(base .. ".step(0)#target", "A")
+            f:setString(base .. ".step(0)#action", "drive")
+            f:setString(base .. ".step(1)#type", "courseplay")
+            f:setString(base .. ".step(1)#target", "Field1")
+            f:setString(base .. ".step(1)#action", "fieldwork")
+            f:save()
+
+            _G.fileExists = function() return true end
+            local loaded = WMStorage:loadWorkflows()
+            local steps = loaded[1].steps
+            assert.are.equal(2, #steps)
+            assert.are.equal("autodrive", steps[1].type)
+            assert.are.equal("courseplay", steps[2].type)
         end)
 
         it("does not migrate a formatVersion 2 file (markers left as-is)", function()

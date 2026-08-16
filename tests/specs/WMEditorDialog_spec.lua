@@ -15,7 +15,11 @@ describe("WMEditorDialog", function()
         _G.Class = function(cls, parent)
             if parent then
                 cls.superClass = function()
-                    return { onOpen = function() end, onClose = function() end }
+                    return {
+                        onOpen  = function() end,
+                        onClose = function() end,
+                        update  = function() end,
+                    }
                 end
             end
             return { __index = cls }
@@ -218,6 +222,28 @@ describe("WMEditorDialog", function()
     -- Save commits
     -- =========================================================================
     describe("onClickSave", function()
+        it("blocks Save while the workflow is executing on a vehicle", function()
+            -- Regression: Save swapped steps under a running execution, desyncing
+            -- currentStep and the followers' sync maps.
+            local wf = makeWorkflow()
+            local d = makeDialog(wf)
+            table.insert(d.workflow.steps, { type = "park", target = "", support = {} })
+
+            local origExec = _G.WMExecutor
+            _G.WMExecutor = {
+                getActiveVehiclesForWorkflow = function(self, workflowId)
+                    if workflowId == wf.id then return { { vehicle = {} } } end
+                    return {}
+                end,
+            }
+            d:onClickSave()
+            _G.WMExecutor = origExec
+
+            -- Nothing committed; the edit buffer is still open
+            assert.are.equal(2, #wf.steps)
+            assert.is_not_nil(d.workflow)
+        end)
+
         it("applies an added step to the live workflow", function()
             local wf = makeWorkflow()
             local d = makeDialog(wf)
@@ -381,6 +407,119 @@ describe("WMEditorDialog", function()
             d:onClickSave()
             assert.are.equal(2, #WorkflowManager.workflows)
             assert.are.equal(other, WorkflowManager.workflows[1])
+        end)
+    end)
+
+    -- =========================================================================
+    -- Move Up / Move Down / Add Support button states
+    --
+    -- The row types have different limits: a main step moves within workflow.steps
+    -- (carrying its sub-steps), a support sub-step only within its own parent's list.
+    -- Clicking a row does not raise onSelectionChanged in FS25, so update() polls the
+    -- list's selectedIndex — without that the buttons describe the previous row.
+    -- =========================================================================
+    describe("button states", function()
+        local function makeButton()
+            return {
+                disabled = false,
+                setDisabled = function(self, value) self.disabled = value end,
+            }
+        end
+
+        -- Flat rows of makeWorkflow(): 1 = main step 1, 2 = main step 2, 3 = its support 2.1
+        local function makeListDialog(workflow)
+            local d = makeDialog(workflow or makeWorkflow())
+            d.editStepButton       = makeButton()
+            d.removeStepButton     = makeButton()
+            d.moveUpButton         = makeButton()
+            d.moveDownButton       = makeButton()
+            d.addSupportStepButton = makeButton()
+            d.stepList = {
+                selectedIndex    = 0,
+                setSelectedIndex = function(self, index) self.selectedIndex = index end,
+                reloadData       = function() end,
+            }
+            d:buildFlatList()
+            return d
+        end
+
+        ---Select a flat row the way a mouse click does: the list's index moves, no callback
+        local function clickRow(d, flatIndex)
+            d.stepList.selectedIndex = flatIndex
+            d:update(16)
+        end
+
+        it("disables Up on the first main step and enables Down", function()
+            local d = makeListDialog()
+            clickRow(d, 1)
+            assert.is_true(d.moveUpButton.disabled)
+            assert.is_false(d.moveDownButton.disabled)
+        end)
+
+        it("enables Up on the last main step and disables Down", function()
+            local d = makeListDialog()
+            clickRow(d, 2)
+            assert.is_false(d.moveUpButton.disabled)
+            assert.is_true(d.moveDownButton.disabled)
+        end)
+
+        it("updates the states when the selection switches rows (regression)", function()
+            -- The states used to keep describing the previously selected row, so Up stayed
+            -- disabled after moving off row 1 and Down stayed enabled.
+            local d = makeListDialog()
+            clickRow(d, 1)
+            clickRow(d, 2)
+            assert.is_false(d.moveUpButton.disabled)
+            assert.is_true(d.moveDownButton.disabled)
+        end)
+
+        it("disables both directions for an only-child support sub-step", function()
+            local d = makeListDialog()
+            clickRow(d, 3)
+            assert.is_true(d.moveUpButton.disabled)
+            assert.is_true(d.moveDownButton.disabled)
+        end)
+
+        it("bounds a support sub-step by its own parent, not by the whole step list", function()
+            local wf = makeWorkflow()
+            table.insert(wf.steps[2].support, { type = "park", action = nil })
+            local d = makeListDialog(wf)
+
+            clickRow(d, 3)                              -- support 2.1 of 2
+            assert.is_true(d.moveUpButton.disabled)     -- first in its parent
+            assert.is_false(d.moveDownButton.disabled)
+
+            clickRow(d, 4)                              -- support 2.2 of 2
+            assert.is_false(d.moveUpButton.disabled)
+            assert.is_true(d.moveDownButton.disabled)   -- last in its parent
+        end)
+
+        it("keeps Add Support for main steps only", function()
+            local d = makeListDialog()
+            clickRow(d, 2)
+            assert.is_false(d.addSupportStepButton.disabled)
+            clickRow(d, 3)
+            assert.is_true(d.addSupportStepButton.disabled)
+        end)
+
+        it("allows Edit and Remove on support sub-steps", function()
+            local d = makeListDialog()
+            clickRow(d, 3)
+            assert.is_false(d.editStepButton.disabled)
+            assert.is_false(d.removeStepButton.disabled)
+        end)
+
+        it("disables every step button without a selection", function()
+            local d = makeListDialog()
+            d.workflow.steps = {}
+            d:buildFlatList()
+            d.selectedFlatIndex = 0
+            d:updateButtons()
+            assert.is_true(d.editStepButton.disabled)
+            assert.is_true(d.removeStepButton.disabled)
+            assert.is_true(d.moveUpButton.disabled)
+            assert.is_true(d.moveDownButton.disabled)
+            assert.is_true(d.addSupportStepButton.disabled)
         end)
     end)
 

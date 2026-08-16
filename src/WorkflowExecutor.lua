@@ -205,7 +205,8 @@ end
 ---@param activeData table Follower's active execution state
 function WMExecutor:refreshLeaderLink(activeData)
     if activeData.leaderVehicle == nil then return end
-    if activeData.pendingLeaderXmlIndex ~= nil or activeData.pendingLeaderWorkflowId ~= nil then
+    if activeData.pendingLeaderXmlIndex ~= nil or activeData.pendingLeaderWorkflowId ~= nil
+    or activeData.pendingLeaderUniqueId ~= nil then
         return  -- leader reference not yet resolved
     end
 
@@ -231,6 +232,26 @@ function WMExecutor:refreshLeaderLink(activeData)
     end
 end
 
+---Leader step the follower's CURRENT step is gated on, or nil when the current step is
+---not a paired wait marker. Shared by isLeaderSyncSatisfied and the wmPrintState console
+---command so the debug output can never drift from the real gate.
+---@param activeData table Follower's active execution state
+---@return number|nil required Leader step index the leader must be on or past
+function WMExecutor:getLeaderSyncRequirement(activeData)
+    local ordinal = activeData.syncSourceOrdinals
+                    and activeData.syncSourceOrdinals[activeData.currentStep]
+    if ordinal == nil then return nil end  -- current step is not a paired wait marker
+
+    local required = activeData.syncTargets and activeData.syncTargets[ordinal]
+    if required == nil then
+        -- More wait markers than unlock markers: wait until the leader finishes
+        local leaderExec = activeData.linkedLeaderExecution
+        local leaderWF = leaderExec and leaderExec.workflow
+        required = leaderWF and (#leaderWF.steps + 1) or 1
+    end
+    return required
+end
+
 ---Returns true if the follower may proceed past its current wait_for_leader step.
 ---Encapsulates: leader reference snapping, leader-gone detection (frees follower),
 ---and the ordinal-based sync check against the leader's unlock markers.
@@ -246,22 +267,10 @@ function WMExecutor:isLeaderSyncSatisfied(activeData)
     self:refreshLeaderLink(activeData)
     if activeData.leaderVehicle == nil then return true end  -- freed by refreshLeaderLink
 
-    local leaderExec = activeData.linkedLeaderExecution
-    local ordinal = activeData.syncSourceOrdinals
-                    and activeData.syncSourceOrdinals[activeData.currentStep]
-    if ordinal == nil then return true end  -- current step is not a paired wait marker
+    local required = self:getLeaderSyncRequirement(activeData)
+    if required == nil then return true end
 
-    local required = activeData.syncTargets and activeData.syncTargets[ordinal]
-    if required == nil then
-        -- More wait markers than unlock markers: wait until the leader finishes
-        local leaderWF = leaderExec.workflow
-        required = leaderWF and (#leaderWF.steps + 1) or 1
-    end
-
-    if leaderExec.currentStep < required then
-        return false
-    end
-    return true
+    return activeData.linkedLeaderExecution.currentStep >= required
 end
 
 ---Pause a running workflow on a vehicle
@@ -293,16 +302,21 @@ function WMExecutor:pauseWorkflow(vehicle)
 
     -- Mark as paused FIRST to stop tracking in update loop
     activeData.status = WorkflowManager.STATUS_PAUSED
+    local hadPendingAutoStep = activeData.pendingAutoStep ~= nil
     activeData.pendingAutoStep = nil  -- cancel any deferred step start
 
-    -- Store tracking state so we can restore it on resume
+    -- Store tracking state so we can restore it on resume.
+    -- (No wasWaitingForMain here: resumeWorkflow re-derives the main-wait case from the
+    -- live waitingForMainStep flag, so a stored copy would just be a second source of truth.)
     activeData.pausedTrackingState = {
         waitingForCompletion = activeData.waitingForCompletion,
         currentStepType = activeData.currentStepType,
         cpHandedOffToAD = activeData.cpHandedOffToAD,
         cpWasRunning = activeData.cpWasRunning,
-        wasWaitingForMain   = wasWaitingForMain,
         wasWaitingForLeader = wasWaitingForLeader,
+        -- Pause hit inside the 2s deferred-start window: the next step was never started,
+        -- so resume must re-arm the timer instead of resuming a nonexistent AD/CP job.
+        hadPendingAutoStep  = hadPendingAutoStep,
     }
 
     -- Stop waiting for completion while paused
@@ -366,6 +380,12 @@ function WMExecutor:resumeWorkflow(vehicle)
             activeData.status = WorkflowManager.STATUS_WAITING_FOR_LEADER
         elseif activeData.isMainVehicle == false and activeData.waitingForMainStep then
             activeData.status = WorkflowManager.STATUS_WAITING_FOR_MAIN
+        elseif pts.hadPendingAutoStep then
+            -- Paused inside the 2s deferred-start window: the step was never started, so
+            -- there is no AD/CP job to resume — re-arm the timer and let update() start it.
+            activeData.status = WorkflowManager.STATUS_RUNNING
+            activeData.pendingAutoStep = g_currentMission.time + 2000
+            WMLogger:info("Resume re-armed deferred start of step %d", activeData.currentStep)
         else
             activeData.status = WorkflowManager.STATUS_RUNNING
             self:resumeCurrentStep(activeData)
@@ -458,15 +478,8 @@ function WMExecutor:executeCurrentStep(activeData)
             target = supportSubStep.target
         })
 
-        if supportSubStep.type == WorkflowManager.STEP_AUTODRIVE then
-            if ADIntegration:isRunning(vehicle) or activeData.justStoppedAD then
-                activeData.waitingForCompletion = true
-                activeData.currentStepType = WorkflowManager.STEP_AUTODRIVE
-                activeData.pendingADStart = true
-                activeData.pendingADStartRetries = 0
-                return
-            end
-            self:startAutoDriveStep(activeData, vehicle, supportSubStep)
+        if WorkflowManager:isAutoDriveTrackedStepType(supportSubStep.type) then
+            self:deferOrStartADStep(activeData, vehicle, supportSubStep)
         elseif supportSubStep.type == WorkflowManager.STEP_COURSEPLAY then
             local comingFromCP = (activeData.currentStepType == WorkflowManager.STEP_COURSEPLAY)
             if ADIntegration:isRunning(vehicle) or comingFromCP then
@@ -478,33 +491,6 @@ function WMExecutor:executeCurrentStep(activeData)
                 return
             end
             self:startCourseplayStep(activeData, vehicle, supportSubStep)
-        elseif supportSubStep.type == WorkflowManager.STEP_PARK then
-            if ADIntegration:isRunning(vehicle) or activeData.justStoppedAD then
-                activeData.waitingForCompletion = true
-                activeData.currentStepType = WorkflowManager.STEP_PARK
-                activeData.pendingADStart = true
-                activeData.pendingADStartRetries = 0
-                return
-            end
-            self:startParkStep(activeData, vehicle, supportSubStep)
-        elseif supportSubStep.type == WorkflowManager.STEP_REFUEL then
-            if ADIntegration:isRunning(vehicle) or activeData.justStoppedAD then
-                activeData.waitingForCompletion = true
-                activeData.currentStepType = WorkflowManager.STEP_REFUEL
-                activeData.pendingADStart = true
-                activeData.pendingADStartRetries = 0
-                return
-            end
-            self:startRefuelStep(activeData, vehicle, supportSubStep)
-        elseif supportSubStep.type == WorkflowManager.STEP_REPAIR then
-            if ADIntegration:isRunning(vehicle) or activeData.justStoppedAD then
-                activeData.waitingForCompletion = true
-                activeData.currentStepType = WorkflowManager.STEP_REPAIR
-                activeData.pendingADStart = true
-                activeData.pendingADStartRetries = 0
-                return
-            end
-            self:startRepairStep(activeData, vehicle, supportSubStep)
         elseif WorkflowManager:isMarkerStepType(supportSubStep.type) then
             -- Leader/follower markers are paired from workflow.steps only, so a marker nested
             -- under a main step has nothing to sync against. The step dialog no longer offers
@@ -538,31 +524,19 @@ function WMExecutor:executeCurrentStep(activeData)
     })
 
     -- Execute based on step type
-    if step.type == WorkflowManager.STEP_AUTODRIVE then
-        -- AutoDrive: Use startRoute which internally uses StartDriving with callback
-        -- Pass all step parameters including unloadTarget and fillTypes
-        WMLogger:info("Starting AutoDrive step - vehicle: %s, target: %s, action: %s, unloadTarget: %s, fillTypes: %s",
+    if WorkflowManager:isAutoDriveTrackedStepType(step.type) then
+        -- AutoDrive-backed steps (autodrive/park/refuel/repair). Park, refuel and repair
+        -- resolve their own destinations, so only a plain autodrive step logs its targets.
+        WMLogger:info("Starting %s step - vehicle: %s%s",
+            step.type,
             vehicle and (vehicle.getName and vehicle:getName() or "unknown") or "nil",
-            step.target or "nil",
-            step.action or "nil",
-            step.unloadTarget or "nil",
-            step.fillTypes and table.concat(step.fillTypes, ",") or "nil")
+            step.type == WorkflowManager.STEP_AUTODRIVE
+                and string.format(", target: %s, action: %s, unloadTarget: %s, fillTypes: %s",
+                    step.target or "nil", step.action or "nil", step.unloadTarget or "nil",
+                    step.fillTypes and table.concat(step.fillTypes, ",") or "nil")
+                or "")
 
-        -- If AutoDrive was just stopped (e.g., manual PREV/NEXT from another AD step),
-        -- we must wait for AD to fully reset before starting a new route.
-        -- isRunning() may return false immediately after setActive(false), but AD's internal
-        -- state may not be fully reset yet.
-        if ADIntegration:isRunning(vehicle) or activeData.justStoppedAD then
-            WMLogger:debug("Deferring AD start for reset (isRunning=%s, justStopped=%s)",
-                tostring(ADIntegration:isRunning(vehicle)), tostring(activeData.justStoppedAD or false))
-            activeData.waitingForCompletion = true
-            activeData.currentStepType = WorkflowManager.STEP_AUTODRIVE
-            activeData.pendingADStart = true
-            activeData.pendingADStartRetries = 0
-            return
-        end
-
-        self:startAutoDriveStep(activeData, vehicle, step)
+        self:deferOrStartADStep(activeData, vehicle, step)
 
     elseif step.type == WorkflowManager.STEP_COURSEPLAY then
         -- Courseplay: The 'target' field specifies which course to load
@@ -591,58 +565,6 @@ function WMExecutor:executeCurrentStep(activeData)
         end
 
         self:startCourseplayStep(activeData, vehicle, step)
-
-    elseif step.type == WorkflowManager.STEP_PARK then
-        -- Park: AD resolves its own destination (any directly attached implement's park
-        -- position, falling back to the vehicle's own), so no target/action needed.
-        WMLogger:info("Starting Park step - vehicle: %s",
-            vehicle and (vehicle.getName and vehicle:getName() or "unknown") or "nil")
-
-        if ADIntegration:isRunning(vehicle) or activeData.justStoppedAD then
-            WMLogger:debug("Deferring park start for reset (isRunning=%s, justStopped=%s)",
-                tostring(ADIntegration:isRunning(vehicle)), tostring(activeData.justStoppedAD or false))
-            activeData.waitingForCompletion = true
-            activeData.currentStepType = WorkflowManager.STEP_PARK
-            activeData.pendingADStart = true
-            activeData.pendingADStartRetries = 0
-            return
-        end
-
-        self:startParkStep(activeData, vehicle, step)
-
-    elseif step.type == WorkflowManager.STEP_REFUEL then
-        -- Refuel: AD resolves the nearest matching station itself, so no target/action needed.
-        WMLogger:info("Starting Refuel step - vehicle: %s",
-            vehicle and (vehicle.getName and vehicle:getName() or "unknown") or "nil")
-
-        if ADIntegration:isRunning(vehicle) or activeData.justStoppedAD then
-            WMLogger:debug("Deferring refuel start for reset (isRunning=%s, justStopped=%s)",
-                tostring(ADIntegration:isRunning(vehicle)), tostring(activeData.justStoppedAD or false))
-            activeData.waitingForCompletion = true
-            activeData.currentStepType = WorkflowManager.STEP_REFUEL
-            activeData.pendingADStart = true
-            activeData.pendingADStartRetries = 0
-            return
-        end
-
-        self:startRefuelStep(activeData, vehicle, step)
-
-    elseif step.type == WorkflowManager.STEP_REPAIR then
-        -- Repair: AD resolves the nearest workshop-adjacent marker itself, so no target/action needed.
-        WMLogger:info("Starting Repair step - vehicle: %s",
-            vehicle and (vehicle.getName and vehicle:getName() or "unknown") or "nil")
-
-        if ADIntegration:isRunning(vehicle) or activeData.justStoppedAD then
-            WMLogger:debug("Deferring repair start for reset (isRunning=%s, justStopped=%s)",
-                tostring(ADIntegration:isRunning(vehicle)), tostring(activeData.justStoppedAD or false))
-            activeData.waitingForCompletion = true
-            activeData.currentStepType = WorkflowManager.STEP_REPAIR
-            activeData.pendingADStart = true
-            activeData.pendingADStartRetries = 0
-            return
-        end
-
-        self:startRepairStep(activeData, vehicle, step)
 
     elseif step.type == WorkflowManager.STEP_UNLOCK_FOLLOWER then
         -- Leader-side milestone: pure pass-through for the vehicle running it.
@@ -682,6 +604,11 @@ function WMExecutor:stopCurrentStep(activeData)
         WMLogger:warning("Cannot stop step - no vehicle in activeData")
         return
     end
+
+    -- Always disarm AD's start-CP-on-completion flag: startCourseplayStep arms it on every
+    -- CP start, and AD persists it in the vehicle savegame. Without this, stopping during a
+    -- CP step leaves the vehicle auto-starting Courseplay on its next manual AD route.
+    pcall(function() ADIntegration:clearCPHandoff(vehicle) end)
 
     -- Wait states: no real AD/CP route was running. The global poller self-cleans next tick.
     if activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER
@@ -737,12 +664,66 @@ function WMExecutor:tryResolvePendingLeader(activeData)
                 activeData.pendingLeaderWorkflowId = nil
                 activeData.pendingLeaderXmlIndex   = nil
                 activeData.pendingLeaderUniqueId   = nil
+                activeData.pendingLeaderResolveAttempts = nil
                 WMLogger:info("Resolved pending leader '%s' for follower at step %d",
                     candidate.getName and candidate:getName() or "?", activeData.currentStep)
-                break
+                return
             end
         end
     end
+
+    -- Unresolvable-leader escape: a saved leader may legitimately never re-enter
+    -- activeVehicles (workflow finished before/after the save, vehicle sold, workflow id
+    -- no longer resolving). Without a timeout the follower blocks at its wait step forever.
+    -- ~60s (120 polls at 500ms) safely covers out-of-order vehicle loading at map start.
+    activeData.pendingLeaderResolveAttempts = (activeData.pendingLeaderResolveAttempts or 0) + 1
+    if activeData.pendingLeaderResolveAttempts > 120 then
+        WMLogger:warning("Leader reference could not be resolved after %d attempts — continuing standalone",
+            activeData.pendingLeaderResolveAttempts - 1)
+        activeData.pendingLeaderWorkflowId = nil
+        activeData.pendingLeaderXmlIndex   = nil
+        activeData.pendingLeaderUniqueId   = nil
+        activeData.pendingLeaderResolveAttempts = nil
+    end
+end
+
+---Route an AutoDrive-backed step (autodrive/park/refuel/repair) to its start function.
+---The single dispatch point shared by executeCurrentStep and resolvePendingADStart, so the
+---normal path and the deferred/timeout path can never route a step type differently.
+---@param activeData table Per-vehicle execution state
+---@param vehicle table Vehicle
+---@param step table Step data
+function WMExecutor:startADStep(activeData, vehicle, step)
+    if step.type == WorkflowManager.STEP_PARK then
+        self:startParkStep(activeData, vehicle, step)
+    elseif step.type == WorkflowManager.STEP_REFUEL then
+        self:startRefuelStep(activeData, vehicle, step)
+    elseif step.type == WorkflowManager.STEP_REPAIR then
+        self:startRepairStep(activeData, vehicle, step)
+    else
+        self:startAutoDriveStep(activeData, vehicle, step)
+    end
+end
+
+---Start an AutoDrive-backed step, deferring while AD is still running or was just stopped:
+---isRunning() may read false immediately after a stop while AD's internal state is not yet
+---fully reset, and issuing a new route then reproduces the double-start bug class.
+---Shared by the main and support paths of executeCurrentStep for all four AD-backed types.
+---@param activeData table Per-vehicle execution state
+---@param vehicle table Vehicle
+---@param step table Step data
+function WMExecutor:deferOrStartADStep(activeData, vehicle, step)
+    if ADIntegration:isRunning(vehicle) or activeData.justStoppedAD then
+        WMLogger:debug("Deferring %s start for AD reset (isRunning=%s, justStopped=%s)",
+            tostring(step.type),
+            tostring(ADIntegration:isRunning(vehicle)), tostring(activeData.justStoppedAD or false))
+        activeData.waitingForCompletion = true
+        activeData.currentStepType = step.type
+        activeData.pendingADStart = true
+        activeData.pendingADStartRetries = 0
+        return
+    end
+    self:startADStep(activeData, vehicle, step)
 end
 
 ---Start an AutoDrive step (extracted for reuse by deferred start)
@@ -781,27 +762,45 @@ function WMExecutor:startAutoDriveStep(activeData, vehicle, step)
     end
 end
 
+---Shared body for the targetless AD-backed steps (Park/Refuel/Repair): clear the CP
+---handoff, start the route, and on success set the common tracking fields. Any change to
+---this bookkeeping applies to all three step types at once.
+---@param activeData table Per-vehicle execution state
+---@param vehicle table Vehicle
+---@param stepType string WorkflowManager.STEP_PARK / STEP_REFUEL / STEP_REPAIR
+---@param startRoute function () -> success[, skipped]
+---@param errorMessage string handleStepError text when the route cannot start
+---@param skippedMessage string|nil Log text when the route reports skipped (instant success)
+function WMExecutor:startSimpleADStep(activeData, vehicle, stepType, startRoute, errorMessage, skippedMessage)
+    local workflow = activeData.workflow
+
+    ADIntegration:clearCPHandoff(vehicle)
+
+    local success, skipped = startRoute()
+    if success then
+        activeData.waitingForCompletion = true
+        activeData.currentStepType = stepType
+        activeData.pendingADStart = nil
+        activeData.pendingADStartRetries = nil
+        activeData.justStoppedAD = nil
+        ADIntegration:applyWorkflowSettings(vehicle, workflow.adSettings)
+        WMLogger:info("%s step started successfully, waiting for completion", stepType)
+    elseif skipped then
+        WMLogger:info(skippedMessage or (stepType .. " step skipped"))
+        self:onStepCompleted(activeData)
+    else
+        self:handleStepError(activeData, errorMessage)
+    end
+end
+
 ---Start a Park step (extracted for reuse by deferred start)
 ---@param activeData table Per-vehicle execution state
 ---@param vehicle table Vehicle
 ---@param step table Step data
 function WMExecutor:startParkStep(activeData, vehicle, step)
-    local workflow = activeData.workflow
-
-    ADIntegration:clearCPHandoff(vehicle)
-
-    local success = ADIntegration:startParkRoute(vehicle)
-    if success then
-        activeData.waitingForCompletion = true
-        activeData.currentStepType = WorkflowManager.STEP_PARK
-        activeData.pendingADStart = nil
-        activeData.pendingADStartRetries = nil
-        activeData.justStoppedAD = nil
-        ADIntegration:applyWorkflowSettings(vehicle, workflow.adSettings)
-        WMLogger:info("Park step started successfully, waiting for completion")
-    else
-        self:handleStepError(activeData, "No park position configured for vehicle or any attached implement")
-    end
+    self:startSimpleADStep(activeData, vehicle, WorkflowManager.STEP_PARK,
+        function() return ADIntegration:startParkRoute(vehicle) end,
+        "No park position configured for vehicle or any attached implement")
 end
 
 ---Start a Refuel step (extracted for reuse by deferred start)
@@ -809,25 +808,10 @@ end
 ---@param vehicle table Vehicle
 ---@param step table Step data
 function WMExecutor:startRefuelStep(activeData, vehicle, step)
-    local workflow = activeData.workflow
-
-    ADIntegration:clearCPHandoff(vehicle)
-
-    local success, skipped = ADIntegration:startRefuelRoute(vehicle)
-    if success then
-        activeData.waitingForCompletion = true
-        activeData.currentStepType = WorkflowManager.STEP_REFUEL
-        activeData.pendingADStart = nil
-        activeData.pendingADStartRetries = nil
-        activeData.justStoppedAD = nil
-        ADIntegration:applyWorkflowSettings(vehicle, workflow.adSettings)
-        WMLogger:info("Refuel step started successfully, waiting for completion")
-    elseif skipped then
-        WMLogger:info("Refuel step skipped - vehicle already fueled or no station reachable")
-        self:onStepCompleted(activeData)
-    else
-        self:handleStepError(activeData, "AutoDrive not available or vehicle missing AutoDrive specialization")
-    end
+    self:startSimpleADStep(activeData, vehicle, WorkflowManager.STEP_REFUEL,
+        function() return ADIntegration:startRefuelRoute(vehicle) end,
+        "AutoDrive not available or vehicle missing AutoDrive specialization",
+        "Refuel step skipped - vehicle already fueled or no station reachable")
 end
 
 ---Start a Repair step (extracted for reuse by deferred start)
@@ -835,22 +819,9 @@ end
 ---@param vehicle table Vehicle
 ---@param step table Step data
 function WMExecutor:startRepairStep(activeData, vehicle, step)
-    local workflow = activeData.workflow
-
-    ADIntegration:clearCPHandoff(vehicle)
-
-    local success = ADIntegration:startRepairRoute(vehicle)
-    if success then
-        activeData.waitingForCompletion = true
-        activeData.currentStepType = WorkflowManager.STEP_REPAIR
-        activeData.pendingADStart = nil
-        activeData.pendingADStartRetries = nil
-        activeData.justStoppedAD = nil
-        ADIntegration:applyWorkflowSettings(vehicle, workflow.adSettings)
-        WMLogger:info("Repair step started successfully, waiting for completion")
-    else
-        self:handleStepError(activeData, "No repair station reachable for vehicle")
-    end
+    self:startSimpleADStep(activeData, vehicle, WorkflowManager.STEP_REPAIR,
+        function() return ADIntegration:startRepairRoute(vehicle) end,
+        "No repair station reachable for vehicle")
 end
 
 ---Start a Courseplay step (extracted for reuse by deferred start)
@@ -1034,6 +1005,10 @@ function WMExecutor:onWorkflowCompleted(activeData)
     local vehicle = activeData.vehicle
     WMLogger:info("Workflow completed: %s", workflow.name)
 
+    -- Natural completion never runs stopCurrentStep, so disarm AD's start-CP-on-completion
+    -- flag here too — otherwise a workflow ending on a CP step leaves it armed (and saved).
+    pcall(function() ADIntegration:clearCPHandoff(vehicle) end)
+
     -- Remove from active workflows
     vehicle.spec_workflowManagerSpec.wmExecution = nil
     self.activeVehicles[vehicle] = nil
@@ -1113,42 +1088,23 @@ function WMExecutor:resolvePendingADStart(activeData, vehicle)
     local adRunning = ADIntegration:isRunning(vehicle)
     local minWaitCycles = 2
     local readyToStart = not adRunning and activeData.pendingADStartRetries >= minWaitCycles
-    if readyToStart then
-        WMLogger:debug("AD reset complete - starting deferred step")
-        activeData.pendingADStart = nil
-        activeData.pendingADStartRetries = nil
-        activeData.justStoppedAD = nil
-        activeData.waitingForCompletion = false
-        local step = self:getCurrentStep(activeData)
-        if step then
-            if step.type == WorkflowManager.STEP_PARK then
-                self:startParkStep(activeData, vehicle, step)
-            elseif step.type == WorkflowManager.STEP_REFUEL then
-                self:startRefuelStep(activeData, vehicle, step)
-            elseif step.type == WorkflowManager.STEP_REPAIR then
-                self:startRepairStep(activeData, vehicle, step)
-            else
-                self:startAutoDriveStep(activeData, vehicle, step)
-            end
-        end
-    elseif activeData.pendingADStartRetries > 20 then
+    local forced = not readyToStart and activeData.pendingADStartRetries > 20
+    if not readyToStart and not forced then
+        return
+    end
+
+    if forced then
         WMLogger:warning("AutoDrive did not stop after 10s - forcing AD start")
-        activeData.pendingADStart = nil
-        activeData.pendingADStartRetries = nil
-        activeData.justStoppedAD = nil
-        activeData.waitingForCompletion = false
-        local step = self:getCurrentStep(activeData)
-        if step then
-            if step.type == WorkflowManager.STEP_PARK then
-                self:startParkStep(activeData, vehicle, step)
-            elseif step.type == WorkflowManager.STEP_REFUEL then
-                self:startRefuelStep(activeData, vehicle, step)
-            elseif step.type == WorkflowManager.STEP_REPAIR then
-                self:startRepairStep(activeData, vehicle, step)
-            else
-                self:startAutoDriveStep(activeData, vehicle, step)
-            end
-        end
+    else
+        WMLogger:debug("AD reset complete - starting deferred step")
+    end
+    activeData.pendingADStart = nil
+    activeData.pendingADStartRetries = nil
+    activeData.justStoppedAD = nil
+    activeData.waitingForCompletion = false
+    local step = self:getCurrentStep(activeData)
+    if step then
+        self:startADStep(activeData, vehicle, step)
     end
 end
 
@@ -1165,18 +1121,26 @@ function WMExecutor:update(dt)
         return
     end
 
-    -- Keep all active vehicles awake every frame. This prevents physics sleep so that
-    -- AD/CP internal update loops can run and so this function keeps firing for them.
-    for vehicle, _ in pairs(self.activeVehicles) do
-        if vehicle.raiseActive then vehicle:raiseActive() end
-    end
-
-    -- Throttle the rest: completion checks and wait-condition polling every 500 ms.
+    -- Throttle: completion checks and wait-condition polling every 500 ms.
     self.updateTimer = self.updateTimer + dt
     if self.updateTimer < self.UPDATE_INTERVAL then
         return
     end
     self.updateTimer = 0
+
+    -- Keep active vehicles out of physics sleep so AD/CP internal update loops can run.
+    -- Once per 500ms poll is sufficient (see cerebrum: vehicle sleep handling). Paused
+    -- vehicles do nothing until the player resumes them, so let those sleep — except
+    -- during the post-load auto-resume window, where AD/CP may still auto-start.
+    for vehicle, _ in pairs(self.activeVehicles) do
+        local vExec = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
+        local sleeping = vExec ~= nil
+            and vExec.status == WorkflowManager.STATUS_PAUSED
+            and vExec.autoResumeUntil == nil
+        if vehicle.raiseActive and not sleeping then
+            vehicle:raiseActive()
+        end
+    end
 
     -- Vehicles to stop after iteration (deferred to avoid modifying activeVehicles mid-pairs)
     local toStop = {}
@@ -1236,7 +1200,11 @@ function WMExecutor:update(dt)
 
             -- Detect a leader that finished/stopped/restarted and free the follower
             -- even when it isn't currently blocked at a wait-for-leader step.
-            self:refreshLeaderLink(activeData)
+            -- The WAITING_FOR_LEADER branch below refreshes via isLeaderSyncSatisfied,
+            -- so skip the direct call there instead of doing the same work twice per tick.
+            if activeData.status ~= WorkflowManager.STATUS_WAITING_FOR_LEADER then
+                self:refreshLeaderLink(activeData)
+            end
 
             -- WAITING_FOR_LEADER: unblock when sync condition is satisfied
             if activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER then
@@ -1567,6 +1535,77 @@ function WMExecutor:resetStepTrackingState(activeData)
 end
 
 
+---Shared body for manual step navigation (prev/next). Handles the deferred auto-step
+---window (navigate only, restart the 2s timer), the stop/reset/execute sequence, support
+---notification, state broadcast and the STEP_CHANGED event — one copy for both directions.
+---@param vehicle table Vehicle whose workflow to navigate (validated by the callers)
+---@param delta number -1 (previous) or +1 (next)
+---@param direction string "previous"|"next" (log/event payload)
+---@return boolean success
+function WMExecutor:navigateStep(vehicle, delta, direction)
+    local activeData = vehicle.spec_workflowManagerSpec.wmExecution
+    local workflow = activeData.workflow
+
+    -- Deferred auto-step window: navigate only; don't execute the step yet.
+    -- Restart the 2s timer so the player can navigate multiple steps.
+    if activeData.pendingAutoStep then
+        activeData.currentStep = activeData.currentStep + delta
+        activeData.pendingAutoStep = g_currentMission.time + 2000
+        WMLogger:info("Deferred: navigated to step %d, timer restarted", activeData.currentStep)
+        if activeData.isMainVehicle ~= false then
+            for _, sd in ipairs(self:getSupportActiveDataListForWorkflow(workflow.id)) do
+                self:onMainStepChanged(sd, activeData.currentStep)
+            end
+        end
+        WorkflowManager:broadcastState(vehicle)
+        return true
+    end
+
+    -- Remember if workflow was paused so we can resume after step change
+    local wasPaused = activeData.status == WorkflowManager.STATUS_PAUSED
+
+    -- Stop the current step (handles paused state internally)
+    self:stopCurrentStep(activeData)
+
+    activeData.currentStep = activeData.currentStep + delta
+
+    WMLogger:info("Moving to %s step %d/%d for workflow %s",
+        direction, activeData.currentStep, #workflow.steps, workflow.name)
+
+    self:resetStepTrackingState(activeData)
+
+    -- Resume to RUNNING if was paused or in any wait state (manual nav always resumes)
+    if wasPaused or activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER
+                 or activeData.status == WorkflowManager.STATUS_WAITING_FOR_MAIN then
+        activeData.status = WorkflowManager.STATUS_RUNNING
+    end
+
+    -- If workflow is running, start the new step
+    if activeData.status == WorkflowManager.STATUS_RUNNING then
+        self:executeCurrentStep(activeData)
+    end
+
+    -- Notify all support vehicles to follow the new main step
+    if activeData.isMainVehicle ~= false then
+        local supportDataList = self:getSupportActiveDataListForWorkflow(workflow.id)
+        for _, supportActiveData in ipairs(supportDataList) do
+            self:onMainStepChanged(supportActiveData, activeData.currentStep)
+        end
+    end
+
+    -- Broadcast main vehicle's new step/status to all clients
+    WorkflowManager:broadcastState(vehicle)
+
+    -- Fire event
+    WMEventHandler:fireEvent(WMEventHandler.EVENT_STEP_CHANGED, {
+        workflowId = workflow.id,
+        stepNumber = activeData.currentStep,
+        direction = direction
+    })
+
+    return true
+end
+
 ---Go to the previous step in a workflow
 ---Stops current step and moves to the previous one
 ---@param vehicle table Vehicle whose workflow to navigate
@@ -1587,67 +1626,7 @@ function WMExecutor:goToPreviousStep(vehicle)
         return false
     end
 
-    local workflow = activeData.workflow
-
-    -- Deferred auto-step window: navigate only; don't execute the step yet.
-    -- Restart the 2s timer so the player can navigate multiple steps.
-    if activeData.pendingAutoStep then
-        activeData.currentStep = activeData.currentStep - 1
-        activeData.pendingAutoStep = g_currentMission.time + 2000
-        WMLogger:info("Deferred: navigated to step %d, timer restarted", activeData.currentStep)
-        if activeData.isMainVehicle ~= false then
-            for _, sd in ipairs(self:getSupportActiveDataListForWorkflow(workflow.id)) do
-                self:onMainStepChanged(sd, activeData.currentStep)
-            end
-        end
-        WorkflowManager:broadcastState(vehicle)
-        return true
-    end
-
-    -- Remember if workflow was paused so we can resume after step change
-    local wasPaused = activeData.status == WorkflowManager.STATUS_PAUSED
-
-    -- Stop the current step (handles paused state internally)
-    self:stopCurrentStep(activeData)
-
-    -- Move to previous step
-    activeData.currentStep = activeData.currentStep - 1
-
-    WMLogger:info("Moving to previous step %d/%d for workflow %s",
-        activeData.currentStep, #workflow.steps, workflow.name)
-
-    self:resetStepTrackingState(activeData)
-
-    -- Resume to RUNNING if was paused or in any wait state (manual nav always resumes)
-    if wasPaused or activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER
-                 or activeData.status == WorkflowManager.STATUS_WAITING_FOR_MAIN then
-        activeData.status = WorkflowManager.STATUS_RUNNING
-    end
-
-    -- If workflow is running, start the new step
-    if activeData.status == WorkflowManager.STATUS_RUNNING then
-        self:executeCurrentStep(activeData)
-    end
-
-    -- Notify all support vehicles to follow the new main step
-    if activeData.isMainVehicle ~= false then
-        local supportDataList = self:getSupportActiveDataListForWorkflow(workflow.id)
-        for _, supportActiveData in ipairs(supportDataList) do
-            self:onMainStepChanged(supportActiveData, activeData.currentStep)
-        end
-    end
-
-    -- Broadcast main vehicle's new step/status to all clients
-    WorkflowManager:broadcastState(vehicle)
-
-    -- Fire event
-    WMEventHandler:fireEvent(WMEventHandler.EVENT_STEP_CHANGED, {
-        workflowId = workflow.id,
-        stepNumber = activeData.currentStep,
-        direction = "previous"
-    })
-
-    return true
+    return self:navigateStep(vehicle, -1, "previous")
 end
 
 ---Go to the next step in a workflow
@@ -1665,69 +1644,10 @@ function WMExecutor:goToNextStep(vehicle)
         return false
     end
 
-    local workflow = activeData.workflow
-
-    if activeData.currentStep >= #workflow.steps then
-        WMLogger:warning("Already at last step of workflow %s", workflow.id)
+    if activeData.currentStep >= #activeData.workflow.steps then
+        WMLogger:warning("Already at last step of workflow %s", activeData.workflow.id)
         return false
     end
 
-    -- Deferred auto-step window: navigate only; don't execute the step yet.
-    if activeData.pendingAutoStep then
-        activeData.currentStep = activeData.currentStep + 1
-        activeData.pendingAutoStep = g_currentMission.time + 2000   
-        WMLogger:info("Deferred: navigated to step %d, timer restarted", activeData.currentStep)
-        if activeData.isMainVehicle ~= false then
-            for _, sd in ipairs(self:getSupportActiveDataListForWorkflow(workflow.id)) do
-                self:onMainStepChanged(sd, activeData.currentStep)
-            end
-        end
-        WorkflowManager:broadcastState(vehicle)
-        return true
-    end
-
-    -- Remember if workflow was paused so we can resume after step change
-    local wasPaused = activeData.status == WorkflowManager.STATUS_PAUSED
-
-    -- Stop the current step (handles paused state internally)
-    self:stopCurrentStep(activeData)
-
-    -- Move to next step
-    activeData.currentStep = activeData.currentStep + 1
-
-    WMLogger:info("Moving to next step %d/%d for workflow %s",
-        activeData.currentStep, #workflow.steps, workflow.name)
-
-    self:resetStepTrackingState(activeData)
-
-    -- Resume to RUNNING if was paused or in any wait state (manual nav always resumes)
-    if wasPaused or activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER
-                 or activeData.status == WorkflowManager.STATUS_WAITING_FOR_MAIN then
-        activeData.status = WorkflowManager.STATUS_RUNNING
-    end
-
-    -- If workflow is running, start the new step
-    if activeData.status == WorkflowManager.STATUS_RUNNING then
-        self:executeCurrentStep(activeData)
-    end
-
-    -- Notify all support vehicles to follow the new main step
-    if activeData.isMainVehicle ~= false then
-        local supportDataList = self:getSupportActiveDataListForWorkflow(workflow.id)
-        for _, supportActiveData in ipairs(supportDataList) do
-            self:onMainStepChanged(supportActiveData, activeData.currentStep)
-        end
-    end
-
-    -- Broadcast main vehicle's new step/status to all clients
-    WorkflowManager:broadcastState(vehicle)
-
-    -- Fire event
-    WMEventHandler:fireEvent(WMEventHandler.EVENT_STEP_CHANGED, {
-        workflowId = workflow.id,
-        stepNumber = activeData.currentStep,
-        direction = "next"
-    })
-
-    return true
+    return self:navigateStep(vehicle, 1, "next")
 end

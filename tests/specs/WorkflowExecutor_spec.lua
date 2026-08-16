@@ -281,6 +281,26 @@ describe("WMExecutor (real)", function()
             WMExecutor:stopWorkflow(v)
             assert.is_nil(wf.status)
         end)
+
+        it("disarms AD's start-CP-on-completion flag on stop", function()
+            -- startCourseplayStep arms setStartCPOnCompletion; AD persists the flag in the
+            -- savegame, so Stop must always clear it or the vehicle auto-starts CP later.
+            local cleared = false
+            local origFn = ADIntegration.clearCPHandoff
+            ADIntegration.clearCPHandoff = function() cleared = true end
+            WMExecutor:stopWorkflow(v)
+            ADIntegration.clearCPHandoff = origFn
+            assert.is_true(cleared)
+        end)
+
+        it("disarms AD's start-CP-on-completion flag on natural workflow completion", function()
+            local cleared = false
+            local origFn = ADIntegration.clearCPHandoff
+            ADIntegration.clearCPHandoff = function() cleared = true end
+            WMExecutor:onWorkflowCompleted(activeData(v))
+            ADIntegration.clearCPHandoff = origFn
+            assert.is_true(cleared)
+        end)
     end)
 
     -- =========================================================================
@@ -1354,6 +1374,33 @@ describe("WMExecutor (real)", function()
             assert.are.equal(WorkflowManager.STEP_COURSEPLAY, d.currentStepType)
             assert.is_true(d.waitingForCompletion)
         end)
+
+        it("pause+resume inside the 2s window re-arms the deferred start (regression: stalled forever)", function()
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wfAdThenCp, v)
+            local d = activeData(v)
+
+            -- Step 1 completes; step 2 start is deferred by 2s
+            WMExecutor:onStepCompleted(d)
+            assert.are.equal(2, d.currentStep)
+            assert.is_not_nil(d.pendingAutoStep)
+
+            -- Pause inside the window (cancels the timer), then resume
+            WMExecutor:pauseWorkflow(v)
+            assert.is_nil(d.pendingAutoStep)
+            WMExecutor:resumeWorkflow(v)
+
+            -- Resume must re-arm the timer — without it nothing ever starts step 2
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, d.status)
+            assert.is_not_nil(d.pendingAutoStep)
+
+            g_currentMission.time = d.pendingAutoStep + 1
+            WMExecutor.updateTimer = 0
+            WMExecutor:update(500)
+
+            assert.are.equal(WorkflowManager.STEP_COURSEPLAY, d.currentStepType)
+            assert.is_true(d.waitingForCompletion)
+        end)
     end)
 
 
@@ -1939,6 +1986,34 @@ describe("WMExecutor (real)", function()
             assert.are.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, followerExec.status)
             assert.are.equal(2, followerExec.currentStep)
             assert.are.equal("vehicleUID_NOTFOUND", followerExec.pendingLeaderUniqueId)
+        end)
+
+        it("frees a follower whose pending leader can never resolve after the retry timeout", function()
+            -- Regression: a saved leader that never re-enters activeVehicles (sold, finished
+            -- before the save, workflow id gone) blocked the follower at its wait step forever.
+            local follower = makeVehicle("Follower")
+            local followerExec = {
+                workflow              = makeFollowerWF("wf_pend_uid_timeout_f"),
+                vehicle               = follower,
+                status                = WorkflowManager.STATUS_WAITING_FOR_LEADER,
+                currentStep           = 2,
+                isMainVehicle         = true,
+                waitingForCompletion  = false,
+                leaderVehicle         = nil,
+                pendingLeaderUniqueId = "vehicleUID_GONE",
+            }
+            follower.spec_workflowManagerSpec.wmExecution = followerExec
+            WMExecutor.activeVehicles[follower] = true
+
+            -- Simulate ~60s of failed resolution polls, then one more tick past the threshold
+            followerExec.pendingLeaderResolveAttempts = 120
+            triggerPoll()
+
+            assert.is_nil(followerExec.pendingLeaderUniqueId)
+
+            -- Next poll: no pending ref + no leader = sync satisfied, follower moves on
+            triggerPoll()
+            assert.are_not.equal(WorkflowManager.STATUS_WAITING_FOR_LEADER, followerExec.status)
         end)
     end)
 

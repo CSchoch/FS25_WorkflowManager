@@ -34,9 +34,11 @@ describe("WMMainDialog", function()
     local shown
     local notifications
     local mouseCursorShown
+    local events   -- ordered log of "close" / "start" for the start-flow ordering contract
 
     before_each(function()
         shown = nil
+        events = {}
         _G.WorkflowManager = {
             workflows = {},
             nextId = 0,
@@ -56,8 +58,17 @@ describe("WMMainDialog", function()
             end,
             getWorkflows = function(self) return self.workflows end,
             getVehicleWorkflowState = function() return nil end,
-            startWorkflow = function(self, id) return self.startResult end,
+            -- Models the async start contract: onStarted fires only when the start command
+            -- is actually dispatched. startDeferred simulates a mode/leader dialog still
+            -- being open (or the player cancelling it): flow initiated, nothing started yet.
+            canStartWorkflow = function(self) return self.startResult end,
+            startWorkflow = function(self, id, onStarted)
+                table.insert(events, "start")
+                if self.startResult and not self.startDeferred and onStarted then onStarted() end
+                return self.startResult
+            end,
             startResult = true,
+            startDeferred = false,
         }
 
         notifications = {}
@@ -80,7 +91,7 @@ describe("WMMainDialog", function()
     local function makeDialog()
         local d = WMMainDialog.new()
         d.closed = false
-        d.close = function(self) self.closed = true end
+        d.close = function(self) self.closed = true; table.insert(events, "close") end
         d.workflowList = nil   -- refreshWorkflowList early-returns without a list
         return d
     end
@@ -173,12 +184,42 @@ describe("WMMainDialog", function()
             assert.is_true(mouseCursorShown)
         end)
 
+        it("closes BEFORE the start flow opens the leader/mode dialog (regression)", function()
+            -- Closing afterwards tore the GUI cursor state out from under the child dialog,
+            -- leaving the leader-select dialog without a mouse pointer.
+            WorkflowManager.startResult = true
+            local d = makeStartDialog()
+            d:onClickStart()
+            assert.are.same({ "close", "start" }, events)
+        end)
+
+        it("does not start when the workflow cannot start", function()
+            WorkflowManager.startResult = false
+            local d = makeStartDialog()
+            d:onClickStart()
+            assert.are.same({}, events)
+        end)
+
         it("stays open when the start fails", function()
             WorkflowManager.startResult = false
             local d = makeStartDialog()
             d:onClickStart()
             assert.is_false(d.closed)
             assert.are.equal(FSBaseMission.INGAME_NOTIFICATION_CRITICAL, notifications[1].kind)
+        end)
+
+        it("does NOT claim success while a mode/leader dialog is still deciding (regression)", function()
+            -- startWorkflow returned true after merely OPENING the mode-select dialog;
+            -- the old code showed 'Workflow started' even if the player then cancelled.
+            WorkflowManager.startResult = true
+            WorkflowManager.startDeferred = true
+            local d = makeStartDialog()
+            d:onClickStart()
+            WorkflowManager.startDeferred = false
+
+            assert.is_true(d.closed)              -- main dialog steps aside for the next dialog
+            assert.are.equal(0, #notifications)   -- but no success message yet
+            assert.is_false(mouseCursorShown)     -- and the cursor was not handed over
         end)
 
         it("does nothing without a selection", function()

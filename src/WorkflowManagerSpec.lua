@@ -271,11 +271,13 @@ end
 function WorkflowManagerSpec:onWriteStream(streamId, connection)
     local activeData = self.spec_workflowManagerSpec and self.spec_workflowManagerSpec.wmExecution
     if activeData ~= nil then
-        local leaderWorkflowId = nil
-        if activeData.leaderVehicle then
-            local leaderExec = activeData.leaderVehicle.spec_workflowManagerSpec
-                               and activeData.leaderVehicle.spec_workflowManagerSpec.wmExecution
-            leaderWorkflowId = leaderExec and leaderExec.workflow and leaderExec.workflow.id
+        -- Leader reference: network object id (0 = none). A workflow id is NOT a usable
+        -- identity here — main and support vehicles of one workflow share it, so a joining
+        -- client could bind the wrong vehicle as leader. The object id is exact; the client
+        -- resolves it lazily because the leader vehicle may not have streamed in yet.
+        local leaderObjectId = 0
+        if activeData.leaderVehicle ~= nil and NetworkUtil ~= nil and NetworkUtil.getObjectId ~= nil then
+            leaderObjectId = NetworkUtil.getObjectId(activeData.leaderVehicle) or 0
         end
 
         streamWriteBool(streamId, true)
@@ -285,11 +287,10 @@ function WorkflowManagerSpec:onWriteStream(streamId, connection)
         streamWriteBool(streamId, activeData.isMainVehicle ~= false)
         streamWriteInt32(streamId, activeData.currentSupportStep or 0)
         streamWriteBool(streamId, activeData.waitingForMainStep == true)
-        streamWriteBool(streamId, leaderWorkflowId ~= nil)
-        if leaderWorkflowId then streamWriteString(streamId, leaderWorkflowId) end
-        WMLogger:debug("onWriteStream: sent wmExecution wf=%s step=%d status=%s isMain=%s leader=%s",
+        streamWriteInt32(streamId, leaderObjectId)
+        WMLogger:debug("onWriteStream: sent wmExecution wf=%s step=%d status=%s isMain=%s leaderObj=%d",
             activeData.workflow.id, activeData.currentStep, activeData.status,
-            tostring(activeData.isMainVehicle ~= false), tostring(leaderWorkflowId))
+            tostring(activeData.isMainVehicle ~= false), leaderObjectId)
     else
         streamWriteBool(streamId, false)
     end
@@ -310,8 +311,7 @@ function WorkflowManagerSpec:onReadStream(streamId, connection)
     local currentSupportStep = streamReadInt32(streamId)
     if currentSupportStep == 0 then currentSupportStep = nil end
     local waitingForMainStep = streamReadBool(streamId) or nil
-    local hasLeader          = streamReadBool(streamId)
-    local leaderWorkflowId   = hasLeader and streamReadString(streamId) or nil
+    local leaderObjectId     = streamReadInt32(streamId)
 
     -- Resolve workflow definition (loadMap has run by the time vehicles are streamed)
     local workflow = WorkflowManager:getWorkflowById(workflowId)
@@ -320,19 +320,17 @@ function WorkflowManagerSpec:onReadStream(streamId, connection)
         return
     end
 
-    -- Attempt to resolve leader vehicle by workflow ID (vehicles may arrive in any order)
+    -- Resolve leader vehicle by its exact network object id. Vehicles stream in arbitrary
+    -- order, so the leader may not exist client-side yet — keep the id pending and let the
+    -- HUD resolve it lazily on first display.
     local leaderVehicle = nil
-    local pendingLeaderWorkflowId = nil
-    if leaderWorkflowId then
-        for v, _ in pairs(WMExecutor.activeVehicles) do
-            local exec = v.spec_workflowManagerSpec and v.spec_workflowManagerSpec.wmExecution
-            if exec and exec.workflow and exec.workflow.id == leaderWorkflowId then
-                leaderVehicle = v
-                break
-            end
+    local pendingLeaderObjectId = nil
+    if leaderObjectId ~= nil and leaderObjectId ~= 0 then
+        if NetworkUtil ~= nil and NetworkUtil.getObject ~= nil then
+            leaderVehicle = NetworkUtil.getObject(leaderObjectId)
         end
-        if not leaderVehicle then
-            pendingLeaderWorkflowId = leaderWorkflowId
+        if leaderVehicle == nil then
+            pendingLeaderObjectId = leaderObjectId
         end
     end
 
@@ -346,7 +344,7 @@ function WorkflowManagerSpec:onReadStream(streamId, connection)
         currentSupportStep      = currentSupportStep,
         waitingForMainStep      = waitingForMainStep,
         leaderVehicle           = leaderVehicle,
-        pendingLeaderWorkflowId = pendingLeaderWorkflowId,
+        pendingLeaderObjectId   = pendingLeaderObjectId,
     }
     WMExecutor.activeVehicles[self] = true
 

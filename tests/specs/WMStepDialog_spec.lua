@@ -187,6 +187,29 @@ describe("WMStepDialog", function()
             assert.are.equal(WorkflowManager.STEP_COURSEPLAY, d.stepType)
             assert.are.equal("fieldwork", d.stepAction)
         end)
+
+        it("maps click indices against the RENDERED list after a type change (regression: saved wrong type)", function()
+            -- Legacy marker sub-step renders a 7-entry list [AD, CP, WAIT, UNLOCK, PARK, REFUEL, REPAIR].
+            -- After switching to AutoDrive, getStepTypes() would shrink to 5 entries — but the
+            -- visible labels still show 7, so clicking the label 'Park' (index 5) used to map
+            -- to types[5] = repair on the recomputed list and silently save a Repair step.
+            local d = makeStubDialog(WorkflowManager.STEP_WAIT_FOR_LEADER, nil)
+            d.isSupportStep = true
+            d.typeDropdown = {
+                setTexts = function() end,
+                setState = function() end,
+            }
+            WMStepDialog.refreshTypeDropdown(d)
+            assert.are.equal(7, #d.renderedStepTypes)
+
+            -- First change: pick AutoDrive (index 1); dropdown labels are NOT re-rendered
+            WMStepDialog.onTypeChanged(d, 1)
+            assert.are.equal(WorkflowManager.STEP_AUTODRIVE, d.stepType)
+
+            -- Second change: click the visible 'Park' label (index 5 of the rendered list)
+            WMStepDialog.onTypeChanged(d, 5)
+            assert.are.equal(WorkflowManager.STEP_PARK, d.stepType)
+        end)
     end)
 
     -- =========================================================================

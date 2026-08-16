@@ -894,20 +894,20 @@ function WorkflowManager:addStep(workflowId, stepType, target, action)
     return true
 end
 
----Start a workflow
----Uses the current vehicle the player is driving (Milestone 4)
+---Check every condition startWorkflow validates and resolve the vehicle it would run on.
+---Shows the matching in-game warning when a condition fails, so callers only react to nil.
 ---@param workflowId string Workflow ID to start
----@return boolean success True if started successfully
-function WorkflowManager:startWorkflow(workflowId)
+---@return table|nil workflow, table|nil vehicle
+function WorkflowManager:resolveStartTarget(workflowId)
     local workflow = self:getWorkflowById(workflowId)
     if workflow == nil then
         WMLogger:error("Cannot start: Workflow %s not found", workflowId)
-        return false
+        return nil
     end
 
     if #workflow.steps == 0 then
         WMLogger:error("Cannot start: Workflow %s has no steps", workflowId)
-        return false
+        return nil
     end
 
     -- Milestone 4: Get the current vehicle the player is driving
@@ -924,7 +924,7 @@ function WorkflowManager:startWorkflow(workflowId)
             g_currentMission.hud:showBlinkingWarning(warningText, 2000)
         end
         WMLogger:warning("Cannot start: Player is not in a vehicle")
-        return false
+        return nil
     end
 
     -- Prevent starting a new workflow on a vehicle that is already running one
@@ -934,7 +934,7 @@ function WorkflowManager:startWorkflow(workflowId)
         if g_currentMission and g_currentMission.hud and g_currentMission.hud.showBlinkingWarning then
             g_currentMission.hud:showBlinkingWarning(warningText, 2000)
         end
-        return false
+        return nil
     end
 
     -- Validate vehicle has required AutoDrive + Courseplay support
@@ -946,6 +946,33 @@ function WorkflowManager:startWorkflow(workflowId)
             g_currentMission.hud:showBlinkingWarning(warningText, 2000)
         end
         WMLogger:warning("Cannot start: Vehicle '%s' does not support workflows (needs AutoDrive + Courseplay)", vehicleName)
+        return nil
+    end
+
+    return workflow, currentVehicle
+end
+
+---True when startWorkflow would get past validation right now.
+---A dialog that starts a workflow must ask this and close *itself* before calling
+---startWorkflow: the start flow opens the mode/leader dialog on top, and closing the
+---parent afterwards tears the GUI's cursor state out from under the child.
+---@param workflowId string Workflow ID to start
+---@return boolean
+function WorkflowManager:canStartWorkflow(workflowId)
+    return self:resolveStartTarget(workflowId) ~= nil
+end
+
+---Start a workflow
+---Uses the current vehicle the player is driving (Milestone 4)
+---The flow may pass through mode-select / leader-select dialogs, so a true return only
+---means "start flow initiated" — the start command may still be cancelled by the player.
+---@param workflowId string Workflow ID to start
+---@param onStarted function|nil Called when the start command is actually dispatched
+---                              (never called when the player cancels a dialog)
+---@return boolean success False on immediate validation failure, true when the flow began
+function WorkflowManager:startWorkflow(workflowId, onStarted)
+    local workflow, currentVehicle = self:resolveStartTarget(workflowId)
+    if workflow == nil or currentVehicle == nil then
         return false
     end
 
@@ -953,14 +980,20 @@ function WorkflowManager:startWorkflow(workflowId)
         workflow.name,
         currentVehicle.getName and currentVehicle:getName() or "unknown")
 
+    local function notifyStarted()
+        if onStarted ~= nil then onStarted() end
+    end
+
     local function startAsMain()
         if g_server ~= nil and self.leaderSelectDialog ~= nil then
             self:showLeaderSelectDialog(currentVehicle, function(leaderVehicle)
                 if leaderVehicle == false then return end  -- user cancelled
                 self:sendCommand(currentVehicle, "start", workflow.id, true, leaderVehicle)
+                notifyStarted()
             end)
         else
             self:sendCommand(currentVehicle, "start", workflow.id, true, nil)
+            notifyStarted()
         end
     end
 
@@ -972,6 +1005,7 @@ function WorkflowManager:startWorkflow(workflowId)
                 startAsMain()
             else
                 self:sendCommand(currentVehicle, "start", workflow.id, false, nil)
+                notifyStarted()
             end
         end)
     else
@@ -1310,7 +1344,7 @@ function WorkflowManager:deleteMap()
     end)
 
     -- Unregister developer console commands
-    WMConsoleCommands:delete()
+    pcall(function() WMConsoleCommands:delete() end)
 
     -- Reset remaining state
     self.guiVisible = false

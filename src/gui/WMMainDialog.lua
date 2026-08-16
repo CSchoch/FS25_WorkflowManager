@@ -237,21 +237,29 @@ function WMMainDialog:onClickStart()
 
     if self.selectedWorkflowIndex > 0 and self.selectedWorkflowIndex <= #self.workflows then
         local workflow = self.workflows[self.selectedWorkflowIndex]
+        local workflowName = workflow.name
 
-        local success = WorkflowManager:startWorkflow(workflow.id)
-        if success then
-            g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_OK,
-                string.format(g_i18n:getText("wm_workflow_started") or "Workflow started: %s", workflow.name))
-            -- Workflow is running: get out of the way so the player can watch the vehicle
-            self:close()
-            -- Closing the dialog hides the cursor; hand it to the HUD, which releases it
-            -- again when it is closed or the workflow ends
-            WMHud:setMouseCursorActive(true)
-        else
+        if not WorkflowManager:canStartWorkflow(workflow.id) then
             g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_CRITICAL,
                 g_i18n:getText("wm_workflow_error") or "Failed to start workflow")
             self:refreshWorkflowList()
+            return
         end
+
+        -- Close BEFORE starting: the start flow may open the mode/leader select dialog on
+        -- top of this one, and closing afterwards drops the GUI cursor the child still needs.
+        self:close()
+
+        -- The start flow may pass through mode/leader select dialogs; only report success
+        -- and hand the cursor to the HUD once the start command is actually dispatched
+        -- (the callback never fires when the player cancels one of those dialogs).
+        WorkflowManager:startWorkflow(workflow.id, function()
+            g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_OK,
+                string.format(g_i18n:getText("wm_workflow_started") or "Workflow started: %s", workflowName))
+            -- Closing the dialogs hides the cursor; hand it to the HUD, which releases it
+            -- again when it is closed or the workflow ends
+            WMHud:setMouseCursorActive(true)
+        end)
     end
 end
 

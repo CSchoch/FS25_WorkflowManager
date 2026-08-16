@@ -2,7 +2,7 @@
     WorkflowManager - Editor Dialog
     Allows editing workflow name and managing steps.
     The step list is a flat, nested view: main steps are shown with their support
-    sub-steps indented below them (  â†³ 1  AutoDrive  Field1  Unload).
+    sub-steps indented below them (  ↳ 1  AutoDrive  Field1  Unload).
 
     Author: WorkflowManager Team
 ]]
@@ -225,7 +225,7 @@ function WMEditorDialog:populateCellForItemInSection(list, section, index, cell)
     end
     if step == nil then return end
 
-    -- # column: step number for main rows, "â””" for support sub-steps
+    -- # column: step number for main rows, "└" for support sub-steps
     local numEl = cell:getDescendantByName("stepNum")
     if numEl then
         numEl:setText(item.isMain and tostring(item.stepIndex) or (tostring(item.stepIndex) .. "." .. tostring(item.supportIndex)))
@@ -325,6 +325,19 @@ function WMEditorDialog:onStepListSelectionChanged(list, section, index)
     self.selectedFlatIndex = index
     self:updateButtons()
     WMLogger:debug("Selected flat index: %d", index)
+end
+
+---Clicking a row in this list does not raise onSelectionChanged (see getSelectedItem), so the
+---Up/Down/Add-Support states would keep describing the previously selected row: Up stayed
+---enabled on the first support sub-step, Down on the last main step, and so on. The list's own
+---selectedIndex is the reliable signal, so poll it and rebuild the button states when it moves.
+function WMEditorDialog:update(dt)
+    WMEditorDialog:superClass().update(self, dt)
+
+    local listIndex = self.stepList ~= nil and self.stepList.selectedIndex or 0
+    if listIndex > 0 and listIndex ~= self.selectedFlatIndex then
+        self:updateButtons()   -- getSelectedItem() syncs selectedFlatIndex to the list
+    end
 end
 
 function WMEditorDialog:onStepListDoubleClick(list, section, index)
@@ -503,6 +516,21 @@ end
 -- ============================================================
 
 function WMEditorDialog:onClickSave()
+    -- A running execution holds a direct reference to the live workflow (activeData.workflow):
+    -- swapping its steps mid-run desyncs currentStep and the followers' sync maps. Block Save
+    -- while any vehicle is executing this workflow; the edit buffer stays open for the user.
+    if self.sourceWorkflow ~= nil and not self.isNewWorkflow and WMExecutor ~= nil
+    and WMExecutor.getActiveVehiclesForWorkflow ~= nil
+    and #WMExecutor:getActiveVehiclesForWorkflow(self.sourceWorkflow.id) > 0 then
+        local warningText = g_i18n:getText("wm_warning_workflow_running")
+            or "Cannot save: workflow is currently running. Stop it first."
+        if g_currentMission and g_currentMission.hud and g_currentMission.hud.showBlinkingWarning then
+            g_currentMission.hud:showBlinkingWarning(warningText, 2000)
+        end
+        WMLogger:warning("Save blocked: workflow '%s' is running", self.sourceWorkflow.name)
+        return
+    end
+
     if self.workflow and self.nameInput then
         self.workflow.name = self.nameInput.text or self.workflow.name
     end

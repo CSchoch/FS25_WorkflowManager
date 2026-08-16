@@ -1023,3 +1023,118 @@
 | 02:36 | Edited CLAUDE.md | 595 → 597 | ~7 |
 | 02:36 | Manual HUD close (X/toggle) always releases the cursor via WMHud:closeManually(); auto-hide still leaves it | src/gui/WMHud.lua, tests/specs/WMHud_spec.lua | 597 tests pass | ~8k |
 | 02:36 | Session end: 59 writes across 13 files (WMMainDialog.lua, WMMainDialog_spec.lua, CLAUDE.md, WMHud.lua, WorkflowManager.lua) | 16 reads | ~59311 tok |
+
+## Session: 2026-08-08 10:53
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-08 22:12
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-14 22:22
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 07:25 | Full-codebase multi-agent code review (16 finders + 14 verifiers): 25 findings reported, 11 confirmed correctness bugs incl. legacy sync-flag migration tripling steps (WorkflowStorage:367), startHelper leak on stop (WorkflowExecutor:700), pause-in-autostep-window stall (:296) | review report | done | ~2.6M |
+| 07:29 | Edited src/WorkflowStorage.lua | 3→5 lines | ~116 |
+| 07:29 | Edited src/WorkflowStorage.lua | expanded (+23 lines) | ~322 |
+| 07:30 | Edited tests/specs/WorkflowStorage_spec.lua | expanded (+26 lines) | ~411 |
+| 07:30 | Edited src/WorkflowExecutor.lua | 10→15 lines | ~192 |
+| 07:30 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~128 |
+| 07:31 | Edited tests/specs/WorkflowExecutor_spec.lua | expanded (+20 lines) | ~304 |
+| 07:31 | Edited src/WorkflowExecutor.lua | 13→17 lines | ~242 |
+| 07:31 | Edited src/WorkflowExecutor.lua | expanded (+6 lines) | ~253 |
+| 07:32 | Edited tests/specs/WorkflowExecutor_spec.lua | expanded (+27 lines) | ~354 |
+| 07:33 | Edited src/WorkflowExecutor.lua | expanded (+15 lines) | ~403 |
+| 07:33 | Edited tests/specs/WorkflowExecutor_spec.lua | expanded (+28 lines) | ~472 |
+| 07:36 | Edited src/WorkflowManagerSpec.lua | 25→26 lines | ~406 |
+| 07:36 | Edited src/WorkflowManagerSpec.lua | 39→36 lines | ~419 |
+| 07:36 | Edited src/gui/WMHud.lua | expanded (+10 lines) | ~235 |
+| 07:36 | Edited tests/mocks/game_globals.lua | modified _G() | ~114 |
+| 07:36 | Edited tests/specs/WorkflowManagerSpec_spec.lua | 3→3 lines | ~48 |
+| 07:37 | Edited tests/specs/WorkflowManagerSpec_spec.lua | leaderWorkflowId() → leaderObjectId() | ~1023 |
+| 07:38 | Edited translations/translation_en.xml | 1→2 lines | ~56 |
+| 07:38 | Edited translations/translation_de.xml | 1→2 lines | ~61 |
+| 07:38 | Edited src/gui/WMEditorDialog.lua | modified WMEditorDialog() | ~306 |
+| 07:38 | Edited tests/specs/WMEditorDialog_spec.lua | expanded (+22 lines) | ~271 |
+| 07:39 | Edited src/gui/WMStepDialog.lua | 17→21 lines | ~200 |
+| 07:39 | Edited src/gui/WMStepDialog.lua | 8→11 lines | ~183 |
+| 07:39 | Edited tests/specs/WMStepDialog_spec.lua | expanded (+23 lines) | ~458 |
+| 07:40 | Edited src/gui/WMHud.lua | added 1 condition(s) | ~246 |
+| 07:40 | Edited src/gui/WMHud.lua | modified WMHud() | ~134 |
+| 07:41 | Edited src/WorkflowManager.lua | modified WorkflowManager() | ~168 |
+| 07:41 | Edited src/WorkflowManager.lua | modified notifyStarted() | ~344 |
+| 07:41 | Edited src/gui/WMMainDialog.lua | 19→24 lines | ~360 |
+| 07:41 | Edited tests/specs/WMMainDialog_spec.lua | modified open() | ~148 |
+| 07:41 | Edited tests/specs/WMMainDialog_spec.lua | expanded (+14 lines) | ~293 |
+| 07:42 | Edited tests/specs/WMHud_spec.lua | expanded (+8 lines) | ~166 |
+| 07:42 | Edited tests/specs/WMHud_spec.lua | expanded (+11 lines) | ~411 |
+| 07:43 | Edited tests/specs/WMHud_spec.lua | 2→3 lines | ~34 |
+| 07:43 | Edited src/gui/WMHud.lua | modified WMHud() | ~245 |
+| 07:43 | Edited src/gui/WMHud.lua | 4→6 lines | ~109 |
+| 07:44 | Edited tests/specs/WMHud_spec.lua | expanded (+15 lines) | ~289 |
+| 07:45 | Edited tests/run_tests.lua | expanded (+6 lines) | ~197 |
+| 07:46 | Edited tests/specs/WMHud_spec.lua | expanded (+9 lines) | ~152 |
+| 07:46 | Edited tests/specs/WMHud_spec.lua | 6→2 lines | ~16 |
+| 07:47 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~83 |
+| 07:47 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~549 |
+| 07:47 | Edited src/dev/WMConsoleCommands.lua | 14→9 lines | ~151 |
+| 07:47 | Edited src/WorkflowManager.lua | inline fix | ~14 |
+| 07:48 | Created tests/specs/WMConsoleCommands_spec.lua | — | ~1391 |
+| 07:48 | Edited tests/run_tests.lua | 3→4 lines | ~40 |
+| 07:49 | Edited src/WorkflowExecutor.lua | reduced (-34 lines) | ~233 |
+| 07:49 | Edited src/WorkflowExecutor.lua | reduced (-12 lines) | ~246 |
+| 07:49 | Edited src/WorkflowExecutor.lua | removed 55 lines | ~34 |
+| 07:50 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~587 |
+| 07:50 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~787 |
+| 07:50 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~251 |
+| 07:52 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~1220 |
+| 07:52 | Edited src/WorkflowExecutor.lua | 6→10 lines | ~172 |
+| 07:52 | Edited src/WorkflowExecutor.lua | 8→9 lines | ~148 |
+| 07:52 | Edited src/WorkflowExecutor.lua | 12→16 lines | ~211 |
+| 07:52 | Edited src/WorkflowExecutor.lua | 9→13 lines | ~201 |
+| 07:53 | Edited src/WorkflowStorage.lua | modified isTargetlessStepType() | ~95 |
+| 07:53 | Edited tests/specs/WorkflowStorage_spec.lua | expanded (+11 lines) | ~190 |
+| 07:53 | Edited src/gui/WMHud.lua | modified renderWaitingLine() | ~787 |
+| 07:54 | Edited src/gui/WMHud.lua | 39→37 lines | ~504 |
+| 11:58 | Created ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/c5441a8e-ad2a-4aec-8364-7f3ff2ddaa3f/scratchpad/append_buglog.py | — | ~2306 |
+| 11:58 | Edited ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/c5441a8e-ad2a-4aec-8364-7f3ff2ddaa3f/scratchpad/append_buglog.py | 1→2 lines | ~38 |
+| 11:59 | Edited CLAUDE.md | 5→6 lines | ~126 |
+| 11:59 | Edited CLAUDE.md | inline fix | ~115 |
+| 11:59 | Fixed all 11 confirmed review bugs (migration marker explosion, startHelper leak, pause-window stall, leader timeout, MP object-id leader ref, editor live-edit guard, dropdown desync, cursor deferred grant, async start callback, pause for waiting states, mojibake) + executor dedup (startADStep/deferOrStartADStep/startSimpleADStep/navigateStep) + full-_G test-runner isolation + WMConsoleCommands spec | src/*, tests/* | 615/615 passing | ~3.5M |
+| 12:00 | Created ../../../../../.claude/projects/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/memory/project_queuesystem_review_fixes.md | — | ~593 |
+| 12:00 | Edited ../../../../../.claude/projects/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/memory/MEMORY.md | 7→9 lines | ~154 |
+| 12:01 | Session end: 67 writes across 25 files (WorkflowStorage.lua, WorkflowStorage_spec.lua, WorkflowExecutor.lua, WorkflowExecutor_spec.lua, WorkflowManagerSpec.lua) | 40 reads | ~272616 tok |
+
+## Session: 2026-08-15 21:37
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-15 21:37
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 21:42 | Edited src/WorkflowManager.lua | modified WorkflowManager() | ~175 |
+| 21:42 | Edited src/WorkflowManager.lua | 3→3 lines | ~26 |
+| 21:42 | Edited src/WorkflowManager.lua | 5→5 lines | ~57 |
+| 21:42 | Edited src/WorkflowManager.lua | modified WorkflowManager() | ~402 |
+| 21:42 | Edited src/WorkflowManager.lua | 4→4 lines | ~42 |
+| 21:43 | Edited src/gui/WMMainDialog.lua | vehicle() → canStartWorkflow() | ~335 |
+| 21:43 | Edited tests/specs/WMMainDialog_spec.lua | 7→9 lines | ~83 |
+| 21:43 | Edited tests/specs/WMMainDialog_spec.lua | 4→6 lines | ~89 |
+| 21:43 | Edited tests/specs/WMMainDialog_spec.lua | inline fix | ~23 |
+| 21:43 | Edited tests/specs/WMMainDialog_spec.lua | expanded (+16 lines) | ~200 |
+| 21:52 | Fixed missing mouse cursor in leader-select dialog: main dialog now closes BEFORE the start flow opens the child dialog | src/WorkflowManager.lua, src/gui/WMMainDialog.lua, tests/specs/WMMainDialog_spec.lua | 617 tests pass | ~9k |
+| 21:52 | Recovered 12 buglog entries lost to an unsafe `git checkout -- .wolf/buglog.json` by extracting the original append script from an earlier session transcript | .wolf/buglog.json | restored bug-196..207, added bug-208 | ~4k |
+| 21:48 | Edited CLAUDE.md | 615 → 617 | ~7 |
+| 21:56 | Edited src/gui/WMEditorDialog.lua | modified WMEditorDialog() | ~240 |
+| 21:57 | Edited tests/specs/WMEditorDialog_spec.lua | 3→7 lines | ~71 |
+| 21:57 | Edited tests/specs/WMEditorDialog_spec.lua | modified makeButton() | ~1334 |
+| 21:57 | Edited CLAUDE.md | 617 → 625 | ~7 |
+| 22:10 | Editor Up/Down/Add-Support states stale on row switch: FS25 never raises onSelectionChanged for stepList, so update() now polls stepList.selectedIndex | src/gui/WMEditorDialog.lua, tests/specs/WMEditorDialog_spec.lua | 625 tests pass (+8) | ~12k |
+| 21:58 | Session end: 15 writes across 6 files (WorkflowManager.lua, WMMainDialog.lua, WMMainDialog_spec.lua, CLAUDE.md, WMEditorDialog.lua) | 9 reads | ~55743 tok |
+| 22:11 | Session end: 15 writes across 6 files (WorkflowManager.lua, WMMainDialog.lua, WMMainDialog_spec.lua, CLAUDE.md, WMEditorDialog.lua) | 10 reads | ~56320 tok |

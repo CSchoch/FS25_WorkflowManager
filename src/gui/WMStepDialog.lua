@@ -234,6 +234,10 @@ function WMStepDialog:refreshTypeDropdown()
     end
 
     local types = self:getStepTypes()
+    -- Snapshot the rendered list: getStepTypes() depends on the CURRENT stepType (marker
+    -- entries appear only for legacy marker sub-steps), so onTypeChanged must map click
+    -- indices against what is actually displayed, not against a freshly recomputed list.
+    self.renderedStepTypes = types
     local texts = {}
     for _, t in ipairs(types) do
         table.insert(texts, WorkflowManager:getStepTypeLabel(t))
@@ -381,7 +385,7 @@ function WMStepDialog:populateCellForItemInSection(list, section, index, cell)
                 for _, name in ipairs(self.selectedFillTypes) do
                     if name == item.name then isSelected = true; break end
                 end
-                textElement:setText((isSelected and "âœ“ " or "  ") .. item.display)
+                textElement:setText((isSelected and "✓ " or "  ") .. item.display)
                 if isSelected then
                     textElement:setTextColor(0.0, 0.85, 0.17, 1)
                 else
@@ -655,7 +659,10 @@ function WMStepDialog:onTypeChanged(element, state)
         state = element
     end
 
-    local types = self:getStepTypes()
+    -- Map the click index against the list the dropdown was rendered with — recomputing
+    -- getStepTypes() here desyncs after the first type change (the list shrinks once the
+    -- step is no longer a legacy marker, silently remapping the visible labels).
+    local types = self.renderedStepTypes or self:getStepTypes()
     local defaultActions = {[WorkflowManager.STEP_AUTODRIVE] = "drive", [WorkflowManager.STEP_COURSEPLAY] = "fieldwork"}
 
     if type(state) == "number" and state > 0 and state <= #types then

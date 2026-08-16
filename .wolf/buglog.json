@@ -3214,6 +3214,296 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-08-08T00:36:18.096Z"
+    },
+    {
+      "id": "bug-196",
+      "timestamp": "2026-08-15T12:00:00",
+      "error_message": "Legacy workflows.xml from main tripled in size on load: 2 sync markers inserted before every step",
+      "file": "src/WorkflowStorage.lua",
+      "root_cause": "isSyncTarget/isSyncSource were read with getBool default=true; main-branch files have neither formatVersion nor any isSync* attribute, so every step of a pre-sync-era file read as 'fully synced' and migrateSyncFlagsToMarkers inserted wait+unlock markers before each step, persisted irreversibly on next save",
+      "fix": "Read the flags with no default (nil = absent) and skip marker insertion entirely when NO step in the file carries an explicit isSync* attribute (pre-sync-era file). Flag-era files (which wrote flags only when false) keep the absent=true semantics",
+      "tags": [
+        "migration",
+        "formatVersion",
+        "sync-markers",
+        "data-corruption",
+        "legacy-save"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-15T12:00:00"
+    },
+    {
+      "id": "bug-197",
+      "timestamp": "2026-08-15T12:00:00",
+      "error_message": "AD startHelper stayed armed after Stop/step error/workflow completion during a CP step; next manual AD route auto-started Courseplay",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "startCourseplayStep arms setStartCPOnCompletion(true) on every CP start, but the branch removed main's unconditional clearCPHandoff from stopCurrentStep, and onWorkflowCompleted never ran stopCurrentStep at all; AD persists startHelper in the vehicle savegame",
+      "fix": "stopCurrentStep clears the handoff unconditionally (pcall, before the wait-state early return) and onWorkflowCompleted clears it too for natural completion",
+      "tags": [
+        "autodrive",
+        "startHelper",
+        "cp-handoff",
+        "double-start"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-15T12:00:00"
+    },
+    {
+      "id": "bug-198",
+      "timestamp": "2026-08-15T12:00:00",
+      "error_message": "Pause+Resume inside the 2s deferred auto-step window stalled the workflow forever (RUNNING, nothing executing)",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "pauseWorkflow cleared pendingAutoStep without saving it; resumeWorkflow restored waitingForCompletion=false and called resumeCurrentStep (no-op, step never started), leaving no update-loop path to ever start the step",
+      "fix": "pausedTrackingState now records hadPendingAutoStep; resumeWorkflow re-arms pendingAutoStep = now+2000 instead of resuming a nonexistent job",
+      "tags": [
+        "pause",
+        "resume",
+        "pendingAutoStep",
+        "stall"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-15T12:00:00"
+    },
+    {
+      "id": "bug-199",
+      "timestamp": "2026-08-15T12:00:00",
+      "error_message": "Follower stuck in WAITING_FOR_LEADER forever when its saved leader could never be resolved (sold/finished/unresolvable workflow)",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "isLeaderSyncSatisfied returns false while any pendingLeader* id is set and tryResolvePendingLeader only matches vehicles in activeVehicles, with no timeout - an unresolvable ref blocked the follower permanently",
+      "fix": "tryResolvePendingLeader counts failed attempts (pendingLeaderResolveAttempts); after ~120 polls (~60s, safely past map-load ordering) it clears the pending ids and the follower continues standalone with a warning",
+      "tags": [
+        "leader-follower",
+        "save-load",
+        "timeout",
+        "waiting_for_leader"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-15T12:00:00"
+    },
+    {
+      "id": "bug-200",
+      "timestamp": "2026-08-15T12:00:00",
+      "error_message": "MP mid-session join could bind a support vehicle as the follower's leader (same workflow id)",
+      "file": "src/WorkflowManagerSpec.lua",
+      "root_cause": "onWriteStream streamed only the leader's workflow id and onReadStream bound the first activeVehicles entry with that id - main and support vehicles share the workflow id; also uniqueId cannot be used because Vehicle:readStream never streams it (nil on clients)",
+      "fix": "Stream the leader's network object id (NetworkUtil.getObjectId, 0=none); onReadStream resolves via NetworkUtil.getObject and keeps pendingLeaderObjectId for lazy resolution in WMHud:draw when the leader has not streamed in yet",
+      "tags": [
+        "multiplayer",
+        "onReadStream",
+        "leader",
+        "networkutil",
+        "object-id"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-15T12:00:00"
+    },
+    {
+      "id": "bug-201",
+      "timestamp": "2026-08-15T12:00:00",
+      "error_message": "Saving the editor while the workflow was running desynced execution (currentStep past end, stale follower sync maps)",
+      "file": "src/gui/WMEditorDialog.lua",
+      "root_cause": "commitToSource swaps source.steps under a running execution which holds a direct reference (activeData.workflow); currentStep was never revalidated and buildSyncMaps only runs at start",
+      "fix": "onClickSave blocks with a wm_warning_workflow_running blinking warning while WMExecutor:getActiveVehiclesForWorkflow(id) is non-empty; edit buffer stays open",
+      "tags": [
+        "editor",
+        "live-edit",
+        "guard",
+        "sync-maps"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-15T12:00:00"
+    },
+    {
+      "id": "bug-202",
+      "timestamp": "2026-08-15T12:00:00",
+      "error_message": "Second step-type change in WMStepDialog could silently save the wrong type (visible 'Park' saved as Repair)",
+      "file": "src/gui/WMStepDialog.lua",
+      "root_cause": "getStepTypes() length depends on the current stepType (7 entries for legacy marker sub-steps, else 5); onTypeChanged recomputed the list at click time while the dropdown labels were never re-rendered, desyncing index->type mapping",
+      "fix": "refreshTypeDropdown snapshots self.renderedStepTypes; onTypeChanged maps click indices against that snapshot",
+      "tags": [
+        "gui",
+        "dropdown",
+        "index-mapping",
+        "step-type"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-15T12:00:00"
+    },
+    {
+      "id": "bug-203",
+      "timestamp": "2026-08-15T12:00:00",
+      "error_message": "HUD unclickable after starting a workflow through the leader/mode-select dialog chain (cursor granted then revoked)",
+      "file": "src/gui/WMHud.lua",
+      "root_cause": "setMouseCursorActive(true) during an open dialog chain set mouseCursorForced, then the last dialog's onClose drove openDialogCount to 0 and unconditionally released the cursor",
+      "fix": "Grants requested while openDialogCount>0 are deferred (pendingCursorGrant) and materialized by onDialogClosed when the chain fully closes; manual close cancels a pending grant",
+      "tags": [
+        "hud",
+        "mouse-cursor",
+        "dialog-chain",
+        "refcount"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-15T12:00:00"
+    },
+    {
+      "id": "bug-204",
+      "timestamp": "2026-08-15T12:00:00",
+      "error_message": "'Workflow started' notification shown even when the player cancelled the mode/leader-select dialog",
+      "file": "src/gui/WMMainDialog.lua",
+      "root_cause": "WorkflowManager:startWorkflow returned true after merely OPENING a dialog; the actual sendCommand happens in dialog callbacks whose cancel paths are silent no-ops",
+      "fix": "startWorkflow gained an onStarted callback invoked only when the start command is actually dispatched; WMMainDialog shows the notification and hands the cursor to the HUD inside that callback",
+      "tags": [
+        "gui",
+        "async",
+        "false-success",
+        "notification"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-15T12:00:00"
+    },
+    {
+      "id": "bug-205",
+      "timestamp": "2026-08-15T12:00:00",
+      "error_message": "HUD pause button was inert for vehicles in WAITING_FOR_MAIN / WAITING_FOR_LEADER",
+      "file": "src/gui/WMHud.lua",
+      "root_cause": "WMExecutor:pauseWorkflow accepts the waiting statuses (and restores them on resume), but onClickPauseResume only sent 'pause' for STATUS_RUNNING, so no UI path could pause a waiting vehicle",
+      "fix": "onClickPauseResume (and the pause icon enable state) now covers RUNNING + both waiting statuses",
+      "tags": [
+        "hud",
+        "pause",
+        "waiting-states"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-15T12:00:00"
+    },
+    {
+      "id": "bug-206",
+      "timestamp": "2026-08-15T12:00:00",
+      "error_message": "Fill-type checkmark rendered as mojibake; comments corrupted in 3 dialog files (cp1252 round-trip)",
+      "file": "src/gui/WMStepDialog.lua",
+      "root_cause": "Files were re-encoded through cp1252: correct UTF-8 sequences were double-encoded (checkmark E2 9C 93 became C3 A2 C5 93 E2 80 9C etc.) in WMStepDialog, WMEditorDialog, WMADSettingsDialog",
+      "fix": "Targeted byte-sequence repair of the four mojibake patterns back to the intended characters; files verified free of C3 A2 / C3 83 sequences afterwards",
+      "tags": [
+        "encoding",
+        "utf-8",
+        "mojibake",
+        "cp1252"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-15T12:00:00"
+    },
+    {
+      "id": "bug-207",
+      "timestamp": "2026-08-15T12:00:00",
+      "error_message": "Cross-spec global leakage: specs dofile'd real modules in setup() and later specs saw them instead of the mocks",
+      "file": "tests/run_tests.lua",
+      "root_cause": "The runner only saved/restored _G.print and _G.WMLogger; AutoDriveIntegration_spec/CourseplayIntegration_spec replaced _G.ADIntegration/_G.CPIntegration for all later spec files, and WMHud_spec silently DEPENDED on _G.WorkflowManager leaked by an earlier spec",
+      "fix": "Runner snapshots and restores the entire _G between spec files (added keys removed, replaced values restored); WMHud_spec now defines its own WorkflowManager stub",
+      "tags": [
+        "tests",
+        "runner",
+        "global-leakage",
+        "isolation"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-15T12:00:00"
+    },
+    {
+      "id": "bug-208",
+      "timestamp": "2026-08-15T21:50:00",
+      "error_message": "Mouse arrow missing in the leader-vehicle-select dialog after starting a workflow",
+      "file": "src/gui/WMMainDialog.lua",
+      "root_cause": "onClickStart called WorkflowManager:startWorkflow first (which opens the leader/mode-select dialog via g_gui:showDialog) and closed the main dialog only afterwards; closing a parent dialog that already has a child on the GUI stack tears down the cursor/input context the child still needs. log.txt shows WMLeaderVehicleSelectDialog:onOpen immediately followed by WMMainDialog:onClose",
+      "fix": "startWorkflow's validation extracted into WorkflowManager:resolveStartTarget plus a canStartWorkflow predicate; WMMainDialog:onClickStart validates, closes itself, then starts - the same close-then-show order onClickEdit already used",
+      "tags": [
+        "gui",
+        "mouse-cursor",
+        "dialog-stack",
+        "leader-select",
+        "WMMainDialog"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-15T21:50:00"
+    },
+    {
+      "id": "bug-209",
+      "timestamp": "2026-08-15T19:48:44.003Z",
+      "error_message": "Wrong reference: 615 should be 617",
+      "file": "CLAUDE.md",
+      "root_cause": "Used \"615\" instead of \"617\"",
+      "fix": "Changed 615 → 617",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-15T19:48:44.003Z"
+    },
+    {
+      "id": "bug-210",
+      "timestamp": "2026-08-15T19:57:01.401Z",
+      "error_message": "Wrong return value",
+      "file": "tests/specs/WMEditorDialog_spec.lua",
+      "root_cause": "Was returning: { onOpen = function() end, onClose = function() en",
+      "fix": "Now returns: {",
+      "tags": [
+        "auto-detected",
+        "return-value",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-15T19:57:01.401Z"
+    },
+    {
+      "id": "bug-211",
+      "timestamp": "2026-08-15T19:57:55.420Z",
+      "error_message": "Wrong reference: 617 should be 625",
+      "file": "CLAUDE.md",
+      "root_cause": "Used \"617\" instead of \"625\"",
+      "fix": "Changed 617 → 625",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-15T19:57:55.420Z"
+    },
+    {
+      "id": "bug-209",
+      "timestamp": "2026-08-15T22:10:00",
+      "error_message": "Editor Up/Down buttons not enabled/disabled properly when switching the selected step; support sub-steps not respected",
+      "file": "src/gui/WMEditorDialog.lua",
+      "root_cause": "updateButtons ran only from refreshStepList and from onStepListSelectionChanged, and the FS25 SmoothList never raises onSelectionChanged for this list on a mouse click (log.txt shows zero 'Selected flat index' debug lines across five minutes of editor use, while WMMainDialog's list logs its selection changes). Clicks did move stepList.selectedIndex, so getSelectedItem read the right row and the actions worked - only the button states kept describing the previously selected row, e.g. Up stayed enabled on the first support sub-step of a group and Down on the last main step",
+      "fix": "Added WMEditorDialog:update(dt): it polls stepList.selectedIndex and calls updateButtons when it differs from selectedFlatIndex (getSelectedItem resyncs the field, so the poll self-clears). Enablement logic itself was already type-correct - main steps bounded by #workflow.steps, support sub-steps by their own parent's support list - and is now pinned by 8 tests in WMEditorDialog_spec",
+      "tags": [
+        "gui",
+        "SmoothList",
+        "onSelectionChanged",
+        "button-state",
+        "support-steps",
+        "WMEditorDialog"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-15T22:10:00"
     }
   ]
 }

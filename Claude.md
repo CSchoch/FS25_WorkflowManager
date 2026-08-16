@@ -59,8 +59,9 @@ Individual runners: `tests\run_executor_spec.lua`, `tests\run_storage_spec.lua`,
 | `WMMainDialog_spec.lua` | New/Edit entry points: New hands the editor an unregistered workflow |
 | `CourseplayIntegration_spec.lua` | Course entry resolution from the root view, legacy-name fallback, folder navigation |
 | `CourseplayCoursesLoader_spec.lua` | Course enumeration from the root view, root-relative names |
+| `WMConsoleCommands_spec.lua` | Console command registration/removal; wmPrintState reports the executor's real sync gate |
 
-Current total: **597**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
+Current total: **625**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
 or they will not run.
 
 **Courseplay course paths:** course names are stored as **root-relative** paths
@@ -80,7 +81,7 @@ candidates — matching by base name alone silently loaded `F09/Kalken` for a st
 The editor's New flow deliberately uses `buildWorkflow` and defers registration to Save, so Cancel
 leaves no trace — do not "simplify" it back to `createWorkflow`.
 
-**Test framework note**: `run_tests.lua` saves/restores `_G.print` and `_G.WMLogger` around every spec. Do NOT add `_G.print = ...` side-effects in `before_each` without a matching restore, and do NOT load real module files in `setup()` without resetting them in the runner.
+**Test framework note**: `run_tests.lua` snapshots and restores **all of `_G`** around every spec file — globals a spec adds are removed, globals it replaces are restored. Every spec must therefore own its stubs (never rely on a module or stub leaked by an earlier spec file). Loading real modules via `dofile` in `setup()` is fine; mutating the *insides* of a shared mock table still leaks, so restore those in the spec itself.
 
 ## Resources
 

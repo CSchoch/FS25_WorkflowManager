@@ -42,6 +42,15 @@ describe("WMHud", function()
             linkRole         = nil,
         }
 
+        -- Own WorkflowManager stub — the runner restores globals between spec files, so
+        -- do NOT rely on an earlier spec leaking the real module
+        _G.WorkflowManager = {
+            STATUS_RUNNING = "running",
+            STATUS_PAUSED  = "paused",
+            STATUS_WAITING_FOR_MAIN   = "waiting_for_main",
+            STATUS_WAITING_FOR_LEADER = "waiting_for_leader",
+        }
+
         vehicle1 = makeVehicle("Tractor1", workflow, WorkflowManager.STATUS_RUNNING)
         vehicle2 = makeVehicle("Tractor2", workflow, WorkflowManager.STATUS_RUNNING)
 
@@ -63,10 +72,6 @@ describe("WMHud", function()
 
         -- Player is sitting in vehicle2
         _G.g_currentMission.controlledVehicle = vehicle2
-
-        -- Reset WorkflowManager constants (in case mock replaced them)
-        _G.WorkflowManager.STATUS_RUNNING = "running"
-        _G.WorkflowManager.STATUS_PAUSED  = "paused"
 
         -- Reset HUD state
         WMHud.isVisible = true
@@ -151,10 +156,25 @@ describe("WMHud", function()
             end
         end)
 
-        it("emits no command when the status is neither RUNNING nor PAUSED", function()
+        it("emits no command when the status is neither RUNNING, PAUSED nor a wait state", function()
             vehicle2.spec_workflowManagerSpec.wmExecution.status = "completed"
             WMHud:onClickPauseResume()
             assert.are.equal(0, #sentCommands)
+        end)
+
+        it("pauses a vehicle waiting for its leader (regression: button was inert)", function()
+            vehicle2.spec_workflowManagerSpec.wmExecution.status = WorkflowManager.STATUS_WAITING_FOR_LEADER
+            WMHud:onClickPauseResume()
+            assert.are.equal(1, #sentCommands)
+            assert.are.equal("pause",  sentCommands[1].cmd)
+            assert.are.equal(vehicle2, sentCommands[1].vehicle)
+        end)
+
+        it("pauses a support vehicle waiting for main (regression: button was inert)", function()
+            vehicle2.spec_workflowManagerSpec.wmExecution.status = WorkflowManager.STATUS_WAITING_FOR_MAIN
+            WMHud:onClickPauseResume()
+            assert.are.equal(1, #sentCommands)
+            assert.are.equal("pause",  sentCommands[1].cmd)
         end)
     end)
 
@@ -206,6 +226,7 @@ describe("WMHud", function()
             cursorCalls = {}
             WMHud.mouseCursorForced = false
             WMHud.openDialogCount = 0
+            WMHud.pendingCursorGrant = nil
             _G.g_inputBinding = {
                 setShowMouseCursor = function(_, show) table.insert(cursorCalls, show) end,
             }
@@ -253,10 +274,18 @@ describe("WMHud", function()
         end)
 
         it("releases the cursor on manual close even while a dialog is counted open", function()
-            WMHud:onDialogOpened()
             WMHud:setMouseCursorActive(true)
+            WMHud:onDialogOpened()
             WMHud:closeManually()
             assert.are.same({ true, false }, cursorCalls)
+        end)
+
+        it("manual close cancels a cursor grant that is still pending", function()
+            WMHud:onDialogOpened()
+            WMHud:setMouseCursorActive(true)   -- deferred: chain still open
+            WMHud:closeManually()
+            assert.are.same({}, cursorCalls)
+            assert.is_nil(WMHud.pendingCursorGrant)
         end)
 
         it("releases the cursor on delete", function()
@@ -276,29 +305,41 @@ describe("WMHud", function()
             cursorCalls = {}
             WMHud.mouseCursorForced = false
             WMHud.openDialogCount = 0
+            WMHud.pendingCursorGrant = nil
             _G.g_inputBinding = {
                 setShowMouseCursor = function(_, show) table.insert(cursorCalls, show) end,
             }
         end)
 
         it("releases the cursor when the last dialog closes", function()
+            WMHud:setMouseCursorActive(true)   -- HUD owns the cursor (start flow ended earlier)
             WMHud:onDialogOpened()
-            WMHud:setMouseCursorActive(true)
             WMHud:onDialogClosed()
             assert.are.same({ true, false }, cursorCalls)
         end)
 
         it("keeps the cursor while another dialog in the chain is still open", function()
             -- main -> editor: editor opens before main is counted out
-            WMHud:onDialogOpened()
-            WMHud:onDialogOpened()
             WMHud:setMouseCursorActive(true)
+            WMHud:onDialogOpened()
+            WMHud:onDialogOpened()
             WMHud:onDialogClosed()
             assert.are.same({ true }, cursorCalls)
             assert.is_true(WMHud.mouseCursorForced)
 
             WMHud:onDialogClosed()
             assert.are.same({ true, false }, cursorCalls)
+        end)
+
+        it("defers a grant requested while a chain is open until the chain closes (regression)", function()
+            -- Start flow with a stacked leader-select dialog: the grant used to be revoked
+            -- the moment that dialog closed, leaving the HUD on screen but unclickable.
+            WMHud:onDialogOpened()             -- leader select still open
+            WMHud:setMouseCursorActive(true)   -- start callback hands the cursor to the HUD
+            assert.are.same({}, cursorCalls)   -- not granted yet
+            WMHud:onDialogClosed()             -- chain fully closes
+            assert.are.same({ true }, cursorCalls)
+            assert.is_true(WMHud.mouseCursorForced)
         end)
 
         it("never counts below zero", function()

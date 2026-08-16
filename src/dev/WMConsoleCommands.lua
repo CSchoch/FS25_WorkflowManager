@@ -79,18 +79,13 @@ function WMConsoleCommands:printVehicleState(vehicle)
             syncRequired = "waiting until leader finishes"
         end
     end
+    -- Ask the executor for the real gate value instead of re-deriving it here — a hand
+    -- copy of the formula silently goes stale when the sync rule is tuned.
     local blockedByLeader = nil
-    if ex.leaderVehicle and ex.syncSourceOrdinals and ex.currentStep then
-        local ordinal = ex.syncSourceOrdinals[ex.currentStep]
-        if ordinal then
-            local required = ex.syncTargets and ex.syncTargets[ordinal]
-            if required == nil then
-                local leaderWF = ex.linkedLeaderExecution and ex.linkedLeaderExecution.workflow
-                required = leaderWF and (#leaderWF.steps + 1) or 1
-            end
-            if leaderStep == nil or leaderStep < required then
-                blockedByLeader = string.format("need leader at step %d (currently at %s)", required, tostring(leaderStep))
-            end
+    if ex.leaderVehicle and WMExecutor and WMExecutor.getLeaderSyncRequirement then
+        local required = WMExecutor:getLeaderSyncRequirement(ex)
+        if required ~= nil and (leaderStep == nil or leaderStep < required) then
+            blockedByLeader = string.format("need leader at step %d (currently at %s)", required, tostring(leaderStep))
         end
     end
     print(string.format("  leaderStep:        %s", tostring(leaderStep)))
