@@ -399,8 +399,24 @@ function WMExecutor:resumeWorkflow(vehicle)
         -- detect when the current step finishes and advance to the next one.
         local step = self:getCurrentStep(activeData)
 
-        activeData.status = WorkflowManager.STATUS_RUNNING
         activeData.autoResumeUntil = nil  -- cancel auto-resume window; we are resuming now
+
+        -- CP step that was driving when the game was saved: Courseplay never restarts itself,
+        -- so attaching monitoring here would detect "never started" and skip the field work.
+        -- Re-issue the start instead (stays paused if no resume waypoint was recorded).
+        -- (resumeCourseplayAfterLoad fires EVENT_WORKFLOW_RESUMED and broadcasts itself,
+        --  so return directly rather than falling through to the shared fire below.)
+        if activeData.cpWasRunningAtSave
+        and step ~= nil and step.type == WorkflowManager.STEP_COURSEPLAY
+        and not CPIntegration:isRunning(vehicle) then
+            return self:resumeCourseplayAfterLoad(activeData)
+        end
+
+        -- Post-load resume markers are spent once we attach to an already-running job
+        activeData.cpWasRunningAtSave = nil
+        activeData.cpResumeWaypoint = nil
+
+        activeData.status = WorkflowManager.STATUS_RUNNING
         activeData.waitingForCompletion = true
         activeData.currentStepType = step and step.type
         if step and step.type == WorkflowManager.STEP_COURSEPLAY and CPIntegration:isRunning(vehicle) then
@@ -863,11 +879,19 @@ function WMExecutor:startCourseplayStep(activeData, vehicle, step)
         return
     end
 
+    -- Resuming after a savegame load: hand Courseplay the waypoint we recorded at save time.
+    -- Must happen AFTER the course load above — loading a course clears CP's remembered index.
+    -- Forces the last-waypoint start even for a step authored with action "first", so a resume
+    -- never sends the vehicle back to the start of the field.
+    local resumeWaypoint = activeData.cpResumeWaypoint
+    activeData.cpResumeWaypoint = nil
+    if resumeWaypoint ~= nil then
+        CPIntegration:setResumeWaypointIx(vehicle, resumeWaypoint)
+    end
+
     -- Determine start position based on action
-    local startAtNearest = activeData.resuming or false
-    local startAtFirst = (step.action == "first" or step.action == "start")
-    local success = CPIntegration:startFieldWork(vehicle, startAtFirst, startAtNearest)
-    activeData.resuming = nil
+    local startAtFirst = (resumeWaypoint == nil) and (step.action == "first" or step.action == "start")
+    local success = CPIntegration:startFieldWork(vehicle, startAtFirst)
 
     if success then
         activeData.waitingForCompletion = true
@@ -882,6 +906,59 @@ function WMExecutor:startCourseplayStep(activeData, vehicle, step)
     else
         self:handleStepError(activeData, "Failed to start Courseplay field work")
     end
+end
+
+---Restart Courseplay after a savegame load for a workflow that was on a CP step when saved.
+---Courseplay never auto-resumes (it clears the base-game AIFieldWorker#isActive flag on save),
+---so nothing restarts on its own — WM has to re-issue the start itself.
+---Without a recorded waypoint we deliberately stay PAUSED: startCpAtLastWp() would silently
+---fall back to waypoint 1 and re-drive the whole field.
+---@param activeData table Per-vehicle execution state
+---@return boolean started True if Courseplay was restarted
+function WMExecutor:resumeCourseplayAfterLoad(activeData)
+    local vehicle  = activeData.vehicle
+    local workflow = activeData.workflow
+    -- getCurrentStep (not workflow.steps[currentStep]) so a support vehicle resolves its
+    -- own CP sub-step rather than the main vehicle's step.
+    local step     = self:getCurrentStep(activeData)
+
+    if step == nil or step.type ~= WorkflowManager.STEP_COURSEPLAY then
+        -- Never let a stale waypoint seed a later CP step
+        activeData.cpWasRunningAtSave = nil
+        activeData.cpResumeWaypoint = nil
+        return false
+    end
+
+    if activeData.cpResumeWaypoint == nil then
+        -- Deliberately keep cpWasRunningAtSave set: every further Resume press must land here
+        -- again rather than falling through to the monitor-existing-job path, which would see
+        -- "Courseplay never started" and silently mark the field work complete.
+        WMLogger:warning("Cannot resume Courseplay for '%s' at step %d - no resume waypoint was "
+            .. "recorded at save time; staying paused (restarting would re-drive the whole course). "
+            .. "Use next/previous step to move on.",
+            workflow.name, activeData.currentStep)
+        return false
+    end
+
+    activeData.cpWasRunningAtSave = nil
+
+    -- AD may have reset its settings on load — same re-apply the auto-resume branch does.
+    ADIntegration:applyWorkflowSettings(vehicle, workflow.adSettings)
+
+    WMLogger:info("Restarting Courseplay for '%s' at step %d from waypoint %d after savegame load",
+        workflow.name, activeData.currentStep, activeData.cpResumeWaypoint)
+
+    activeData.status = WorkflowManager.STATUS_RUNNING
+    self:startCourseplayStep(activeData, vehicle, step)
+
+    WMEventHandler:fireEvent(WMEventHandler.EVENT_WORKFLOW_RESUMED, {
+        workflowId = workflow.id,
+        vehicle = vehicle,
+        currentStep = activeData.currentStep
+    })
+    WorkflowManager:broadcastState(vehicle)
+
+    return true
 end
 
 ---Pause the current step
@@ -1153,12 +1230,24 @@ function WMExecutor:update(dt)
             -- Auto-resume check: poll every tick for the first 10 seconds after restore.
             -- If AD auto-started after load we catch it as soon as it begins running.
             if activeData.status == WorkflowManager.STATUS_PAUSED and activeData.autoResumeUntil ~= nil then
+                -- KNOWN ISSUE (unfixed, pre-dates the CP resume work — see buglog bug-247):
+                -- this reads the MAIN step list directly. For a support vehicle the live step is
+                -- steps[main.currentStep].support[currentSupportStep], so a restored support
+                -- vehicle can auto-resume with the wrong currentStepType (e.g. "autodrive" when
+                -- its sub-step is Courseplay), which then routes completion detection through the
+                -- wrong branch below. self:getCurrentStep(activeData) resolves both roles and is
+                -- what resumeCourseplayAfterLoad uses. Not changed here because it also alters
+                -- the AD auto-resume path for support vehicles and wants its own test pass.
                 local step = workflow.steps[activeData.currentStep]
                 local adRunning = step and ADIntegration:isRunning(vehicle)
                 local cpRunning = step and CPIntegration:isRunning(vehicle)
 
                 if adRunning or cpRunning then
                     activeData.autoResumeUntil = nil  -- found - stop polling
+                    -- A job restarted on its own; the post-load resume markers are spent and
+                    -- must not seed a later CP step with this step's waypoint.
+                    activeData.cpWasRunningAtSave = nil
+                    activeData.cpResumeWaypoint = nil
 
                     -- Re-apply AD settings after savegame restore (AD may have reset them on load)
                     ADIntegration:applyWorkflowSettings(vehicle, workflow.adSettings)
@@ -1182,8 +1271,26 @@ function WMExecutor:update(dt)
                     -- Broadcast the new running state to all clients
                     WorkflowManager:broadcastState(vehicle)
                 elseif g_currentMission.time >= activeData.autoResumeUntil then
-                    activeData.autoResumeUntil = nil  -- window expired - stay paused
-                    WMLogger:info("Auto-resume window expired for '%s', staying paused", workflow.name)
+                    activeData.autoResumeUntil = nil  -- window expired
+                    -- Courseplay never restarts itself after a load. If CP was driving when the
+                    -- game was saved, re-issue the start at the waypoint we recorded — unless the
+                    -- player switched the option off. Only this automatic restart is gated: the
+                    -- manual Resume path must keep calling resumeCourseplayAfterLoad, or it falls
+                    -- through to the monitor branch and marks the field work complete.
+                    -- (WMSettings is absent in unit specs — nil reads as enabled.)
+                    local autoResumeEnabled = WMSettings == nil or WMSettings.courseplayAutoResume ~= false
+                    if activeData.cpWasRunningAtSave and not autoResumeEnabled then
+                        -- Markers stay set so a later Resume press still restarts at the waypoint
+                        WMLogger:info("Auto-resume window expired for '%s' - Courseplay auto-resume is "
+                            .. "disabled in the settings; staying paused. Press Resume to restart at "
+                            .. "waypoint %s.", workflow.name, tostring(activeData.cpResumeWaypoint))
+                    else
+                        local restarted = activeData.cpWasRunningAtSave
+                            and self:resumeCourseplayAfterLoad(activeData)
+                        if not restarted then
+                            WMLogger:info("Auto-resume window expired for '%s', staying paused", workflow.name)
+                        end
+                    end
                 end
             end
 
@@ -1532,6 +1639,9 @@ function WMExecutor:resetStepTrackingState(activeData)
     activeData.waitingForMainStepIndex = nil
     activeData.pendingExecuteOnResume = nil
     activeData.pendingAutoStep = nil
+    -- Post-load CP resume markers are only valid for the step that was running at save time
+    activeData.cpWasRunningAtSave = nil
+    activeData.cpResumeWaypoint = nil
 end
 
 

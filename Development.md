@@ -8,9 +8,29 @@
 
 **Recent:** Multi-field workflows, hierarchical support steps, per-vehicle runtime state with savegame persistence, auto-resume after load, draggable HUD, reactive HUD show/hide, HUD badges/tooltips, step editor UX (selected-value rows, auto-select), support vehicle dummy AD hold to prevent staling, `justStoppedAD` fix for idle transitions, per-workflow AD settings (unloadFillLevel, pipeOffset, preCallLevel) accessible from main dialog via "AD/CP Einstellungen" button, fixed pcall arg-order bug in `applyWorkflowSettings`, fixed preCallLevel unit mismatch (now stored as 0.0–1.0 fraction), settings re-applied after `StartDriving`, multiplayer sync (WMCommandEvent/WMStateSyncEvent, server-authoritative executor, mid-session join via onReadStream/onWriteStream), support vehicles no longer paused when main pauses (run independently), fixed duplicate KEY_d binding (WM_GUI_DELETE → KEY_r), removed unused WM_START_WORKFLOW/WM_STOP_WORKFLOW action declarations
 
-**Other:** Courseplay resume at nearest waypoint, release build support (DevConfig stub), DDS textures, old linked-workflow migration, multiple simultaneous support vehicles, sub-step editor numbering (N.M format), mode dialog vehicle reference fix
+**Other:** release build support (DevConfig stub), DDS textures, old linked-workflow migration, multiple simultaneous support vehicles, sub-step editor numbering (N.M format), mode dialog vehicle reference fix
 
 **Latest batch (2026-07):** Park/Refuel/Repair step types (AutoDrive-driven, no configurable target); leader-follower sync reworked from per-step Sync Target/Sync Source Yes/No flags to explicit `Wait for Leader`/`Unlock Follower` marker steps (opt-in, ordinally paired) — old flags migrated automatically; leader identity now keyed on `vehicle.uniqueId` instead of a positional XML index (fixes leader references breaking across save sessions); `STATUS_WAITING_FOR_MAIN` for support vehicles idling between main steps; HUD redesign (header shows only the title, step line gets an `[AD]`/`[CP]`/`[PARK]`/`[REFUEL]`/`[REPAIR]`/`[WM]` type tag, Waiting-for-Leader/Waiting-for-Main lines show the other vehicle's name and are clickable to jump into it); fixed Refuel never actually refueling and Repair silently resuming AD to a stale destination after completing (both traced to AutoDrive's own `RepairTask`/`RefuelTask:finished()` restarting the vehicle's AD mode); removed the entire AD completion-callback/listener pipeline after confirming it's dead code in the installed AutoDrive version (completion has always been detected by polling); Docusaurus docs swept to match all of the above.
+
+**Latest batch (2026-08):** Courseplay resume after savegame load. Courseplay never auto-resumes
+(it clears the base-game `AIFieldWorker#isActive` on save) and only records its own
+`#rememberedWpIx` on a clean stop, never mid-drive — so WM now captures the waypoint itself at save
+time (`#cpWasRunning` / `#cpResumeWaypoint`) and re-issues `startCpAtLastWp()` once the 10 s
+auto-resume window expires. With no recorded waypoint the workflow stays paused rather than
+restarting the course from waypoint 1. Also fixed: manual Resume on a restored CP step used to log
+"Courseplay never started" and silently mark the field work complete. Removed the dead, mislabelled
+`startAtNearest` branch (it was unreachable, and `cpStartStopDriver(false)` starts the player's
+HUD-configured job, not a nearest-waypoint one).
+
+### Known Issues
+
+- **Restored support vehicle can auto-resume with the wrong step type** (`WorkflowExecutor.lua`,
+  auto-resume branch in `update`). It reads `workflow.steps[activeData.currentStep]` — the *main*
+  step list — so a support vehicle whose live step is a sub-step gets the wrong
+  `currentStepType`, and completion detection then runs through the wrong per-step-type branch.
+  `WMExecutor:getCurrentStep` resolves both roles correctly. Left unfixed because the change also
+  affects the AutoDrive auto-resume path for support vehicles and wants its own test pass; the
+  line is marked with a `KNOWN ISSUE` comment. See buglog `bug-247`.
 
 ### Milestone 9: Folder View
 

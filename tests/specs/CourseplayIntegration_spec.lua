@@ -306,4 +306,85 @@ describe("CPIntegration (course resolution)", function()
         end)
     end)
 
+    -- =========================================================================
+    -- Resume waypoint (savegame load)
+    --
+    -- Courseplay only writes its own #rememberedWpIx when a job stops cleanly, never while
+    -- driving, so WM reads the live strategy's own "best waypoint to continue" at save time.
+    -- =========================================================================
+    describe("resume waypoint", function()
+        -- These helpers gate on isAvailable, unlike the pure entry-shape helpers above.
+        -- Re-armed per test because one case below deliberately switches it off.
+        before_each(function()
+            CPIntegration.isAvailable = true
+        end)
+
+        -- Vehicle driving a field work course, with CP's strategy attached
+        local function drivingVehicle(bestWaypoint, rememberedIx)
+            local v = { remembered = nil }
+            v.getCpDriveStrategy = function()
+                if bestWaypoint == nil then
+                    return { }  -- e.g. bale finder / combine unloader: no fieldwork method
+                end
+                return {
+                    getBestWaypointToContinueFieldWork = function() return bestWaypoint end,
+                }
+            end
+            v.getCpLastRememberedWaypointIx = function() return rememberedIx end
+            v.rememberCpLastWaypointIx = function(self, ix) self.remembered = ix end
+            return v
+        end
+
+        describe("getResumeWaypointIx", function()
+            it("prefers the live drive strategy over the remembered index", function()
+                assert.are.equal(42, CPIntegration:getResumeWaypointIx(drivingVehicle(42, 7)))
+            end)
+
+            it("falls back to the remembered index when the strategy has no fieldwork method", function()
+                assert.are.equal(7, CPIntegration:getResumeWaypointIx(drivingVehicle(nil, 7)))
+            end)
+
+            it("returns nil when neither source yields a waypoint", function()
+                assert.is_nil(CPIntegration:getResumeWaypointIx(drivingVehicle(nil, nil)))
+            end)
+
+            it("returns nil for a vehicle without the Courseplay functions", function()
+                assert.is_nil(CPIntegration:getResumeWaypointIx({}))
+            end)
+
+            it("returns nil for a nil vehicle or when CP is unavailable", function()
+                assert.is_nil(CPIntegration:getResumeWaypointIx(nil))
+                CPIntegration.isAvailable = false
+                assert.is_nil(CPIntegration:getResumeWaypointIx(drivingVehicle(42, 7)))
+            end)
+
+            it("does not propagate an error from a throwing strategy", function()
+                local v = {
+                    getCpDriveStrategy = function()
+                        return { getBestWaypointToContinueFieldWork = function() error("boom") end }
+                    end,
+                    getCpLastRememberedWaypointIx = function() return 5 end,
+                }
+                assert.are.equal(5, CPIntegration:getResumeWaypointIx(v))
+            end)
+        end)
+
+        describe("setResumeWaypointIx", function()
+            it("hands the waypoint to Courseplay", function()
+                local v = drivingVehicle(42, nil)
+                assert.is_true(CPIntegration:setResumeWaypointIx(v, 42))
+                assert.are.equal(42, v.remembered)
+            end)
+
+            it("returns false when the vehicle has no rememberCpLastWaypointIx", function()
+                assert.is_false(CPIntegration:setResumeWaypointIx({}, 42))
+            end)
+
+            it("returns false for a nil vehicle or nil waypoint", function()
+                assert.is_false(CPIntegration:setResumeWaypointIx(nil, 42))
+                assert.is_false(CPIntegration:setResumeWaypointIx(drivingVehicle(42, nil), nil))
+            end)
+        end)
+    end)
+
 end)

@@ -199,6 +199,7 @@ print(string.rep("=", 60))
 local testFiles = {
     "tests/specs/EventHandler_spec.lua",
     "tests/specs/Logger_spec.lua",
+    "tests/specs/WMSettings_spec.lua",
     "tests/specs/WorkflowStorage_spec.lua",
     "tests/specs/WorkflowManager_spec.lua",
     "tests/specs/WorkflowExecutor_spec.lua",
@@ -211,7 +212,8 @@ local testFiles = {
     "tests/specs/WMMainDialog_spec.lua",
     "tests/specs/CourseplayIntegration_spec.lua",
     "tests/specs/CourseplayCoursesLoader_spec.lua",
-    "tests/specs/WMConsoleCommands_spec.lua"
+    "tests/specs/WMConsoleCommands_spec.lua",
+    "tests/specs/WMGameSettings_spec.lua"
 }
 
 for _, testFile in ipairs(testFiles) do

@@ -108,6 +108,13 @@ describe("WorkflowManagerSpec", function()
 
         _G.WMHud = { show = function() end, hide = function() end }
 
+        -- saveToXMLFile records the Courseplay resume waypoint. Default: CP not running,
+        -- so the existing save tests write nothing extra; the CP tests override these.
+        _G.CPIntegration = {
+            isRunning            = function() return false end,
+            getResumeWaypointIx  = function() return nil end,
+        }
+
         _G.g_currentMission.time = 12000
         _G.g_currentMission.controlledVehicle = nil
 
@@ -630,6 +637,102 @@ describe("WorkflowManagerSpec", function()
             WorkflowManagerSpec.onPostLoad(v, sg)
 
             assert.is_not_nil(v.spec_workflowManagerSpec.wmExecution.autoResumeUntil)
+        end)
+    end)
+
+    -- =========================================================================
+    -- Courseplay resume-after-load markers
+    --
+    -- Courseplay never restarts itself after a load and only records its own waypoint on a
+    -- clean stop, so WM captures the resume point while CP is still driving at save time.
+    -- =========================================================================
+    describe("Courseplay resume markers", function()
+        local function runningVehicleWithWorkflow(resumeWaypoint)
+            local wf = { id = "wf_cp_resume", name = "CP Resume", steps = {} }
+            local v = makeVehicle("Harvester")
+            WorkflowManagerSpec.onLoad(v, nil)
+            v.spec_workflowManagerSpec.wmExecution = {
+                workflow      = wf,
+                currentStep   = 3,
+                isMainVehicle = true,
+            }
+            _G.CPIntegration.isRunning           = function() return true end
+            _G.CPIntegration.getResumeWaypointIx = function() return resumeWaypoint end
+            return v, wf
+        end
+
+        it("saves cpWasRunning and the resume waypoint when CP is driving", function()
+            local v = runningVehicleWithWorkflow(57)
+            local xml = makeSavegameXML()
+            WorkflowManagerSpec.saveToXMLFile(v, xml, BASE_KEY, {})
+
+            assert.is_true(xml._data[BASE_KEY .. "#cpWasRunning"])
+            assert.are.equal(57, xml._data[BASE_KEY .. "#cpResumeWaypoint"])
+        end)
+
+        it("saves cpWasRunning but no waypoint when none can be determined", function()
+            local v = runningVehicleWithWorkflow(nil)
+            local xml = makeSavegameXML()
+            WorkflowManagerSpec.saveToXMLFile(v, xml, BASE_KEY, {})
+
+            assert.is_true(xml._data[BASE_KEY .. "#cpWasRunning"])
+            assert.is_nil(xml._data[BASE_KEY .. "#cpResumeWaypoint"])
+        end)
+
+        it("writes neither key when Courseplay is not running", function()
+            local wf = { id = "wf_cp_idle", name = "Idle", steps = {} }
+            local v = makeVehicle()
+            WorkflowManagerSpec.onLoad(v, nil)
+            v.spec_workflowManagerSpec.wmExecution = {
+                workflow = wf, currentStep = 1, isMainVehicle = true,
+            }
+
+            local xml = makeSavegameXML()
+            WorkflowManagerSpec.saveToXMLFile(v, xml, BASE_KEY, {})
+
+            assert.is_nil(xml._data[BASE_KEY .. "#cpWasRunning"])
+            assert.is_nil(xml._data[BASE_KEY .. "#cpResumeWaypoint"])
+        end)
+
+        it("restores both markers onto wmExecution", function()
+            local wf = { id = "wf_cp_restore", name = "CP Restore", steps = {} }
+            _G.WorkflowManager.workflows = { wf }
+            local v = makeVehicle()
+            WorkflowManagerSpec.onLoad(v, nil)
+            local xml = makeSavegameXML({
+                [BASE_KEY .. "#workflowId"]       = "wf_cp_restore",
+                [BASE_KEY .. "#currentStep"]      = 3,
+                [BASE_KEY .. "#isMainVehicle"]    = true,
+                [BASE_KEY .. "#cpWasRunning"]     = true,
+                [BASE_KEY .. "#cpResumeWaypoint"] = 57,
+            })
+            local sg = { key = "vehicles.vehicle(0)", resetVehicles = false, xmlFile = xml }
+            WorkflowManagerSpec.onPostLoad(v, sg)
+
+            local exec = v.spec_workflowManagerSpec.wmExecution
+            assert.is_true(exec.cpWasRunningAtSave)
+            assert.are.equal(57, exec.cpResumeWaypoint)
+            -- Restore behaviour is otherwise unchanged: still paused with the 10s window
+            assert.are.equal("paused", exec.status)
+            assert.is_not_nil(exec.autoResumeUntil)
+        end)
+
+        it("leaves both markers nil for a save written without them", function()
+            local wf = { id = "wf_cp_legacy", name = "Legacy", steps = {} }
+            _G.WorkflowManager.workflows = { wf }
+            local v = makeVehicle()
+            WorkflowManagerSpec.onLoad(v, nil)
+            local xml = makeSavegameXML({
+                [BASE_KEY .. "#workflowId"]    = "wf_cp_legacy",
+                [BASE_KEY .. "#currentStep"]   = 1,
+                [BASE_KEY .. "#isMainVehicle"] = true,
+            })
+            local sg = { key = "vehicles.vehicle(0)", resetVehicles = false, xmlFile = xml }
+            WorkflowManagerSpec.onPostLoad(v, sg)
+
+            local exec = v.spec_workflowManagerSpec.wmExecution
+            assert.is_nil(exec.cpWasRunningAtSave)
+            assert.is_nil(exec.cpResumeWaypoint)
         end)
     end)
 

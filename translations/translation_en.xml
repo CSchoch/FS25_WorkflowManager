@@ -179,5 +179,10 @@
         <text name="wm_editor_support_select" text="Select a step to manage support sub-steps"/>
         <text name="wm_editor_support_info" text="Support steps for step %d: %d"/>
         <text name="wm_editor_support_step" text="  Support sub-step %d of main step %d (Edit or Delete to change)"/>
+
+        <!-- Game settings page (ESC -> Settings -> General) -->
+        <text name="wm_settings_title" text="Workflow Manager"/>
+        <text name="wm_settings_cpAutoResume" text="Resume Courseplay after loading"/>
+        <text name="wm_settings_cpAutoResume_tooltip" text="Restart the Courseplay field work at the saved waypoint after loading a savegame. When off, the workflow stays paused until you press Resume."/>
     </texts>
 </l10n>

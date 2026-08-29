@@ -42,6 +42,10 @@ describe("WMStorage", function()
         -- WMHud stub for HUD position save/restore
         _G.WMHud = { x = nil, y = nil }
 
+        -- Real settings module: WMStorage resets and persists it (globals are restored
+        -- between spec files, so this spec has to own it)
+        dofile("src/WMSettings.lua")
+
         dofile("src/WorkflowStorage.lua")
         WMStorage = _G.WMStorage
     end)
@@ -53,6 +57,7 @@ describe("WMStorage", function()
         WMStorage.isInitialized = false
         XMLFile._clearAll()
         _G.WMHud = { x = nil, y = nil }
+        _G.WMSettings:reset()
         -- Default: no file exists on disk
         _G.fileExists = function(path) return false end
         -- Reset logger
@@ -348,6 +353,41 @@ describe("WMStorage", function()
             WMStorage:loadWorkflows()
             assert.are.equal(0.75, _G.WMHud.x)
             assert.are.equal(0.25, _G.WMHud.y)
+        end)
+
+        it("saves and restores the Courseplay auto-resume option", function()
+            _G.WMSettings.courseplayAutoResume = false
+            WMStorage:saveWorkflows({})
+
+            _G.WMSettings.courseplayAutoResume = true
+            _G.fileExists = function() return true end
+            WMStorage:loadWorkflows()
+
+            assert.is_false(_G.WMSettings.courseplayAutoResume)
+        end)
+
+        it("keeps the option enabled for a file written before it existed", function()
+            -- Save, then strip the attribute the way an older savegame would have it
+            WMStorage:saveWorkflows({})
+            local data = XMLFile._getDataForPath(WMStorage:getXmlPath())
+            data.WorkflowManager.settings["general#courseplayAutoResume"] = nil
+
+            _G.WMSettings.courseplayAutoResume = false
+            _G.fileExists = function() return true end
+            WMStorage:loadWorkflows()
+
+            assert.is_true(_G.WMSettings.courseplayAutoResume)
+        end)
+
+        it("resets the option to its default when no file exists", function()
+            -- Options are per savegame: a value from the previously loaded savegame must
+            -- not survive into one that has no settings of its own.
+            _G.WMSettings.courseplayAutoResume = false
+            _G.fileExists = function() return false end
+
+            WMStorage:loadWorkflows()
+
+            assert.is_true(_G.WMSettings.courseplayAutoResume)
         end)
 
         it("persists adSettings when all three fields are set", function()

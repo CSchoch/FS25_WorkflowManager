@@ -283,6 +283,10 @@ _G.ADIntegration = {
 _G.CPIntegration = {
     _vehicleCourses  = {},  -- [vehicle] = courseName
     _vehicleRunning  = {},  -- [vehicle] = bool
+    _resumeWaypoints = {},  -- [vehicle] = waypoint reported by getResumeWaypointIx
+    _seededWaypoints = {},  -- [vehicle] = waypoint handed to setResumeWaypointIx
+    _startArgs       = {},  -- [vehicle] = { startAtFirst = bool }
+    _callLog         = {},  -- ordered "loadCourse"/"setResumeWaypointIx"/"startFieldWork"
 
     init = function(self) end,
     update = function(self, dt) end,
@@ -291,11 +295,22 @@ _G.CPIntegration = {
     hasCourse = function(self, vehicle) return self._vehicleCourses[vehicle] ~= nil end,
     loadCourse = function(self, vehicle, courseName)
         self._vehicleCourses[vehicle] = courseName
+        table.insert(self._callLog, "loadCourse")
         return true
     end,
     getCurrentCourseName = function(self, vehicle) return self._vehicleCourses[vehicle] end,
-    startFieldWork = function(self, vehicle, startAtFirst, startAtNearest)
+    startFieldWork = function(self, vehicle, startAtFirst)
         self._vehicleRunning[vehicle] = true
+        self._startArgs[vehicle] = { startAtFirst = startAtFirst }
+        table.insert(self._callLog, "startFieldWork")
+        return true
+    end,
+    -- Savegame resume support: WM captures the waypoint at save time and seeds it back
+    -- after any course (re)load, because loading a course clears CP's remembered index.
+    getResumeWaypointIx = function(self, vehicle) return self._resumeWaypoints[vehicle] end,
+    setResumeWaypointIx = function(self, vehicle, waypointIx)
+        self._seededWaypoints[vehicle] = waypointIx
+        table.insert(self._callLog, "setResumeWaypointIx")
         return true
     end,
     stopCourse = function(self, vehicle)
@@ -312,8 +327,12 @@ _G.CPIntegration = {
 
     -- Test helper: reset all per-vehicle state
     _reset = function(self)
-        self._vehicleCourses = {}
-        self._vehicleRunning = {}
+        self._vehicleCourses  = {}
+        self._vehicleRunning  = {}
+        self._resumeWaypoints = {}
+        self._seededWaypoints = {}
+        self._startArgs       = {}
+        self._callLog         = {}
     end
 }
 

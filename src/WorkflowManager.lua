@@ -46,6 +46,7 @@ source(Utils.getFilename("src/utils/EventHandler.lua", g_currentModDirectory))
 source(Utils.getFilename("src/utils/DebugUtil.lua", g_currentModDirectory))
 
 -- 3. Core modules
+source(Utils.getFilename("src/WMSettings.lua", g_currentModDirectory))
 source(Utils.getFilename("src/WorkflowStorage.lua", g_currentModDirectory))
 source(Utils.getFilename("src/WorkflowExecutor.lua", g_currentModDirectory))
 source(Utils.getFilename("src/network/WMNetworkEvents.lua", g_currentModDirectory))
@@ -63,6 +64,7 @@ source(Utils.getFilename("src/gui/WMStepDialog.lua", g_currentModDirectory))
 source(Utils.getFilename("src/gui/WMModeSelectDialog.lua", g_currentModDirectory))
 source(Utils.getFilename("src/gui/WMADSettingsDialog.lua", g_currentModDirectory))
 source(Utils.getFilename("src/gui/WMLeaderVehicleSelectDialog.lua", g_currentModDirectory))
+source(Utils.getFilename("src/gui/WMGameSettings.lua", g_currentModDirectory))
 
 -- 6. In-vehicle HUD
 source(Utils.getFilename("src/gui/WMHudElements.lua", g_currentModDirectory))
@@ -311,6 +313,9 @@ function WorkflowManager:loadDialogs()
         WMLogger:warning("Failed to load leader select dialog: %s", tostring(result))
         self.leaderSelectDialog = nil
     end
+
+    -- Add the mod's options to the game's General settings page
+    WMGameSettings:init()
 end
 
 ---Show the AD/CP settings dialog
@@ -1108,6 +1113,9 @@ function WorkflowManager:deleteMap()
             self.adSettingsDialog = nil
         end
     end)
+
+    -- Remove the rows injected into the game's General settings page
+    pcall(function() WMGameSettings:delete() end)
 
     -- Cleanup in-vehicle HUD (also releases the mouse cursor if WM forced it on)
     pcall(function()

@@ -196,5 +196,10 @@
         <text name="wm_editor_support_select" text="Schritt auswaehlen zum Verwalten der Unterstuetzungsschritte"/>
         <text name="wm_editor_support_info" text="Unterstuetzungsschritte fuer Schritt %d: %d"/>
         <text name="wm_editor_support_step" text="  Unterstuetzungsschritt %d von Hauptschritt %d (Bearbeiten oder Loeschen)"/>
+
+        <!-- Spieleinstellungen (ESC -> Einstellungen -> Allgemein) -->
+        <text name="wm_settings_title" text="Workflow Manager"/>
+        <text name="wm_settings_cpAutoResume" text="Courseplay nach dem Laden fortsetzen"/>
+        <text name="wm_settings_cpAutoResume_tooltip" text="Setzt die Courseplay-Feldarbeit nach dem Laden eines Spielstands am gespeicherten Wegpunkt fort. Wenn aus, bleibt der Workflow pausiert, bis du Weiter drueckst."/>
     </texts>
 </l10n>

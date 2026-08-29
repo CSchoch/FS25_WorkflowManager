@@ -1278,3 +1278,126 @@
 | 23:21 | Edited docs/SCREENSHOTS.md | 3→7 lines | ~108 |
 | 00:35 | Captured web-editor.png headlessly (seeded localStorage copy + openwolf designqc), wired into web-editor.md, recipe in SCREENSHOTS.md | website/static/img/screenshots/, docs/SCREENSHOTS.md | docs b759815, mod 1662f61; 4 in-game shots still need the user | ~9k |
 | 23:21 | Session end: 80 writes across 26 files (step-dialog.md, ad-settings-dialog.md, mode-dialog.md, leader-select-dialog.md, main-dialog.md) | 16 reads | ~76286 tok |
+
+## Session: 2026-08-17 22:47
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 23:01 | Created ../../../../../.claude/plans/is-it-possible-to-recursive-forest.md | — | ~2795 |
+| 20:49 | Edited src/integration/CourseplayIntegration.lua | modified CPIntegration() | ~779 |
+| 20:49 | Edited src/integration/CourseplayIntegration.lua | removed 9 lines | ~14 |
+| 20:49 | Edited src/WorkflowExecutor.lua | expanded (+8 lines) | ~207 |
+| 20:49 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~579 |
+| 20:49 | Edited src/WorkflowExecutor.lua | expanded (+6 lines) | ~206 |
+| 20:49 | Edited src/WorkflowExecutor.lua | 5→5 lines | ~84 |
+| 20:50 | Edited src/WorkflowExecutor.lua | expanded (+18 lines) | ~293 |
+| 20:50 | Edited src/WorkflowExecutor.lua | reduced (-6 lines) | ~112 |
+| 20:50 | Edited src/WorkflowExecutor.lua | 3→6 lines | ~68 |
+| 20:51 | Edited src/WorkflowExecutor.lua | 5→6 lines | ~63 |
+| 20:51 | Edited src/WorkflowExecutor.lua | 3→7 lines | ~110 |
+| 20:51 | Edited src/WorkflowExecutor.lua | 6→10 lines | ~133 |
+| 20:51 | Edited src/WorkflowManagerSpec.lua | 2→6 lines | ~134 |
+| 20:51 | Edited src/WorkflowManagerSpec.lua | expanded (+19 lines) | ~337 |
+| 20:51 | Edited src/WorkflowManagerSpec.lua | 1→6 lines | ~114 |
+| 20:51 | Edited src/WorkflowManagerSpec.lua | 2→4 lines | ~53 |
+| 21:07 | Edited tests/specs/CourseplayIntegration_spec.lua | modified drivingVehicle() | ~1091 |
+| 21:07 | Edited tests/specs/CourseplayIntegration_spec.lua | 13→8 lines | ~102 |
+| 21:19 | Edited tests/specs/WorkflowManagerSpec_spec.lua | expanded (+7 lines) | ~110 |
+| 21:19 | Edited tests/specs/WorkflowManagerSpec_spec.lua | modified runningVehicleWithWorkflow() | ~1295 |
+| 21:33 | Edited tests/mocks/game_globals.lua | 4→8 lines | ~120 |
+| 21:33 | Edited tests/mocks/game_globals.lua | expanded (+11 lines) | ~267 |
+| 21:34 | Edited tests/mocks/game_globals.lua | 5→9 lines | ~66 |
+| 21:35 | Edited tests/specs/WorkflowExecutor_spec.lua | modified restoreVehicle() | ~2414 |
+| 21:35 | Edited tests/specs/WorkflowExecutor_spec.lua | 3→8 lines | ~89 |
+| 21:35 | Edited src/WorkflowExecutor.lua | expanded (+6 lines) | ~265 |
+| 21:36 | Edited tests/specs/WorkflowExecutor_spec.lua | expanded (+15 lines) | ~273 |
+| 21:36 | Edited tests/specs/WorkflowExecutor_spec.lua | 5→6 lines | ~91 |
+| 21:36 | Edited CLAUDE.md | 630 → 656 | ~27 |
+| 21:36 | Edited CLAUDE.md | expanded (+12 lines) | ~295 |
+| 20:10 | Resume Courseplay at last waypoint after savegame load (save-time waypoint capture + active restart) | src/WorkflowExecutor.lua, src/WorkflowManagerSpec.lua, src/integration/CourseplayIntegration.lua, 3 specs, tests/mocks/game_globals.lua | 656 tests pass (+26) | ~95k |
+| 21:37 | Session end: 31 writes across 9 files (is-it-possible-to-recursive-forest.md, CourseplayIntegration.lua, WorkflowExecutor.lua, WorkflowManagerSpec.lua, CourseplayIntegration_spec.lua) | 14 reads | ~80593 tok |
+| 22:04 | Edited src/WorkflowExecutor.lua | modified ISSUE() | ~252 |
+| 22:04 | Edited Development.md | inline fix | ~9 |
+| 22:04 | Edited Development.md | modified batch() | ~398 |
+| 22:04 | Session end: 34 writes across 10 files (is-it-possible-to-recursive-forest.md, CourseplayIntegration.lua, WorkflowExecutor.lua, WorkflowManagerSpec.lua, CourseplayIntegration_spec.lua) | 15 reads | ~82803 tok |
+
+## Session: 2026-08-20 08:01
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-20 08:27
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-20 08:28
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-20 08:28
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-26 23:31
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 06:21 | Created ../../../../../.claude/plans/idempotent-zooming-wadler.md | — | ~2730 |
+| 21:57 | Created src/WMSettings.lua | — | ~356 |
+| 21:57 | Edited src/WorkflowStorage.lua | 5→9 lines | ~109 |
+| 21:57 | Edited src/WorkflowStorage.lua | 5→9 lines | ~86 |
+| 21:57 | Edited src/WorkflowStorage.lua | expanded (+8 lines) | ~142 |
+| 21:57 | Edited src/WorkflowExecutor.lua | expanded (+12 lines) | ~458 |
+| 21:57 | Created xml/gui/WMGameSettings.xml | — | ~306 |
+| 21:59 | Created src/gui/WMGameSettings.lua | — | ~2446 |
+| 21:59 | Edited src/WorkflowManager.lua | 2→3 lines | ~44 |
+| 21:59 | Edited src/WorkflowManager.lua | 1→2 lines | ~46 |
+| 21:59 | Edited src/WorkflowManager.lua | 7→10 lines | ~86 |
+| 21:59 | Edited src/WorkflowManager.lua | 4→7 lines | ~61 |
+| 22:00 | Edited translations/translation_en.xml | 2→7 lines | ~148 |
+| 22:00 | Edited translations/translation_de.xml | 2→7 lines | ~159 |
+| 22:00 | Created tests/specs/WMSettings_spec.lua | — | ~408 |
+| 22:00 | Edited tests/run_tests.lua | 1→2 lines | ~22 |
+| 22:00 | Edited tests/specs/WorkflowStorage_spec.lua | 4→8 lines | ~86 |
+| 22:00 | Edited tests/specs/WorkflowStorage_spec.lua | 2→3 lines | ~26 |
+| 22:00 | Edited tests/specs/WorkflowStorage_spec.lua | expanded (+34 lines) | ~412 |
+| 22:01 | Edited tests/specs/WorkflowStorage_spec.lua | 3→4 lines | ~75 |
+| 22:01 | Edited tests/specs/WorkflowExecutor_spec.lua | 6→9 lines | ~82 |
+| 22:01 | Edited tests/specs/WorkflowExecutor_spec.lua | 2→5 lines | ~74 |
+| 22:01 | Edited tests/specs/WorkflowExecutor_spec.lua | expanded (+33 lines) | ~390 |
+| 22:06 | Edited CLAUDE.md | 1→2 lines | ~50 |
+| 22:06 | Edited CLAUDE.md | modified options() | ~223 |
+| 22:15 | Session: added Courseplay auto-resume option to the game settings (General page) | src/WMSettings.lua, src/gui/WMGameSettings.lua, xml/gui/WMGameSettings.xml, src/WorkflowStorage.lua, src/WorkflowExecutor.lua, src/WorkflowManager.lua, translations/*, tests/specs/WMSettings_spec.lua, tests/specs/WorkflowStorage_spec.lua, tests/specs/WorkflowExecutor_spec.lua, tests/run_tests.lua, CLAUDE.md | 666 tests pass (was 656) | ~18k |
+| 22:15 | Session end: 25 writes across 14 files (idempotent-zooming-wadler.md, WMSettings.lua, WorkflowStorage.lua, WorkflowExecutor.lua, WMGameSettings.xml) | 4 reads | ~76857 tok |
+| 22:28 | Created src/gui/WMGameSettings.lua | — | ~2196 |
+| 22:31 | Edited CLAUDE.md | modified options() | ~146 |
+| 22:20 | Fixed settings row not appearing: layout is page.generalSettingsLayout, clone vanilla rows (bug-252) | src/gui/WMGameSettings.lua (rewritten), xml/gui/WMGameSettings.xml (deleted), CLAUDE.md, .wolf/cerebrum.md, .wolf/buglog.json | 666 tests pass | ~9k |
+| 22:32 | Session end: 27 writes across 14 files (idempotent-zooming-wadler.md, WMSettings.lua, WorkflowStorage.lua, WorkflowExecutor.lua, WMGameSettings.xml) | 4 reads | ~79366 tok |
+| 22:38 | Created tests/specs/WMGameSettings_spec.lua | — | ~4010 |
+| 22:39 | Edited tests/specs/WMGameSettings_spec.lua | 2→6 lines | ~69 |
+| 22:39 | Edited tests/specs/WMGameSettings_spec.lua | base() → setGui() | ~316 |
+| 22:35 | Added WMGameSettings_spec (24 tests) + mutation-checked every guard; fixed hook-once test that counted at the wrong level | tests/specs/WMGameSettings_spec.lua, tests/run_tests.lua, CLAUDE.md | 691 tests pass | ~14k |
+| 22:41 | Session end: 30 writes across 15 files (idempotent-zooming-wadler.md, WMSettings.lua, WorkflowStorage.lua, WorkflowExecutor.lua, WMGameSettings.xml) | 4 reads | ~84075 tok |
+
+## Session: 2026-08-29 21:10
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-29 21:13
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-29 22:50
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-29 22:50
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|

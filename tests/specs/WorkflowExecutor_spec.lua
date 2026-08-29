@@ -20,6 +20,9 @@ describe("WMExecutor (real)", function()
     -- -------------------------------------------------------------------------
     setup(function()
         dofile("src/utils/EventHandler.lua")
+        -- Real settings module: the executor reads courseplayAutoResume when the
+        -- post-load auto-resume window expires (globals are restored between spec files)
+        dofile("src/WMSettings.lua")
 
         -- WorkflowManager constants + stub methods called by executor
         _G.WorkflowManager = {
@@ -144,6 +147,9 @@ describe("WMExecutor (real)", function()
     -- -------------------------------------------------------------------------
     before_each(function()
         WMExecutor:init()
+
+        -- Mod options gate the post-load Courseplay restart; start every test at the defaults
+        _G.WMSettings:reset()
 
         -- Reset logger call tracking
         _G.WMLogger.calls = { debug = {}, info = {}, warning = {}, error = {} }
@@ -2643,6 +2649,255 @@ describe("WMExecutor (real)", function()
 
             assert.is_true(repairStarted)
             assert.is_false(adStarted)
+        end)
+    end)
+
+    -- =========================================================================
+    -- Courseplay resume after savegame load
+    --
+    -- Courseplay deliberately never restarts itself after a load, so the 10s auto-resume
+    -- window can never catch a CP step the way it catches an AutoDrive one. When it expires,
+    -- the executor re-issues the start at the waypoint recorded at save time.
+    -- =========================================================================
+    describe("Courseplay resume after savegame load", function()
+
+        -- The mock's ordered call log is file-scoped; start each test with a clean one
+        before_each(function()
+            CPIntegration._callLog = {}
+        end)
+
+        -- Rebuild the wmExecution onPostLoad produces: paused, inside the auto-resume window.
+        local function restoreVehicle(workflow, opts)
+            opts = opts or {}
+            local v = makeVehicle(opts.name)
+            v.spec_workflowManagerSpec.wmExecution = {
+                workflow           = workflow,
+                vehicle            = v,
+                status             = WorkflowManager.STATUS_PAUSED,
+                currentStep        = opts.currentStep or 2,
+                currentSupportStep = opts.currentSupportStep,
+                isMainVehicle      = opts.isMainVehicle ~= false,
+                startTime          = 0,
+                waitingForCompletion = false,
+                autoResumeUntil    = 10000,
+                cpWasRunningAtSave = opts.cpWasRunningAtSave,
+                cpResumeWaypoint   = opts.cpResumeWaypoint,
+            }
+            WMExecutor.activeVehicles[v] = true
+            return v
+        end
+
+        -- Push time past the auto-resume window and run one poll tick
+        local function expireWindow()
+            _G.g_currentMission.time = 20000
+            triggerPoll()
+        end
+
+        it("restarts Courseplay at the saved waypoint when the window expires", function()
+            local wf = makeWorkflow("wf_cp_load")
+            local v = restoreVehicle(wf, { cpWasRunningAtSave = true, cpResumeWaypoint = 57 })
+
+            expireWindow()
+
+            local d = activeData(v)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, d.status)
+            assert.is_true(d.waitingForCompletion)
+            assert.are.equal(WorkflowManager.STEP_COURSEPLAY, d.currentStepType)
+            assert.is_true(CPIntegration:isRunning(v))
+            assert.are.equal(57, CPIntegration._seededWaypoints[v])
+        end)
+
+        it("seeds the waypoint AFTER loading the course, not before", function()
+            -- Loading a course clears Courseplay's remembered index, so seeding first is lost
+            local wf = makeWorkflow("wf_cp_order")
+            local v = restoreVehicle(wf, { cpWasRunningAtSave = true, cpResumeWaypoint = 12 })
+
+            expireWindow()
+
+            local order = table.concat(CPIntegration._callLog, ",")
+            assert.are.equal("loadCourse,setResumeWaypointIx,startFieldWork", order)
+        end)
+
+        it("forces the last-waypoint start even for a step authored with action 'first'", function()
+            local wf = makeWorkflow("wf_cp_first")
+            wf.steps[2].action = "first"
+            local v = restoreVehicle(wf, { cpWasRunningAtSave = true, cpResumeWaypoint = 30 })
+
+            expireWindow()
+
+            assert.is_false(CPIntegration._startArgs[v].startAtFirst)
+        end)
+
+        it("stays paused and does not start Courseplay when no waypoint was recorded", function()
+            -- Without a waypoint startCpAtLastWp() silently restarts at waypoint 1,
+            -- re-driving the whole field — worse than staying paused.
+            local wf = makeWorkflow("wf_cp_nowp")
+            local v = restoreVehicle(wf, { cpWasRunningAtSave = true, cpResumeWaypoint = nil })
+
+            expireWindow()
+
+            local d = activeData(v)
+            assert.are.equal(WorkflowManager.STATUS_PAUSED, d.status)
+            assert.is_false(CPIntegration:isRunning(v))
+            assert.is_nil(CPIntegration._startArgs[v])
+            -- Marker retained so a later Resume press lands here too instead of skipping the step
+            assert.is_true(d.cpWasRunningAtSave)
+        end)
+
+        it("stays paused when Courseplay was not running at save time", function()
+            local wf = makeWorkflow("wf_cp_notrunning")
+            local v = restoreVehicle(wf, { cpWasRunningAtSave = nil, cpResumeWaypoint = nil })
+
+            expireWindow()
+
+            assert.are.equal(WorkflowManager.STATUS_PAUSED, activeData(v).status)
+            assert.is_false(CPIntegration:isRunning(v))
+        end)
+
+        it("does not restart when the restored step is not a Courseplay step", function()
+            local wf = makeWorkflow("wf_cp_wrongstep")
+            local v = restoreVehicle(wf, {
+                currentStep = 1,  -- autodrive
+                cpWasRunningAtSave = true,
+                cpResumeWaypoint = 44,
+            })
+
+            expireWindow()
+
+            local d = activeData(v)
+            assert.are.equal(WorkflowManager.STATUS_PAUSED, d.status)
+            assert.is_false(CPIntegration:isRunning(v))
+            -- Markers cleared so they can never seed a later CP step with a stale waypoint
+            assert.is_nil(d.cpWasRunningAtSave)
+            assert.is_nil(d.cpResumeWaypoint)
+        end)
+
+        it("clears the markers when a job restarted on its own inside the window", function()
+            local wf = makeWorkflow("wf_cp_selfstart")
+            local v = restoreVehicle(wf, { cpWasRunningAtSave = true, cpResumeWaypoint = 44 })
+
+            -- AutoDrive auto-started (it does resume after load, unlike Courseplay)
+            local origIsRunning = ADIntegration.isRunning
+            ADIntegration.isRunning = function() return true end
+            _G.g_currentMission.time = 5000  -- still inside the window
+            triggerPoll()
+            ADIntegration.isRunning = origIsRunning
+
+            local d = activeData(v)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, d.status)
+            assert.is_nil(d.cpWasRunningAtSave)
+            assert.is_nil(d.cpResumeWaypoint)
+        end)
+
+        it("resolves a support vehicle's own CP sub-step, not the main step", function()
+            -- Main step 1 is AutoDrive; the support sub-step under it is the Courseplay job.
+            -- Reading workflow.steps[currentStep] directly would see AutoDrive and do nothing.
+            local wf = {
+                id = "wf_cp_support", name = "Support CP",
+                steps = {
+                    { type = "autodrive", target = "Farm", action = "drive", support = {
+                        { type = "courseplay", target = "Field9", action = "fieldwork" },
+                    }},
+                },
+            }
+            local main = restoreVehicle(wf, { name = "Main", currentStep = 1 })
+            activeData(main).status = WorkflowManager.STATUS_RUNNING
+            activeData(main).autoResumeUntil = nil
+
+            local support = restoreVehicle(wf, {
+                name = "Support", isMainVehicle = false,
+                currentStep = 1, currentSupportStep = 1,
+                cpWasRunningAtSave = true, cpResumeWaypoint = 88,
+            })
+
+            expireWindow()
+
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, activeData(support).status)
+            assert.is_true(CPIntegration:isRunning(support))
+            assert.are.equal(88, CPIntegration._seededWaypoints[support])
+        end)
+
+        it("manual Resume restarts CP instead of skipping the step", function()
+            -- Previously this path attached monitoring to a job that was never running, so the
+            -- completion poll saw "never started" and marked the field work complete.
+            local wf = makeWorkflow("wf_cp_manual")
+            local v = restoreVehicle(wf, { cpWasRunningAtSave = true, cpResumeWaypoint = 21 })
+
+            assert.is_true(WMExecutor:resumeWorkflow(v))
+
+            local d = activeData(v)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, d.status)
+            assert.are.equal(2, d.currentStep)  -- still on the CP step, not advanced
+            assert.is_true(CPIntegration:isRunning(v))
+            assert.are.equal(21, CPIntegration._seededWaypoints[v])
+        end)
+
+        it("manual Resume stays paused when no waypoint was recorded", function()
+            local wf = makeWorkflow("wf_cp_manual_nowp")
+            local v = restoreVehicle(wf, { cpWasRunningAtSave = true, cpResumeWaypoint = nil })
+
+            assert.is_false(WMExecutor:resumeWorkflow(v))
+
+            assert.are.equal(WorkflowManager.STATUS_PAUSED, activeData(v).status)
+            assert.is_false(CPIntegration:isRunning(v))
+        end)
+
+        it("repeated Resume presses keep staying paused, never skipping the step", function()
+            -- The marker must survive a failed resume, or the second press falls through to the
+            -- monitor path, sees "Courseplay never started" and marks the field work complete.
+            local wf = makeWorkflow("wf_cp_manual_twice")
+            local v = restoreVehicle(wf, { cpWasRunningAtSave = true, cpResumeWaypoint = nil })
+
+            assert.is_false(WMExecutor:resumeWorkflow(v))
+            assert.is_false(WMExecutor:resumeWorkflow(v))
+
+            local d = activeData(v)
+            assert.are.equal(WorkflowManager.STATUS_PAUSED, d.status)
+            assert.are.equal(2, d.currentStep)  -- never advanced past the CP step
+            assert.is_false(d.waitingForCompletion)
+        end)
+
+        it("stays paused when Courseplay auto-resume is switched off", function()
+            _G.WMSettings.courseplayAutoResume = false
+
+            local wf = makeWorkflow("wf_cp_optoff")
+            local v = restoreVehicle(wf, { cpWasRunningAtSave = true, cpResumeWaypoint = 63 })
+
+            expireWindow()
+
+            local d = activeData(v)
+            assert.are.equal(WorkflowManager.STATUS_PAUSED, d.status)
+            assert.is_false(CPIntegration:isRunning(v))
+            -- Markers survive: the player can still resume manually at the same waypoint
+            assert.is_true(d.cpWasRunningAtSave)
+            assert.are.equal(63, d.cpResumeWaypoint)
+        end)
+
+        it("manual Resume still restarts at the waypoint when auto-resume is off", function()
+            _G.WMSettings.courseplayAutoResume = false
+
+            local wf = makeWorkflow("wf_cp_optoff_manual")
+            local v = restoreVehicle(wf, { cpWasRunningAtSave = true, cpResumeWaypoint = 63 })
+
+            expireWindow()
+            assert.are.equal(WorkflowManager.STATUS_PAUSED, activeData(v).status)
+
+            WMExecutor:resumeWorkflow(v)
+
+            local d = activeData(v)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, d.status)
+            assert.is_true(CPIntegration:isRunning(v))
+            assert.are.equal(63, CPIntegration._seededWaypoints[v])
+        end)
+
+        it("resetStepTrackingState clears the post-load markers", function()
+            local wf = makeWorkflow("wf_cp_reset")
+            local v = restoreVehicle(wf, { cpWasRunningAtSave = true, cpResumeWaypoint = 99 })
+
+            WMExecutor:resetStepTrackingState(activeData(v))
+
+            assert.is_nil(activeData(v).cpWasRunningAtSave)
+            assert.is_nil(activeData(v).cpResumeWaypoint)
         end)
     end)
 

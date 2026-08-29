@@ -47,7 +47,8 @@ Individual runners: `tests\run_executor_spec.lua`, `tests\run_storage_spec.lua`,
 | --- | --- |
 | `EventHandler_spec.lua` | WMEventHandler (subscribe, fire, remove) |
 | `Logger_spec.lua` | WMLogger (levels, formatting, api/event/state helpers) |
-| `WorkflowStorage_spec.lua` | WMStorage save/load, adSettings, old-format migration |
+| `WMSettings_spec.lua` | WMSettings defaults, reset, Courseplay auto-resume accessor |
+| `WorkflowStorage_spec.lua` | WMStorage save/load, adSettings, mod options, old-format migration |
 | `WorkflowManager_spec.lua` | CRUD, vehicle validation, network command dispatch |
 | `WorkflowExecutor_spec.lua` | Full state machine: start/stop/pause/resume/step nav, support vehicles, MP roles |
 | `AutoDriveIntegration_spec.lua` | AD destinations, park/refuel/repair route resolution |
@@ -60,9 +61,34 @@ Individual runners: `tests\run_executor_spec.lua`, `tests\run_storage_spec.lua`,
 | `CourseplayIntegration_spec.lua` | Course entry resolution from the root view, legacy-name fallback, folder navigation |
 | `CourseplayCoursesLoader_spec.lua` | Course enumeration from the root view, root-relative names |
 | `WMConsoleCommands_spec.lua` | Console command registration/removal; wmPrintState reports the executor's real sync gate |
+| `WMGameSettings_spec.lua` | Settings-row injection: clones the vanilla row/header, focus ids, controls list, MP read-only, hook-once, delete |
 
-Current total: **630**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
+**Courseplay resume after savegame load:** Courseplay never auto-resumes — it overwrites the
+base-game `AIFieldWorker#isActive` to `false` at save time on purpose. It also only writes its own
+`#rememberedWpIx` when a job stops *cleanly* (`AIDriveStrategyFieldWorkCourse:delete()`), never
+mid-drive, so after a load that index is typically nil and `startCpAtLastWp()` silently falls back
+to **waypoint 1** — re-driving the whole field. WM therefore captures the waypoint itself in
+`WorkflowManagerSpec:saveToXMLFile` (`#cpWasRunning` / `#cpResumeWaypoint`, read from the live
+strategy via `CPIntegration:getResumeWaypointIx`) and re-issues the start in
+`WMExecutor:resumeCourseplayAfterLoad` once the 10 s `autoResumeUntil` window expires. The seed
+must happen **after** any course load (loading a course clears CP's remembered index) — see the
+ordering in `startCourseplayStep`. With no recorded waypoint the workflow deliberately stays
+PAUSED rather than restarting from scratch.
+
+Current total: **691**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
 or they will not run.
+
+**Mod options (game settings):** `WMSettings` holds the player-facing options; `WMGameSettings`
+appends rows to the base game's **General** settings list on the first
+`InGameMenuSettingsFrame:onFrameOpen`. The rows are **clones of the vanilla ones** — page is
+`g_gui.screenControllers[InGameMenu].pageSettings`, layout is `page.generalSettingsLayout`, the
+row prefab is `page.checkWoodHarvesterAutoCutBox` and the header prefab is the layout element
+named `sectionHeader` — so there is no GUI XML of our own. Values are persisted per savegame by
+`WMStorage` under `WorkflowManager.settings.general`, so in multiplayer the server's savegame is
+authoritative and the control is disabled for clients (`g_server == nil`).
+`courseplayAutoResume` gates **only** the automatic post-load Courseplay restart in
+`WMExecutor:update`; the manual Resume path must keep calling `resumeCourseplayAfterLoad` or it
+falls through to the monitor branch and marks the field work complete.
 
 **Courseplay course paths:** course names are stored as **root-relative** paths
 (`"Farm1/Field A"`). Both enumeration (`CPCoursesLoader:extractCoursesFromFileSystem`) and lookup

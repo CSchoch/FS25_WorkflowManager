@@ -138,6 +138,10 @@ function WMStorage:saveWorkflows(workflows)
         xmlFile:setFloat("WorkflowManager.settings.hud#posY", WMHud.y)
     end
 
+    -- Save mod options (shown in the game's General settings page)
+    xmlFile:setBool("WorkflowManager.settings.general#courseplayAutoResume",
+        WMSettings.courseplayAutoResume)
+
     xmlFile:save()
     xmlFile:delete()
 
@@ -319,6 +323,10 @@ function WMStorage:loadWorkflows()
     local workflows = {}
     local xmlPath = self:getXmlPath()
 
+    -- Options are per savegame: drop the previous savegame's values before reading this
+    -- one, so loading a second savegame in the same session never inherits them.
+    WMSettings:reset()
+
     -- Check if file exists
     if not fileExists(xmlPath) then
         WMLogger:info("No saved workflows found at: %s", xmlPath)
@@ -433,6 +441,14 @@ function WMStorage:loadWorkflows()
         WMHud.x = hudX
         WMHud.y = hudY
         WMLogger:info("Restored HUD position: x=%.4f y=%.4f", hudX, hudY)
+    end
+
+    -- Load mod options. Read with no default so an absent attribute (file written before
+    -- the option existed) keeps the default rather than reading as false.
+    local cpAutoResume = xmlFile:getBool("WorkflowManager.settings.general#courseplayAutoResume")
+    if cpAutoResume ~= nil then
+        WMSettings.courseplayAutoResume = cpAutoResume
+        WMLogger:info("Restored setting courseplayAutoResume=%s", tostring(cpAutoResume))
     end
 
     xmlFile:delete()

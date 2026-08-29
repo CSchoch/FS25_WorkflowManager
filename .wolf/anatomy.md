@@ -1,11 +1,13 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-08-16T21:21:10.350Z
-> Files: 77 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-08-27T20:39:29.953Z
+> Files: 84 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
 - `id-like-a-wm-lucky-minsky.md` — New Workflow Steps: "Refuel" and "Repair" (~3858 tok)
+- `idempotent-zooming-wadler.md` — Add a "Courseplay auto resume" option to the game settings (~2559 tok)
+- `is-it-possible-to-recursive-forest.md` — Resume Courseplay at the last waypoint after savegame load (~2620 tok)
 - `there-was-again-an-delegated-kay.md` — Fix: leader-follower reference lost across save/load (stale XML vehicle index) (~1513 tok)
 
 ## ../../../../../.claude/projects/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/memory/
@@ -43,8 +45,8 @@
 
 ## ./
 
-- `CLAUDE.md` — FS25 Workflow Manager (~1890 tok)
-- `Development.md` — FS25 Workflow Manager — Development (~1402 tok)
+- `CLAUDE.md` — FS25 Workflow Manager (~2403 tok)
+- `Development.md` — FS25 Workflow Manager — Development (~1758 tok)
 
 ## .claude/
 
@@ -72,10 +74,11 @@
 
 ## src/
 
-- `WorkflowExecutor.lua` — init, startWorkflow, stopWorkflow, buildSyncMaps, refreshLeaderLink (~20630 tok)
-- `WorkflowManager.lua` — getStepTypeLabel, isMarkerStepType, isTargetlessStepType, isAutoDriveTrackedStepType, getStepTypeSho (~12576 tok)
-- `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~7449 tok)
-- `WorkflowStorage.lua` — deepCopySupportStep, isTargetlessStepType, parseFillTypes, init, getXmlPath (~4988 tok)
+- `WMSettings.lua` — reset, isCourseplayAutoResumeEnabled (~356 tok)
+- `WorkflowExecutor.lua` — init, startWorkflow, stopWorkflow, buildSyncMaps, refreshLeaderLink (~22395 tok)
+- `WorkflowManager.lua` — getStepTypeLabel, isMarkerStepType, isTargetlessStepType, isAutoDriveTrackedStepType, getStepTypeSho (~12673 tok)
+- `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~7967 tok)
+- `WorkflowStorage.lua` — deepCopySupportStep, isTargetlessStepType, parseFillTypes, init, getXmlPath (~5214 tok)
 
 ## src/dev/
 
@@ -85,6 +88,7 @@
 
 - `WMADSettingsDialog.lua` — new, onCreate, onOpen, onClose, Called (~755 tok)
 - `WMEditorDialog.lua` — deepCopy, new, onCreate, onOpen, onClose (~6431 tok)
+- `WMGameSettings.lua` — updateFocusIds, getSettingsPage, ensureMenuInjected, refreshMenuState, onCpAutoResumeChanged (~2196 tok)
 - `WMHud.lua` — ensureOverlays, createIconOverlays, updateOverlayPositions, init, show (~9647 tok)
 - `WMLeaderVehicleSelectDialog.lua` — new, onCreate, buildVehicleList, onOpen, onClose (~1169 tok)
 - `WMMainDialog.lua` — new, onCreate, onOpen, onClose, refreshWorkflowList (~3813 tok)
@@ -96,7 +100,7 @@
 
 - `AutoDriveIntegration.lua` — init, completeInitialization, update, checkAvailability, getDestinations (~11852 tok)
 - `CourseplayCoursesLoader.lua` — init, getCourseplayObject, scanCourses, logCourseplayStructure, extractCoursesFromStorage (~5496 tok)
-- `CourseplayIntegration.lua` — init, completeInitialization, update, checkAvailability, hasSpec (~8931 tok)
+- `CourseplayIntegration.lua` — init, completeInitialization, update, checkAvailability, hasSpec (~9509 tok)
 
 ## src/network/
 
@@ -110,32 +114,34 @@
 
 ## tests/
 
-- `run_tests.lua` — local, assert, describe, it, before_each (~2281 tok)
+- `run_tests.lua` — local, assert, describe, it, before_each (~2292 tok)
 
 ## tests/fixtures/
 
 
 ## tests/mocks/
 
-- `game_globals.lua` — getDate, addModEventListener, NetworkUtil, NetworkUtil (~2776 tok)
+- `game_globals.lua` — getDate, addModEventListener, NetworkUtil, NetworkUtil (~3073 tok)
 - `init.lua` — setupPackagePath, to, resetMocks, loadSource (~983 tok)
 
 ## tests/specs/
 
 - `AutoDriveIntegration_spec.lua` — makeImplement, makeVehicle (~4616 tok)
 - `CourseplayCoursesLoader_spec.lua` — file, folder, view, makeFileSystem, contains (~1901 tok)
-- `CourseplayIntegration_spec.lua` — file, folder, view, makeStorage, makeVehicle (~3699 tok)
+- `CourseplayIntegration_spec.lua` — file, folder, view, makeStorage, makeVehicle (~4726 tok)
 - `EventHandler_spec.lua` — Declares gracefully (~2992 tok)
 - `WMConsoleCommands_spec.lua` — captureOutput, makeVehicle (~1391 tok)
 - `WMEditorDialog_spec.lua` — makeWorkflow, makeDialog (~5980 tok)
+- `WMGameSettings_spec.lua` — setText, setDisabled, setIsChecked, setCallback, invalidateLayout (~4230 tok)
 - `WMHud_spec.lua` — makeVehicle (~4253 tok)
 - `WMLeaderVehicleSelectDialog_spec.lua` — makeVehicle, makeList, makeButton (~3207 tok)
 - `WMMainDialog_spec.lua` — makeDialog, makeStartDialog (~2443 tok)
+- `WMSettings_spec.lua` (~408 tok)
 - `WMStepDialog_spec.lua` — makeDialog, makeStubDialog, confirm (~5978 tok)
-- `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport, makeLeaderWF (~32031 tok)
+- `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport, makeLeaderWF (~35163 tok)
 - `WorkflowManager_spec.lua` — Declares constants (~9653 tok)
-- `WorkflowManagerSpec_spec.lua` — makeVehicle, makeSavegameXML (~11270 tok)
-- `WorkflowStorage_spec.lua` — hasFormatVersion (~10373 tok)
+- `WorkflowManagerSpec_spec.lua` — makeVehicle, makeSavegameXML (~12594 tok)
+- `WorkflowStorage_spec.lua` — hasFormatVersion (~10819 tok)
 
 ## textures/
 
@@ -145,8 +151,8 @@
 
 ## translations/
 
-- `translation_de.xml` (~3096 tok)
-- `translation_en.xml` (~2652 tok)
+- `translation_de.xml` (~3219 tok)
+- `translation_en.xml` (~2766 tok)
 
 ## webeditor/
 
@@ -229,3 +235,4 @@
 
 ## xml/gui/
 
+- `WMGameSettings.xml` (~306 tok)

@@ -181,6 +181,11 @@ function WorkflowManagerSpec:onPostLoad(savegame)
                 restoredWaitingForMainStepIndex = savegame.xmlFile:getValue(key .. "#waitingForMainStepIndex")
             end
 
+            -- Courseplay was driving when the game was saved. It never auto-resumes, so the
+            -- executor restarts it once the auto-resume window expires — at this waypoint.
+            local cpWasRunningAtSave = savegame.xmlFile:getValue(key .. "#cpWasRunning")
+            local cpResumeWaypoint   = savegame.xmlFile:getValue(key .. "#cpResumeWaypoint")
+
             self.spec_workflowManagerSpec.wmExecution = {
                 workflow                = workflow,
                 vehicle                 = self,
@@ -198,6 +203,8 @@ function WorkflowManagerSpec:onPostLoad(savegame)
                 waitingForMainStep      = restoredWaitingForMainStep,
                 waitingForMainStepIndex = restoredWaitingForMainStepIndex,
                 autoResumeUntil         = restoredAutoResume,
+                cpWasRunningAtSave      = cpWasRunningAtSave,
+                cpResumeWaypoint        = cpResumeWaypoint,
             }
             WMExecutor.activeVehicles[self] = true
             WMHud:show(self)
@@ -257,6 +264,25 @@ function WorkflowManagerSpec:saveToXMLFile(xmlFile, key, usedModNames)
         else
             WMLogger:warning("Leader vehicle '%s' has no uniqueId — leader not saved",
                 activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?")
+        end
+    end
+
+    -- Courseplay never restarts itself after a load (it clears the base-game AIFieldWorker
+    -- #isActive flag on save), and it only records its own #rememberedWpIx on a clean stop —
+    -- never mid-drive. So capture the resume waypoint ourselves while CP is still driving.
+    -- Keyed off isRunning, not currentStepType: the latter is memory-only and a CP→AD handoff
+    -- would misreport it.
+    if CPIntegration:isRunning(self) then
+        xmlFile:setValue(key .. "#cpWasRunning", true)
+        local resumeWaypoint = CPIntegration:getResumeWaypointIx(self)
+        if resumeWaypoint ~= nil then
+            xmlFile:setValue(key .. "#cpResumeWaypoint", resumeWaypoint)
+            WMLogger:debug("Saved Courseplay resume waypoint %d for '%s'", resumeWaypoint,
+                self.getName and self:getName() or "?")
+        else
+            WMLogger:warning("Courseplay running at save but no resume waypoint could be determined "
+                .. "for '%s' — the workflow will stay paused after load",
+                self.getName and self:getName() or "?")
         end
     end
 
@@ -565,6 +591,10 @@ function WorkflowManagerSpec.initSpecialization()
         "Workflow status at save time (only written for waiting_for_leader)")
     schema:register(XMLValueType.INT, key .. "#waitingForMainStepIndex",
         "Main vehicle step index when support entered WAITING_FOR_MAIN (support vehicles only)")
+    schema:register(XMLValueType.BOOL, key .. "#cpWasRunning",
+        "true = Courseplay was driving this vehicle at save time (Courseplay never auto-resumes)")
+    schema:register(XMLValueType.INT, key .. "#cpResumeWaypoint",
+        "Courseplay waypoint to continue field work from after load (absent = unknown, stay paused)")
     print("[WorkflowManager] Registered savegame XML schema")
 end
 

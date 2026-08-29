@@ -612,13 +612,71 @@ function CPIntegration:navigateToFolder(directoryView, folderPath)
     return current
 end
 
+---Get the waypoint Courseplay should continue field work from for a vehicle it is driving.
+---Reads the live drive strategy's own "best waypoint to continue" calculation — the same value
+---Courseplay stores when a job is stopped cleanly. Courseplay does NOT snapshot this while
+---driving, so WorkflowManager must read it itself before a savegame is written.
+---@param vehicle table Vehicle to inspect
+---@return number|nil waypointIx Waypoint index, or nil if it cannot be determined
+function CPIntegration:getResumeWaypointIx(vehicle)
+    if not self.isAvailable or vehicle == nil then
+        return nil
+    end
+
+    -- Live strategy first: only field work strategies implement this (bale finder /
+    -- combine unloader strategies do not), hence the explicit function-type check.
+    if vehicle.getCpDriveStrategy then
+        local ok, strategy = pcall(vehicle.getCpDriveStrategy, vehicle)
+        if ok and strategy ~= nil and type(strategy.getBestWaypointToContinueFieldWork) == "function" then
+            local wpOk, waypointIx = pcall(strategy.getBestWaypointToContinueFieldWork, strategy)
+            if wpOk and type(waypointIx) == "number" then
+                return waypointIx
+            end
+        end
+    end
+
+    -- Fallback: whatever Courseplay remembered from the last clean stop
+    if vehicle.getCpLastRememberedWaypointIx then
+        local ok, waypointIx = pcall(vehicle.getCpLastRememberedWaypointIx, vehicle)
+        if ok and type(waypointIx) == "number" then
+            return waypointIx
+        end
+    end
+
+    return nil
+end
+
+---Seed Courseplay's remembered waypoint so a following startCpAtLastWp() resumes there.
+---Must be called AFTER any course (re)load — loading a course clears the remembered index.
+---@param vehicle table Vehicle to seed
+---@param waypointIx number Waypoint index to resume from
+---@return boolean success True if the value was handed to Courseplay
+function CPIntegration:setResumeWaypointIx(vehicle, waypointIx)
+    if not self.isAvailable or vehicle == nil or waypointIx == nil then
+        return false
+    end
+
+    if not vehicle.rememberCpLastWaypointIx then
+        WMLogger:warning("Cannot seed Courseplay resume waypoint - rememberCpLastWaypointIx missing")
+        return false
+    end
+
+    local ok = pcall(vehicle.rememberCpLastWaypointIx, vehicle, waypointIx)
+    if not ok then
+        WMLogger:warning("Failed to seed Courseplay resume waypoint %d", waypointIx)
+        return false
+    end
+
+    WMLogger:info("Seeded Courseplay resume waypoint: %d", waypointIx)
+    return true
+end
+
 ---Start Courseplay field work for a vehicle
 ---Uses the actual FS25 CP API: startCpAtLastWp() or startCpAtFirstWp()
 ---@param vehicle table Vehicle to control
 ---@param startAtFirst boolean|nil If true, start at first waypoint (default: last)
----@param startAtNearest boolean|nil If true, start at nearest waypoint (for resume from save)
 ---@return boolean success True if started successfully
-function CPIntegration:startFieldWork(vehicle, startAtFirst, startAtNearest)
+function CPIntegration:startFieldWork(vehicle, startAtFirst)
     if not self.isAvailable then
         WMLogger:error("Cannot start Courseplay - Courseplay not available")
         return false
@@ -645,14 +703,6 @@ function CPIntegration:startFieldWork(vehicle, startAtFirst, startAtNearest)
     if vehicle.getCanStartCpFieldWork and not vehicle:getCanStartCpFieldWork() then
         WMLogger:error("Vehicle cannot start Courseplay field work")
         return false
-    end
-
-    -- Resume from save: start at nearest waypoint
-    if startAtNearest and vehicle.cpStartStopDriver then
-        WMLogger:info("Starting Courseplay field work at nearest waypoint (resume)")
-        vehicle:cpStartStopDriver(false)
-        WMLogger:stateChange("Courseplay", nil, "started (nearest wp)")
-        return true
     end
 
     WMLogger:info("Starting Courseplay field work")

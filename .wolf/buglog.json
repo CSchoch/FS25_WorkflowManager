@@ -3946,6 +3946,244 @@
       "related_bugs": [],
       "occurrences": 2,
       "last_seen": "2026-08-16T21:21:10.386Z"
+    },
+    {
+      "id": "bug-240",
+      "timestamp": "2026-08-19T18:49:01.880Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/integration/CourseplayIntegration.lua",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 7→65 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-19T18:49:01.880Z"
+    },
+    {
+      "id": "bug-241",
+      "timestamp": "2026-08-19T18:49:17.244Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 6→14 lines (4 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-19T18:49:17.244Z"
+    },
+    {
+      "id": "bug-242",
+      "timestamp": "2026-08-19T19:34:03.614Z",
+      "error_message": "Significant refactor of ",
+      "file": "tests/mocks/game_globals.lua",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 5→9 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-19T19:34:03.614Z"
+    },
+    {
+      "id": "bug-243",
+      "timestamp": "2026-08-19T19:35:05.625Z",
+      "error_message": "Missing error handling in restoreVehicle",
+      "file": "tests/specs/WorkflowExecutor_spec.lua",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-19T19:35:05.625Z"
+    },
+    {
+      "id": "bug-244",
+      "timestamp": "2026-08-19T19:35:57.586Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 16→22 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-19T19:35:57.586Z"
+    },
+    {
+      "id": "bug-245",
+      "timestamp": "2026-08-19T19:36:27.100Z",
+      "error_message": "Wrong reference: 630 should be 656",
+      "file": "CLAUDE.md",
+      "root_cause": "Used \"630\" instead of \"656\"",
+      "fix": "Changed 630 → 656",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-19T19:36:27.100Z"
+    },
+    {
+      "id": "bug-246",
+      "timestamp": "2026-08-19T20:10:00.000Z",
+      "error_message": "Workflow does not continue after loading a savegame that was taken while a Courseplay step was driving; pressing Resume logs \"Courseplay never started for workflow X\" and silently skips the field work step.",
+      "file": "src/WorkflowExecutor.lua, src/WorkflowManagerSpec.lua, src/integration/CourseplayIntegration.lua",
+      "root_cause": "Courseplay deliberately never auto-resumes (CpAIFieldWorker overwrites the base-game AIFieldWorker#isActive to false at save time), so WM's 10s autoResumeUntil window - which only ATTACHES monitoring to a job that restarted itself - could never catch a CP step and the workflow stayed PAUSED forever. On manual Resume the post-load branch of resumeWorkflow assumed AD/CP had already auto-started, so it set waitingForCompletion=true with cpWasRunning=false; the completion poll then hit the \"not cpRunning and not cpWasRunning\" branch and marked the step complete. Additionally CP only writes its own #rememberedWpIx on a clean strategy stop, never mid-drive, so even an active restart would have fallen back to waypoint 1 and re-driven the whole field.",
+      "fix": "WM now captures the resume waypoint itself at save time: WorkflowManagerSpec:saveToXMLFile writes #cpWasRunning and #cpResumeWaypoint (from new CPIntegration:getResumeWaypointIx, which reads the live strategy via vehicle:getCpDriveStrategy():getBestWaypointToContinueFieldWork() and falls back to getCpLastRememberedWaypointIx). onPostLoad restores them as cpWasRunningAtSave/cpResumeWaypoint. New WMExecutor:resumeCourseplayAfterLoad re-issues the start when the autoResumeUntil window expires and from resumeWorkflow's post-load branch; it uses getCurrentStep so support vehicles resolve their own CP sub-step. startCourseplayStep seeds the waypoint via CPIntegration:setResumeWaypointIx AFTER the course load (loading a course clears CP's remembered index) and forces startAtFirst=false. With no recorded waypoint the workflow stays PAUSED and warns, and keeps cpWasRunningAtSave set so repeated Resume presses cannot fall through to the step-skipping path. Also removed the dead, mislabelled startAtNearest branch in CPIntegration:startFieldWork.",
+      "tags": [
+        "courseplay",
+        "savegame",
+        "resume",
+        "waypoint",
+        "workflow-executor",
+        "step-skipped",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-19T20:10:00.000Z"
+    },
+    {
+      "id": "bug-247",
+      "timestamp": "2026-08-19T20:40:00.000Z",
+      "error_message": "OPEN / NOT FIXED - after a savegame load, a restored SUPPORT vehicle can auto-resume with the wrong currentStepType.",
+      "file": "src/WorkflowExecutor.lua (WMExecutor:update, auto-resume branch)",
+      "root_cause": "The auto-resume poll reads the step as workflow.steps[activeData.currentStep], i.e. the MAIN vehicle step list. For a support vehicle the live step is workflow.steps[main.currentStep].support[activeData.currentSupportStep]. If AD or CP is detected running inside the 10s window, activeData.currentStepType is set from the main step instead of the support sub-step, so completion detection afterwards runs through the wrong per-step-type branch (e.g. AD route polling for what is really a CP sub-step). WMExecutor:getCurrentStep already resolves both roles correctly.",
+      "fix": "NOT APPLIED - documented only. A KNOWN ISSUE comment marks the line. The fix is to use self:getCurrentStep(activeData) there, but it also changes the AutoDrive auto-resume path for support vehicles, so it needs its own test pass and was kept out of the Courseplay resume-after-load change. New code added in that change (WMExecutor:resumeCourseplayAfterLoad) already uses getCurrentStep and has a regression test covering the support-vehicle case.",
+      "tags": [
+        "open",
+        "not-fixed",
+        "support-vehicle",
+        "savegame",
+        "auto-resume",
+        "workflow-executor",
+        "known-issue",
+        "lua"
+      ],
+      "related_bugs": [
+        "bug-246"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-08-19T20:40:00.000Z"
+    },
+    {
+      "id": "bug-248",
+      "timestamp": "2026-08-27T19:59:37.866Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/WorkflowManager.lua",
+      "root_cause": "Had \"src/WorkflowStorage.lua\"",
+      "fix": "Changed to \"src/WMSettings.lua\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-27T19:59:37.866Z"
+    },
+    {
+      "id": "bug-249",
+      "timestamp": "2026-08-27T20:00:22.984Z",
+      "error_message": "Incorrect value in code",
+      "file": "tests/run_tests.lua",
+      "root_cause": "Had \"tests/specs/WorkflowStorage_spec.lua\"",
+      "fix": "Changed to \"tests/specs/WMSettings_spec.lua\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-27T20:00:22.984Z"
+    },
+    {
+      "id": "bug-250",
+      "timestamp": "2026-08-27T20:06:32.710Z",
+      "error_message": "Incorrect value in code",
+      "file": "CLAUDE.md",
+      "root_cause": "Had `WorkflowStorage_spec.lua`",
+      "fix": "Changed to `WMSettings_spec.lua`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-27T20:06:32.710Z"
+    },
+    {
+      "id": "bug-251",
+      "timestamp": "2026-08-27T20:31:01.220Z",
+      "error_message": "Significant refactor of ",
+      "file": "CLAUDE.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 3→6 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-27T20:31:01.220Z"
+    },
+    {
+      "id": "bug-252",
+      "timestamp": "2026-08-27T22:20:00",
+      "error_message": "Warning: [WorkflowManager] Could not find the General settings layout (tried generalSettingsLayout, settingsLayout, layout and a structural search below subCategoryPages[SUB_CATEGORY.GENERAL]) - the Workflow Manager options are not shown in the settings menu",
+      "file": "src/gui/WMGameSettings.lua",
+      "root_cause": "The General settings layout was searched for underneath subCategoryPages[InGameMenuSettingsFrame.SUB_CATEGORY.GENERAL]. In FS25 the layout is a direct field on the settings page itself (page.generalSettingsLayout), so the sub-page search and its structural fallback both returned nil and the injection was skipped. The base game GUI XML lives in the encrypted dataS.gar, so the element names had been guessed from mods that build their own settings page instead of extending the vanilla one.",
+      "fix": "Rewrote WMGameSettings to the recipe used by FS25_MovePlaceablesAdvanced (scripts/AxesMovement.lua): page = g_gui.screenControllers[InGameMenu].pageSettings, layout = page.generalSettingsLayout, rows cloned from page.checkWoodHarvesterAutoCutBox and the layout element named 'sectionHeader' (own xml/gui/WMGameSettings.xml deleted), controls registered in page.controlsList, fresh FocusManager:serveAutoFocusId() per cloned element, plus a FocusManager.setGui hook filtered on gui == 'ingameMenuSettings' so the clones stay keyboard-navigable.",
+      "tags": [
+        "gui",
+        "settings",
+        "ingamemenu",
+        "fs25",
+        "injection",
+        "focusmanager"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-27T22:20:00"
+    },
+    {
+      "id": "bug-253",
+      "timestamp": "2026-08-27T20:39:30.020Z",
+      "error_message": "Significant refactor of ",
+      "file": "tests/specs/WMGameSettings_spec.lua",
+      "root_cause": "8 lines replaced/restructured",
+      "fix": "Rewrote 15→30 lines (8 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-27T20:39:30.020Z"
     }
   ]
 }
