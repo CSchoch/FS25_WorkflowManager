@@ -525,6 +525,18 @@ function WorkflowManager:showEditorDialog(workflow, isNew)
     g_gui:showDialog("WMEditorDialog")
 end
 
+---Re-show the editor dialog without touching its edit buffer.
+---Used when a child dialog (step / AD settings) closes again: the editor is closed before
+---the child opens so the two never stack. See WMEditorDialog:suspendForChildDialog.
+function WorkflowManager:reopenEditorDialog()
+    if self.editorDialog == nil then
+        WMLogger:warning("Editor dialog not available")
+        return
+    end
+
+    g_gui:showDialog("WMEditorDialog")
+end
+
 ---Show the step add/edit dialog
 ---@param step table|nil Step to edit, or nil for new step
 ---@param callback function Callback when done: callback(step) or callback(nil) if cancelled

@@ -4184,6 +4184,27 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-08-27T20:39:30.020Z"
+    },
+    {
+      "id": "bug-254",
+      "timestamp": "2026-08-30T22:30:00Z",
+      "error_message": "After creating a workflow and closing the WM dialogs, keyboard and mouse are sometimes dead. Log: 'Tried reverting to input context [] which is not defined. Current context [TEXT_INPUT]' then 'Tried reverting to input context [TEXT_INPUT] ... Current context [DIALOG_WMStepDialog]'",
+      "file": "src/gui/WMEditorDialog.lua, src/gui/WMMainDialog.lua, src/WorkflowManager.lua",
+      "root_cause": "The step and AD/CP settings dialogs were opened ON TOP of the still-open editor (and the settings dialog on top of the main dialog). FS25 pushes one input context per open dialog; in the nested dialog a focused TextInput records an EMPTY previous context, so TextInputElement:onFocusLeave -> revertContext fails and TEXT_INPUT is never popped. Every later push/pop is then off by one: the next dialog stores TEXT_INPUT as its previous context, that temporary context is already destroyed, and after the whole chain closes the game stays parked in DIALOG_WMStepDialog - a context with no gameplay bindings. WMHud then releases the mouse cursor on the last onDialogClosed, so keyboard AND mouse are gone. Intermittent because it needs a text field (target search / workflow name) to be focused and then clicked away from. Control case in the same log: the editor's nameInput, used while the editor was the ONLY open dialog, reverted cleanly with no warning.",
+      "fix": "Never stack two WM dialogs. WMEditorDialog:suspendForChildDialog() closes the editor (carrying the uncommitted nameInput text into the edit buffer first) before showStepDialog/showADSettingsDialog, and resumeAfterChildDialog() -> WorkflowManager:reopenEditorDialog() re-shows it from the child's callback (all paths, including cancel). WMMainDialog:onClickADSettings closes before showing and reopens in the callback. Same sequential pattern Main->Editor and the start/leader/mode chain already use.",
+      "tags": [
+        "input-context",
+        "gui",
+        "dialog",
+        "text-input",
+        "input-freeze",
+        "mouse-cursor",
+        "nested-dialog",
+        "fs25"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-30T22:30:00Z"
     }
   ]
 }

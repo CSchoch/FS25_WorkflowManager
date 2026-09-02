@@ -75,7 +75,7 @@ must happen **after** any course load (loading a course clears CP's remembered i
 ordering in `startCourseplayStep`. With no recorded waypoint the workflow deliberately stays
 PAUSED rather than restarting from scratch.
 
-Current total: **691**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
+Current total: **704**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
 or they will not run.
 
 **Mod options (game settings):** `WMSettings` holds the player-facing options; `WMGameSettings`

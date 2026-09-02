@@ -542,4 +542,118 @@ describe("WMEditorDialog", function()
         end)
     end)
 
+    -- =========================================================================
+    -- Child dialogs must never stack on top of the editor
+    -- =========================================================================
+    describe("child dialog suspend/resume", function()
+        -- FS25 pushes an input context per open dialog. With the editor still open behind a
+        -- step/settings dialog, a TextInput focused in the child records an empty previous
+        -- context, its focus-leave revert fails and TEXT_INPUT stays on the stack; from then
+        -- on every close reverts to the wrong context and the player is left with no keyboard
+        -- and no mouse once all dialogs are gone. So: close the editor first, reopen after.
+        -- This is the last describe in the file and _G.WorkflowManager is a mock this spec
+        -- owns, so the stubs are re-installed per test rather than torn down afterwards
+        -- (the runner drops the whole global between spec files).
+        local events, stepCallback, adCallback
+
+        before_each(function()
+            events, stepCallback, adCallback = {}, nil, nil
+
+            WorkflowManager.showStepDialog = function(_, step, callback, isSupport)
+                table.insert(events, "showStep")
+                stepCallback = callback
+            end
+            WorkflowManager.showADSettingsDialog = function(_, settings, callback)
+                table.insert(events, "showAD")
+                adCallback = callback
+            end
+            WorkflowManager.reopenEditorDialog = function()
+                table.insert(events, "reopen")
+            end
+        end)
+
+        local function makeSuspendDialog()
+            local d = makeDialog(makeWorkflow())
+            d.close = function() table.insert(events, "close") end
+            d:buildFlatList()
+            return d
+        end
+
+        it("closes the editor before opening the step dialog", function()
+            local d = makeSuspendDialog()
+            d:onClickAddStep()
+            assert.are.same({"close", "showStep"}, events)
+        end)
+
+        it("reopens the editor when the step dialog confirms", function()
+            local d = makeSuspendDialog()
+            d:onClickAddStep()
+            stepCallback({ type = "autodrive", target = "Farm", action = "drive" })
+            assert.are.equal("reopen", events[#events])
+        end)
+
+        it("reopens the editor when the step dialog is cancelled", function()
+            local d = makeSuspendDialog()
+            d:onClickAddStep()
+            stepCallback(nil)
+            assert.are.equal("reopen", events[#events])
+        end)
+
+        it("closes and reopens around editing an existing main step", function()
+            local d = makeSuspendDialog()
+            d.selectedFlatIndex = 1
+            d:onClickEditStep()
+            assert.are.same({"close", "showStep"}, events)
+            stepCallback({ type = "park", action = "park" })
+            assert.are.equal("reopen", events[#events])
+        end)
+
+        it("closes and reopens around editing a support sub-step", function()
+            local d = makeSuspendDialog()
+            -- flat list: 1 = step 1, 2 = step 2, 3 = step 2's support sub-step
+            d.selectedFlatIndex = 3
+            assert.is_false(d:getSelectedItem().isMain)
+            d:onClickEditStep()
+            assert.are.same({"close", "showStep"}, events)
+            stepCallback({ type = "autodrive", target = "Silo", action = "deliver" })
+            assert.are.equal("reopen", events[#events])
+        end)
+
+        it("closes and reopens around adding a support sub-step", function()
+            local d = makeSuspendDialog()
+            d.selectedFlatIndex = 1
+            d:onClickAddSupportStep()
+            assert.are.same({"close", "showStep"}, events)
+            stepCallback({ type = "refuel", action = "refuel" })
+            assert.are.equal("reopen", events[#events])
+            assert.are.equal(1, #d.workflow.steps[1].support)
+        end)
+
+        it("reopens the editor even when the added support step is dropped", function()
+            local d = makeSuspendDialog()
+            d.selectedFlatIndex = 1
+            d:onClickAddSupportStep()
+            stepCallback(nil)
+            assert.are.equal("reopen", events[#events])
+        end)
+
+        it("closes and reopens around the AD/CP settings dialog", function()
+            local d = makeSuspendDialog()
+            d:onClickADSettings()
+            assert.are.same({"close", "showAD"}, events)
+            adCallback({ unloadFillLevel = 0.5 })
+            assert.are.equal("reopen", events[#events])
+            assert.are.equal(0.5, d.workflow.adSettings.unloadFillLevel)
+        end)
+
+        it("carries an uncommitted name edit across the close/reopen", function()
+            -- The name field is only written back on Enter or Save, so suspending has to
+            -- capture it; otherwise reopening resets the field from the buffer.
+            local d = makeSuspendDialog()
+            d.nameInput = { text = "Renamed While Editing", setText = function() end }
+            d:onClickAddStep()
+            assert.are.equal("Renamed While Editing", d.workflow.name)
+        end)
+    end)
+
 end)

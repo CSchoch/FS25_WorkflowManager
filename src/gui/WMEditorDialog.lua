@@ -349,6 +349,27 @@ end
 -- Step operations
 -- ============================================================
 
+---Close the editor before opening one of its child dialogs (step / AD settings).
+---Two WM dialogs must never be open at the same time: FS25 pushes an input context per
+---dialog, and a TextInput focused inside the nested one records an empty previous context,
+---so its focus-leave revert fails and leaves TEXT_INPUT on the stack. Every later push/pop
+---is then off by one and the game stays parked in a dead dialog context once everything is
+---closed - no keyboard, no mouse. Resume with resumeAfterChildDialog.
+function WMEditorDialog:suspendForChildDialog()
+    -- The name field is only committed on Enter or Save; carry an uncommitted edit across
+    -- the close, otherwise reopening resets the field from the buffer and drops it.
+    if self.workflow and self.nameInput then
+        self.workflow.name = self.nameInput.text or self.workflow.name
+    end
+    self:close()
+end
+
+---Re-open the editor after a child dialog closed. The child closes itself before invoking
+---its callback, so the two are never up at the same time.
+function WMEditorDialog:resumeAfterChildDialog()
+    WorkflowManager:reopenEditorDialog()
+end
+
 function WMEditorDialog:onNameEnterPressed()
     if self.workflow and self.nameInput then
         self.workflow.name = self.nameInput.text or ""
@@ -357,6 +378,7 @@ end
 
 ---Add a new main step at the end of the workflow.
 function WMEditorDialog:onClickAddStep()
+    self:suspendForChildDialog()
     WorkflowManager:showStepDialog(nil, function(step)
         if step and self.workflow then
             step.support = {}
@@ -366,6 +388,7 @@ function WMEditorDialog:onClickAddStep()
             self.selectedFlatIndex = self:flatIndexForMainStep(#self.workflow.steps)
             self:refreshStepList()
         end
+        self:resumeAfterChildDialog()
     end)
 end
 
@@ -378,12 +401,14 @@ function WMEditorDialog:onClickEditStep()
         local step = self.workflow.steps[item.stepIndex]
         if step == nil then return end
         local si = item.stepIndex
+        self:suspendForChildDialog()
         WorkflowManager:showStepDialog(step, function(editedStep)
             if editedStep and self.workflow then
                 editedStep.support = step.support or {}  -- preserve nested support
                 self.workflow.steps[si] = editedStep
                 self:refreshStepList()
             end
+            self:resumeAfterChildDialog()
         end)
     else
         local mainStep = self.workflow.steps[item.stepIndex]
@@ -391,6 +416,7 @@ function WMEditorDialog:onClickEditStep()
         local supportStep = mainStep.support[item.supportIndex]
         if supportStep == nil then return end
         local si, sj = item.stepIndex, item.supportIndex
+        self:suspendForChildDialog()
         WorkflowManager:showStepDialog(supportStep, function(editedSupportStep)
             if editedSupportStep and self.workflow then
                 editedSupportStep.support = nil  -- sub-steps don't nest
@@ -400,6 +426,7 @@ function WMEditorDialog:onClickEditStep()
                 end
                 self:refreshStepList()
             end
+            self:resumeAfterChildDialog()
         end, true)
     end
 end
@@ -475,10 +502,12 @@ end
 ---Open the AD/CP settings dialog for the current workflow.
 function WMEditorDialog:onClickADSettings()
     if self.workflow == nil then return end
+    self:suspendForChildDialog()
     WorkflowManager:showADSettingsDialog(self.workflow.adSettings, function(settings)
         if settings ~= nil and self.workflow then
             self.workflow.adSettings = settings
         end
+        self:resumeAfterChildDialog()
     end)
 end
 
@@ -488,13 +517,13 @@ function WMEditorDialog:onClickAddSupportStep()
     if item == nil or not item.isMain or self.workflow == nil then return end
 
     local si = item.stepIndex
+    self:suspendForChildDialog()
     WorkflowManager:showStepDialog(nil, function(supportStep)
-        if supportStep and self.workflow then
+        -- Append to the edit buffer, not via WorkflowManager:addSupportStep (which resolves
+        -- the workflow by id and would write straight to the live table, bypassing Cancel).
+        local mainStep = supportStep and self.workflow and self.workflow.steps[si] or nil
+        if mainStep ~= nil then
             supportStep.support = nil
-            -- Append to the edit buffer, not via WorkflowManager:addSupportStep (which resolves
-            -- the workflow by id and would write straight to the live table, bypassing Cancel).
-            local mainStep = self.workflow.steps[si]
-            if mainStep == nil then return end
             if mainStep.support == nil then mainStep.support = {} end
             table.insert(mainStep.support, supportStep)
             -- Select the newly added support row
@@ -508,6 +537,7 @@ function WMEditorDialog:onClickAddSupportStep()
             end
             self:refreshStepList()
         end
+        self:resumeAfterChildDialog()
     end, true)
 end
 

@@ -281,11 +281,15 @@ function WMMainDialog:onClickADSettings()
     WMLogger:debug("WMMainDialog:onClickADSettings")
     if self.selectedWorkflowIndex < 1 or self.selectedWorkflowIndex > #self.workflows then return end
     local workflow = self.workflows[self.selectedWorkflowIndex]
+    -- Close BEFORE opening the settings dialog: two WM dialogs stacked on the GUI leave the
+    -- input context stack unbalanced once they close (see WMEditorDialog:suspendForChildDialog)
+    self:close()
     WorkflowManager:showADSettingsDialog(workflow.adSettings, function(settings)
         if settings ~= nil then
             workflow.adSettings = settings
             WorkflowManager:saveWorkflows()
         end
+        WorkflowManager:showMainDialog()
     end)
 end
 

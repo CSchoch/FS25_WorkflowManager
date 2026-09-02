@@ -69,6 +69,16 @@ describe("WMMainDialog", function()
             end,
             startResult = true,
             startDeferred = false,
+
+            -- AD/CP settings is a child dialog: the main dialog has to close before it opens
+            -- and reopen when it returns, so the two never sit on the GUI stack together.
+            adCallback = nil,
+            showADSettingsDialog = function(self, settings, callback)
+                table.insert(events, "showAD")
+                self.adCallback = callback
+            end,
+            showMainDialog = function() table.insert(events, "reopenMain") end,
+            saveWorkflows  = function() table.insert(events, "save") end,
         }
 
         notifications = {}
@@ -229,6 +239,51 @@ describe("WMMainDialog", function()
             d:onClickStart()
             assert.is_false(d.closed)
             assert.are.equal(0, #notifications)
+        end)
+    end)
+
+    -- =========================================================================
+    -- AD/CP settings: child dialog must not stack on the main dialog
+    -- =========================================================================
+    describe("onClickADSettings", function()
+        -- Two WM dialogs open at once leave the FS25 input-context stack unbalanced: a
+        -- TextInput focused in the nested dialog cannot revert its context on focus-leave,
+        -- and once everything closes the game is stuck in a dead context with no keyboard
+        -- and no mouse. Same contract as the editor (WMEditorDialog_spec).
+        local function makeSettingsDialog()
+            local d = makeDialog()
+            d.workflows = { { id = "wf_1", name = "Harvest", steps = {}, adSettings = {} } }
+            d.selectedWorkflowIndex = 1
+            return d
+        end
+
+        it("closes the main dialog before opening the settings dialog", function()
+            local d = makeSettingsDialog()
+            d:onClickADSettings()
+            assert.are.same({"close", "showAD"}, events)
+        end)
+
+        it("reopens the main dialog after the settings are confirmed", function()
+            local d = makeSettingsDialog()
+            d:onClickADSettings()
+            WorkflowManager.adCallback({ unloadFillLevel = 0.8 })
+            assert.are.equal("reopenMain", events[#events])
+            assert.are.equal(0.8, d.workflows[1].adSettings.unloadFillLevel)
+        end)
+
+        it("reopens the main dialog when the settings dialog is cancelled", function()
+            local d = makeSettingsDialog()
+            d:onClickADSettings()
+            WorkflowManager.adCallback(nil)
+            assert.are.equal("reopenMain", events[#events])
+        end)
+
+        it("does nothing without a selection", function()
+            local d = makeDialog()
+            d.workflows = {}
+            d.selectedWorkflowIndex = 0
+            d:onClickADSettings()
+            assert.are.same({}, events)
         end)
     end)
 
