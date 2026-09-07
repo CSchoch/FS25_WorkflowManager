@@ -1437,3 +1437,64 @@
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+| 17:35 | Created ../../../../../.claude/plans/id-like-workflow-manager-cryptic-wave.md | — | ~3098 |
+| 21:15 | Edited src/integration/CourseplayIntegration.lua | modified CPIntegration() | ~1088 |
+| 21:15 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~196 |
+| 21:15 | Edited src/WorkflowExecutor.lua | 4→5 lines | ~80 |
+| 21:15 | Edited src/WorkflowStorage.lua | 4→5 lines | ~46 |
+| 21:15 | Edited src/WorkflowStorage.lua | 3→8 lines | ~115 |
+| 21:16 | Edited src/WorkflowStorage.lua | 3→6 lines | ~113 |
+| 21:16 | Edited src/WorkflowStorage.lua | 3→4 lines | ~86 |
+| 21:16 | Edited src/WorkflowStorage.lua | 3→4 lines | ~81 |
+| 21:16 | Edited xml/gui/WMStepDialog.xml | expanded (+6 lines) | ~128 |
+| 21:16 | Edited src/gui/WMEditorDialog.lua | 2→5 lines | ~94 |
+| 21:16 | Edited src/gui/WMEditorDialog.lua | modified WMEditorDialog() | ~47 |
+| 21:16 | Edited src/gui/WMStepDialog.lua | 2→3 lines | ~54 |
+| 21:16 | Edited src/gui/WMStepDialog.lua | 2→4 lines | ~25 |
+| 21:16 | Edited src/gui/WMStepDialog.lua | expanded (+6 lines) | ~108 |
+| 21:16 | Edited src/gui/WMStepDialog.lua | 3→4 lines | ~55 |
+| 21:16 | Edited src/gui/WMStepDialog.lua | 4→5 lines | ~32 |
+| 21:17 | Edited src/gui/WMStepDialog.lua | expanded (+8 lines) | ~107 |
+| 21:17 | Edited src/gui/WMStepDialog.lua | 2→5 lines | ~35 |
+| 21:17 | Edited src/gui/WMStepDialog.lua | modified WMStepDialog() | ~243 |
+| 21:17 | Edited src/gui/WMStepDialog.lua | modified WMStepDialog() | ~128 |
+| 21:17 | Edited src/gui/WMStepDialog.lua | 1→2 lines | ~38 |
+| 21:17 | Edited src/gui/WMStepDialog.lua | 1→4 lines | ~60 |
+| 21:17 | Edited src/gui/WMStepDialog.lua | expanded (+6 lines) | ~146 |
+| 21:17 | Edited src/gui/WMStepDialog.lua | modified WMStepDialog() | ~302 |
+| 21:17 | Edited src/gui/WMStepDialog.lua | 5→9 lines | ~108 |
+| 21:17 | Edited translations/translation_en.xml | 1→2 lines | ~32 |
+| 21:18 | Edited translations/translation_de.xml | 1→2 lines | ~31 |
+| 21:18 | Edited tests/specs/CourseplayIntegration_spec.lua | modified seeder() | ~1736 |
+| 21:20 | Edited tests/specs/CourseplayIntegration_spec.lua | equal() → is_true() | ~58 |
+| 21:25 | Added per-step seed type (CPIntegration:getSeedFruitTypes/applySeedFruitType) | src/integration/CourseplayIntegration.lua | +2 methods | ~900 |
+| 21:26 | Apply seed at top of startCourseplayStep; extended CP step log | src/WorkflowExecutor.lua | done | ~200 |
+| 21:27 | Persist #seedFruitType on main + support steps | src/WorkflowStorage.lua | 5 sites | ~180 |
+| 21:28 | Seed Type dropdown row (MultiTextOption) | xml/gui/WMStepDialog.xml, src/gui/WMStepDialog.lua, src/gui/WMEditorDialog.lua | done | ~700 |
+| 21:29 | Mirrored seedFruitType in the web editor | webeditor/app.js, webeditor/index.html | node harness 11/11 | ~800 |
+| 21:30 | Docs: xml-format, step-types, step-dialog | website/docs/** | done | ~400 |
+| 21:31 | Tests for storage/dialog/executor/CP integration | tests/** | 704 -> 731 pass | ~1500 |
+
+## Session summary 2026-09-02
+
+Added a per-step **Seed Type** to Courseplay field-work steps: `step.seedFruitType` (fruit type
+NAME, e.g. `"WHEAT"`), persisted as `#seedFruitType`, applied by
+`CPIntegration:applySeedFruitType` at the top of `WMExecutor:startCourseplayStep`. Courseplay
+has no seed API at all - the seed lives on the base-game `SowingMachine` specialization of the
+attached implement, verified against `sdk/debugger/gameSource.zip`. Semantics chosen by the
+user: no seeder attached = skip silently, seeder attached but none can sow the fruit = fail the
+step; mission-locked seed = warn and continue. Mirrored in the web editor and documented.
+Test total 704 -> 731, all green.
+| 21:26 | Session end: 30 writes across 10 files (id-like-workflow-manager-cryptic-wave.md, CourseplayIntegration.lua, WorkflowExecutor.lua, WorkflowStorage.lua, WMStepDialog.xml) | 12 reads | ~116344 tok |
+| 21:28 | Session end: 30 writes across 10 files (id-like-workflow-manager-cryptic-wave.md, CourseplayIntegration.lua, WorkflowExecutor.lua, WorkflowStorage.lua, WMStepDialog.xml) | 13 reads | ~116344 tok |
+| 22:09 | Session end: 30 writes across 10 files (id-like-workflow-manager-cryptic-wave.md, CourseplayIntegration.lua, WorkflowExecutor.lua, WorkflowStorage.lua, WMStepDialog.xml) | 13 reads | ~116344 tok |
+
+## Session: 2026-09-07 22:54
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-09-07 22:54
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|

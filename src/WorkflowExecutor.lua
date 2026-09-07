@@ -556,10 +556,11 @@ function WMExecutor:executeCurrentStep(activeData)
 
     elseif step.type == WorkflowManager.STEP_COURSEPLAY then
         -- Courseplay: The 'target' field specifies which course to load
-        WMLogger:info("Starting Courseplay step - vehicle: %s, course: %s, action: %s",
+        WMLogger:info("Starting Courseplay step - vehicle: %s, course: %s, action: %s, seedType: %s",
             vehicle and (vehicle.getName and vehicle:getName() or "unknown") or "nil",
             step.target or "nil",
-            step.action or "nil")
+            step.action or "nil",
+            step.seedFruitType or "nil")
 
         -- Defer CP start if AD is still active, or if we just came from a CP step (CP->CP).
         -- The CP->CP deferral gives CP's previous job time to fully clean up (reset tasks,
@@ -845,6 +846,16 @@ end
 ---@param vehicle table Vehicle
 ---@param step table Step data
 function WMExecutor:startCourseplayStep(activeData, vehicle, step)
+    -- Select the step's seed type before anything else: it must be set before Courseplay
+    -- starts processing work areas, and an unsupported seed should fail before a course load.
+    if step.seedFruitType ~= nil and step.seedFruitType ~= "" then
+        local seedOk, seedReason = CPIntegration:applySeedFruitType(vehicle, step.seedFruitType)
+        if not seedOk then
+            self:handleStepError(activeData, "Cannot set seed type: " .. (seedReason or "unsupported"))
+            return
+        end
+    end
+
     -- Safety: if CP is somehow already running, just attach monitoring — never reset a running course
     if CPIntegration:isRunning(vehicle) then
         WMLogger:warning("Courseplay unexpectedly already running at CP step start - attaching monitoring only")

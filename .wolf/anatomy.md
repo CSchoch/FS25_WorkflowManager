@@ -1,11 +1,12 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-08-27T20:39:29.953Z
-> Files: 84 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-09-02T19:20:19.579Z
+> Files: 86 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
 - `id-like-a-wm-lucky-minsky.md` — New Workflow Steps: "Refuel" and "Repair" (~3858 tok)
+- `id-like-workflow-manager-cryptic-wave.md` — Per-step seed type for the sowing machine (~2904 tok)
 - `idempotent-zooming-wadler.md` — Add a "Courseplay auto resume" option to the game settings (~2559 tok)
 - `is-it-possible-to-recursive-forest.md` — Resume Courseplay at the last waypoint after savegame load (~2620 tok)
 - `there-was-again-an-delegated-kay.md` — Fix: leader-follower reference lost across save/load (stale XML vehicle index) (~1513 tok)
@@ -75,10 +76,10 @@
 ## src/
 
 - `WMSettings.lua` — reset, isCourseplayAutoResumeEnabled (~356 tok)
-- `WorkflowExecutor.lua` — init, startWorkflow, stopWorkflow, buildSyncMaps, refreshLeaderLink (~22395 tok)
+- `WorkflowExecutor.lua` — init, startWorkflow, stopWorkflow, buildSyncMaps, refreshLeaderLink (~22551 tok)
 - `WorkflowManager.lua` — getStepTypeLabel, isMarkerStepType, isTargetlessStepType, isAutoDriveTrackedStepType, getStepTypeSho (~12673 tok)
 - `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~7967 tok)
-- `WorkflowStorage.lua` — deepCopySupportStep, isTargetlessStepType, parseFillTypes, init, getXmlPath (~5214 tok)
+- `WorkflowStorage.lua` — deepCopySupportStep, isTargetlessStepType, parseFillTypes, init, getXmlPath (~5398 tok)
 
 ## src/dev/
 
@@ -87,20 +88,20 @@
 ## src/gui/
 
 - `WMADSettingsDialog.lua` — new, onCreate, onOpen, onClose, Called (~755 tok)
-- `WMEditorDialog.lua` — deepCopy, new, onCreate, onOpen, onClose (~6431 tok)
+- `WMEditorDialog.lua` — deepCopy, new, onCreate, onOpen, onClose (~6738 tok)
 - `WMGameSettings.lua` — updateFocusIds, getSettingsPage, ensureMenuInjected, refreshMenuState, onCpAutoResumeChanged (~2196 tok)
 - `WMHud.lua` — ensureOverlays, createIconOverlays, updateOverlayPositions, init, show (~9647 tok)
 - `WMLeaderVehicleSelectDialog.lua` — new, onCreate, buildVehicleList, onOpen, onClose (~1169 tok)
 - `WMMainDialog.lua` — new, onCreate, onOpen, onClose, refreshWorkflowList (~3813 tok)
 - `WMModeSelectDialog.lua` — new, onCreate, onOpen, onClose, Called (~577 tok)
-- `WMStepDialog.lua` — new, onCreate, onOpen, onClose, keyEvent (~8210 tok)
+- `WMStepDialog.lua` — new, onCreate, onOpen, onClose, keyEvent (~9124 tok)
 - `WMTextInputDialog.lua` — new, onCreate, onOpen, onClose, setTitle (~805 tok)
 
 ## src/integration/
 
 - `AutoDriveIntegration.lua` — init, completeInitialization, update, checkAvailability, getDestinations (~11852 tok)
 - `CourseplayCoursesLoader.lua` — init, getCourseplayObject, scanCourses, logCourseplayStructure, extractCoursesFromStorage (~5496 tok)
-- `CourseplayIntegration.lua` — init, completeInitialization, update, checkAvailability, hasSpec (~9509 tok)
+- `CourseplayIntegration.lua` — init, completeInitialization, update, checkAvailability, hasSpec (~10590 tok)
 
 ## src/network/
 
@@ -128,7 +129,7 @@
 
 - `AutoDriveIntegration_spec.lua` — makeImplement, makeVehicle (~4616 tok)
 - `CourseplayCoursesLoader_spec.lua` — file, folder, view, makeFileSystem, contains (~1901 tok)
-- `CourseplayIntegration_spec.lua` — file, folder, view, makeStorage, makeVehicle (~4726 tok)
+- `CourseplayIntegration_spec.lua` — file, folder, view, makeStorage, makeVehicle (~6381 tok)
 - `EventHandler_spec.lua` — Declares gracefully (~2992 tok)
 - `WMConsoleCommands_spec.lua` — captureOutput, makeVehicle (~1391 tok)
 - `WMEditorDialog_spec.lua` — makeWorkflow, makeDialog (~5980 tok)
@@ -151,8 +152,8 @@
 
 ## translations/
 
-- `translation_de.xml` (~3219 tok)
-- `translation_en.xml` (~2766 tok)
+- `translation_de.xml` (~3234 tok)
+- `translation_en.xml` (~2782 tok)
 
 ## webeditor/
 
@@ -236,3 +237,4 @@
 ## xml/gui/
 
 - `WMGameSettings.xml` (~306 tok)
+- `WMStepDialog.xml` — dropdown: Section (~2586 tok)

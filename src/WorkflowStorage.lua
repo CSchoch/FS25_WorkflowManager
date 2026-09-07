@@ -19,6 +19,7 @@ local function deepCopySupportStep(step)
         action       = step.action,
         unloadTarget = step.unloadTarget,
         fillTypes    = step.fillTypes and {unpack(step.fillTypes)} or nil,
+        seedFruitType = step.seedFruitType,
     }
 end
 
@@ -114,6 +115,11 @@ function WMStorage:saveWorkflows(workflows)
                 xmlFile:setString(stepKey .. "#fillTypes", table.concat(step.fillTypes, ","))
             end
 
+            -- Courseplay field work: seed type to select on the sowing machine
+            if step.seedFruitType ~= nil and step.seedFruitType ~= "" then
+                xmlFile:setString(stepKey .. "#seedFruitType", step.seedFruitType)
+            end
+
             -- Nested support sub-steps
             local supportSteps = step.support or {}
             for k, supportStep in ipairs(supportSteps) do
@@ -127,6 +133,9 @@ function WMStorage:saveWorkflows(workflows)
                 end
                 if supportStep.fillTypes ~= nil and #supportStep.fillTypes > 0 then
                     xmlFile:setString(supportKey .. "#fillTypes", table.concat(supportStep.fillTypes, ","))
+                end
+                if supportStep.seedFruitType ~= nil and supportStep.seedFruitType ~= "" then
+                    xmlFile:setString(supportKey .. "#seedFruitType", supportStep.seedFruitType)
                 end
             end
         end
@@ -389,6 +398,7 @@ function WMStorage:loadWorkflows()
                 unloadTarget = xmlFile:getString(stepKey .. "#unloadTarget"),
                 fillTypes    = parseFillTypes(xmlFile:getString(stepKey .. "#fillTypes"))
                                or parseFillTypes(xmlFile:getString(stepKey .. "#fillType")),
+                seedFruitType = xmlFile:getString(stepKey .. "#seedFruitType"),
                 -- Legacy syncGroup read for migration only
                 syncGroup    = xmlFile:getInt(stepKey .. "#syncGroup"),
                 -- Legacy sync flags read for marker migration only (formatVersion 1 -> 2).
@@ -415,6 +425,7 @@ function WMStorage:loadWorkflows()
                     unloadTarget = xmlFile:getString(supportKey .. "#unloadTarget"),
                     fillTypes    = parseFillTypes(xmlFile:getString(supportKey .. "#fillTypes"))
                                    or parseFillTypes(xmlFile:getString(supportKey .. "#fillType")),
+                    seedFruitType = xmlFile:getString(supportKey .. "#seedFruitType"),
                 }
                 table.insert(step.support, supportStep)
                 supportIndex = supportIndex + 1

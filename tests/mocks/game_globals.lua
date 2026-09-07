@@ -299,6 +299,19 @@ _G.CPIntegration = {
         return true
     end,
     getCurrentCourseName = function(self, vehicle) return self._vehicleCourses[vehicle] end,
+    -- Seed type selection on the attached sowing machine. `_seedApplyResult` lets a spec
+    -- simulate "a seeder is attached but cannot sow this fruit" (false + reason).
+    _appliedSeeds     = {},  -- [vehicle] = fruit type name
+    _seedApplyResult  = nil, -- nil = succeed; false = fail with _seedApplyReason
+    _seedApplyReason  = "no attached sowing machine can sow it",
+    applySeedFruitType = function(self, vehicle, fruitTypeName)
+        table.insert(self._callLog, "applySeedFruitType")
+        if self._seedApplyResult == false then
+            return false, self._seedApplyReason
+        end
+        self._appliedSeeds[vehicle] = fruitTypeName
+        return true
+    end,
     startFieldWork = function(self, vehicle, startAtFirst)
         self._vehicleRunning[vehicle] = true
         self._startArgs[vehicle] = { startAtFirst = startAtFirst }

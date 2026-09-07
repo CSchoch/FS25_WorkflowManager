@@ -25,6 +25,7 @@ function WMStepDialog.new(target)
     self.stepTarget = ""
     self.stepUnloadTarget = ""
     self.selectedFillTypes = {}  -- array of selected fill type name strings
+    self.stepSeedFruitType = ""  -- fruit type name ("WHEAT"), "" = keep whatever is selected
     self.ctrlPressed = false
 
     -- List data
@@ -38,6 +39,8 @@ function WMStepDialog.new(target)
 
     self.fillTypeItems = {}
     self.filteredFillTypeItems = {}
+
+    self.seedTypeItems = {}
 
     -- Flag to suppress list-callback recursion (set before any reloadData inside a callback)
     self.isFiltering = false
@@ -65,6 +68,12 @@ function WMStepDialog:onOpen()
         local dialog = self
         self.actionDropdown.onClickCallback = function(_, state)
             dialog:onActionChanged(nil, state)
+        end
+    end
+    if self.seedTypeDropdown ~= nil then
+        local dialog = self
+        self.seedTypeDropdown.onClickCallback = function(_, state)
+            dialog:onSeedTypeChanged(nil, state)
         end
     end
     -- Setup list data sources and callbacks
@@ -140,6 +149,7 @@ function WMStepDialog:setStep(step, callback, isSupportStep)
         self.stepTarget = step.target or ""
         self.stepUnloadTarget = step.unloadTarget or ""
         self.selectedFillTypes = step.fillTypes and {unpack(step.fillTypes)} or {}
+        self.stepSeedFruitType = step.seedFruitType or ""
     else
         self.step = nil
         self.stepType = "autodrive"
@@ -147,6 +157,7 @@ function WMStepDialog:setStep(step, callback, isSupportStep)
         self.stepTarget = ""
         self.stepUnloadTarget = ""
         self.selectedFillTypes = {}
+        self.stepSeedFruitType = ""
     end
 end
 
@@ -167,6 +178,14 @@ function WMStepDialog:loadAvailableData()
         end
     end
     self.filteredFillTypeItems = self.fillTypeItems
+
+    -- Load seed types (name = fruit type ID like "WHEAT", display = localized fill type title)
+    self.seedTypeItems = {}
+    if editor and editor.getSeedTypes then
+        for _, st in ipairs(editor:getSeedTypes()) do
+            table.insert(self.seedTypeItems, {name = st.name, display = st.title or st.name})
+        end
+    end
 end
 
 ---Refresh the target list based on current step type
@@ -216,6 +235,9 @@ function WMStepDialog:refreshDisplay()
 
     -- Update action dropdown
     self:refreshActionDropdown()
+
+    -- Update seed type dropdown
+    self:refreshSeedTypeDropdown()
 
     -- Update input field values
     self:setInputFieldValues()
@@ -305,6 +327,29 @@ function WMStepDialog:refreshActionDropdown()
     end
 
     self.actionDropdown:setState(currentIndex)
+end
+
+---Refresh seed type dropdown options. Entry 1 is "none" (leave the machine's current seed).
+function WMStepDialog:refreshSeedTypeDropdown()
+    if self.seedTypeDropdown == nil then
+        return
+    end
+
+    -- Snapshot the rendered list: the change handler must map click indices against what is
+    -- actually displayed, never against a freshly built list (see refreshTypeDropdown).
+    self.renderedSeedTypes = self.seedTypeItems or {}
+
+    local texts = {g_i18n:getText("wm_none") or "None"}
+    local currentIndex = 1
+    for i, item in ipairs(self.renderedSeedTypes) do
+        table.insert(texts, item.display)
+        if item.name == self.stepSeedFruitType then
+            currentIndex = i + 1
+        end
+    end
+
+    self.seedTypeDropdown:setTexts(texts)
+    self.seedTypeDropdown:setState(currentIndex)
 end
 
 ---Get available actions based on step type
@@ -470,12 +515,16 @@ function WMStepDialog:updateFieldVisibility()
     local isMarker = self:isMarkerStep()
     local needsUnloadTarget = not isMarker and self:actionNeedsUnloadTarget()
     local needsFillType = not isMarker and self:actionNeedsFillType()
+    local needsSeedType = not isMarker and self:actionNeedsSeedType()
 
     -- Action + target rows are hidden entirely for marker steps
     if self.actionRow then self.actionRow:setVisible(not isMarker) end
     if self.targetRow then self.targetRow:setVisible(not isMarker) end
     if self.targetSelectedRow then self.targetSelectedRow:setVisible(not isMarker) end
     if self.targetDropdownContainer then self.targetDropdownContainer:setVisible(not isMarker) end
+
+    -- Seed type row (Courseplay field work only)
+    if self.seedTypeRow then self.seedTypeRow:setVisible(needsSeedType) end
 
     -- Update unload target label based on action
     if self.unloadTargetLabel then
@@ -523,6 +572,11 @@ function WMStepDialog:actionNeedsFillType()
         return false
     end
     return self.stepAction == "pickup_deliver" or self.stepAction == "load"
+end
+
+---Check if current action can select a seed type (Courseplay field work only)
+function WMStepDialog:actionNeedsSeedType()
+    return self.stepType == WorkflowManager.STEP_COURSEPLAY and self.stepAction == "fieldwork"
 end
 
 ---Filter target list by search text
@@ -689,8 +743,14 @@ function WMStepDialog:onTypeChanged(element, state)
                 self.fillTypeSearchInput:setText("")
             end
 
+            -- Clear seed type if the new type/default action can't carry one
+            if not self:actionNeedsSeedType() then
+                self.stepSeedFruitType = ""
+            end
+
             self:refreshTargetList()
             self:refreshActionDropdown()
+            self:refreshSeedTypeDropdown()
             self:refreshTargetDisplay()
             self:updateFieldVisibility()
         end
@@ -724,7 +784,31 @@ function WMStepDialog:onActionChanged(element, state)
             end
         end
 
+        -- Clear seed type if new action can't carry one
+        if not self:actionNeedsSeedType() then
+            self.stepSeedFruitType = ""
+        end
+        self:refreshSeedTypeDropdown()
+
         self:updateFieldVisibility()
+    end
+end
+
+---Called when seed type dropdown changes
+function WMStepDialog:onSeedTypeChanged(element, state)
+    -- Handle both (state) and (element, state) signatures
+    if state == nil then
+        state = element
+    end
+
+    -- Index 1 is the "none" entry; the rest map onto the list the dropdown was rendered with
+    local items = self.renderedSeedTypes or self.seedTypeItems or {}
+    if type(state) == "number" and state > 0 and state <= #items + 1 then
+        if state == 1 then
+            self.stepSeedFruitType = ""
+        else
+            self.stepSeedFruitType = items[state - 1].name
+        end
     end
 end
 
@@ -830,6 +914,10 @@ function WMStepDialog:onClickConfirm()
             end
             if self:actionNeedsFillType() and #self.selectedFillTypes > 0 then
                 step.fillTypes = {unpack(self.selectedFillTypes)}
+            end
+        elseif self.stepType == WorkflowManager.STEP_COURSEPLAY then
+            if self:actionNeedsSeedType() and self.stepSeedFruitType ~= "" then
+                step.seedFruitType = self.stepSeedFruitType
             end
         end
     end

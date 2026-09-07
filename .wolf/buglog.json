@@ -4205,6 +4205,23 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-08-30T22:30:00Z"
+    },
+    {
+      "id": "bug-255",
+      "timestamp": "2026-09-02T21:30:00Z",
+      "error_message": "tests/specs/CourseplayIntegration_spec.lua:454: attempt to index field 'is_not' (a nil value)",
+      "file": "tests/specs/CourseplayIntegration_spec.lua",
+      "root_cause": "The hand-rolled assert table in tests/run_tests.lua has assert.are_not.equal and assert.is_not_nil, but NO assert.is_not.equal - it is a busted-shaped subset, not busted.",
+      "fix": "Used assert.is_true(x ~= y) instead. Available negatives: assert.are_not.equal, assert.is_not_nil, assert.is_false, assert.is_nil.",
+      "tags": [
+        "tests",
+        "assert",
+        "test-framework",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-02T21:30:00Z"
     }
   ]
 }

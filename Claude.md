@@ -58,7 +58,7 @@ Individual runners: `tests\run_executor_spec.lua`, `tests\run_storage_spec.lua`,
 | `WMStepDialog_spec.lua` | Step type/action branching, confirm payloads, support-step type restrictions |
 | `WMEditorDialog_spec.lua` | Edit-buffer contract: Save commits to the live workflow, Cancel discards; new-workflow registration |
 | `WMMainDialog_spec.lua` | New/Edit entry points: New hands the editor an unregistered workflow |
-| `CourseplayIntegration_spec.lua` | Course entry resolution from the root view, legacy-name fallback, folder navigation |
+| `CourseplayIntegration_spec.lua` | Course entry resolution from the root view, legacy-name fallback, folder navigation, seed type selection |
 | `CourseplayCoursesLoader_spec.lua` | Course enumeration from the root view, root-relative names |
 | `WMConsoleCommands_spec.lua` | Console command registration/removal; wmPrintState reports the executor's real sync gate |
 | `WMGameSettings_spec.lua` | Settings-row injection: clones the vanilla row/header, focus ids, controls list, MP read-only, hook-once, delete |
@@ -75,7 +75,7 @@ must happen **after** any course load (loading a course clears CP's remembered i
 ordering in `startCourseplayStep`. With no recorded waypoint the workflow deliberately stays
 PAUSED rather than restarting from scratch.
 
-Current total: **704**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
+Current total: **731**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
 or they will not run.
 
 **Mod options (game settings):** `WMSettings` holds the player-facing options; `WMGameSettings`
@@ -101,6 +101,18 @@ today read `Singleplayer/F34/Kalken`. Workflows authored before the root-view fi
 `F34/Kalken`. `findCourseEntry` therefore falls back to a **path-suffix** match on the collected
 candidates — matching by base name alone silently loaded `F09/Kalken` for a step asking for
 `F34/Kalken`.
+
+**Per-step seed type:** a Courseplay field-work step can carry `seedFruitType` (a fruit type
+*name*, e.g. `"WHEAT"`, stored as `#seedFruitType`). Courseplay has **no** seed API — the seed
+lives on the base-game `SowingMachine` specialization of the attached implement, so
+`CPIntegration:applySeedFruitType` walks `vehicle:getChildVehicles()` looking for
+`spec_sowingMachine` and calls `implement:setSeedFruitType(fruitTypeIndex)`. That setter is a
+**silent no-op** for a fruit missing from `spec.seeds`, so membership is checked first; it also
+fires `SetSeedIndexEvent` itself, so the server-side call syncs to clients with no WM event.
+Semantics: no seeder attached → skip silently; seeder attached but none can sow the fruit →
+`handleStepError`; seeder present but `getIsSeedChangeAllowed()` false (mission-locked) → warn
+and continue. Applied at the very top of `WMExecutor:startCourseplayStep`, before the
+already-running early-out and before any course load.
 
 **Workflow lifecycle:** `WorkflowManager:buildWorkflow(name)` returns an *unregistered* workflow;
 `registerWorkflow(wf)` adds it to the list (idempotent by id); `createWorkflow(name)` is both at once.

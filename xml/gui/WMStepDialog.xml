@@ -62,6 +62,12 @@
                 </BoxLayout>
             </BoxLayout>
 
+            <!-- Seed Type (conditional: Courseplay field work only) -->
+            <BoxLayout profile="wm_hBox" id="seedTypeRow" size="860px 45px">
+                <Text profile="wm_dialogText" text="$l10n_wm_editor_seed_type" size="150px 40px"/>
+                <MultiTextOption profile="fs25_settingsMultiTextOption" id="seedTypeDropdown" onStateChanged="onSeedTypeChanged" size="500px 40px"/>
+            </BoxLayout>
+
             <!-- Unload Target Section (conditional) -->
             <GuiElement id="unloadTargetSection" size="860px 40px">
                 <BoxLayout profile="wm_hBox" size="860px 40px">

@@ -69,6 +69,7 @@
         <text name="wm_editor_load_point" text="Ladepunkt"/>
         <text name="wm_editor_return_target" text="Zurueck zu"/>
         <text name="wm_editor_fill_type" text="Fuelltyp"/>
+        <text name="wm_editor_seed_type" text="Saatgut"/>
         <text name="wm_editor_no_steps" text="Keine Schritte definiert. Klicken Sie +, um einen Schritt hinzuzufuegen."/>
 
         <!-- Tooltips -->

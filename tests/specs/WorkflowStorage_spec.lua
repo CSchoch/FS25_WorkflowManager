@@ -513,6 +513,31 @@ describe("WMStorage", function()
             assert.are.equal("WHEAT",  support[1].fillTypes[1])
             assert.are.equal("BARLEY", support[1].fillTypes[2])
         end)
+
+        it("saves and loads the Courseplay step seed type", function()
+            local wf = {
+                id = "wf_seed_001", name = "Seed Workflow",
+                steps = {
+                    {
+                        type = "courseplay", target = "Field1", action = "fieldwork",
+                        seedFruitType = "BARLEY",
+                        support = {
+                            { type = "courseplay", target = "Field2", action = "fieldwork",
+                              seedFruitType = "WHEAT" },
+                        }
+                    },
+                    { type = "courseplay", target = "Field3", action = "fieldwork", support = {} }
+                }
+            }
+            WMStorage:saveWorkflows({ wf })
+
+            _G.fileExists = function() return true end
+            local steps = WMStorage:loadWorkflows()[1].steps
+            assert.are.equal("BARLEY", steps[1].seedFruitType)
+            assert.are.equal("WHEAT",  steps[1].support[1].seedFruitType)
+            -- Absent attribute stays nil: "keep whatever seed the machine has"
+            assert.is_nil(steps[2].seedFruitType)
+        end)
     end)
 
     -- =========================================================================

@@ -2901,4 +2901,75 @@ describe("WMExecutor (real)", function()
         end)
     end)
 
+    -- =========================================================================
+    -- Courseplay step seed type
+    --
+    -- The seed lives on the attached sowing machine (base game), not in Courseplay. It has
+    -- to be selected before Courseplay starts processing work areas, and an unsupported seed
+    -- must fail before any course is loaded.
+    -- =========================================================================
+    describe("Courseplay step seed type", function()
+
+        before_each(function()
+            CPIntegration._callLog        = {}
+            CPIntegration._appliedSeeds   = {}
+            CPIntegration._seedApplyResult = nil
+        end)
+
+        -- Workflow whose single step is a CP field work step with a seed type
+        local function seedWorkflow(seedFruitType)
+            return {
+                id = "wf_seed", name = "Seed Workflow",
+                steps = {
+                    { type = "courseplay", target = "Field1", action = "fieldwork",
+                      seedFruitType = seedFruitType, support = {} },
+                },
+            }
+        end
+
+        it("selects the seed before loading the course and starting field work", function()
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(seedWorkflow("WHEAT"), v)
+
+            assert.are.equal("WHEAT", CPIntegration._appliedSeeds[v])
+            assert.are.equal("applySeedFruitType,loadCourse,startFieldWork",
+                table.concat(CPIntegration._callLog, ","))
+        end)
+
+        it("does not touch the seed for a step without a seed type", function()
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(seedWorkflow(nil), v)
+
+            assert.is_nil(CPIntegration._appliedSeeds[v])
+            assert.are.equal("loadCourse,startFieldWork", table.concat(CPIntegration._callLog, ","))
+        end)
+
+        it("handleStepError (STATUS_ERROR) when no attached machine can sow the seed", function()
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(makeWorkflow(), v)
+            local d = activeData(v)
+
+            CPIntegration._seedApplyResult = false
+            WMExecutor:startCourseplayStep(d, v,
+                { type = "courseplay", target = "Field1", action = "fieldwork", seedFruitType = "WHEAT" })
+
+            assert.are.equal(WorkflowManager.STATUS_ERROR, d.status)
+            assert.is_nil(activeData(v))  -- wmExecution cleared by stopWorkflow
+        end)
+
+        it("does not load a course when the seed cannot be applied", function()
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(makeWorkflow(), v)
+            local d = activeData(v)
+
+            CPIntegration._callLog = {}
+            CPIntegration._seedApplyResult = false
+            WMExecutor:startCourseplayStep(d, v,
+                { type = "courseplay", target = "Field1", action = "fieldwork", seedFruitType = "WHEAT" })
+
+            assert.are.equal("applySeedFruitType", table.concat(CPIntegration._callLog, ","))
+            assert.is_false(CPIntegration:isRunning(v))
+        end)
+    end)
+
 end)

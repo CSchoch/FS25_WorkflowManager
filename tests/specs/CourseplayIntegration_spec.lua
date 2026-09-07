@@ -387,4 +387,141 @@ describe("CPIntegration (course resolution)", function()
         end)
     end)
 
+    -- =========================================================================
+    -- Seed type selection (base-game SowingMachine specialization)
+    --
+    -- Courseplay has no seed setting at all — the seed lives on the attached implement's
+    -- spec_sowingMachine. setSeedFruitType() is a silent no-op for a fruit the machine
+    -- cannot sow, so membership in spec.seeds has to be checked before calling it.
+    -- =========================================================================
+    describe("seed type", function()
+        local WHEAT, BARLEY, MEADOW, NOSEED = 1, 2, 3, 4
+
+        before_each(function()
+            local fruitTypes = {
+                {index = WHEAT,  name = "WHEAT"},
+                {index = BARLEY, name = "BARLEY"},
+                {index = MEADOW, name = "MEADOW"},
+                {index = NOSEED, name = "NOSEED"},   -- has no fill type
+            }
+            local fillTypes = {
+                [WHEAT]  = {title = "Wheat"},
+                [BARLEY] = {title = "Barley"},
+                [MEADOW] = {title = "Meadow"},
+            }
+            _G.g_fruitTypeManager = {
+                getFruitTypes = function() return fruitTypes end,
+                getFruitTypeByName = function(_, name)
+                    for _, ft in ipairs(fruitTypes) do
+                        if ft.name == name then return ft end
+                    end
+                    return nil
+                end,
+                getFillTypeByFruitTypeIndex = function(_, index) return fillTypes[index] end,
+            }
+        end)
+
+        -- An implement carrying the base-game sowing machine specialization
+        local function seeder(name, seeds, allowChange)
+            local s
+            s = {
+                spec_sowingMachine = {seeds = seeds},
+                applied = nil,
+                getName = function() return name end,
+                setSeedFruitType = function(_, index) s.applied = index end,
+            }
+            if allowChange ~= nil then
+                s.getIsSeedChangeAllowed = function() return allowChange end
+            end
+            return s
+        end
+
+        local function vehicleWith(children)
+            return {getChildVehicles = function() return children end}
+        end
+
+        describe("getSeedFruitTypes", function()
+            it("lists plantable fruit types sorted by title", function()
+                local seeds = CPIntegration:getSeedFruitTypes()
+                assert.are.equal(2, #seeds)
+                assert.are.equal("BARLEY", seeds[1].name)
+                assert.are.equal("Barley", seeds[1].title)
+                assert.are.equal("WHEAT", seeds[2].name)
+            end)
+
+            it("excludes MEADOW and fruits without a fill type", function()
+                for _, entry in ipairs(CPIntegration:getSeedFruitTypes()) do
+                    assert.is_true(entry.name ~= "MEADOW")
+                    assert.is_true(entry.name ~= "NOSEED")
+                end
+            end)
+
+            it("returns an empty list without a fruit type manager", function()
+                _G.g_fruitTypeManager = nil
+                assert.are.equal(0, #CPIntegration:getSeedFruitTypes())
+            end)
+        end)
+
+        describe("applySeedFruitType", function()
+            it("selects the seed on the attached sowing machine", function()
+                local s = seeder("Seeder", {WHEAT, BARLEY})
+                assert.is_true(CPIntegration:applySeedFruitType(vehicleWith({s}), "WHEAT"))
+                assert.are.equal(WHEAT, s.applied)
+            end)
+
+            it("selects the seed on every sowing machine that supports it", function()
+                local a = seeder("A", {WHEAT})
+                local b = seeder("B", {WHEAT, BARLEY})
+                assert.is_true(CPIntegration:applySeedFruitType(vehicleWith({a, b}), "WHEAT"))
+                assert.are.equal(WHEAT, a.applied)
+                assert.are.equal(WHEAT, b.applied)
+            end)
+
+            it("skips silently when no sowing machine is attached", function()
+                local plain = {}
+                assert.is_true(CPIntegration:applySeedFruitType(vehicleWith({plain}), "WHEAT"))
+            end)
+
+            it("fails when a sowing machine is attached but none can sow the fruit", function()
+                local s = seeder("Seeder", {BARLEY})
+                local ok, reason = CPIntegration:applySeedFruitType(vehicleWith({s}), "WHEAT")
+                assert.is_false(ok)
+                assert.is_not_nil(reason)
+                assert.is_nil(s.applied)
+            end)
+
+            it("succeeds when at least one of several machines can sow the fruit", function()
+                local supported = seeder("A", {WHEAT})
+                local other     = seeder("B", {BARLEY})
+                assert.is_true(CPIntegration:applySeedFruitType(vehicleWith({supported, other}), "WHEAT"))
+                assert.are.equal(WHEAT, supported.applied)
+                assert.is_nil(other.applied)
+            end)
+
+            it("keeps the game's seed when seed changing is not allowed", function()
+                local s = seeder("Seeder", {WHEAT}, false)
+                assert.is_true(CPIntegration:applySeedFruitType(vehicleWith({s}), "WHEAT"))
+                assert.is_nil(s.applied)
+            end)
+
+            it("fails for an unknown fruit type name", function()
+                local ok, reason = CPIntegration:applySeedFruitType(vehicleWith({seeder("S", {WHEAT})}), "NOTAFRUIT")
+                assert.is_false(ok)
+                assert.is_not_nil(reason)
+            end)
+
+            it("does nothing for a nil or empty seed type", function()
+                local s = seeder("Seeder", {WHEAT})
+                assert.is_true(CPIntegration:applySeedFruitType(vehicleWith({s}), nil))
+                assert.is_true(CPIntegration:applySeedFruitType(vehicleWith({s}), ""))
+                assert.is_nil(s.applied)
+            end)
+
+            it("tolerates a vehicle without getChildVehicles", function()
+                assert.is_true(CPIntegration:applySeedFruitType({}, "WHEAT"))
+                assert.is_true(CPIntegration:applySeedFruitType(nil, "WHEAT"))
+            end)
+        end)
+    end)
+
 end)

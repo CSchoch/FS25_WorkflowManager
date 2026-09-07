@@ -671,6 +671,99 @@ function CPIntegration:setResumeWaypointIx(vehicle, waypointIx)
     return true
 end
 
+---List the fruit types a workflow step can select as its seed type.
+---Base-game data (g_fruitTypeManager), NOT a Courseplay API — Courseplay has no seed setting
+---at all, the seed lives on the base-game SowingMachine specialization. Kept here because the
+---seed type is only reachable from Courseplay field work steps.
+---MEADOW is excluded: it has a fill type but is not sowable (same exclusion AutoDrive makes).
+---@return table seedTypes List of {name, title} tables sorted by title
+function CPIntegration:getSeedFruitTypes()
+    local seedTypes = {}
+
+    if g_fruitTypeManager == nil or g_fruitTypeManager.getFruitTypes == nil then
+        return seedTypes
+    end
+
+    for _, fruitType in pairs(g_fruitTypeManager:getFruitTypes()) do
+        if fruitType.name ~= "MEADOW" then
+            local fillType = g_fruitTypeManager:getFillTypeByFruitTypeIndex(fruitType.index)
+            if fillType ~= nil then
+                table.insert(seedTypes, {
+                    name = fruitType.name,
+                    title = fillType.title or fruitType.name
+                })
+            end
+        end
+    end
+
+    table.sort(seedTypes, function(a, b) return a.title < b.title end)
+    return seedTypes
+end
+
+---Select a seed type on every attached sowing machine that can sow it.
+---Server-side only: setSeedFruitType() broadcasts a SetSeedIndexEvent to all clients itself.
+---setSeedFruitType() is a silent no-op for a fruit the machine cannot sow, so membership in
+---spec.seeds is checked here to be able to report the failure.
+---@param vehicle table Vehicle whose attached implements are searched
+---@param fruitTypeName string Fruit type name, e.g. "WHEAT"
+---@return boolean ok False only when a sowing machine is attached but none can sow the fruit
+---@return string|nil reason Failure reason when ok is false
+function CPIntegration:applySeedFruitType(vehicle, fruitTypeName)
+    if vehicle == nil or fruitTypeName == nil or fruitTypeName == "" then
+        return true
+    end
+
+    local fruitType = g_fruitTypeManager ~= nil and g_fruitTypeManager:getFruitTypeByName(fruitTypeName) or nil
+    if fruitType == nil then
+        return false, string.format("unknown fruit type '%s'", tostring(fruitTypeName))
+    end
+
+    if vehicle.getChildVehicles == nil then
+        return true
+    end
+
+    local seedersFound, seedersHandled = 0, 0
+    for _, child in ipairs(vehicle:getChildVehicles() or {}) do
+        local spec = child.spec_sowingMachine
+        if spec ~= nil and spec.seeds ~= nil then
+            seedersFound = seedersFound + 1
+
+            local supported = false
+            for _, seedFruitIndex in ipairs(spec.seeds) do
+                if seedFruitIndex == fruitType.index then
+                    supported = true
+                    break
+                end
+            end
+
+            if supported then
+                seedersHandled = seedersHandled + 1
+                if child.getIsSeedChangeAllowed ~= nil and not child:getIsSeedChangeAllowed() then
+                    -- A mission has locked the seed to its own fruit; the game is already
+                    -- enforcing the right one, so warn instead of aborting the workflow.
+                    WMLogger:warning("Seed change not allowed on %s - keeping the seed the game selected",
+                        child.getName ~= nil and child:getName() or "implement")
+                else
+                    child:setSeedFruitType(fruitType.index)
+                    WMLogger:info("Set seed type '%s' on %s", fruitTypeName,
+                        child.getName ~= nil and child:getName() or "implement")
+                end
+            end
+        end
+    end
+
+    if seedersFound == 0 then
+        WMLogger:debug("No sowing machine attached - seed type '%s' ignored", fruitTypeName)
+        return true
+    end
+
+    if seedersHandled == 0 then
+        return false, string.format("no attached sowing machine can sow '%s'", fruitTypeName)
+    end
+
+    return true
+end
+
 ---Start Courseplay field work for a vehicle
 ---Uses the actual FS25 CP API: startCpAtLastWp() or startCpAtFirstWp()
 ---@param vehicle table Vehicle to control

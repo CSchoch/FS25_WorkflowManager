@@ -155,6 +155,83 @@ describe("WMStepDialog", function()
     end)
 
     -- =========================================================================
+    -- actionNeedsSeedType  (Courseplay field work only)
+    -- =========================================================================
+    describe("actionNeedsSeedType", function()
+        it("returns true for 'fieldwork' on STEP_COURSEPLAY", function()
+            local d = makeDialog()
+            d.stepType   = WorkflowManager.STEP_COURSEPLAY
+            d.stepAction = "fieldwork"
+            assert.is_true(d:actionNeedsSeedType())
+        end)
+
+        it("returns false for 'bale_collect' on STEP_COURSEPLAY", function()
+            local d = makeDialog()
+            d.stepType   = WorkflowManager.STEP_COURSEPLAY
+            d.stepAction = "bale_collect"
+            assert.is_false(d:actionNeedsSeedType())
+        end)
+
+        it("returns false for STEP_AUTODRIVE", function()
+            local d = makeDialog()
+            d.stepType   = WorkflowManager.STEP_AUTODRIVE
+            d.stepAction = "load"
+            assert.is_false(d:actionNeedsSeedType())
+        end)
+    end)
+
+    -- =========================================================================
+    -- Seed type dropdown
+    -- =========================================================================
+    describe("seed type dropdown", function()
+        local function dropdownDialog()
+            local d = makeDialog()
+            d.seedTypeItems = {{name = "BARLEY", display = "Barley"}, {name = "WHEAT", display = "Wheat"}}
+            d.texts, d.state = nil, nil
+            d.seedTypeDropdown = {
+                setTexts = function(_, t) d.texts = t end,
+                setState = function(_, i) d.state = i end,
+            }
+            return d
+        end
+
+        it("renders a 'none' entry ahead of the seed types", function()
+            local d = dropdownDialog()
+            d:refreshSeedTypeDropdown()
+            assert.are.equal(3, #d.texts)
+            assert.are.equal("Wheat", d.texts[3])
+            assert.are.equal(1, d.state)
+        end)
+
+        it("selects the step's current seed type", function()
+            local d = dropdownDialog()
+            d.stepSeedFruitType = "WHEAT"
+            d:refreshSeedTypeDropdown()
+            assert.are.equal(3, d.state)
+        end)
+
+        it("maps a click against the rendered list", function()
+            local d = dropdownDialog()
+            d:refreshSeedTypeDropdown()
+            d:onSeedTypeChanged(nil, 2)
+            assert.are.equal("BARLEY", d.stepSeedFruitType)
+            d:onSeedTypeChanged(nil, 1)
+            assert.are.equal("", d.stepSeedFruitType)
+        end)
+
+        it("clears the seed type when the action can no longer carry one", function()
+            local d = dropdownDialog()
+            d.stepType         = WorkflowManager.STEP_COURSEPLAY
+            d.stepAction       = "fieldwork"
+            d.stepSeedFruitType = "WHEAT"
+            d.actionDropdown   = nil
+            d:onActionChanged(nil, 2)  -- bale_collect
+            assert.are.equal("bale_collect", d.stepAction)
+            assert.are.equal("", d.stepSeedFruitType)
+        end)
+    end)
+
+    -- =========================================================================
     -- onTypeChanged – defaultActions map  (line 642 in WMStepDialog.lua)
     -- =========================================================================
     describe("onTypeChanged defaultActions", function()
@@ -263,6 +340,36 @@ describe("WMStepDialog", function()
             d.selectedFillTypes = {"wheat"}  -- must be ignored for CP
             local step = confirm(d)
             assert.is_nil(step.fillTypes)
+        end)
+
+        it("includes seedFruitType for 'fieldwork' step on STEP_COURSEPLAY", function()
+            local d = makeDialog()
+            d.stepType          = WorkflowManager.STEP_COURSEPLAY
+            d.stepAction        = "fieldwork"
+            d.stepTarget        = "Field1"
+            d.stepSeedFruitType = "WHEAT"
+            local step = confirm(d)
+            assert.are.equal("WHEAT", step.seedFruitType)
+        end)
+
+        it("does not include seedFruitType for 'bale_collect' on STEP_COURSEPLAY", function()
+            local d = makeDialog()
+            d.stepType          = WorkflowManager.STEP_COURSEPLAY
+            d.stepAction        = "bale_collect"
+            d.stepTarget        = "Field1"
+            d.stepSeedFruitType = "WHEAT"
+            local step = confirm(d)
+            assert.is_nil(step.seedFruitType)
+        end)
+
+        it("does not include seedFruitType for STEP_AUTODRIVE step", function()
+            local d = makeDialog()
+            d.stepType          = WorkflowManager.STEP_AUTODRIVE
+            d.stepAction        = "load"
+            d.stepTarget        = "Silo"
+            d.stepSeedFruitType = "WHEAT"  -- must be ignored for AD
+            local step = confirm(d)
+            assert.is_nil(step.seedFruitType)
         end)
     end)
 

@@ -171,8 +171,11 @@ function WMEditorDialog:loadDataCaches()
         end
     end
 
-    WMLogger:debug("Data caches loaded: %d AD, %d CP, %d fillTypes",
-        #self.cachedADDestinations, #self.cachedCPCourses, #self.cachedFillTypes)
+    -- Seed types come from the base game (g_fruitTypeManager), not from AD/CP
+    self.cachedSeedTypes = CPIntegration and CPIntegration:getSeedFruitTypes() or {}
+
+    WMLogger:debug("Data caches loaded: %d AD, %d CP, %d fillTypes, %d seedTypes",
+        #self.cachedADDestinations, #self.cachedCPCourses, #self.cachedFillTypes, #self.cachedSeedTypes)
 end
 
 function WMEditorDialog:refreshDisplay()
@@ -597,6 +600,7 @@ end
 function WMEditorDialog:getADDestinations() return self.cachedADDestinations or {} end
 function WMEditorDialog:getCPCourses()      return self.cachedCPCourses or {}      end
 function WMEditorDialog:getFillTypes()      return self.cachedFillTypes or {}      end
+function WMEditorDialog:getSeedTypes()      return self.cachedSeedTypes or {}      end
 
 -- ============================================================
 -- Input events
