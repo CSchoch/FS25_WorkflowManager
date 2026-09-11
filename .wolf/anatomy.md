@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-09-11T07:55:03.884Z
-> Files: 92 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-09-11T20:09:05.809Z
+> Files: 97 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -39,6 +39,10 @@
 ## ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/cf0cd88e-1fb2-4e57-8d56-7a5d7bf9a788/scratchpad/shot/
 
 - `seed.js` — Screenshot fixture only — seeds the web editor with a representative English workflow (~594 tok)
+
+## ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/e5a90252-f238-4c13-964c-df2cbdb9b392/scratchpad/
+
+- `we_settings_check.js` — Headless check: webeditor round-trips <settings><general courseplayAutoResume/>. (~1729 tok)
 
 ## ../../../tmp/claude-0/-home-user-FS25-WorkflowManager/442c8c76-f882-5833-bcbb-d59df923d2a5/scratchpad/
 
@@ -163,9 +167,9 @@
 
 ## webeditor/
 
-- `app.js` — Declares STEP_AUTODRIVE (~20004 tok)
+- `app.js` — Declares STEP_AUTODRIVE (~21216 tok)
 - `index.html` — FS25 Workflow Manager — Web Editor (~4074 tok)
-- `README.md` — Project documentation (~664 tok)
+- `README.md` — Project documentation (~676 tok)
 - `style.css` — Styles: 99 rules, 46 vars (~6454 tok)
 
 ## webeditor/.github/workflows/
@@ -202,31 +206,35 @@
 
 ## website/docs/
 
-- `faq.md` — Frequently Asked Questions (~1670 tok)
-- `intro.md` — FS25 Workflow Manager (~849 tok)
-- `troubleshooting.md` — Troubleshooting (~2308 tok)
-- `web-editor.md` — Web Editor (~976 tok)
+- `faq.md` — Frequently Asked Questions (~1856 tok)
+- `getting-started.md` — Getting Started (~977 tok)
+- `installation.md` — Installation (~732 tok)
+- `intro.md` — FS25 Workflow Manager (~901 tok)
+- `troubleshooting.md` — Troubleshooting (~2607 tok)
+- `web-editor.md` — Web Editor (~1063 tok)
 
 ## website/docs/api/
 
 - `console-commands.md` — Console Commands (~1477 tok)
+- `xml-format.md` — XML Format (~2395 tok)
 
 ## website/docs/ui/
 
 - `ad-settings-dialog.md` — AD/CP Settings Dialog (~503 tok)
-- `editor-dialog.md` — Editor Dialog (~1192 tok)
+- `editor-dialog.md` — Editor Dialog (~1219 tok)
 - `hud-controls.md` — HUD Controls (~1694 tok)
-- `leader-select-dialog.md` — Leader Vehicle Select Dialog (~627 tok)
-- `main-dialog.md` — Main Dialog (~1005 tok)
-- `mode-dialog.md` — Mode Select Dialog (~602 tok)
-- `step-dialog.md` — Step Dialog (~1073 tok)
+- `leader-select-dialog.md` — Leader Vehicle Select Dialog (~629 tok)
+- `main-dialog.md` — Main Dialog (~1085 tok)
+- `mode-dialog.md` — Mode Select Dialog (~604 tok)
+- `step-dialog.md` — Step Dialog (~1381 tok)
 
 ## website/docs/workflows/
 
 - `creating-workflows.md` — Creating Workflows (~1963 tok)
-- `linked-workflows.md` — Multi-Vehicle Workflows (~1681 tok)
+- `executing-workflows.md` — Executing Workflows (~2083 tok)
+- `linked-workflows.md` — Multi-Vehicle Workflows (~1706 tok)
 - `queue-system.md` — Queue System (~1325 tok)
-- `step-types.md` — Step Types (~2294 tok)
+- `step-types.md` — Step Types (~2633 tok)
 
 ## website/src/components/HomepageFeatures/
 

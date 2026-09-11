@@ -1565,3 +1565,57 @@ No WM dialog defines an Enter handler. Needs a 2-second in-game check: open the 
 | 09:55 | Edited ../../../../../.claude/projects/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/memory/project_wm_keybinding_audit.md | 3→4 lines | ~84 |
 | 09:40 | Stop hotkey KEY_x (MENU_EXTRA_1, user-confirmed dead) -> KEY_k; spec forbids KEY_x too (777 pass) | modDesc.xml, tests/specs/ModDescInputBindings_spec.lua, CLAUDE.md | done | ~1500 |
 | 09:55 | Session end: 15 writes across 5 files (modDesc.xml, ModDescInputBindings_spec.lua, run_tests.lua, CLAUDE.md, project_wm_keybinding_audit.md) | 10 reads | ~20495 tok |
+
+## Session: 2026-09-11 10:12
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-09-11 21:26
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 22:06 | Edited webeditor/app.js | 2→3 lines | ~59 |
+| 22:06 | Edited webeditor/app.js | inline fix | ~30 |
+| 22:06 | Edited webeditor/app.js | added 1 condition(s) | ~32 |
+| 22:06 | Edited webeditor/app.js | expanded (+7 lines) | ~170 |
+| 22:06 | Edited webeditor/app.js | added 2 condition(s) | ~146 |
+| 22:06 | Edited webeditor/app.js | 2→5 lines | ~76 |
+| 22:06 | Edited webeditor/README.md | 2→2 lines | ~44 |
+| 22:06 | Edited website/docs/intro.md | inline fix | ~42 |
+| 22:06 | Edited website/docs/intro.md | 4→4 lines | ~91 |
+| 22:06 | Edited website/docs/getting-started.md | 3→3 lines | ~79 |
+| 22:06 | Edited website/docs/getting-started.md | 2→2 lines | ~36 |
+| 22:06 | Edited website/docs/getting-started.md | inline fix | ~28 |
+| 22:06 | Edited website/docs/getting-started.md | inline fix | ~93 |
+| 22:06 | Edited website/docs/installation.md | 8→11 lines | ~184 |
+| 22:06 | Edited website/docs/installation.md | 4→4 lines | ~43 |
+| 22:07 | Edited website/docs/installation.md | 3→3 lines | ~25 |
+| 22:07 | Edited website/docs/installation.md | 7→7 lines | ~88 |
+| 22:07 | Edited website/docs/troubleshooting.md | 9→12 lines | ~133 |
+| 22:07 | Edited website/docs/troubleshooting.md | 2→4 lines | ~75 |
+| 22:07 | Edited website/docs/troubleshooting.md | expanded (+15 lines) | ~217 |
+| 22:07 | Edited website/docs/workflows/executing-workflows.md | inline fix | ~38 |
+| 22:07 | Edited website/docs/workflows/executing-workflows.md | expanded (+22 lines) | ~533 |
+| 22:07 | Edited website/docs/faq.md | inline fix | ~72 |
+| 22:07 | Edited website/docs/faq.md | 6→8 lines | ~105 |
+| 22:07 | Edited website/docs/faq.md | inline fix | ~55 |
+| 22:07 | Edited website/docs/faq.md | inline fix | ~92 |
+| 22:07 | Edited website/docs/ui/main-dialog.md | inline fix | ~31 |
+| 22:07 | Edited website/docs/ui/main-dialog.md | 9→11 lines | ~126 |
+| 22:07 | Edited website/docs/ui/main-dialog.md | inline fix | ~63 |
+| 22:07 | Edited website/docs/ui/editor-dialog.md | 2→5 lines | ~44 |
+| 22:07 | Edited website/docs/ui/mode-dialog.md | inline fix | ~11 |
+| 22:07 | Edited website/docs/ui/leader-select-dialog.md | inline fix | ~18 |
+| 22:07 | Edited website/docs/ui/step-dialog.md | inline fix | ~22 |
+| 22:07 | Edited website/docs/ui/step-dialog.md | expanded (+7 lines) | ~106 |
+| 22:07 | Edited website/docs/workflows/step-types.md | 1→3 lines | ~87 |
+| 22:07 | Edited website/docs/workflows/step-types.md | 2→3 lines | ~51 |
+| 22:07 | Edited website/docs/workflows/linked-workflows.md | inline fix | ~57 |
+| 22:08 | Edited website/docs/api/xml-format.md | expanded (+19 lines) | ~205 |
+| 22:08 | Edited website/docs/web-editor.md | 1→2 lines | ~44 |
+| 22:08 | Edited website/docs/web-editor.md | expanded (+6 lines) | ~103 |
+| 22:09 | Created ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/e5a90252-f238-4c13-964c-df2cbdb9b392/scratchpad/we_settings_check.js | — | ~1729 |
+| 22:11 | Webeditor: round-trip <settings><general courseplayAutoResume> (import/export/localStorage) + README | webeditor/app.js, webeditor/README.md | 9/9 headless vm checks pass | ~6k |
+| 22:11 | Website docs sweep for ad6bb1d + 7f75d3a: AutoDrive optional, real hotkeys (Stop=K, Edit=T, F in mode/leader), resume-after-load + setting, <settings> XML | website/docs (15 files) | docusaurus build clean, 777 Lua tests pass; not committed | ~25k |
+| 22:12 | Session end: 41 writes across 18 files (app.js, README.md, intro.md, getting-started.md, installation.md) | 21 reads | ~75760 tok |

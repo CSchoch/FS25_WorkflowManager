@@ -4409,6 +4409,188 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-11T07:54:52.019Z"
+    },
+    {
+      "id": "bug-266",
+      "timestamp": "2026-09-11T20:06:23.539Z",
+      "error_message": "Wrong reference: selectedId should be general",
+      "file": "webeditor/app.js",
+      "root_cause": "Used \"selectedId\" instead of \"general\"",
+      "fix": "Changed selectedId → general",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T20:06:23.539Z"
+    },
+    {
+      "id": "bug-267",
+      "timestamp": "2026-09-11T20:06:30.516Z",
+      "error_message": "Wrong return value",
+      "file": "webeditor/app.js",
+      "root_cause": "Was returning: { workflows, hud, migrated: anyMigrated };",
+      "fix": "Now returns: { workflows, hud, general, migrated: anyMigrated }",
+      "tags": [
+        "auto-detected",
+        "return-value",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T20:06:30.516Z"
+    },
+    {
+      "id": "bug-268",
+      "timestamp": "2026-09-11T20:06:34.412Z",
+      "error_message": "Wrong condition in logic",
+      "file": "webeditor/app.js",
+      "root_cause": "Condition was: if (state.hud && state.hud.posX != null && state.hud.p)",
+      "fix": "Changed to: if (hasHud || hasGeneral)",
+      "tags": [
+        "auto-detected",
+        "logic-fix",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T20:06:34.412Z"
+    },
+    {
+      "id": "bug-269",
+      "timestamp": "2026-09-11T20:06:43.667Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/docs/intro.md",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 4→4 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T20:06:43.668Z"
+    },
+    {
+      "id": "bug-270",
+      "timestamp": "2026-09-11T20:06:46.204Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/docs/getting-started.md",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 3→3 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T20:06:46.204Z"
+    },
+    {
+      "id": "bug-271",
+      "timestamp": "2026-09-11T20:06:56.985Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/docs/installation.md",
+      "root_cause": "6 lines replaced/restructured",
+      "fix": "Rewrote 8→11 lines (6 removed) | Also: - Check that AutoDrive and Courseplay are also ena; If you see \"AutoDrive not found\" or \"Courseplay no",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-09-11T20:07:03.923Z"
+    },
+    {
+      "id": "bug-272",
+      "timestamp": "2026-09-11T20:07:07.661Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/docs/troubleshooting.md",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 9→12 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T20:07:07.661Z"
+    },
+    {
+      "id": "bug-273",
+      "timestamp": "2026-09-11T20:07:23.607Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/docs/workflows/executing-workflows.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 3→25 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T20:07:23.607Z"
+    },
+    {
+      "id": "bug-274",
+      "timestamp": "2026-09-11T20:07:38.980Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/docs/ui/main-dialog.md",
+      "root_cause": "5 lines replaced/restructured",
+      "fix": "Rewrote 9→11 lines (5 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T20:07:38.980Z"
+    },
+    {
+      "id": "bug-275",
+      "timestamp": "2026-09-11T12:00:00Z",
+      "error_message": "Webeditor export drops <settings><general courseplayAutoResume/> - an in-game 'Resume Courseplay after loading = off' silently turns back on after importing/exporting workflowManager.xml",
+      "file": "webeditor/app.js",
+      "root_cause": "importWorkflowsXml/exportWorkflowsXml only knew <settings><hud>; the general mod-options element added by WMStorage in ad6bb1d was never mirrored, and an absent attribute reads as the default (true) on the next game load",
+      "fix": "Parse settings>general into state.general (replaced, not merged, on import so one savegame's option cannot leak into another), persist it in localStorage, and export it after <hud> inside one <settings> element; verified with a headless Node vm harness (9 checks)",
+      "tags": [
+        "webeditor",
+        "round-trip",
+        "settings",
+        "courseplayAutoResume",
+        "parity"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T12:00:00Z"
+    },
+    {
+      "id": "bug-276",
+      "timestamp": "2026-09-11T12:00:00Z",
+      "error_message": "Website docs out of date: AutoDrive listed as required, Main Dialog shortcut table listed X/P/Enter/1-9/Delete, resume-after-load described as manual-only (and contradicted by linked-workflows.md)",
+      "file": "website/docs (15 pages)",
+      "root_cause": "Docs not swept after ad6bb1d (Courseplay resume + setting) and 7f75d3a (AutoDrive optional, WM_GUI_NEW/EDIT/ADD_SUPPORT/NO_LEADER/RUN_SUPPORT, Stop X->K); the P/Enter/1-9 rows never had handlers in WMMainDialog and Delete is bound to KEY_r",
+      "fix": "Documented optional AutoDrive, real modDesc bindings (Main N/T/R/S/K/B, Editor N/T/S/R/U/D, Mode/Leader F), the 10 s post-load window + Courseplay waypoint restart + the General settings toggle, and the <settings> XML element; docusaurus build clean",
+      "tags": [
+        "docs",
+        "website",
+        "keybindings",
+        "autodrive-optional",
+        "resume"
+      ],
+      "related_bugs": [
+        "bug-261"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T12:00:00Z"
     }
   ]
 }
