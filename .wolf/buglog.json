@@ -4222,6 +4222,193 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-02T21:30:00Z"
+    },
+    {
+      "id": "bug-256",
+      "timestamp": "2026-09-07T23:40:00Z",
+      "error_message": "Mod unusable without AutoDrive: every start refused with \"Vehicle 'X' needs AutoDrive + Courseplay\", even for workflows made only of Courseplay steps.",
+      "file": "src/WorkflowManager.lua",
+      "root_cause": "isVehicleValid hardcoded `return hasAutoDrive and hasCP`, so resolveStartTarget rejected any vehicle without vehicle.ad / spec_autoDrive - which is every vehicle when AutoDrive is not installed. Everything else (ADIntegration entry points, the editor's cache load) already degraded gracefully, so this single gate was the only blocker.",
+      "fix": "Added WorkflowManager:workflowNeedsAutoDrive(workflow) (scans steps and support sub-steps for isAutoDriveTrackedStepType) and made isVehicleValid(vehicle, workflow) require CP always and AD only when the workflow needs it. A nil workflow still requires AD. resolveStartTarget passes the workflow and picks the wm_warning_incompatible_vehicle_cp message when only CP is needed.",
+      "tags": [
+        "autodrive",
+        "optional-dependency",
+        "validation",
+        "start-gate",
+        "courseplay"
+      ],
+      "related_bugs": [
+        "bug-257"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-07T23:40:00Z"
+    },
+    {
+      "id": "bug-257",
+      "timestamp": "2026-09-07T23:45:00Z",
+      "error_message": "WMStepDialog spec: 'hides the four AD-driven types when AutoDrive is not installed' - Expected 3, got 4",
+      "file": "src/gui/WMStepDialog.lua",
+      "root_cause": "getStepTypes keeps the step's CURRENT type listed even when filtered out (so legacy data can be converted), and setStep defaults a NEW step to stepType=\"autodrive\". Without AutoDrive the new-step default therefore re-added AutoDrive to the dropdown, and confirming would have saved an unrunnable AD step.",
+      "fix": "setStep now defaults a new step to STEP_COURSEPLAY/\"fieldwork\" when WMStepDialog:isAutoDriveAvailable() is false, keeping AutoDrive/\"drive\" otherwise.",
+      "tags": [
+        "gui",
+        "step-dialog",
+        "autodrive",
+        "defaults",
+        "tests"
+      ],
+      "related_bugs": [
+        "bug-256"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-07T23:45:00Z"
+    },
+    {
+      "id": "bug-258",
+      "timestamp": "2026-09-08T08:00:00Z",
+      "error_message": "Error: Could not find motion path effect mesh for settings (Class: 'CutterMotionPathEffect', numRows: 32, rowLength: 42, fruitType 'MAIZE', growthState '7', fillType 'MAIZE') / MotionPathEffectManager.lua:514: attempt to index nil with 'speedScale'",
+      "file": "EXTERNAL - not WorkflowManager (FS25_Hirschfeld_AGCO_Ideal_Pack_by_HIP_Marco/xml/cressoni_14m.xml)",
+      "root_cause": "The Cressoni 14m grain header attached to the LEXION 8900 declares <motionPathEffect numRows=\"32\" rowLength=\"42\"> (grainheader beltXArray). The NDL map registers CUTTER effect meshes for MAIZE growthState 7 only in cornheader/maizeheader dimensions (6x5, 6x20, 12x26, 20x36, 6x8, 12x8, 20x8 - see FS25_NDL/xml/cutterEffects.xml). When the combine's cutting area covers maize, the engine looks up a 32x42 MAIZE mesh, finds none, and MotionPathEffectManager indexes the nil result. Purely cosmetic/base-game; WorkflowManager has zero motion-path/cutter code.",
+      "fix": "No WM change. Harvest maize with a maize/corn header (e.g. the Capello Diamant 8) instead of the Cressoni 14m grain header, or report to the header mod author. Do NOT re-investigate this from the WM side.",
+      "tags": [
+        "external",
+        "not-our-bug",
+        "log-error",
+        "motion-path-effect",
+        "cutter",
+        "maize",
+        "NDL",
+        "cressoni"
+      ],
+      "related_bugs": [],
+      "occurrences": 9,
+      "last_seen": "2026-09-08T07:12:48Z"
+    },
+    {
+      "id": "bug-259",
+      "timestamp": "2026-09-10T22:50:20",
+      "error_message": "It seems like there are some input bindings missing in that dialog (WMEditorDialog)",
+      "file": "src/gui/WMEditorDialog.lua",
+      "root_cause": "WMEditorDialog only had keyboard actions for Delete/Move Up/Move Down. The New step, Edit step and Add Support Step buttons had no InputAction assigned and no registered action event, so they were mouse-only and showed no key glyph, unlike the equivalent buttons in WMMainDialog.",
+      "fix": "Added WM_GUI_NEW (KEY_n), WM_GUI_EDIT (KEY_e) and WM_GUI_ADD_SUPPORT (KEY_s) to modDesc.xml actions + inputBinding and to both translation files (action_/input_ pairs). WMEditorDialog:onOpen now calls setInputAction on all six step buttons; registerInputEvents registers all six; new onInputAddStep/onInputEditStep/onInputAddSupportStep handlers mirror the existing disabled-guard pattern.",
+      "tags": [
+        "input-binding",
+        "gui",
+        "WMEditorDialog",
+        "modDesc",
+        "keyboard"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-10T22:50:20"
+    },
+    {
+      "id": "bug-260",
+      "timestamp": "2026-09-10T23:12:47",
+      "error_message": "Audit follow-up: which other key bindings are missing? (WMMainDialog New/Edit; WMLeaderVehicleSelectDialog No Leader; WMModeSelectDialog Run as Support)",
+      "file": "src/gui/WMMainDialog.lua, src/gui/WMLeaderVehicleSelectDialog.lua, src/gui/WMModeSelectDialog.lua",
+      "root_cause": "WMMainDialog bound only Delete/Start/Stop/AD-Settings, leaving New and Edit mouse-only. The secondary choice in the two 3-button dialogs ('No Leader', 'Run as Support') had no id attribute in its GUI XML at all, so Lua could not reference the button to bind it; neither dialog had registerInputEvents.",
+      "fix": "WMMainDialog: setInputAction + registered events + onInputNew/onInputEdit reusing the existing WM_GUI_NEW/WM_GUI_EDIT actions. Added WM_GUI_NO_LEADER (KEY_space) and WM_GUI_RUN_SUPPORT (KEY_f) to modDesc + both translations; gave the two buttons ids (noLeaderButton, supportButton) and added the register/unregister/handler trio to both dialogs.",
+      "tags": [
+        "input-binding",
+        "gui",
+        "WMMainDialog",
+        "WMLeaderVehicleSelectDialog",
+        "WMModeSelectDialog",
+        "modDesc",
+        "keyboard"
+      ],
+      "related_bugs": [
+        "bug-259"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-10T23:12:47"
+    },
+    {
+      "id": "bug-261",
+      "timestamp": "2026-09-11T09:30:00",
+      "error_message": "The edit key (e) does not work in any dialog; changing the assignment did not fix it",
+      "file": "modDesc.xml",
+      "root_cause": "Gui:registerMenuInput registers the menu navigation actions (Gui.NAV_ACTIONS) in the dialog input context. KEY_e is MENU_PAGE_NEXT, so the colliding WM_GUI_EDIT binding never fired. The player's rebind went to KEY_space (MENU_ACTIVATE), also menu-owned. The handler code was correct: New/Delete use the identical pattern and work.",
+      "fix": "WM_GUI_EDIT default KEY_e -> KEY_t (user's choice). Added ModDescInputBindings_spec pinning Edit=KEY_t and forbidding KEY_q/KEY_e on WM_GUI_* actions. Saved profile bindings override modDesc defaults, so existing players must rebind in Options. Follow-up: the user confirmed WM_GUI_STOP on KEY_x (MENU_EXTRA_1) was dead too, so it moved to KEY_k and KEY_x joined the spec's forbidden list. D (MENU_EXTRA_3) is left as is pending an in-game test.",
+      "tags": [
+        "input-binding",
+        "gui",
+        "modDesc",
+        "keyboard",
+        "menu-context",
+        "MENU_PAGE_NEXT"
+      ],
+      "related_bugs": [
+        "bug-259",
+        "bug-260"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T09:30:00"
+    },
+    {
+      "id": "bug-262",
+      "timestamp": "2026-09-11T07:30:02.727Z",
+      "error_message": "Wrong reference: 774 should be 776",
+      "file": "CLAUDE.md",
+      "root_cause": "Used \"774\" instead of \"776\"",
+      "fix": "Changed 774 → 776",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T07:30:02.727Z"
+    },
+    {
+      "id": "bug-263",
+      "timestamp": "2026-09-11T07:30:08.080Z",
+      "error_message": "Significant refactor of ",
+      "file": "../../../../../.claude/projects/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/memory/project_wm_keybinding_audit.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 3→8 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T07:30:08.080Z"
+    },
+    {
+      "id": "bug-264",
+      "timestamp": "2026-09-11T07:54:27.786Z",
+      "error_message": "Incorrect value in code",
+      "file": "modDesc.xml",
+      "root_cause": "Had \"WM_GUI_STOP\"",
+      "fix": "Changed to 's MENU_EXTRA_1 owns X inside every dialog. -->\n  ",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T07:54:27.786Z"
+    },
+    {
+      "id": "bug-265",
+      "timestamp": "2026-09-11T07:54:52.019Z",
+      "error_message": "Wrong reference: 776 should be 777",
+      "file": "CLAUDE.md",
+      "root_cause": "Used \"776\" instead of \"777\"",
+      "fix": "Changed 776 → 777",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-11T07:54:52.019Z"
     }
   ]
 }

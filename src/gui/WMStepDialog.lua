@@ -152,8 +152,15 @@ function WMStepDialog:setStep(step, callback, isSupportStep)
         self.stepSeedFruitType = step.seedFruitType or ""
     else
         self.step = nil
-        self.stepType = "autodrive"
-        self.stepAction = "drive"
+        -- A new step starts as AutoDrive, but that type cannot be authored (or run) without
+        -- AutoDrive installed - fall back to Courseplay so the dropdown and the saved step agree.
+        if self:isAutoDriveAvailable() then
+            self.stepType = WorkflowManager.STEP_AUTODRIVE
+            self.stepAction = "drive"
+        else
+            self.stepType = WorkflowManager.STEP_COURSEPLAY
+            self.stepAction = "fieldwork"
+        end
         self.stepTarget = ""
         self.stepUnloadTarget = ""
         self.selectedFillTypes = {}
@@ -277,24 +284,41 @@ function WMStepDialog:refreshTypeDropdown()
     self.typeDropdown:setState(currentIndex)
 end
 
+---True when AutoDrive is installed, i.e. AD-driven step types can be authored at all.
+---@return boolean
+function WMStepDialog:isAutoDriveAvailable()
+    return ADIntegration ~= nil and ADIntegration.isAvailable == true
+end
+
 ---Ordered list of selectable step types (must match onTypeChanged indexing).
 ---Sync markers are omitted for support sub-steps: leader/follower pairing is built from
 ---workflow.steps only (see WMExecutor:buildSyncMaps), so a marker nested under a main step
 ---has nothing to pair with and would abort the workflow at runtime.
+---AutoDrive-driven types (drive/park/refuel/repair) are omitted when AutoDrive is not
+---installed - they would fail at runtime with no route to drive.
 function WMStepDialog:getStepTypes()
-    local types = {
-        WorkflowManager.STEP_AUTODRIVE,
-        WorkflowManager.STEP_COURSEPLAY,
-    }
-    -- Exception: keep them listed when the step being edited already is a marker (data saved
-    -- before this restriction existed), so the dropdown reflects reality and can convert it.
+    -- Exception in both filters below: a type the edited step ALREADY has stays listed, so
+    -- the dropdown reflects reality (and can convert the step) for data saved when the type
+    -- was still authorable - a legacy marker sub-step, or an AD step from before AD was removed.
+    local adOk = self:isAutoDriveAvailable()
+    local function includeAD(stepType)
+        return adOk or self.stepType == stepType
+    end
+
+    local types = {}
+    if includeAD(WorkflowManager.STEP_AUTODRIVE) then
+        table.insert(types, WorkflowManager.STEP_AUTODRIVE)
+    end
+    table.insert(types, WorkflowManager.STEP_COURSEPLAY)
     if not self.isSupportStep or WorkflowManager:isMarkerStepType(self.stepType) then
         table.insert(types, WorkflowManager.STEP_WAIT_FOR_LEADER)
         table.insert(types, WorkflowManager.STEP_UNLOCK_FOLLOWER)
     end
-    table.insert(types, WorkflowManager.STEP_PARK)
-    table.insert(types, WorkflowManager.STEP_REFUEL)
-    table.insert(types, WorkflowManager.STEP_REPAIR)
+    for _, adType in ipairs({WorkflowManager.STEP_PARK, WorkflowManager.STEP_REFUEL, WorkflowManager.STEP_REPAIR}) do
+        if includeAD(adType) then
+            table.insert(types, adType)
+        end
+    end
     return types
 end
 

@@ -1498,3 +1498,70 @@ Test total 704 -> 731, all green.
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+| 23:05 | Investigated running WM without AutoDrive; found isVehicleValid hard-gates start on vehicle.ad | src/WorkflowManager.lua (read only) | answered, no code change | ~12k |
+| 23:35 | Made AutoDrive optional: CP-only workflows may start; step dialog hides AD types without AD | src/WorkflowManager.lua, src/gui/WMStepDialog.lua, modDesc.xml, translations/*, tests/specs/WorkflowManagerADRequirement_spec.lua (new), tests/specs/WMStepDialog_spec.lua, tests/run_tests.lua, CLAUDE.md | 753/753 tests pass | ~45k |
+| 23:55 | Added hard <dependencies>FS25_Courseplay</dependencies> to modDesc (AutoDrive intentionally omitted) | modDesc.xml | XML parses, 753/753 tests pass | ~3k |
+
+## Session: 2026-09-08 06:15
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 08:05 | Traced log error "motion path effect mesh MAIZE 32x42" to Cressoni 14m grain header (Hirschfeld pack) vs NDL maize cutter meshes | log.txt, .wolf/buglog.json | external mod issue, no WM change | ~35k |
+
+## Session: 2026-09-10 22:39
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-09-10 22:41
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-09-10 22:41
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 22:50 | Added missing WMEditorDialog key bindings (New/Edit/Add Support) | modDesc.xml, WMEditorDialog.lua, translations, WMEditorDialog_spec.lua | 758 tests pass | ~14k |
+| 23:12 | Bound main-dialog New/Edit + No Leader (Space) / Run as Support (F) | modDesc.xml, WMMainDialog.lua, WMLeaderVehicleSelectDialog.lua, WMModeSelectDialog.lua, 2 XML, translations, 3 specs | 774 tests pass | ~20k |
+
+## Session summary 2026-09-10
+Audited every WM dialog for missing keyboard bindings and closed three of four gaps.
+Added actions WM_GUI_NEW (N), WM_GUI_EDIT (E), WM_GUI_ADD_SUPPORT (S), WM_GUI_NO_LEADER (Space), WM_GUI_RUN_SUPPORT (F)
+in modDesc.xml + EN/DE translations; wired them into WMEditorDialog (6 step buttons), WMMainDialog (New/Edit),
+WMLeaderVehicleSelectDialog (No Leader) and WMModeSelectDialog (Run as Support) — the latter two needed new XML button ids
+and a registerInputEvents/unregister/handler trio each. Tests 753 -> 774; new spec file WMModeSelectDialog_spec.lua.
+STILL OPEN (finding #2, deliberately deferred): the WMHud transport controls (prev/pause-resume/stop/next) are mouse-only —
+hit-tested against WMHud.buttonBounds, zero registered action events. Needs 3 new actions registered in *vehicle* context via
+WorkflowManagerSpec:onRegisterActionEvents, not the dialog pattern. User has not picked keys for these yet.
+ALSO UNVERIFIED (finding #4): whether Enter/MENU_ACCEPT confirms a buttonOK in WM dialogs. DialogElement:onClickBack is real
+in the GIANTS dump so Esc/back is fine, but no accept counterpart is visible (Gui.lua's dialog key routing is a stripped body).
+No WM dialog defines an Enter handler. Needs a 2-second in-game check: open the step dialog, press Enter.
+
+| 23:15 | Created ../../../../../.claude/projects/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/memory/feedback_ask_before_choosing_keybindings.md | — | ~256 |
+| 23:15 | Created ../../../../../.claude/projects/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/memory/project_wm_keybinding_audit.md | — | ~498 |
+| 23:16 | Session end: 2 writes across 2 files (feedback_ask_before_choosing_keybindings.md, project_wm_keybinding_audit.md) | 0 reads | ~807 tok |
+
+## Session: 2026-09-11 08:53
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 09:29 | Edited modDesc.xml | 2→4 lines | ~76 |
+| 09:29 | Created tests/specs/ModDescInputBindings_spec.lua | — | ~433 |
+| 09:29 | Edited tests/run_tests.lua | 2→3 lines | ~25 |
+| 09:30 | Edited CLAUDE.md | 2→3 lines | ~43 |
+| 09:30 | Edited CLAUDE.md | 774 → 776 | ~7 |
+| 09:30 | Edited ../../../../../.claude/projects/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/memory/project_wm_keybinding_audit.md | 3→8 lines | ~165 |
+| 09:31 | Fixed dead Edit hotkey: WM_GUI_EDIT KEY_e (MENU_PAGE_NEXT collision) -> KEY_t; added ModDescInputBindings_spec (776 pass); bug-261, cerebrum DNR | modDesc.xml, tests/specs/ModDescInputBindings_spec.lua, tests/run_tests.lua, CLAUDE.md | done | ~3000 |
+| 09:30 | Session end: 6 writes across 5 files (modDesc.xml, ModDescInputBindings_spec.lua, run_tests.lua, CLAUDE.md, project_wm_keybinding_audit.md) | 9 reads | ~17449 tok |
+| 09:54 | Edited modDesc.xml | 2→3 lines | ~52 |
+| 09:54 | Edited tests/specs/ModDescInputBindings_spec.lua | 2→2 lines | ~43 |
+| 09:54 | Edited tests/specs/ModDescInputBindings_spec.lua | 3→7 lines | ~57 |
+| 09:54 | Edited tests/specs/ModDescInputBindings_spec.lua | 1→2 lines | ~40 |
+| 09:54 | Edited tests/specs/ModDescInputBindings_spec.lua | inline fix | ~14 |
+| 09:54 | Edited CLAUDE.md | inline fix | ~41 |
+| 09:54 | Edited CLAUDE.md | 776 → 777 | ~7 |
+| 09:55 | Edited ../../../../../.claude/projects/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/memory/project_wm_keybinding_audit.md | inline fix | ~11 |
+| 09:55 | Edited ../../../../../.claude/projects/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/memory/project_wm_keybinding_audit.md | 3→4 lines | ~84 |
+| 09:40 | Stop hotkey KEY_x (MENU_EXTRA_1, user-confirmed dead) -> KEY_k; spec forbids KEY_x too (777 pass) | modDesc.xml, tests/specs/ModDescInputBindings_spec.lua, CLAUDE.md | done | ~1500 |
+| 09:55 | Session end: 15 writes across 5 files (modDesc.xml, ModDescInputBindings_spec.lua, run_tests.lua, CLAUDE.md, project_wm_keybinding_audit.md) | 10 reads | ~20495 tok |

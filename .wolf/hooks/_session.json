@@ -1,12 +1,160 @@
 {
-  "session_id": "session-2026-09-07-2254",
-  "started": "2026-09-07T20:54:34.355Z",
-  "files_read": {},
-  "files_written": [],
-  "edit_counts": {},
-  "anatomy_hits": 0,
-  "anatomy_misses": 0,
+  "session_id": "session-2026-09-11-0853",
+  "started": "2026-09-11T06:53:38.759Z",
+  "files_read": {
+    "C:/Users/Chef/.claude/projects/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/memory/project_wm_keybinding_audit.md": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-09-11T07:09:00.366Z"
+    },
+    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMMainDialog.lua": {
+      "count": 1,
+      "tokens": 3813,
+      "first_read": "2026-09-11T07:09:11.523Z"
+    },
+    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMEditorDialog.lua": {
+      "count": 1,
+      "tokens": 6738,
+      "first_read": "2026-09-11T07:09:12.186Z"
+    },
+    "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/debugger/dataS/scripts/input/InputBinding.lua": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-09-11T07:10:46.785Z"
+    },
+    "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/debugger/dataS/scripts/gui/base/Gui.lua": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-09-11T07:10:57.823Z"
+    },
+    "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/WMModeSelectDialog_spec.lua": {
+      "count": 1,
+      "tokens": 1400,
+      "first_read": "2026-09-11T07:28:59.972Z"
+    },
+    "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/run_tests.lua": {
+      "count": 1,
+      "tokens": 2292,
+      "first_read": "2026-09-11T07:29:06.699Z"
+    },
+    "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/.wolf/cerebrum.md": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-09-11T07:29:45.332Z"
+    },
+    "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md": {
+      "count": 1,
+      "tokens": 2403,
+      "first_read": "2026-09-11T07:29:57.226Z"
+    },
+    "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/modDesc.xml": {
+      "count": 1,
+      "tokens": 2673,
+      "first_read": "2026-09-11T07:54:23.124Z"
+    }
+  },
+  "files_written": [
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/modDesc.xml",
+      "action": "edit",
+      "tokens": 82,
+      "at": "2026-09-11T07:29:12.218Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/ModDescInputBindings_spec.lua",
+      "action": "create",
+      "tokens": 464,
+      "at": "2026-09-11T07:29:19.905Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/run_tests.lua",
+      "action": "edit",
+      "tokens": 27,
+      "at": "2026-09-11T07:29:21.637Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md",
+      "action": "edit",
+      "tokens": 46,
+      "at": "2026-09-11T07:30:01.547Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md",
+      "action": "edit",
+      "tokens": 7,
+      "at": "2026-09-11T07:30:02.722Z"
+    },
+    {
+      "file": "C:/Users/Chef/.claude/projects/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/memory/project_wm_keybinding_audit.md",
+      "action": "edit",
+      "tokens": 177,
+      "at": "2026-09-11T07:30:08.075Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/modDesc.xml",
+      "action": "edit",
+      "tokens": 56,
+      "at": "2026-09-11T07:54:27.781Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/ModDescInputBindings_spec.lua",
+      "action": "edit",
+      "tokens": 46,
+      "at": "2026-09-11T07:54:30.439Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/ModDescInputBindings_spec.lua",
+      "action": "edit",
+      "tokens": 61,
+      "at": "2026-09-11T07:54:32.758Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/ModDescInputBindings_spec.lua",
+      "action": "edit",
+      "tokens": 43,
+      "at": "2026-09-11T07:54:34.892Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/specs/ModDescInputBindings_spec.lua",
+      "action": "edit",
+      "tokens": 15,
+      "at": "2026-09-11T07:54:48.127Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md",
+      "action": "edit",
+      "tokens": 44,
+      "at": "2026-09-11T07:54:50.367Z"
+    },
+    {
+      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/CLAUDE.md",
+      "action": "edit",
+      "tokens": 7,
+      "at": "2026-09-11T07:54:52.014Z"
+    },
+    {
+      "file": "C:/Users/Chef/.claude/projects/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/memory/project_wm_keybinding_audit.md",
+      "action": "edit",
+      "tokens": 11,
+      "at": "2026-09-11T07:55:00.718Z"
+    },
+    {
+      "file": "C:/Users/Chef/.claude/projects/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/memory/project_wm_keybinding_audit.md",
+      "action": "edit",
+      "tokens": 90,
+      "at": "2026-09-11T07:55:03.901Z"
+    }
+  ],
+  "edit_counts": {
+    "modDesc.xml": 2,
+    "tests/specs/ModDescInputBindings_spec.lua": 5,
+    "tests/run_tests.lua": 1,
+    "CLAUDE.md": 4,
+    "../../../../../.claude/projects/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/memory/project_wm_keybinding_audit.md": 3
+  },
+  "anatomy_hits": 6,
+  "anatomy_misses": 4,
   "repeated_reads_warned": 0,
   "cerebrum_warnings": 0,
-  "stop_count": 0
+  "stop_count": 2
 }

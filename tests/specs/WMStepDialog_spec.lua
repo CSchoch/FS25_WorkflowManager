@@ -46,6 +46,9 @@ describe("WMStepDialog", function()
             editorDialog = nil,
         }
 
+        -- AutoDrive present by default: getStepTypes() hides the AD-driven types without it.
+        _G.ADIntegration = { isAvailable = true }
+
         dofile("src/gui/WMStepDialog.lua")
     end)
 
@@ -532,6 +535,72 @@ describe("WMStepDialog", function()
             local d = makeDialog()
             WMStepDialog.setStep(d, nil, function() end, false)
             assert.are.equal(7, #d:getStepTypes())
+        end)
+
+        it("starts a new step as AutoDrive while AutoDrive is installed", function()
+            local d = makeDialog()
+            WMStepDialog.setStep(d, nil, function() end, false)
+            assert.are.equal(WorkflowManager.STEP_AUTODRIVE, d.stepType)
+            assert.are.equal("drive", d.stepAction)
+        end)
+
+        it("starts a new step as Courseplay when AutoDrive is missing", function()
+            -- Otherwise the dropdown (which hides AutoDrive) and the step being edited
+            -- disagree, and confirming would save an unrunnable AutoDrive step.
+            _G.ADIntegration = { isAvailable = false }
+            local d = makeDialog()
+            WMStepDialog.setStep(d, nil, function() end, false)
+            assert.are.equal(WorkflowManager.STEP_COURSEPLAY, d.stepType)
+            assert.are.equal("fieldwork", d.stepAction)
+            assert.are.equal(WorkflowManager.STEP_COURSEPLAY, d:getStepTypes()[1])
+            _G.ADIntegration = { isAvailable = true }
+        end)
+
+        it("hides the four AD-driven types when AutoDrive is not installed", function()
+            _G.ADIntegration = { isAvailable = false }
+            local d = makeDialog()
+            WMStepDialog.setStep(d, nil, function() end, false)
+            local types = d:getStepTypes()
+            assert.are.equal(3, #types)
+            assert.are.equal(WorkflowManager.STEP_COURSEPLAY, types[1])
+            assert.is_false(contains(types, WorkflowManager.STEP_AUTODRIVE))
+            assert.is_false(contains(types, WorkflowManager.STEP_PARK))
+            assert.is_false(contains(types, WorkflowManager.STEP_REFUEL))
+            assert.is_false(contains(types, WorkflowManager.STEP_REPAIR))
+            _G.ADIntegration = { isAvailable = true }
+        end)
+
+        it("leaves only Courseplay for support sub-steps without AutoDrive", function()
+            _G.ADIntegration = { isAvailable = false }
+            local d = makeDialog()
+            WMStepDialog.setStep(d, nil, function() end, true)
+            local types = d:getStepTypes()
+            assert.are.equal(1, #types)
+            assert.are.equal(WorkflowManager.STEP_COURSEPLAY, types[1])
+            _G.ADIntegration = { isAvailable = true }
+        end)
+
+        it("re-lists an AD step type it is already editing without AutoDrive", function()
+            -- Workflow authored while AD was installed, opened after AD was removed: the
+            -- dropdown must show the step's real type so it can be converted, not relabelled.
+            _G.ADIntegration = { isAvailable = false }
+            local d = makeDialog()
+            WMStepDialog.setStep(d, { type = WorkflowManager.STEP_REFUEL, target = "" },
+                function() end, false)
+            local types = d:getStepTypes()
+            assert.is_true(contains(types, WorkflowManager.STEP_REFUEL))
+            assert.is_false(contains(types, WorkflowManager.STEP_AUTODRIVE))
+            assert.is_false(contains(types, WorkflowManager.STEP_PARK))
+            _G.ADIntegration = { isAvailable = true }
+        end)
+
+        it("treats a missing ADIntegration global as AutoDrive unavailable", function()
+            _G.ADIntegration = nil
+            local d = makeDialog()
+            WMStepDialog.setStep(d, nil, function() end, false)
+            assert.is_false(d:isAutoDriveAvailable())
+            assert.is_false(contains(d:getStepTypes(), WorkflowManager.STEP_AUTODRIVE))
+            _G.ADIntegration = { isAvailable = true }
         end)
 
         it("re-lists markers when editing a support sub-step that already is one", function()

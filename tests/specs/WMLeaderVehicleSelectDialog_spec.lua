@@ -9,6 +9,37 @@ describe("WMLeaderVehicleSelectDialog", function()
     local callbackResult   -- records what callback received
     local closeCalled
 
+    -- onOpen registers this dialog's hotkeys, so every onOpen test needs the input globals;
+    -- installed file-wide here and reset per test via resetInputStubs().
+    local registeredInputs = {}
+
+    local function resetInputStubs()
+        registeredInputs = {}
+        g_inputBinding.removed = {}
+    end
+
+    local function installInputStubs(actions)
+        _G.GS_PRIO_VERY_LOW = 1
+        _G.InputAction = actions
+        _G.g_inputBinding = {
+            removed = {},
+            registerActionEvent = function(self, action, target, handler)
+                table.insert(registeredInputs, { action = action, handler = handler })
+                return true, "evt_" .. tostring(#registeredInputs)
+            end,
+            setActionEventTextPriority   = function() end,
+            setActionEventTextVisibility = function() end,
+            removeActionEvent = function(self, eventId) table.insert(self.removed, eventId) end,
+        }
+    end
+
+    local function makeInputButton()
+        local b = { disabled = false }
+        b.setInputAction = function(self, action) self.inputAction = action end
+        b.setDisabled    = function(self, v) self.disabled = v end
+        return b
+    end
+
     -- Minimal FS25 class infrastructure needed by the dialog module
     setup(function()
         -- Class(cls, parent) must return a metatable whose __index is cls,
@@ -35,6 +66,8 @@ describe("WMLeaderVehicleSelectDialog", function()
         _G.WMHud = _G.WMHud or {}
         _G.WMHud.onDialogOpened = function() end
         _G.WMHud.onDialogClosed = function() end
+
+        installInputStubs({ WM_GUI_NO_LEADER = "ia_noleader" })
 
         dofile("src/gui/WMLeaderVehicleSelectDialog.lua")
     end)
@@ -326,4 +359,44 @@ describe("WMLeaderVehicleSelectDialog", function()
             assert.is_true(closeCalled)
         end)
     end)
+    -- =========================================================================
+    -- Input bindings: "No Leader" is the one non-list choice, so it gets a key
+    -- =========================================================================
+    describe("input bindings", function()
+
+        local function makeBoundDialog()
+            resetInputStubs()
+            local d = WMLeaderVehicleSelectDialog.new()
+            d.close = function() end
+            d.vehicleList = nil
+            d.noLeaderButton = makeInputButton()
+            return d
+        end
+
+        it("shows a key glyph on the No Leader button", function()
+            local d = makeBoundDialog()
+            d:onOpen()
+            assert.are.equal("WM_GUI_NO_LEADER", d.noLeaderButton.inputAction)
+        end)
+
+        it("registers and unregisters the action event with the dialog", function()
+            local d = makeBoundDialog()
+            d:registerInputEvents()
+            assert.are.equal(1, #registeredInputs)
+            assert.are.equal("ia_noleader", registeredInputs[1].action)
+            d:unregisterInputEvents()
+            assert.are.equal(1, #g_inputBinding.removed)
+            assert.are.equal(0, #d.inputEventIds)
+        end)
+
+        it("starts the workflow with no leader when the key is pressed", function()
+            local d = makeBoundDialog()
+            local result, called = "unset", false
+            d.callback = function(v) result = v; called = true end
+            d:onInputNoLeader()
+            assert.is_true(called)
+            assert.is_nil(result)   -- nil = no leader, false = cancelled
+        end)
+    end)
+
 end)

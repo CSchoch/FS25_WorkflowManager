@@ -656,4 +656,126 @@ describe("WMEditorDialog", function()
         end)
     end)
 
+    -- =========================================================================
+    -- Input bindings: every step button must be reachable from the keyboard
+    -- =========================================================================
+    describe("input bindings", function()
+
+        -- onOpen/registerInputEvents touch globals the buffer tests never need, so they are
+        -- installed here and restored by the runner's per-file _G snapshot.
+        local registered
+
+        local function installInputGlobals()
+            registered = {}
+            _G.GS_PRIO_VERY_LOW = 1
+            _G.WMLogger = { debug = function() end }
+            _G.WMHud = { onDialogOpened = function() end, onDialogClosed = function() end }
+            -- onOpen runs loadDataCaches; this spec owns its integration stubs so the caches
+            -- come back empty instead of reaching into whatever a sibling spec left behind.
+            _G.ADIntegration = { isAvailable = false }
+            _G.CPIntegration = nil
+            _G.InputAction = {
+                WM_GUI_NEW         = "ia_new",
+                WM_GUI_EDIT        = "ia_edit",
+                WM_GUI_DELETE      = "ia_delete",
+                WM_GUI_MOVE_UP     = "ia_up",
+                WM_GUI_MOVE_DOWN   = "ia_down",
+                WM_GUI_ADD_SUPPORT = "ia_addsup",
+            }
+            _G.g_inputBinding = {
+                removed = {},
+                registerActionEvent = function(self, action, target, handler)
+                    table.insert(registered, { action = action, handler = handler })
+                    return true, "evt_" .. tostring(#registered)
+                end,
+                setActionEventTextPriority   = function() end,
+                setActionEventTextVisibility = function() end,
+                removeActionEvent = function(self, eventId) table.insert(self.removed, eventId) end,
+            }
+        end
+
+        local function makeButton()
+            local b = { disabled = false }
+            b.setInputAction = function(self, action) self.inputAction = action end
+            b.setDisabled    = function(self, v) self.disabled = v end
+            return b
+        end
+
+        local function makeOpenDialog()
+            installInputGlobals()
+            local d = makeDialog(makeWorkflow())
+            d.addStepButton        = makeButton()
+            d.editStepButton       = makeButton()
+            d.removeStepButton     = makeButton()
+            d.moveUpButton         = makeButton()
+            d.moveDownButton       = makeButton()
+            d.addSupportStepButton = makeButton()
+            return d
+        end
+
+        it("shows a key glyph on every step button", function()
+            local d = makeOpenDialog()
+            d:onOpen()
+            assert.are.equal("WM_GUI_NEW",         d.addStepButton.inputAction)
+            assert.are.equal("WM_GUI_EDIT",        d.editStepButton.inputAction)
+            assert.are.equal("WM_GUI_DELETE",      d.removeStepButton.inputAction)
+            assert.are.equal("WM_GUI_MOVE_UP",     d.moveUpButton.inputAction)
+            assert.are.equal("WM_GUI_MOVE_DOWN",   d.moveDownButton.inputAction)
+            assert.are.equal("WM_GUI_ADD_SUPPORT", d.addSupportStepButton.inputAction)
+        end)
+
+        it("registers an action event for every step button", function()
+            local d = makeOpenDialog()
+            d:registerInputEvents()
+            local actions = {}
+            for _, r in ipairs(registered) do table.insert(actions, r.action) end
+            assert.are.same({ "ia_new", "ia_edit", "ia_delete", "ia_up", "ia_down", "ia_addsup" }, actions)
+            assert.are.equal(6, #d.inputEventIds)
+        end)
+
+        it("removes every registered event on close", function()
+            local d = makeOpenDialog()
+            d:registerInputEvents()
+            d:unregisterInputEvents()
+            assert.are.equal(6, #g_inputBinding.removed)
+            assert.are.equal(0, #d.inputEventIds)
+        end)
+
+        it("routes each key to the matching click handler", function()
+            local d = makeOpenDialog()
+            local calls = {}
+            d.onClickAddStep        = function() table.insert(calls, "add")    end
+            d.onClickEditStep       = function() table.insert(calls, "edit")   end
+            d.onClickRemoveStep     = function() table.insert(calls, "remove") end
+            d.onClickMoveUp         = function() table.insert(calls, "up")     end
+            d.onClickMoveDown       = function() table.insert(calls, "down")   end
+            d.onClickAddSupportStep = function() table.insert(calls, "addsup") end
+
+            d:onInputAddStep()
+            d:onInputEditStep()
+            d:onInputRemove()
+            d:onInputMoveUp()
+            d:onInputMoveDown()
+            d:onInputAddSupportStep()
+
+            assert.are.same({ "add", "edit", "remove", "up", "down", "addsup" }, calls)
+        end)
+
+        it("ignores a key whose button is disabled", function()
+            -- Edit/Add-Support are disabled without a (main-step) selection; the key must
+            -- honour the same gate the button does, not act on a stale selection.
+            local d = makeOpenDialog()
+            local calls = {}
+            d.onClickEditStep       = function() table.insert(calls, "edit")   end
+            d.onClickAddSupportStep = function() table.insert(calls, "addsup") end
+            d.editStepButton.disabled       = true
+            d.addSupportStepButton.disabled = true
+
+            d:onInputEditStep()
+            d:onInputAddSupportStep()
+
+            assert.are.equal(0, #calls)
+        end)
+    end)
+
 end)

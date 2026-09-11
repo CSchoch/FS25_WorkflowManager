@@ -47,9 +47,12 @@ function WMEditorDialog:onOpen()
 
     self:registerInputEvents()
 
+    if self.addStepButton   then self.addStepButton:setInputAction("WM_GUI_NEW")        end
+    if self.editStepButton  then self.editStepButton:setInputAction("WM_GUI_EDIT")      end
     if self.removeStepButton then self.removeStepButton:setInputAction("WM_GUI_DELETE") end
     if self.moveUpButton    then self.moveUpButton:setInputAction("WM_GUI_MOVE_UP")    end
     if self.moveDownButton  then self.moveDownButton:setInputAction("WM_GUI_MOVE_DOWN") end
+    if self.addSupportStepButton then self.addSupportStepButton:setInputAction("WM_GUI_ADD_SUPPORT") end
 
     if self.stepList ~= nil then
         self.stepList:setDataSource(self)
@@ -618,9 +621,12 @@ function WMEditorDialog:registerInputEvents()
         end
     end
 
-    reg("WM_GUI_DELETE",    self.onInputRemove)
-    reg("WM_GUI_MOVE_UP",   self.onInputMoveUp)
-    reg("WM_GUI_MOVE_DOWN", self.onInputMoveDown)
+    reg("WM_GUI_NEW",         self.onInputAddStep)
+    reg("WM_GUI_EDIT",        self.onInputEditStep)
+    reg("WM_GUI_DELETE",      self.onInputRemove)
+    reg("WM_GUI_MOVE_UP",     self.onInputMoveUp)
+    reg("WM_GUI_MOVE_DOWN",   self.onInputMoveDown)
+    reg("WM_GUI_ADD_SUPPORT", self.onInputAddSupportStep)
 end
 
 function WMEditorDialog:unregisterInputEvents()
@@ -628,6 +634,18 @@ function WMEditorDialog:unregisterInputEvents()
         g_inputBinding:removeActionEvent(eventId)
     end
     self.inputEventIds = {}
+end
+
+function WMEditorDialog:onInputAddStep()
+    if self.addStepButton and not self.addStepButton.disabled then self:onClickAddStep() end
+end
+
+function WMEditorDialog:onInputEditStep()
+    if self.editStepButton and not self.editStepButton.disabled then self:onClickEditStep() end
+end
+
+function WMEditorDialog:onInputAddSupportStep()
+    if self.addSupportStepButton and not self.addSupportStepButton.disabled then self:onClickAddSupportStep() end
 end
 
 function WMEditorDialog:onInputRemove()

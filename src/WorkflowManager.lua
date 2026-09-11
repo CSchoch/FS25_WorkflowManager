@@ -751,15 +751,19 @@ function WorkflowManager:resolveStartTarget(workflowId)
         return nil
     end
 
-    -- Validate vehicle has required AutoDrive + Courseplay support
-    if not self:isVehicleValid(currentVehicle) then
+    -- Validate the vehicle supports every step type this workflow uses (CP always, AD on demand)
+    if not self:isVehicleValid(currentVehicle, workflow) then
         local vehicleName = currentVehicle.getName and currentVehicle:getName() or "unknown"
-        -- Show in-game warning to user
-        local warningText = string.format(g_i18n:getText("wm_warning_incompatible_vehicle") or "Vehicle '%s' needs AutoDrive + Courseplay", vehicleName)
+        -- Show in-game warning to user - name only the mods this workflow actually needs
+        local needsAD = self:workflowNeedsAutoDrive(workflow)
+        local warningKey = needsAD and "wm_warning_incompatible_vehicle" or "wm_warning_incompatible_vehicle_cp"
+        local fallback = needsAD and "Vehicle '%s' needs AutoDrive + Courseplay" or "Vehicle '%s' needs Courseplay"
+        local warningText = string.format(g_i18n:getText(warningKey) or fallback, vehicleName)
         if g_currentMission and g_currentMission.hud and g_currentMission.hud.showBlinkingWarning then
             g_currentMission.hud:showBlinkingWarning(warningText, 2000)
         end
-        WMLogger:warning("Cannot start: Vehicle '%s' does not support workflows (needs AutoDrive + Courseplay)", vehicleName)
+        WMLogger:warning("Cannot start: Vehicle '%s' does not support this workflow (needs %s)", vehicleName,
+            needsAD and "AutoDrive + Courseplay" or "Courseplay")
         return nil
     end
 
@@ -953,11 +957,39 @@ function WorkflowManager:goToPreviousStep(vehicle)
     self:sendCommand(vehicle, "prev_step")
 end
 
+---Returns true if any step (or support sub-step) of the workflow is driven by AutoDrive.
+---A workflow made only of Courseplay steps and sync markers runs without AutoDrive at all,
+---so it must not be blocked on vehicles/setups that have no AutoDrive.
+---A nil workflow is treated as "needs AutoDrive": callers without a workflow in hand cannot
+---prove otherwise, and the conservative answer keeps the old validation behaviour.
+---@param workflow table|nil Workflow definition
+---@return boolean
+function WorkflowManager:workflowNeedsAutoDrive(workflow)
+    if workflow == nil or workflow.steps == nil then
+        return true
+    end
+
+    for _, step in ipairs(workflow.steps) do
+        if self:isAutoDriveTrackedStepType(step.type) then
+            return true
+        end
+        for _, subStep in ipairs(step.support or {}) do
+            if self:isAutoDriveTrackedStepType(subStep.type) then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
 ---Check if a vehicle supports running workflows
----Requires both AutoDrive and Courseplay specs
+---Courseplay is always required. AutoDrive is required only when the workflow actually
+---contains an AutoDrive-driven step (drive/park/refuel/repair) - see workflowNeedsAutoDrive.
 ---@param vehicle table Vehicle to validate
----@return boolean valid True if vehicle has AutoDrive and Courseplay support
-function WorkflowManager:isVehicleValid(vehicle)
+---@param workflow table|nil Workflow the vehicle should run (nil = require AutoDrive too)
+---@return boolean valid True if the vehicle supports every step type the workflow uses
+function WorkflowManager:isVehicleValid(vehicle, workflow)
     if vehicle == nil then
         return false
     end
@@ -970,7 +1002,11 @@ function WorkflowManager:isVehicleValid(vehicle)
                   vehicle.spec_cpAIFieldWorker ~= nil or
                   (vehicle.getIsCpActive ~= nil)
 
-    return hasAutoDrive and hasCP
+    if not hasCP then
+        return false
+    end
+
+    return hasAutoDrive or not self:workflowNeedsAutoDrive(workflow)
 end
 
 ---Find the vehicle that has the given workflowId active (scan all active vehicles).

@@ -22,6 +22,16 @@
         <text name="input_WM_GUI_AD_SETTINGS" text="AD/CP Settings"/>
         <text name="action_WM_TOGGLE_HUD" text="Toggle Workflow HUD"/>
         <text name="input_WM_TOGGLE_HUD" text="Toggle Workflow HUD"/>
+        <text name="action_WM_GUI_NEW" text="New Step"/>
+        <text name="input_WM_GUI_NEW" text="New Step"/>
+        <text name="action_WM_GUI_EDIT" text="Edit Step"/>
+        <text name="input_WM_GUI_EDIT" text="Edit Step"/>
+        <text name="action_WM_GUI_ADD_SUPPORT" text="Add Support Step"/>
+        <text name="input_WM_GUI_ADD_SUPPORT" text="Add Support Step"/>
+        <text name="action_WM_GUI_NO_LEADER" text="No Leader"/>
+        <text name="input_WM_GUI_NO_LEADER" text="No Leader"/>
+        <text name="action_WM_GUI_RUN_SUPPORT" text="Run as Support"/>
+        <text name="input_WM_GUI_RUN_SUPPORT" text="Run as Support"/>
 
         <!-- GUI titles -->
         <text name="wm_title" text="Workflow Manager"/>
@@ -128,6 +138,7 @@
         <!-- Warnings -->
         <text name="wm_warning_no_vehicle" text="Enter a vehicle to start the workflow"/>
         <text name="wm_warning_incompatible_vehicle" text="Vehicle '%s' needs AutoDrive + Courseplay"/>
+        <text name="wm_warning_incompatible_vehicle_cp" text="Vehicle '%s' needs Courseplay"/>
         <text name="wm_warning_vehicle_busy" text="Vehicle is already running a workflow"/>
         <text name="wm_warning_workflow_running" text="Cannot save: workflow is currently running. Stop it first."/>
         <text name="wm_warning_no_target" text="Select a target before confirming the step"/>

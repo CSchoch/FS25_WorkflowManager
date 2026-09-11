@@ -95,6 +95,8 @@ describe("WMMainDialog", function()
         mouseCursorShown = false
         _G.WMHud = {
             setMouseCursorActive = function(_, active) mouseCursorShown = active end,
+            onDialogOpened = function() end,
+            onDialogClosed = function() end,
         }
     end)
 
@@ -284,6 +286,105 @@ describe("WMMainDialog", function()
             d.selectedWorkflowIndex = 0
             d:onClickADSettings()
             assert.are.same({}, events)
+        end)
+    end)
+
+    -- =========================================================================
+    -- Input bindings: New and Edit were the only step buttons without a hotkey
+    -- =========================================================================
+    describe("input bindings", function()
+
+        local registered
+
+        local function installInputGlobals()
+            registered = {}
+            _G.WMLogger = _G.WMLogger or { debug = function() end, info = function() end }
+            _G.GS_PRIO_VERY_LOW = 1
+            _G.InputAction = {
+                WM_GUI_NEW         = "ia_new",
+                WM_GUI_EDIT        = "ia_edit",
+                WM_GUI_DELETE      = "ia_delete",
+                WM_GUI_START       = "ia_start",
+                WM_GUI_STOP        = "ia_stop",
+                WM_GUI_AD_SETTINGS = "ia_adsettings",
+            }
+            _G.g_inputBinding = {
+                removed = {},
+                registerActionEvent = function(self, action, target, handler)
+                    table.insert(registered, { action = action, handler = handler })
+                    return true, "evt_" .. tostring(#registered)
+                end,
+                setActionEventTextPriority   = function() end,
+                setActionEventTextVisibility = function() end,
+                removeActionEvent = function(self, eventId) table.insert(self.removed, eventId) end,
+            }
+        end
+
+        local function makeButton()
+            local b = { disabled = false }
+            b.setInputAction = function(self, action) self.inputAction = action end
+            b.setDisabled    = function(self, v) self.disabled = v end
+            b.setText        = function(self, t) self.text = t end
+            return b
+        end
+
+        local function makeBoundDialog()
+            installInputGlobals()
+            local d = makeDialog()
+            d.newButton        = makeButton()
+            d.editButton       = makeButton()
+            d.deleteButton     = makeButton()
+            d.startButton      = makeButton()
+            d.stopButton       = makeButton()
+            d.adSettingsButton = makeButton()
+            return d
+        end
+
+        it("shows a key glyph on New and Edit alongside the existing buttons", function()
+            local d = makeBoundDialog()
+            d:onOpen()
+            assert.are.equal("WM_GUI_NEW",    d.newButton.inputAction)
+            assert.are.equal("WM_GUI_EDIT",   d.editButton.inputAction)
+            assert.are.equal("WM_GUI_DELETE", d.deleteButton.inputAction)
+            assert.are.equal("WM_GUI_START",  d.startButton.inputAction)
+            assert.are.equal("WM_GUI_STOP",   d.stopButton.inputAction)
+        end)
+
+        it("registers an action event for every hotkey button", function()
+            local d = makeBoundDialog()
+            d:registerInputEvents()
+            local actions = {}
+            for _, r in ipairs(registered) do table.insert(actions, r.action) end
+            assert.are.same({ "ia_new", "ia_edit", "ia_delete", "ia_start", "ia_stop", "ia_adsettings" }, actions)
+            assert.are.equal(6, #d.inputEventIds)
+        end)
+
+        it("removes every registered event on close", function()
+            local d = makeBoundDialog()
+            d:registerInputEvents()
+            d:unregisterInputEvents()
+            assert.are.equal(6, #g_inputBinding.removed)
+            assert.are.equal(0, #d.inputEventIds)
+        end)
+
+        it("routes the New and Edit keys to their click handlers", function()
+            local d = makeBoundDialog()
+            local calls = {}
+            d.onClickNew  = function() table.insert(calls, "new")  end
+            d.onClickEdit = function() table.insert(calls, "edit") end
+            d:onInputNew()
+            d:onInputEdit()
+            assert.are.same({ "new", "edit" }, calls)
+        end)
+
+        it("ignores the Edit key while the button is disabled", function()
+            -- Edit is disabled without a selected workflow; the key must honour that gate.
+            local d = makeBoundDialog()
+            local calls = {}
+            d.onClickEdit = function() table.insert(calls, "edit") end
+            d.editButton.disabled = true
+            d:onInputEdit()
+            assert.are.equal(0, #calls)
         end)
     end)
 

@@ -15,6 +15,7 @@ function WMLeaderVehicleSelectDialog.new(target)
     self.callback        = nil
     self.vehicles        = {}   -- list of {vehicle, name, workflowName}
     self.selectedIndex   = 0
+    self.inputEventIds   = {}
     return self
 end
 
@@ -42,6 +43,10 @@ function WMLeaderVehicleSelectDialog:onOpen()
     WMLogger:debug("WMLeaderVehicleSelectDialog:onOpen")
     WMHud:onDialogOpened()
 
+    self:registerInputEvents()
+
+    if self.noLeaderButton then self.noLeaderButton:setInputAction("WM_GUI_NO_LEADER") end
+
     if self.vehicleList then
         self.vehicleList:setDataSource(self)
         self.vehicleList:reloadData()
@@ -56,6 +61,7 @@ function WMLeaderVehicleSelectDialog:onClose()
     WMLeaderVehicleSelectDialog:superClass().onClose(self)
     WMLogger:debug("WMLeaderVehicleSelectDialog:onClose")
     WMHud:onDialogClosed()
+    self:unregisterInputEvents()
 end
 
 ---Configure the dialog before showing it.
@@ -119,6 +125,32 @@ end
 
 function WMLeaderVehicleSelectDialog:onEscPressed()
     self:onClickCancel()
+end
+
+-- ============================================================
+-- Input events
+-- ============================================================
+
+function WMLeaderVehicleSelectDialog:registerInputEvents()
+    self.inputEventIds = {}
+
+    local _, eventId = g_inputBinding:registerActionEvent(InputAction.WM_GUI_NO_LEADER, self, self.onInputNoLeader, false, true, false, true)
+    if eventId ~= nil then
+        table.insert(self.inputEventIds, eventId)
+        g_inputBinding:setActionEventTextPriority(eventId, GS_PRIO_VERY_LOW)
+        g_inputBinding:setActionEventTextVisibility(eventId, false)
+    end
+end
+
+function WMLeaderVehicleSelectDialog:unregisterInputEvents()
+    for _, eventId in ipairs(self.inputEventIds or {}) do
+        g_inputBinding:removeActionEvent(eventId)
+    end
+    self.inputEventIds = {}
+end
+
+function WMLeaderVehicleSelectDialog:onInputNoLeader()
+    if self.noLeaderButton and not self.noLeaderButton.disabled then self:onClickNoLeader() end
 end
 
 WMLogger:info("WMLeaderVehicleSelectDialog module loaded")

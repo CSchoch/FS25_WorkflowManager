@@ -33,6 +33,12 @@ function WMMainDialog:onOpen()
     self:registerInputEvents()
 
     -- Set correct input action indicators on buttons
+    if self.newButton then
+        self.newButton:setInputAction("WM_GUI_NEW")
+    end
+    if self.editButton then
+        self.editButton:setInputAction("WM_GUI_EDIT")
+    end
     if self.deleteButton then
         self.deleteButton:setInputAction("WM_GUI_DELETE")
     end
@@ -308,8 +314,24 @@ end
 function WMMainDialog:registerInputEvents()
     self.inputEventIds = {}
 
+    -- New: N key
+    local _, eventId = g_inputBinding:registerActionEvent(InputAction.WM_GUI_NEW, self, self.onInputNew, false, true, false, true)
+    if eventId ~= nil then
+        table.insert(self.inputEventIds, eventId)
+        g_inputBinding:setActionEventTextPriority(eventId, GS_PRIO_VERY_LOW)
+        g_inputBinding:setActionEventTextVisibility(eventId, false)
+    end
+
+    -- Edit: E key
+    _, eventId = g_inputBinding:registerActionEvent(InputAction.WM_GUI_EDIT, self, self.onInputEdit, false, true, false, true)
+    if eventId ~= nil then
+        table.insert(self.inputEventIds, eventId)
+        g_inputBinding:setActionEventTextPriority(eventId, GS_PRIO_VERY_LOW)
+        g_inputBinding:setActionEventTextVisibility(eventId, false)
+    end
+
     -- Delete: ENTF key
-    local _, eventId = g_inputBinding:registerActionEvent(InputAction.WM_GUI_DELETE, self, self.onInputDelete, false, true, false, true)
+    _, eventId = g_inputBinding:registerActionEvent(InputAction.WM_GUI_DELETE, self, self.onInputDelete, false, true, false, true)
     if eventId ~= nil then
         table.insert(self.inputEventIds, eventId)
         g_inputBinding:setActionEventTextPriority(eventId, GS_PRIO_VERY_LOW)
@@ -348,6 +370,20 @@ function WMMainDialog:unregisterInputEvents()
             g_inputBinding:removeActionEvent(eventId)
         end
         self.inputEventIds = {}
+    end
+end
+
+---Input handler for New key
+function WMMainDialog:onInputNew(actionName, inputValue)
+    if self.newButton and not self.newButton.disabled then
+        self:onClickNew()
+    end
+end
+
+---Input handler for Edit key
+function WMMainDialog:onInputEdit(actionName, inputValue)
+    if self.editButton and not self.editButton.disabled then
+        self:onClickEdit()
     end
 end
 

@@ -22,7 +22,7 @@
         <BoxLayout profile="wm_dialogButtonBoxBottom">
             <Button profile="buttonOK"       text="$l10n_wm_button_run_as_main"    onClick="onClickMain"    focusId="mainBtn"/>
             <Bitmap  profile="fs25_dialogButtonBoxSeparator"/>
-            <Button profile="buttonActivate" text="$l10n_wm_button_run_as_support" onClick="onClickSupport" focusId="supportBtn"/>
+            <Button profile="buttonActivate" id="supportButton" text="$l10n_wm_button_run_as_support" onClick="onClickSupport" focusId="supportBtn"/>
             <Bitmap  profile="fs25_dialogButtonBoxSeparator"/>
             <Button profile="buttonBack"     text="$l10n_wm_button_cancel"         onClick="onClickCancel"  focusId="cancelBtn"/>
         </BoxLayout>

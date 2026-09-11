@@ -50,11 +50,13 @@ Individual runners: `tests\run_executor_spec.lua`, `tests\run_storage_spec.lua`,
 | `WMSettings_spec.lua` | WMSettings defaults, reset, Courseplay auto-resume accessor |
 | `WorkflowStorage_spec.lua` | WMStorage save/load, adSettings, mod options, old-format migration |
 | `WorkflowManager_spec.lua` | CRUD, vehicle validation, network command dispatch |
+| `WorkflowManagerADRequirement_spec.lua` | Real `workflowNeedsAutoDrive` / `isVehicleValid`: AutoDrive is required only for workflows that use AD-driven steps |
 | `WorkflowExecutor_spec.lua` | Full state machine: start/stop/pause/resume/step nav, support vehicles, MP roles |
 | `AutoDriveIntegration_spec.lua` | AD destinations, park/refuel/repair route resolution |
 | `WorkflowManagerSpec_spec.lua` | Vehicle spec: onLoad, onPostLoad, saveToXMLFile, onWriteStream/onReadStream, onDelete |
 | `WMHud_spec.lua` | HUD button handlers, vehicle targeting |
-| `WMLeaderVehicleSelectDialog_spec.lua` | Leader candidate list building |
+| `WMLeaderVehicleSelectDialog_spec.lua` | Leader candidate list building, No-Leader hotkey |
+| `WMModeSelectDialog_spec.lua` | Main/Support/Cancel tri-state callback, Run-as-Support hotkey |
 | `WMStepDialog_spec.lua` | Step type/action branching, confirm payloads, support-step type restrictions |
 | `WMEditorDialog_spec.lua` | Edit-buffer contract: Save commits to the live workflow, Cancel discards; new-workflow registration |
 | `WMMainDialog_spec.lua` | New/Edit entry points: New hands the editor an unregistered workflow |
@@ -62,6 +64,7 @@ Individual runners: `tests\run_executor_spec.lua`, `tests\run_storage_spec.lua`,
 | `CourseplayCoursesLoader_spec.lua` | Course enumeration from the root view, root-relative names |
 | `WMConsoleCommands_spec.lua` | Console command registration/removal; wmPrintState reports the executor's real sync gate |
 | `WMGameSettings_spec.lua` | Settings-row injection: clones the vanilla row/header, focus ids, controls list, MP read-only, hook-once, delete |
+| `ModDescInputBindings_spec.lua` | modDesc hotkey defaults: Edit is KEY_t, Stop is KEY_k; no `WM_GUI_*` action on a confirmed menu-owned key (Q/E/X) |
 
 **Courseplay resume after savegame load:** Courseplay never auto-resumes — it overwrites the
 base-game `AIFieldWorker#isActive` to `false` at save time on purpose. It also only writes its own
@@ -75,7 +78,7 @@ must happen **after** any course load (loading a course clears CP's remembered i
 ordering in `startCourseplayStep`. With no recorded waypoint the workflow deliberately stays
 PAUSED rather than restarting from scratch.
 
-Current total: **731**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
+Current total: **777**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
 or they will not run.
 
 **Mod options (game settings):** `WMSettings` holds the player-facing options; `WMGameSettings`
@@ -113,6 +116,17 @@ Semantics: no seeder attached → skip silently; seeder attached but none can so
 `handleStepError`; seeder present but `getIsSeedChangeAllowed()` false (mission-locked) → warn
 and continue. Applied at the very top of `WMExecutor:startCourseplayStep`, before the
 already-running early-out and before any course load.
+
+**AutoDrive is optional:** Courseplay is always required; AutoDrive is required only when a
+workflow actually contains an AD-driven step (`autodrive`/`park`/`refuel`/`repair` — see
+`WorkflowManager:isAutoDriveTrackedStepType`). `WorkflowManager:workflowNeedsAutoDrive(workflow)`
+scans steps *and* support sub-steps, and `isVehicleValid(vehicle, workflow)` gates the start on it;
+called **without** a workflow it still demands AD, since a caller with no workflow cannot prove
+otherwise. `WMStepDialog:getStepTypes` hides the four AD types when `ADIntegration.isAvailable` is
+false — except the type the edited step already has, so a workflow authored with AD still shows its
+real types after AD is removed. A new step then defaults to Courseplay/`fieldwork` instead of
+AutoDrive/`drive`, or the dropdown and the saved step disagree. Every `ADIntegration` entry point
+already early-outs on `isAvailable` / `vehicle.ad == nil`, so nothing else needs guarding.
 
 **Workflow lifecycle:** `WorkflowManager:buildWorkflow(name)` returns an *unregistered* workflow;
 `registerWorkflow(wf)` adds it to the list (idempotent by id); `createWorkflow(name)` is both at once.

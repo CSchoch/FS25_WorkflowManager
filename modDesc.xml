@@ -41,7 +41,7 @@ WHILE YOU PLAY:
 
 DOCUMENTATION: https://cschoch.github.io/FS25_WorkflowManagerDocs/
 
-REQUIREMENTS: AutoDrive, Courseplay
+REQUIREMENTS: Courseplay. AutoDrive is optional - it is only needed for workflows that contain AutoDrive, Park, Refuel or Repair steps. Pure Courseplay workflows run without it.
 
 CHANGELOG:
 v1.1.0 (2026-05-20)
@@ -95,7 +95,7 @@ WÄHREND DES SPIELENS:
 
 DOKUMENTATION: https://cschoch.github.io/FS25_WorkflowManagerDocs/
 
-VORAUSSETZUNGEN: AutoDrive, Courseplay
+VORAUSSETZUNGEN: Courseplay. AutoDrive ist optional - es wird nur fuer Workflows mit AutoDrive-, Park-, Tank- oder Reparatur-Schritten benoetigt. Reine Courseplay-Workflows laufen auch ohne.
 
 CHANGELOG:
 v1.1.0 (2026-04-12)
@@ -118,6 +118,13 @@ v1.0.0 (2026-03-11)
     <multiplayer supported="true" />
     <iconFilename>icon_WorkflowManager.dds</iconFilename>
 
+    <!-- Courseplay is required: every workflow runs its field work through it.
+         AutoDrive is deliberately NOT listed - workflows made only of Courseplay steps
+         run without it (see WorkflowManager:workflowNeedsAutoDrive). -->
+    <dependencies>
+        <dependency>FS25_Courseplay</dependency>
+    </dependencies>
+
     <extraSourceFiles>
         <!-- Load spec first so it registers to vehicle types before vehicles are created -->
         <sourceFile filename="src/WorkflowManagerSpec.lua" />
@@ -135,6 +142,11 @@ v1.0.0 (2026-03-11)
         <action name="WM_GUI_MOVE_UP" />
         <action name="WM_GUI_MOVE_DOWN" />
         <action name="WM_GUI_AD_SETTINGS" />
+        <action name="WM_GUI_NEW" />
+        <action name="WM_GUI_EDIT" />
+        <action name="WM_GUI_ADD_SUPPORT" />
+        <action name="WM_GUI_NO_LEADER" />
+        <action name="WM_GUI_RUN_SUPPORT" />
     </actions>
 
     <inputBinding>
@@ -150,8 +162,9 @@ v1.0.0 (2026-03-11)
         <actionBinding action="WM_GUI_START">
             <binding device="KB_MOUSE_DEFAULT" input="KEY_s" />
         </actionBinding>
+        <!-- Not KEY_x: the base game's MENU_EXTRA_1 owns X inside every dialog. -->
         <actionBinding action="WM_GUI_STOP">
-            <binding device="KB_MOUSE_DEFAULT" input="KEY_x" />
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_k" />
         </actionBinding>
         <actionBinding action="WM_GUI_MOVE_UP">
             <binding device="KB_MOUSE_DEFAULT" input="KEY_u" />
@@ -161,6 +174,23 @@ v1.0.0 (2026-03-11)
         </actionBinding>
         <actionBinding action="WM_GUI_AD_SETTINGS">
             <binding device="KB_MOUSE_DEFAULT" input="KEY_b" />
+        </actionBinding>
+        <actionBinding action="WM_GUI_NEW">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_n" />
+        </actionBinding>
+        <!-- Not KEY_e: the base game's MENU_PAGE_NEXT owns E inside every dialog and the
+             colliding mod binding never fires (same for KEY_q / MENU_PAGE_PREV). -->
+        <actionBinding action="WM_GUI_EDIT">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_t" />
+        </actionBinding>
+        <actionBinding action="WM_GUI_ADD_SUPPORT">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_s" />
+        </actionBinding>
+        <actionBinding action="WM_GUI_NO_LEADER">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_f" />
+        </actionBinding>
+        <actionBinding action="WM_GUI_RUN_SUPPORT">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_f" />
         </actionBinding>
     </inputBinding>
 </modDesc>

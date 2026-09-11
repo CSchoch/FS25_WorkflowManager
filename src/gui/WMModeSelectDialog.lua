@@ -15,6 +15,7 @@ function WMModeSelectDialog.new(target)
     self.workflowId = nil
     self.vehicle    = nil
     self.callback   = nil
+    self.inputEventIds = {}
     return self
 end
 
@@ -26,6 +27,10 @@ function WMModeSelectDialog:onOpen()
     WMModeSelectDialog:superClass().onOpen(self)
     WMLogger:debug("WMModeSelectDialog:onOpen")
     WMHud:onDialogOpened()
+
+    self:registerInputEvents()
+
+    if self.supportButton then self.supportButton:setInputAction("WM_GUI_RUN_SUPPORT") end
 
     -- Set title to workflow name
     if self.titleElement and self.workflowId then
@@ -40,6 +45,7 @@ function WMModeSelectDialog:onClose()
     WMModeSelectDialog:superClass().onClose(self)
     WMLogger:debug("WMModeSelectDialog:onClose")
     WMHud:onDialogClosed()
+    self:unregisterInputEvents()
 end
 
 ---Configure the dialog before showing it.
@@ -69,6 +75,32 @@ end
 
 function WMModeSelectDialog:onEscPressed()
     self:onClickCancel()
+end
+
+-- ============================================================
+-- Input events
+-- ============================================================
+
+function WMModeSelectDialog:registerInputEvents()
+    self.inputEventIds = {}
+
+    local _, eventId = g_inputBinding:registerActionEvent(InputAction.WM_GUI_RUN_SUPPORT, self, self.onInputSupport, false, true, false, true)
+    if eventId ~= nil then
+        table.insert(self.inputEventIds, eventId)
+        g_inputBinding:setActionEventTextPriority(eventId, GS_PRIO_VERY_LOW)
+        g_inputBinding:setActionEventTextVisibility(eventId, false)
+    end
+end
+
+function WMModeSelectDialog:unregisterInputEvents()
+    for _, eventId in ipairs(self.inputEventIds or {}) do
+        g_inputBinding:removeActionEvent(eventId)
+    end
+    self.inputEventIds = {}
+end
+
+function WMModeSelectDialog:onInputSupport()
+    if self.supportButton and not self.supportButton.disabled then self:onClickSupport() end
 end
 
 WMLogger:info("WMModeSelectDialog module loaded")

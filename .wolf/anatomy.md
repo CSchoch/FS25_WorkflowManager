@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-09-02T19:20:19.579Z
-> Files: 86 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-09-11T07:55:03.884Z
+> Files: 92 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -13,9 +13,11 @@
 
 ## ../../../../../.claude/projects/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/memory/
 
+- `feedback_ask_before_choosing_keybindings.md` (~268 tok)
 - `MEMORY.md` — FS25 WorkflowManager - Session Memory (~1355 tok)
 - `project_leader_uniqueid_fix.md` (~531 tok)
 - `project_queuesystem_review_fixes.md` (~585 tok)
+- `project_wm_keybinding_audit.md` — Declares bodies (~613 tok)
 
 ## ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/0e008aae-1437-47ea-92bf-f55f7ab67d82/scratchpad/
 
@@ -46,8 +48,9 @@
 
 ## ./
 
-- `CLAUDE.md` — FS25 Workflow Manager (~2403 tok)
+- `CLAUDE.md` — FS25 Workflow Manager (~3033 tok)
 - `Development.md` — FS25 Workflow Manager — Development (~1758 tok)
+- `modDesc.xml` (~2696 tok)
 
 ## .claude/
 
@@ -115,7 +118,7 @@
 
 ## tests/
 
-- `run_tests.lua` — local, assert, describe, it, before_each (~2292 tok)
+- `run_tests.lua` — local, assert, describe, it, before_each (~2270 tok)
 
 ## tests/fixtures/
 
@@ -131,16 +134,19 @@
 - `CourseplayCoursesLoader_spec.lua` — file, folder, view, makeFileSystem, contains (~1901 tok)
 - `CourseplayIntegration_spec.lua` — file, folder, view, makeStorage, makeVehicle (~6381 tok)
 - `EventHandler_spec.lua` — Declares gracefully (~2992 tok)
+- `ModDescInputBindings_spec.lua` (~471 tok)
 - `WMConsoleCommands_spec.lua` — captureOutput, makeVehicle (~1391 tok)
 - `WMEditorDialog_spec.lua` — makeWorkflow, makeDialog (~5980 tok)
 - `WMGameSettings_spec.lua` — setText, setDisabled, setIsChecked, setCallback, invalidateLayout (~4230 tok)
 - `WMHud_spec.lua` — makeVehicle (~4253 tok)
 - `WMLeaderVehicleSelectDialog_spec.lua` — makeVehicle, makeList, makeButton (~3207 tok)
 - `WMMainDialog_spec.lua` — makeDialog, makeStartDialog (~2443 tok)
+- `WMModeSelectDialog_spec.lua` — makeDialog, makeBoundDialog, role tri-state + Run-as-Support hotkey (~1400 tok)
 - `WMSettings_spec.lua` (~408 tok)
 - `WMStepDialog_spec.lua` — makeDialog, makeStubDialog, confirm (~5978 tok)
 - `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport, makeLeaderWF (~35163 tok)
 - `WorkflowManager_spec.lua` — Declares constants (~9653 tok)
+- `WorkflowManagerADRequirement_spec.lua` — Loads the real WorkflowManager.lua with `source` neutered; tests workflowNeedsAutoDrive / isVehicleValid (AutoDrive optional for CP-only workflows) (~1400 tok)
 - `WorkflowManagerSpec_spec.lua` — makeVehicle, makeSavegameXML (~12594 tok)
 - `WorkflowStorage_spec.lua` — hasFormatVersion (~10819 tok)
 

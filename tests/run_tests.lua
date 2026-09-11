@@ -202,18 +202,21 @@ local testFiles = {
     "tests/specs/WMSettings_spec.lua",
     "tests/specs/WorkflowStorage_spec.lua",
     "tests/specs/WorkflowManager_spec.lua",
+    "tests/specs/WorkflowManagerADRequirement_spec.lua",
     "tests/specs/WorkflowExecutor_spec.lua",
     "tests/specs/AutoDriveIntegration_spec.lua",
     "tests/specs/WorkflowManagerSpec_spec.lua",
     "tests/specs/WMHud_spec.lua",
     "tests/specs/WMLeaderVehicleSelectDialog_spec.lua",
+    "tests/specs/WMModeSelectDialog_spec.lua",
     "tests/specs/WMStepDialog_spec.lua",
     "tests/specs/WMEditorDialog_spec.lua",
     "tests/specs/WMMainDialog_spec.lua",
     "tests/specs/CourseplayIntegration_spec.lua",
     "tests/specs/CourseplayCoursesLoader_spec.lua",
     "tests/specs/WMConsoleCommands_spec.lua",
-    "tests/specs/WMGameSettings_spec.lua"
+    "tests/specs/WMGameSettings_spec.lua",
+    "tests/specs/ModDescInputBindings_spec.lua"
 }
 
 for _, testFile in ipairs(testFiles) do

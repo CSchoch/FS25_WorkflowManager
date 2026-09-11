@@ -43,7 +43,7 @@
         <BoxLayout profile="wm_dialogButtonBoxBottom">
             <Button profile="buttonOK"     id="selectButton"   text="$l10n_wm_button_select"    onClick="onClickSelect"   focusId="selectBtn"/>
             <Bitmap  profile="fs25_dialogButtonBoxSeparator"/>
-            <Button profile="buttonActivate"                   text="$l10n_wm_button_no_leader"  onClick="onClickNoLeader" focusId="noLeaderBtn"/>
+            <Button profile="buttonActivate" id="noLeaderButton" text="$l10n_wm_button_no_leader"  onClick="onClickNoLeader" focusId="noLeaderBtn"/>
             <Bitmap  profile="fs25_dialogButtonBoxSeparator"/>
             <Button profile="buttonBack"                       text="$l10n_wm_button_cancel"     onClick="onClickCancel"   focusId="cancelBtn"/>
         </BoxLayout>
