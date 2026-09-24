@@ -106,16 +106,16 @@ function CPVehiclesLoader:getVehiclesFromCourseplayAPI()
 
     -- Pattern 2: getVehicles() method
     if not vehicles and type(courseplay.getVehicles) == "function" then
-        local success, result = pcall(courseplay.getVehicles, courseplay)
-        if success and result then
+        local result = courseplay:getVehicles()
+        if result then
             vehicles = self:extractVehiclesFromTable(result)
         end
     end
 
     -- Pattern 3: getAllVehicles() method
     if not vehicles and type(courseplay.getAllVehicles) == "function" then
-        local success, result = pcall(courseplay.getAllVehicles, courseplay)
-        if success and result then
+        local result = courseplay:getAllVehicles()
+        if result then
             vehicles = self:extractVehiclesFromTable(result)
         end
     end
@@ -245,15 +245,15 @@ function CPVehiclesLoader:extractVehiclesFromManager(manager)
 
     -- Try common patterns for manager objects
     if type(manager.getVehicles) == "function" then
-        local success, result = pcall(manager.getVehicles, manager)
-        if success and result then
+        local result = manager:getVehicles()
+        if result then
             return self:extractVehiclesFromTable(result)
         end
     end
 
     if type(manager.getAll) == "function" then
-        local success, result = pcall(manager.getAll, manager)
-        if success and result then
+        local result = manager:getAll()
+        if result then
             return self:extractVehiclesFromTable(result)
         end
     end

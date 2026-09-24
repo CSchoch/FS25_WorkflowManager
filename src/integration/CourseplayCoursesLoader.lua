@@ -85,8 +85,8 @@ function CPCoursesLoader:scanCourses()
 
     -- Pattern 5: getCourses() method
     if not courses and type(courseplay.getCourses) == "function" then
-        local success, result = pcall(courseplay.getCourses, courseplay)
-        if success and result then
+        local result = courseplay:getCourses()
+        if result then
             courses = self:extractCoursesFromTable(result)
         end
     end
@@ -159,8 +159,8 @@ function CPCoursesLoader:extractCoursesFromStorage(storage)
 
     -- Pattern 2: storage:getCourses() method
     if type(storage.getCourses) == "function" then
-        local success, result = pcall(storage.getCourses, storage)
-        if success and result then
+        local result = storage:getCourses()
+        if result then
             local extracted = self:extractCoursesFromTable(result)
             if extracted then
                 return extracted
@@ -170,8 +170,8 @@ function CPCoursesLoader:extractCoursesFromStorage(storage)
 
     -- Pattern 3: storage:getAll() method
     if type(storage.getAll) == "function" then
-        local success, result = pcall(storage.getAll, storage)
-        if success and result then
+        local result = storage:getAll()
+        if result then
             local extracted = self:extractCoursesFromTable(result)
             if extracted then
                 return extracted
@@ -219,8 +219,8 @@ function CPCoursesLoader:extractCoursesFromFileSystem(fileSystem)
 
     -- Method 3: Try legacy methods
     if #courses == 0 and type(fileSystem.getCourses) == "function" then
-        local success, result = pcall(fileSystem.getCourses, fileSystem)
-        if success and result then
+        local result = fileSystem:getCourses()
+        if result then
             local extracted = self:extractCoursesFromTable(result)
             if extracted then
                 return extracted
@@ -229,8 +229,8 @@ function CPCoursesLoader:extractCoursesFromFileSystem(fileSystem)
     end
 
     if #courses == 0 and type(fileSystem.getLoadedCourses) == "function" then
-        local success, result = pcall(fileSystem.getLoadedCourses, fileSystem)
-        if success and result then
+        local result = fileSystem:getLoadedCourses()
+        if result then
             local extracted = self:extractCoursesFromTable(result)
             if extracted then
                 return extracted
@@ -258,8 +258,8 @@ function CPCoursesLoader:collectCoursesFromDirectoryView(directoryView, courses,
     -- Get current directory name for building path
     local currentDirName = ""
     if type(directoryView.getName) == "function" then
-        local success, result = pcall(directoryView.getName, directoryView)
-        if success and result then
+        local result = directoryView:getName()
+        if result then
             currentDirName = result
         end
     elseif directoryView.name then
@@ -279,10 +279,7 @@ function CPCoursesLoader:collectCoursesFromDirectoryView(directoryView, courses,
     -- Get entries (files and subdirectories)
     local entries = nil
     if type(directoryView.getEntries) == "function" then
-        local success, result = pcall(directoryView.getEntries, directoryView)
-        if success then
-            entries = result
-        end
+        entries = directoryView:getEntries()
     end
 
     -- Also try fileViews and directoryViews arrays directly
@@ -291,10 +288,7 @@ function CPCoursesLoader:collectCoursesFromDirectoryView(directoryView, courses,
             for _, fileView in ipairs(directoryView.fileViews) do
                 local name = nil
                 if type(fileView.getName) == "function" then
-                    local success, result = pcall(fileView.getName, fileView)
-                    if success then
-                        name = result
-                    end
+                    name = fileView:getName()
                 elseif fileView.name then
                     name = fileView.name
                 end
@@ -335,10 +329,7 @@ function CPCoursesLoader:collectCoursesFromDirectoryView(directoryView, courses,
             if CPIntegration and CPIntegration.isDirectoryEntry then
                 isDir = CPIntegration:isDirectoryEntry(entry)
             elseif type(entry.isDirectory) == "function" then
-                local success, result = pcall(entry.isDirectory, entry)
-                if success then
-                    isDir = result
-                end
+                isDir = entry:isDirectory()
             end
 
             if isDir then
@@ -354,10 +345,7 @@ function CPCoursesLoader:collectCoursesFromDirectoryView(directoryView, courses,
                 -- It's a file (course)
                 local name = nil
                 if type(entry.getName) == "function" then
-                    local success, result = pcall(entry.getName, entry)
-                    if success then
-                        name = result
-                    end
+                    name = entry:getName()
                 elseif entry.name then
                     name = entry.name
                 end
@@ -391,8 +379,8 @@ function CPCoursesLoader:collectCoursesFromDirectory(directory, courses, depth, 
     -- Get current directory name for building path
     local currentDirName = ""
     if type(directory.getName) == "function" then
-        local success, result = pcall(directory.getName, directory)
-        if success and result then
+        local result = directory:getName()
+        if result then
             currentDirName = result
         end
     elseif directory.name then
@@ -414,10 +402,7 @@ function CPCoursesLoader:collectCoursesFromDirectory(directory, courses, depth, 
     if directory.entries then
         entries = directory.entries
     elseif type(directory.getEntries) == "function" then
-        local success, result = pcall(directory.getEntries, directory, true, true)
-        if success then
-            entries = result
-        end
+        entries = directory:getEntries(true, true)
     end
 
     if not entries then
@@ -428,10 +413,7 @@ function CPCoursesLoader:collectCoursesFromDirectory(directory, courses, depth, 
         if entry then
             local isDir = false
             if type(entry.isDirectory) == "function" then
-                local success, result = pcall(entry.isDirectory, entry)
-                if success then
-                    isDir = result
-                end
+                isDir = entry:isDirectory()
             end
 
             if isDir then
@@ -441,10 +423,7 @@ function CPCoursesLoader:collectCoursesFromDirectory(directory, courses, depth, 
                 -- It's a file (course)
                 local name = entry.name
                 if type(entry.getName) == "function" then
-                    local success, result = pcall(entry.getName, entry)
-                    if success then
-                        name = result
-                    end
+                    name = entry:getName()
                 end
 
                 if name and type(name) == "string" and name ~= "" then
@@ -472,8 +451,8 @@ function CPCoursesLoader:extractCoursesFromAssignedManager(manager)
     end
 
     if type(manager.getCourses) == "function" then
-        local success, result = pcall(manager.getCourses, manager)
-        if success and result then
+        local result = manager:getCourses()
+        if result then
             return self:extractCoursesFromTable(result)
         end
     end

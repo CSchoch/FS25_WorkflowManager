@@ -390,11 +390,9 @@ function WorkflowManagerSpec:onDelete()
     -- Stop workflow if running (prevents dangling state when vehicle is deleted mid-workflow)
     local spec = self.spec_workflowManagerSpec
     if spec and spec.wmExecution then
-        pcall(function()
-            WMLogger:info("Vehicle deleted while running workflow - stopping: %s",
-                spec.wmExecution.workflow and spec.wmExecution.workflow.name or "unknown")
-            WMExecutor:stopWorkflow(self)
-        end)
+        WMLogger:info("Vehicle deleted while running workflow - stopping: %s",
+            spec.wmExecution.workflow and spec.wmExecution.workflow.name or "unknown")
+        WMExecutor:stopWorkflow(self)
     end
     if spec and spec.actionEvents then
         self:clearActionEventsTable(spec.actionEvents)
@@ -594,7 +592,7 @@ function WorkflowManagerSpec.initSpecialization()
     schema:register(XMLValueType.BOOL, key .. "#cpWasRunning",
         "true = Courseplay was driving this vehicle at save time (Courseplay never auto-resumes)")
     schema:register(XMLValueType.INT, key .. "#cpResumeWaypoint",
-        "Courseplay waypoint to continue field work from after load (absent = unknown, stay paused)")
+        "Courseplay waypoint to continue field work from after loading; absent = unknown, stay paused")
     print("[WorkflowManager] Registered savegame XML schema")
 end
 

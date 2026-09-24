@@ -212,15 +212,6 @@ function WMDebugUtil:createTestWorkflow()
     return workflow
 end
 
----Get memory usage info (if available)
----@return string memoryInfo
-function WMDebugUtil:getMemoryInfo()
-    if collectgarbage then
-        local memKB = collectgarbage("count")
-        return string.format("%.2f MB", memKB / 1024)
-    end
-    return "N/A"
-end
 
 ---Benchmark a function
 ---@param func function Function to benchmark

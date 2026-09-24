@@ -226,6 +226,17 @@ describe("ADIntegration (park position)", function()
             ADIntegration:startParkRoute(v)
             assert.are.equal(10, v._parkDestinationAtJobFinished)
         end)
+
+        -- No pcall any more (ModHub TestRunner), so a missing API must be caught up front
+        it("returns false without touching the vehicle when AutoDrive:StartDriving is missing", function()
+            local orig = AutoDrive.StartDriving
+            AutoDrive.StartDriving = nil
+            local v = makeVehicle({ vehicleParkId = 10 })
+            local success = ADIntegration:startParkRoute(v)
+            AutoDrive.StartDriving = orig
+            assert.is_false(success)
+            assert.is_nil(v._parkDestinationAtJobFinished)
+        end)
     end)
 
     -- =========================================================================
@@ -277,6 +288,16 @@ describe("ADIntegration (park position)", function()
             assert.is_true(v._startAutoDriveCalled)
             assert.is_nil(_G.__lastStartDrivingCall)
         end)
+
+        it("returns false, false without arming onRouteToRefuel when vehicle:startAutoDrive is missing", function()
+            _G.__refuelDestinationResult = 20
+            local v = makeVehicle({})
+            v.startAutoDrive = nil
+            local success, skipped = ADIntegration:startRefuelRoute(v)
+            assert.is_false(success)
+            assert.is_false(skipped)
+            assert.is_nil(v.ad.onRouteToRefuel)
+        end)
     end)
 
     -- =========================================================================
@@ -319,6 +340,14 @@ describe("ADIntegration (park position)", function()
             assert.are.equal(AutoDrive.MODE_DRIVETO, v._mode)
             assert.is_true(v.ad.onRouteToRepair)
             assert.is_true(v._startAutoDriveCalled)
+        end)
+
+        it("returns false without arming onRouteToRepair when vehicle:startAutoDrive is missing", function()
+            _G.__repairTriggerResult = { marker = 30 }
+            local v = makeVehicle({})
+            v.startAutoDrive = nil
+            assert.is_false(ADIntegration:startRepairRoute(v))
+            assert.is_nil(v.ad.onRouteToRepair)
         end)
     end)
 

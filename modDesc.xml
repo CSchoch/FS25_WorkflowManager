@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
-<modDesc descVersion="108">
+<modDesc descVersion="113">
     <author>C.Schoch</author>
     <title>
         <en>Workflow Manager</en>
@@ -39,11 +39,42 @@ WHILE YOU PLAY:
 - Workflows are saved with your savegame and automatically resume after loading
 - Works in multiplayer — all players see the correct state on their screens
 
+HOTKEYS (keyboard defaults, can be changed in the Controls settings):
+- Left Alt + W: open Workflow Manager (on foot or in a vehicle)
+- Left Alt + H: show / hide the workflow HUD (in a vehicle)
+Workflow list:
+- N: new workflow
+- T: edit the selected workflow
+- R: delete the selected workflow
+- S: start the selected workflow on your vehicle
+- K: stop the workflow on your vehicle
+- B: open the AD/CP settings of the selected workflow
+Workflow editor:
+- N: add step
+- T: edit the selected step
+- R: remove the selected step
+- U / D: move the selected step up / down
+- S: add a support step to the selected step
+Start dialogs:
+- F: run as support vehicle (role selection)
+- F: start without a leader vehicle (leader selection)
+
 DOCUMENTATION: https://cschoch.github.io/FS25_WorkflowManagerDocs/
 
 REQUIREMENTS: Courseplay. AutoDrive is optional - it is only needed for workflows that contain AutoDrive, Park, Refuel or Repair steps. Pure Courseplay workflows run without it.
 
 CHANGELOG:
+v1.2.0 (2026-09-23)
+- New step types: Park, Refuel and Repair (via AutoDrive)
+- Leader and follower vehicles: a follower waits at a "Wait for Leader" step until its leader releases it with "Unlock Follower"
+- Seed type per Courseplay field work step - the seeder is switched automatically
+- AutoDrive is now optional: pure Courseplay workflows run without it
+- Courseplay field work now continues from the last waypoint after loading a savegame instead of restarting the whole field
+- New mod option in the General settings: turn automatic Courseplay resume after loading on or off
+- HUD: click the leader or main vehicle name to switch to that vehicle
+- Keyboard shortcuts in all dialogs; Edit is now T and Stop is K so they no longer clash with the game's menu keys
+- Many multiplayer and save / load fixes
+
 v1.1.0 (2026-05-20)
 - Support vehicles that work alongside the main vehicle (e.g. a grain cart following a combine)
 - Choose your role (Main or Support) when starting a workflow that has support tasks
@@ -93,12 +124,43 @@ WÄHREND DES SPIELENS:
 - Workflows werden mit dem Spielstand gespeichert und nach dem Laden automatisch fortgesetzt
 - Multiplayer-fähig — alle Spieler sehen den korrekten Zustand auf ihrem Bildschirm
 
+TASTENKÜRZEL (Tastatur-Standard, änderbar in den Steuerungseinstellungen):
+- Linke Alt + W: Workflow Manager öffnen (zu Fuß oder im Fahrzeug)
+- Linke Alt + H: Workflow-HUD ein- / ausblenden (im Fahrzeug)
+Workflow-Liste:
+- N: neuer Workflow
+- T: ausgewählten Workflow bearbeiten
+- R: ausgewählten Workflow löschen
+- S: ausgewählten Workflow auf deinem Fahrzeug starten
+- K: Workflow auf deinem Fahrzeug stoppen
+- B: AD/CP-Einstellungen des ausgewählten Workflows öffnen
+Workflow-Editor:
+- N: Schritt hinzufügen
+- T: ausgewählten Schritt bearbeiten
+- R: ausgewählten Schritt entfernen
+- U / D: ausgewählten Schritt nach oben / unten verschieben
+- S: Hilfsschritt zum ausgewählten Schritt hinzufügen
+Start-Dialoge:
+- F: als Hilfsfahrzeug starten (Rollenwahl)
+- F: ohne Anführerfahrzeug starten (Anführerwahl)
+
 DOKUMENTATION: https://cschoch.github.io/FS25_WorkflowManagerDocs/
 
 VORAUSSETZUNGEN: Courseplay. AutoDrive ist optional - es wird nur fuer Workflows mit AutoDrive-, Park-, Tank- oder Reparatur-Schritten benoetigt. Reine Courseplay-Workflows laufen auch ohne.
 
 CHANGELOG:
-v1.1.0 (2026-04-12)
+v1.2.0 (2026-09-23)
+- Neue Schritttypen: Parken, Auftanken und Reparieren (über AutoDrive)
+- Anführer- und Folgefahrzeuge: ein Folgefahrzeug wartet bei einem Schritt „Auf Anfuehrer warten", bis sein Anführer es mit „Folger freigeben" weiterschickt
+- Saatgut pro Courseplay-Feldarbeitsschritt - die Sämaschine wird automatisch umgestellt
+- AutoDrive ist jetzt optional: reine Courseplay-Workflows laufen ohne
+- Courseplay-Feldarbeit wird nach dem Laden eines Spielstands am letzten Wegpunkt fortgesetzt, statt das ganze Feld neu zu fahren
+- Neue Mod-Option in den allgemeinen Einstellungen: automatisches Fortsetzen von Courseplay nach dem Laden ein- oder ausschalten
+- HUD: Klick auf den Namen des Anführer- oder Hauptfahrzeugs wechselt zu diesem Fahrzeug
+- Tastenkürzel in allen Dialogen; Bearbeiten ist jetzt T und Stopp ist K, damit sie nicht mehr mit den Menütasten des Spiels kollidieren
+- Viele Verbesserungen für Multiplayer und Speichern / Laden
+
+v1.1.0 (2026-05-20)
 - Hilfsfahrzeuge, die parallel zum Hauptfahrzeug arbeiten (z.B. Überladewagen beim Mähdrescher)
 - Rollenauswahl (Haupt- oder Hilfsfahrzeug) beim Start eines Workflows mit Hilfsaufgaben
 - Workflow-Fortschritt für Hilfsfahrzeuge wird korrekt gespeichert und wiederhergestellt
@@ -114,7 +176,7 @@ v1.0.0 (2026-03-11)
 ]]>
         </de>
     </description>
-    <version>1.1.0.0</version>
+    <version>1.2.0.0</version>
     <multiplayer supported="true" />
     <iconFilename>icon_WorkflowManager.dds</iconFilename>
 

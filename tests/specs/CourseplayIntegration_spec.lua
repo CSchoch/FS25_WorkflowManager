@@ -91,8 +91,11 @@ describe("CPIntegration (course resolution)", function()
             assert.is_false(CPIntegration:isDirectoryEntry(nil))
         end)
 
-        it("does not propagate an error from a throwing isDirectory()", function()
-            assert.is_false(CPIntegration:isDirectoryEntry({ isDirectory = function() error("boom") end }))
+        -- ModHub's TestRunner rejects pcall: a Courseplay error must reach the game log, not vanish
+        it("lets an error from a throwing isDirectory() reach the log", function()
+            local ok = pcall(CPIntegration.isDirectoryEntry, CPIntegration,
+                { isDirectory = function() error("boom") end })
+            assert.is_false(ok)
         end)
     end)
 
@@ -327,6 +330,7 @@ describe("CPIntegration (course resolution)", function()
                     return { }  -- e.g. bale finder / combine unloader: no fieldwork method
                 end
                 return {
+                    fieldWorkCourse = {},
                     getBestWaypointToContinueFieldWork = function() return bestWaypoint end,
                 }
             end
@@ -358,14 +362,51 @@ describe("CPIntegration (course resolution)", function()
                 assert.is_nil(CPIntegration:getResumeWaypointIx(drivingVehicle(42, 7)))
             end)
 
-            it("does not propagate an error from a throwing strategy", function()
+            -- The real getBestWaypointToContinueFieldWork indexes self.fieldWorkCourse unguarded,
+            -- and this runs during savegame writing - so it must never be reached without one.
+            it("skips a strategy without a field work course and falls back to the remembered index", function()
+                local called = false
                 local v = {
                     getCpDriveStrategy = function()
-                        return { getBestWaypointToContinueFieldWork = function() error("boom") end }
+                        return { getBestWaypointToContinueFieldWork = function() called = true return 42 end }
                     end,
                     getCpLastRememberedWaypointIx = function() return 5 end,
                 }
                 assert.are.equal(5, CPIntegration:getResumeWaypointIx(v))
+                assert.is_false(called)
+            end)
+        end)
+
+        describe("getProgress", function()
+            it("reads progress from a field work strategy", function()
+                local v = { getCpDriveStrategy = function()
+                    return { fieldWorkCourse = {}, getProgress = function() return 0.25 end }
+                end }
+                assert.are.equal(0.25, CPIntegration:getProgress(v))
+            end)
+
+            -- Regression: while CP starts, the active strategy has no getProgress. CP's own
+            -- getCpFieldWorkProgress calls it anyway and errored on every HUD draw frame.
+            it("returns nil for a strategy without getProgress and never uses getCpFieldWorkProgress", function()
+                local v = {
+                    getCpDriveStrategy = function() return {} end,
+                    getCpFieldWorkProgress = function() error("must not be called") end,
+                }
+                assert.is_nil(CPIntegration:getProgress(v))
+            end)
+
+            it("returns nil for a strategy without a field work course", function()
+                local called = false
+                local v = { getCpDriveStrategy = function()
+                    return { getProgress = function() called = true return 0.5 end }
+                end }
+                assert.is_nil(CPIntegration:getProgress(v))
+                assert.is_false(called)
+            end)
+
+            it("returns nil when no strategy is active", function()
+                assert.is_nil(CPIntegration:getProgress({ getCpDriveStrategy = function() return nil end }))
+                assert.is_nil(CPIntegration:getProgress({}))
             end)
         end)
 

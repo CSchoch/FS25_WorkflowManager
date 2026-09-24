@@ -1039,7 +1039,8 @@ describe("WorkflowManagerSpec", function()
             assert.is_nil(v.spec_workflowManagerSpec.actionEvents["WM_TOGGLE_HUD"])
         end)
 
-        it("does not crash when WMExecutor:stopWorkflow errors", function()
+        -- ModHub's TestRunner rejects pcall, so a stop error is no longer hidden from the log
+        it("lets an error from WMExecutor:stopWorkflow reach the log", function()
             _G.WMExecutor.stopWorkflow = function() error("simulated stop error") end
 
             local wf = { id = "wf_del_err", name = "Error on Delete", steps = {} }
@@ -1049,10 +1050,8 @@ describe("WorkflowManagerSpec", function()
                 workflow = wf, currentStep = 1, status = "running",
             }
 
-            -- onDelete wraps the stop call in pcall, so this must not propagate
-            assert.has_no.errors(function()
-                WorkflowManagerSpec.onDelete(v)
-            end)
+            local ok = pcall(WorkflowManagerSpec.onDelete, v)
+            assert.is_false(ok)
         end)
     end)
 

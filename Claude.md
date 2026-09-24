@@ -31,8 +31,9 @@ After every code change:
 - **Workflow definitions** are immutable templates (`id`, `name`, `steps[]`, `adSettings`). No runtime state.
 - **Runtime state** lives entirely on `vehicle.spec_workflowManagerSpec.wmExecution` (`activeData`).
 - **Server-authoritative**: `WMExecutor.update()` is guarded `if g_server == nil then return end`. All client commands route through `WorkflowManager:sendCommand()`.
-- **AD globals**: `FS25_AutoDrive.AutoDrive` — `AD.setSettingState` is a **static function** (dot notation, not colon). `pcall(AD.setSettingState, name, idx, vehicle)` — passing `AD` as first arg shifts all params and silently does nothing.
+- **AD globals**: `FS25_AutoDrive.AutoDrive` — `AD.setSettingState` is a **static function** (dot notation, not colon). `AD.setSettingState(name, idx, vehicle)` — passing `AD` as first arg shifts all params and silently does nothing.
 - **CP globals**: `FS25_Courseplay.g_Courseplay`
+- **No `pcall` / `xpcall` / `collectgarbage` / `load(` in `src/`**: GIANTS' TestRunner (`PublicLuaCheck`, 0.9.21+) fails the mod on any of them, even a `pcall` that logs its error. Guard AD/CP calls with nil / `type(...) == "function"` checks and let a real error reach the game log. The checker is textual: the word `load (` inside a string counts too. Its `ObsoleteFiles` check is textual as well: a file is "used" only if its full path appears as a literal string, so never build asset paths by concatenation (`"xml/gui/" .. name`).
 - Full API docs: `docs/API_Analysis.md`
 
 ## Running Tests
@@ -51,6 +52,7 @@ Individual runners: `tests\run_executor_spec.lua`, `tests\run_storage_spec.lua`,
 | `WorkflowStorage_spec.lua` | WMStorage save/load, adSettings, mod options, old-format migration |
 | `WorkflowManager_spec.lua` | CRUD, vehicle validation, network command dispatch |
 | `WorkflowManagerADRequirement_spec.lua` | Real `workflowNeedsAutoDrive` / `isVehicleValid`: AutoDrive is required only for workflows that use AD-driven steps |
+| `WorkflowManagerLifecycle_spec.lua` | Real module: DevConfig sourced only if present, `loadDialog`, literal dialog XML paths, `releaseADForShutdown` (skips deleted vehicles, never stops CP) |
 | `WorkflowExecutor_spec.lua` | Full state machine: start/stop/pause/resume/step nav, support vehicles, MP roles |
 | `AutoDriveIntegration_spec.lua` | AD destinations, park/refuel/repair route resolution |
 | `WorkflowManagerSpec_spec.lua` | Vehicle spec: onLoad, onPostLoad, saveToXMLFile, onWriteStream/onReadStream, onDelete |
@@ -78,7 +80,7 @@ must happen **after** any course load (loading a course clears CP's remembered i
 ordering in `startCourseplayStep`. With no recorded waypoint the workflow deliberately stays
 PAUSED rather than restarting from scratch.
 
-Current total: **777**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
+Current total: **793**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
 or they will not run.
 
 **Mod options (game settings):** `WMSettings` holds the player-facing options; `WMGameSettings`

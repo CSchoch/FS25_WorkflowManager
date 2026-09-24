@@ -4591,6 +4591,269 @@
       ],
       "occurrences": 1,
       "last_seen": "2026-09-11T12:00:00Z"
+    },
+    {
+      "id": "bug-277",
+      "timestamp": "2026-09-23T19:27:59.373Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/WorkflowManager.lua",
+      "root_cause": "Had \"1.0.0.0\"",
+      "fix": "Changed to \"1.2.0.0\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-23T19:27:59.373Z"
+    },
+    {
+      "id": "bug-278",
+      "timestamp": "2026-09-23T19:28:05.469Z",
+      "error_message": "Incorrect value in code",
+      "file": "modDesc.xml",
+      "root_cause": "Had \"108\"",
+      "fix": "Changed to \"111\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-09-23T19:28:35.172Z"
+    },
+    {
+      "id": "bug-279",
+      "timestamp": "2026-09-23T21:29:00",
+      "error_message": "GIANTS TestRunner FAIL: descVersion '108' outside allowed range (111); unused file textures/white.dds",
+      "file": "modDesc.xml",
+      "root_cause": "modDesc descVersion not bumped for current FS25 patch; white.dds left over after HUD stopped using it. Also stale version string (1.0.0.0 in WorkflowManager.lua), EN/DE changelog date mismatch, no hotkey list in description (ModHub 10.4)",
+      "fix": "descVersion=111, version 1.2.0.0 in modDesc + WorkflowManager.lua, hotkey list + changelog in EN/DE, deleted white.dds, removed 17 orphan wm_link_* DE keys",
+      "tags": [
+        "modhub",
+        "testrunner",
+        "modDesc",
+        "release"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-23T21:29:00"
+    },
+    {
+      "id": "bug-280",
+      "timestamp": "2026-09-23T19:52:24.140Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/integration/AutoDriveIntegration.lua",
+      "root_cause": "6 lines replaced/restructured",
+      "fix": "Rewrote 11→4 lines (6 removed) | Also: local success, errorMsg = pcall(function(); end) | Also: local ok, err = pcall(AD.setSettingState, settingN; if ok then",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-09-23T19:52:49.903Z"
+    },
+    {
+      "id": "bug-281",
+      "timestamp": "2026-09-23T19:55:03.803Z",
+      "error_message": "Wrong return value",
+      "file": "src/integration/CourseplayIntegration.lua",
+      "root_cause": "Was returning: nil",
+      "fix": "Now returns: view:getEntries()",
+      "tags": [
+        "auto-detected",
+        "return-value",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-23T19:55:03.803Z"
+    },
+    {
+      "id": "bug-282",
+      "timestamp": "2026-09-23T19:55:11.003Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/integration/CourseplayIntegration.lua",
+      "root_cause": "5 lines replaced/restructured",
+      "fix": "Rewrote 7→3 lines (5 removed) | Also: local loadSuccess = pcall(vehicle.setCpFieldWorkCo; if loadSuccess then",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-09-23T19:55:25.677Z"
+    },
+    {
+      "id": "bug-283",
+      "timestamp": "2026-09-23T19:55:47.591Z",
+      "error_message": "Significant refactor of ",
+      "file": "tests/specs/CourseplayIntegration_spec.lua",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 9→13 lines (2 removed) | Also: it(\"does not propagate an error from a throwing is; assert.is_false(CPIntegration:isDirectoryEntry({ i",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-09-23T19:55:49.770Z"
+    },
+    {
+      "id": "bug-284",
+      "timestamp": "2026-09-23T19:57:37.366Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowManager.lua",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 4→5 lines (3 removed) | Also: -- Load Main Dialog; self.mainDialog = WMMainDialog.new() | Also: -- Clear AD handoffs and stop AD routes only. Do N; -- during shutdown causes CP's deferred task clean | Also: pcall(function(); for vehicle, _ in pairs(WMExecutor.activeVehicles) | Also: self.mainDialog         = self:loadDialog(\"WMMainD; self.editorDialog       = self:loadDialog(\"WMEdito",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 5,
+      "last_seen": "2026-09-23T19:59:46.774Z"
+    },
+    {
+      "id": "bug-285",
+      "timestamp": "2026-09-23T19:58:21.668Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/WorkflowManagerSpec.lua",
+      "root_cause": "Had \"Courseplay waypoint to continue field work from a",
+      "fix": "Changed to \"Courseplay waypoint to continue field work from a",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-23T19:58:21.668Z"
+    },
+    {
+      "id": "bug-286",
+      "timestamp": "2026-09-23T19:58:23.111Z",
+      "error_message": "Incorrect value in code",
+      "file": "modDesc.xml",
+      "root_cause": "Had \"111\"",
+      "fix": "Changed to \"113\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "xml"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-23T19:58:23.111Z"
+    },
+    {
+      "id": "bug-287",
+      "timestamp": "2026-09-23T19:59:57.622Z",
+      "error_message": "Significant refactor of ",
+      "file": "tests/specs/WorkflowManagerLifecycle_spec.lua",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 19→33 lines (4 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-23T19:59:57.622Z"
+    },
+    {
+      "id": "bug-288",
+      "timestamp": "2026-09-23T20:00:27.452Z",
+      "error_message": "Incorrect value in code",
+      "file": "CLAUDE.md",
+      "root_cause": "Had `pcall(AD.setSettingState, name, idx, vehicle)`",
+      "fix": "Changed to `AD.setSettingState(name, idx, vehicle)`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-23T20:00:27.452Z"
+    },
+    {
+      "id": "bug-289",
+      "timestamp": "2026-09-23T20:00:31.247Z",
+      "error_message": "Wrong reference: 777 should be 789",
+      "file": "CLAUDE.md",
+      "root_cause": "Used \"777\" instead of \"789\"",
+      "fix": "Changed 777 → 789",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-23T20:00:31.247Z"
+    },
+    {
+      "id": "bug-290",
+      "timestamp": "2026-09-23T22:02:00",
+      "error_message": "GIANTS TestRunner 0.9.21 FAIL: descVersion must be 113; PublicLuaCheck: 84x '[pcall] pcall/xpcall swallows errors and hides them from the log', '[dynamic-code]' at WorkflowManagerSpec.lua:597, '[collectgarbage]' in DebugUtil.lua",
+      "file": "src/ (10 files), modDesc.xml",
+      "root_cause": "New TestRunner check rejects every pcall/xpcall syntactically (even logged ones), collectgarbage, and the text 'load (' even inside a string literal. descVersion requirement moved 111->113.",
+      "fix": "Replaced all 84 pcalls with nil/type guards + direct calls (verified against gameSource.zip and FS25_Courseplay source: Gui:loadGui returns nil on failure; CP FileView has no load/loadCourse so tryLoadEntry always reaches appendLoadedCpCourse); added strategy.fieldWorkCourse guard before getBestWaypointToContinueFieldWork (runs at save time); extracted WorkflowManager:releaseADForShutdown (skips isDeleted vehicles) and loadDialog; DevConfig via fileExists; removed unused WMDebugUtil:getMemoryInfo; reworded schema string; descVersion 113. Follow-up: first loadDialog built paths by concatenation -> ObsoleteFiles flagged all 6 dialog XMLs unused; now literal paths. 3 tests that asserted swallowed errors rewritten, 12 tests added (789).",
+      "tags": [
+        "modhub",
+        "testrunner",
+        "pcall",
+        "PublicLuaCheck",
+        "ObsoleteFiles"
+      ],
+      "related_bugs": [
+        "bug-289"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-23T22:02:00"
+    },
+    {
+      "id": "bug-291",
+      "timestamp": "2026-09-24T07:08:56.364Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/integration/CourseplayIntegration.lua",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 8→16 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-24T07:08:56.364Z"
+    },
+    {
+      "id": "bug-292",
+      "timestamp": "2026-09-24T09:10:00Z",
+      "error_message": "CpAIFieldWorker.lua:151: attempt to call missing method 'getProgress' of table (every draw frame when Courseplay starts)",
+      "file": "src/integration/CourseplayIntegration.lua",
+      "root_cause": "CPIntegration:getProgress called CP's getCpFieldWorkProgress, which calls strategy:getProgress() on any active strategy; startup/unloader/bale strategies lack it. Previously hidden by pcall, exposed when pcall was removed for PublicLuaCheck.",
+      "fix": "Read progress from vehicle:getCpDriveStrategy() only when strategy.fieldWorkCourse ~= nil and type(strategy.getProgress)=='function'; added 4 regression tests.",
+      "tags": [
+        "courseplay",
+        "hud",
+        "pcall-removal",
+        "getProgress",
+        "draw"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-24T09:10:00Z"
     }
   ]
 }

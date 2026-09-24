@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-09-11T20:09:05.809Z
-> Files: 97 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-09-24T07:09:00.446Z
+> Files: 99 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -52,9 +52,9 @@
 
 ## ./
 
-- `CLAUDE.md` — FS25 Workflow Manager (~3033 tok)
+- `CLAUDE.md` — FS25 Workflow Manager (~3214 tok)
 - `Development.md` — FS25 Workflow Manager — Development (~1758 tok)
-- `modDesc.xml` (~2696 tok)
+- `modDesc.xml` — Declares per (~3573 tok)
 
 ## .claude/
 
@@ -84,8 +84,8 @@
 
 - `WMSettings.lua` — reset, isCourseplayAutoResumeEnabled (~356 tok)
 - `WorkflowExecutor.lua` — init, startWorkflow, stopWorkflow, buildSyncMaps, refreshLeaderLink (~22551 tok)
-- `WorkflowManager.lua` — getStepTypeLabel, isMarkerStepType, isTargetlessStepType, isAutoDriveTrackedStepType, getStepTypeSho (~12673 tok)
-- `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~7967 tok)
+- `WorkflowManager.lua` — getStepTypeLabel, isMarkerStepType, isTargetlessStepType, isAutoDriveTrackedStepType, getStepTypeSho (~12766 tok)
+- `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad, saveToXMLFile (~7954 tok)
 - `WorkflowStorage.lua` — deepCopySupportStep, isTargetlessStepType, parseFillTypes, init, getXmlPath (~5398 tok)
 
 ## src/dev/
@@ -96,8 +96,8 @@
 
 - `WMADSettingsDialog.lua` — new, onCreate, onOpen, onClose, Called (~755 tok)
 - `WMEditorDialog.lua` — deepCopy, new, onCreate, onOpen, onClose (~6738 tok)
-- `WMGameSettings.lua` — updateFocusIds, getSettingsPage, ensureMenuInjected, refreshMenuState, onCpAutoResumeChanged (~2196 tok)
-- `WMHud.lua` — ensureOverlays, createIconOverlays, updateOverlayPositions, init, show (~9647 tok)
+- `WMGameSettings.lua` — updateFocusIds, getSettingsPage, ensureMenuInjected, refreshMenuState, onCpAutoResumeChanged (~2227 tok)
+- `WMHud.lua` — ensureOverlays, createIconOverlays, updateOverlayPositions, init, show (~9568 tok)
 - `WMLeaderVehicleSelectDialog.lua` — new, onCreate, buildVehicleList, onOpen, onClose (~1169 tok)
 - `WMMainDialog.lua` — new, onCreate, onOpen, onClose, refreshWorkflowList (~3813 tok)
 - `WMModeSelectDialog.lua` — new, onCreate, onOpen, onClose, Called (~577 tok)
@@ -106,15 +106,16 @@
 
 ## src/integration/
 
-- `AutoDriveIntegration.lua` — init, completeInitialization, update, checkAvailability, getDestinations (~11852 tok)
+- `AutoDriveIntegration.lua` — init, completeInitialization, update, checkAvailability, getDestinations (~11594 tok)
 - `CourseplayCoursesLoader.lua` — init, getCourseplayObject, scanCourses, logCourseplayStructure, extractCoursesFromStorage (~5496 tok)
-- `CourseplayIntegration.lua` — init, completeInitialization, update, checkAvailability, hasSpec (~10590 tok)
+- `CourseplayIntegration.lua` — init, completeInitialization, update, checkAvailability, hasSpec (~9928 tok)
 
 ## src/network/
 
 
 ## src/utils/
 
+- `DebugUtil.lua` — init, update, draw, dumpTable, dumpTableRecursive (~2081 tok)
 - `EventHandler.lua` — init, Callback, to, addEventListener, removeEventListener (~1004 tok)
 
 ## testdata/
@@ -122,7 +123,7 @@
 
 ## tests/
 
-- `run_tests.lua` — local, assert, describe, it, before_each (~2270 tok)
+- `run_tests.lua` — local, assert, describe, it, before_each (~2284 tok)
 
 ## tests/fixtures/
 
@@ -134,9 +135,9 @@
 
 ## tests/specs/
 
-- `AutoDriveIntegration_spec.lua` — makeImplement, makeVehicle (~4616 tok)
+- `AutoDriveIntegration_spec.lua` — makeImplement, makeVehicle (~4979 tok)
 - `CourseplayCoursesLoader_spec.lua` — file, folder, view, makeFileSystem, contains (~1901 tok)
-- `CourseplayIntegration_spec.lua` — file, folder, view, makeStorage, makeVehicle (~6381 tok)
+- `CourseplayIntegration_spec.lua` — file, folder, view, makeStorage, makeVehicle (~6954 tok)
 - `EventHandler_spec.lua` — Declares gracefully (~2992 tok)
 - `ModDescInputBindings_spec.lua` (~471 tok)
 - `WMConsoleCommands_spec.lua` — captureOutput, makeVehicle (~1391 tok)
@@ -151,7 +152,8 @@
 - `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport, makeLeaderWF (~35163 tok)
 - `WorkflowManager_spec.lua` — Declares constants (~9653 tok)
 - `WorkflowManagerADRequirement_spec.lua` — Loads the real WorkflowManager.lua with `source` neutered; tests workflowNeedsAutoDrive / isVehicleValid (AutoDrive optional for CP-only workflows) (~1400 tok)
-- `WorkflowManagerSpec_spec.lua` — makeVehicle, makeSavegameXML (~12594 tok)
+- `WorkflowManagerLifecycle_spec.lua` — loadModule, wasSourced, activeVehicle (~1646 tok)
+- `WorkflowManagerSpec_spec.lua` — makeVehicle, makeSavegameXML (~12595 tok)
 - `WorkflowStorage_spec.lua` — hasFormatVersion (~10819 tok)
 
 ## textures/
@@ -162,7 +164,7 @@
 
 ## translations/
 
-- `translation_de.xml` (~3234 tok)
+- `translation_de.xml` (~3086 tok)
 - `translation_en.xml` (~2782 tok)
 
 ## webeditor/

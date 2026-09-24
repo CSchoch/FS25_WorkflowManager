@@ -2,15 +2,16 @@
     WorkflowManager - Main Entry Point
     Combines AutoDrive and Courseplay for automated field workflows
 
-    Author: WorkflowManager Team
-    Version: 1.0.0.0
+    Author: CSchoch
+    Version: 1.2.0.0
 ]]
 
 -- Source all required files (order matters for dependencies)
 -- 1. Development config (optional - omitted in release builds)
-pcall(function()
-    source(Utils.getFilename("src/DevConfig.lua", g_currentModDirectory))
-end)
+local devConfigPath = Utils.getFilename("src/DevConfig.lua", g_currentModDirectory)
+if fileExists(devConfigPath) then
+    source(devConfigPath)
+end
 
 -- Fallback: if DevConfig was not loaded, use release defaults (all debug off)
 if WMDevConfig == nil then
@@ -78,7 +79,7 @@ WMLogger:initFromDevConfig()
 
 ---@class WorkflowManager
 WorkflowManager = {}
-WorkflowManager.version = "1.0.0.0"
+WorkflowManager.version = "1.2.0.0"
 WorkflowManager.modName = g_currentModName
 WorkflowManager.modDirectory = g_currentModDirectory
 
@@ -190,12 +191,7 @@ function WorkflowManager:init()
     WMDebugUtil:init()
 
     -- Initialize in-vehicle HUD
-    local hudSuccess, hudErr = pcall(function()
-        WMHud:init()
-    end)
-    if not hudSuccess then
-        WMLogger:error("Failed to initialize WMHud: %s", tostring(hudErr))
-    end
+    WMHud:init()
 
     -- Subscribe to workflow events to show/hide HUD automatically
     WMEventHandler:subscribe(WMEventHandler.EVENT_WORKFLOW_STARTED, self, self.onWorkflowStartedEvent)
@@ -236,86 +232,35 @@ function WorkflowManager:loadDialogs()
     g_gui:loadProfiles(profilesPath)
     WMLogger:debug("Loaded GUI profiles from: %s", profilesPath)
 
-    -- Load Main Dialog
-    self.mainDialog = WMMainDialog.new()
-    local xmlPath = Utils.getFilename("xml/gui/WMMainDialog.xml", self.modDirectory)
-    local success, result = pcall(function()
-        g_gui:loadGui(xmlPath, "WMMainDialog", self.mainDialog)
-    end)
-    if success then
-        WMLogger:info("Main dialog loaded successfully")
-    else
-        WMLogger:warning("Failed to load main dialog: %s", tostring(result))
-        self.mainDialog = nil
-    end
-
-    -- Load Editor Dialog
-    self.editorDialog = WMEditorDialog.new()
-    xmlPath = Utils.getFilename("xml/gui/WMEditorDialog.xml", self.modDirectory)
-    success, result = pcall(function()
-        g_gui:loadGui(xmlPath, "WMEditorDialog", self.editorDialog)
-    end)
-    if success then
-        WMLogger:info("Editor dialog loaded successfully")
-    else
-        WMLogger:warning("Failed to load editor dialog: %s", tostring(result))
-        self.editorDialog = nil
-    end
-
-    -- Load Step Dialog
-    self.stepDialog = WMStepDialog.new()
-    xmlPath = Utils.getFilename("xml/gui/WMStepDialog.xml", self.modDirectory)
-    success, result = pcall(function()
-        g_gui:loadGui(xmlPath, "WMStepDialog", self.stepDialog)
-    end)
-    if success then
-        WMLogger:info("Step dialog loaded successfully")
-    else
-        WMLogger:warning("Failed to load step dialog: %s", tostring(result))
-        self.stepDialog = nil
-    end
-
-    -- Load Mode Select Dialog
-    self.modeSelectDialog = WMModeSelectDialog.new()
-    xmlPath = Utils.getFilename("xml/gui/WMModeSelectDialog.xml", self.modDirectory)
-    success, result = pcall(function()
-        g_gui:loadGui(xmlPath, "WMModeSelectDialog", self.modeSelectDialog)
-    end)
-    if success then
-        WMLogger:info("Mode select dialog loaded successfully")
-    else
-        WMLogger:warning("Failed to load mode select dialog: %s", tostring(result))
-        self.modeSelectDialog = nil
-    end
-
-    -- Load AD/CP Settings Dialog
-    self.adSettingsDialog = WMADSettingsDialog.new()
-    xmlPath = Utils.getFilename("xml/gui/WMADSettingsDialog.xml", self.modDirectory)
-    success, result = pcall(function()
-        g_gui:loadGui(xmlPath, "WMADSettingsDialog", self.adSettingsDialog)
-    end)
-    if success then
-        WMLogger:info("AD settings dialog loaded successfully")
-    else
-        WMLogger:warning("Failed to load AD settings dialog: %s", tostring(result))
-        self.adSettingsDialog = nil
-    end
-
-    -- Load Leader Vehicle Select Dialog
-    self.leaderSelectDialog = WMLeaderVehicleSelectDialog.new()
-    xmlPath = Utils.getFilename("xml/gui/WMLeaderVehicleSelectDialog.xml", self.modDirectory)
-    success, result = pcall(function()
-        g_gui:loadGui(xmlPath, "WMLeaderVehicleSelectDialog", self.leaderSelectDialog)
-    end)
-    if success then
-        WMLogger:info("Leader select dialog loaded successfully")
-    else
-        WMLogger:warning("Failed to load leader select dialog: %s", tostring(result))
-        self.leaderSelectDialog = nil
-    end
+    -- Full literal paths on purpose: GIANTS' TestRunner finds used files by their path string
+    -- and reports a concatenated one ("xml/gui/" .. name) as an unused file.
+    self.mainDialog = self:loadDialog("xml/gui/WMMainDialog.xml", "WMMainDialog", WMMainDialog.new())
+    self.editorDialog = self:loadDialog("xml/gui/WMEditorDialog.xml", "WMEditorDialog", WMEditorDialog.new())
+    self.stepDialog = self:loadDialog("xml/gui/WMStepDialog.xml", "WMStepDialog", WMStepDialog.new())
+    self.modeSelectDialog = self:loadDialog("xml/gui/WMModeSelectDialog.xml",
+        "WMModeSelectDialog", WMModeSelectDialog.new())
+    self.adSettingsDialog = self:loadDialog("xml/gui/WMADSettingsDialog.xml",
+        "WMADSettingsDialog", WMADSettingsDialog.new())
+    self.leaderSelectDialog = self:loadDialog("xml/gui/WMLeaderVehicleSelectDialog.xml",
+        "WMLeaderVehicleSelectDialog", WMLeaderVehicleSelectDialog.new())
 
     -- Add the mod's options to the game's General settings page
     WMGameSettings:init()
+end
+
+---Load one dialog's GUI XML into its controller.
+---@param xmlFile string Mod-relative path of the dialog XML
+---@param name string GUI name
+---@param controller table Dialog controller instance
+---@return table|nil controller The controller, or nil if loading failed (Gui:loadGui logs why)
+function WorkflowManager:loadDialog(xmlFile, name, controller)
+    local xmlPath = Utils.getFilename(xmlFile, self.modDirectory)
+    if g_gui:loadGui(xmlPath, name, controller) == nil then
+        WMLogger:warning("Failed to load dialog: %s", name)
+        return nil
+    end
+    WMLogger:info("Dialog loaded: %s", name)
+    return controller
 end
 
 ---Show the AD/CP settings dialog
@@ -377,43 +322,32 @@ function WorkflowManager:registerGlobalActions()
     WMLogger:debug("Registering global input actions...")
 
     -- Register WM_TOGGLE_GUI
-    local success, result = pcall(function()
-        local _, eventId = g_inputBinding:registerActionEvent(
-            "WM_TOGGLE_GUI",
-            self,
-            self.onToggleGUI,
-            false,  -- triggerUp
-            true,   -- triggerDown
-            false,  -- triggerAlways
-            true    -- startActive
-        )
-        return eventId
-    end)
-
-    if success then
-        if result ~= nil then
-            g_inputBinding:setActionEventTextVisibility(result, true)
-            g_inputBinding:setActionEventTextPriority(result, GS_PRIO_NORMAL)
-            WMLogger:info("Registered global input action WM_TOGGLE_GUI (eventId: %s)", tostring(result))
-        else
-            WMLogger:warning("Input action WM_TOGGLE_GUI registered but eventId is nil")
-        end
+    local _, eventId = g_inputBinding:registerActionEvent(
+        "WM_TOGGLE_GUI",
+        self,
+        self.onToggleGUI,
+        false,  -- triggerUp
+        true,   -- triggerDown
+        false,  -- triggerAlways
+        true    -- startActive
+    )
+    if eventId ~= nil then
+        g_inputBinding:setActionEventTextVisibility(eventId, true)
+        g_inputBinding:setActionEventTextPriority(eventId, GS_PRIO_NORMAL)
+        WMLogger:info("Registered global input action WM_TOGGLE_GUI (eventId: %s)", tostring(eventId))
     else
-        WMLogger:error("Failed to register input action WM_TOGGLE_GUI: %s", tostring(result))
+        WMLogger:warning("Input action WM_TOGGLE_GUI registered but eventId is nil")
     end
 
     -- Register WM_TOGGLE_HUD
-    success, result = pcall(function()
-        local _, eventId = g_inputBinding:registerActionEvent(
-            "WM_TOGGLE_HUD",
-            self,
-            self.onToggleHUD,
-            false, true, false, true
-        )
-        return eventId
-    end)
-    if success and result then
-        g_inputBinding:setActionEventTextVisibility(result, false)
+    _, eventId = g_inputBinding:registerActionEvent(
+        "WM_TOGGLE_HUD",
+        self,
+        self.onToggleHUD,
+        false, true, false, true
+    )
+    if eventId ~= nil then
+        g_inputBinding:setActionEventTextVisibility(eventId, false)
         WMLogger:debug("Registered WM_TOGGLE_HUD")
     end
 end
@@ -1109,6 +1043,25 @@ function WorkflowManager:loadMap(name)
     -- which fires after this and has access to the now-populated self.workflows.
 end
 
+---Clear AD->CP handoffs and stop AD routes on every active vehicle, then forget them all.
+---Deliberately does NOT stop Courseplay: stopCurrentAIJob during shutdown makes CP's deferred
+---task cleanup run after game objects are torn down (nil-index errors in CpAITaskFieldWork).
+---CP shuts itself down cleanly via its own handlers.
+function WorkflowManager:releaseADForShutdown()
+    for vehicle, _ in pairs(WMExecutor.activeVehicles) do
+        -- A vehicle the engine already deleted must not be driven through AD's stop path
+        if not vehicle.isDeleted then
+            local activeData = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
+            -- Clear AD->CP handoff flag FIRST to prevent AD from restarting CP during shutdown
+            if activeData and activeData.vehicle then
+                ADIntegration:clearCPHandoff(activeData.vehicle)
+            end
+            ADIntegration:stopRoute(vehicle)
+        end
+    end
+    WMExecutor.activeVehicles = {}
+end
+
 ---Called when map is deleted/unloaded
 function WorkflowManager:deleteMap()
     WMLogger:info("Map unloading, cleaning up...")
@@ -1119,61 +1072,29 @@ function WorkflowManager:deleteMap()
     -- IMMEDIATELY set isInitialized to false to stop update/draw processing
     self.isInitialized = false
 
-    -- Clear AD handoffs and stop AD routes only. Do NOT stop CP here: calling stopCurrentAIJob
-    -- during shutdown causes CP's deferred task cleanup to run after game objects are torn down,
-    -- producing nil-index errors. CP shuts itself down cleanly via its own handlers.
-    pcall(function()
-        for vehicle, _ in pairs(WMExecutor.activeVehicles) do
-            local activeData = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
-            -- Clear AD->CP handoff flag FIRST to prevent AD from restarting CP during shutdown
-            if activeData and activeData.vehicle then
-                pcall(function() ADIntegration:clearCPHandoff(activeData.vehicle) end)
-            end
-            pcall(function() ADIntegration:stopRoute(vehicle) end)
-        end
-        -- Clear any remaining active vehicles
-        WMExecutor.activeVehicles = {}
-    end)
+    self:releaseADForShutdown()
 
     -- Save workflows
-    pcall(function()
-        self:saveWorkflows()
-    end)
+    self:saveWorkflows()
 
     -- Cleanup new dialog-based GUI
-    pcall(function()
-        if self.mainDialog ~= nil then
-            self.mainDialog = nil
-        end
-        if self.editorDialog ~= nil then
-            self.editorDialog = nil
-        end
-        if self.stepDialog ~= nil then
-            self.stepDialog = nil
-        end
-        if self.textInputDialog ~= nil then
-            self.textInputDialog = nil
-        end
-        if self.modeSelectDialog ~= nil then
-            self.modeSelectDialog = nil
-        end
-        if self.adSettingsDialog ~= nil then
-            self.adSettingsDialog = nil
-        end
-    end)
+    self.mainDialog = nil
+    self.editorDialog = nil
+    self.stepDialog = nil
+    self.textInputDialog = nil
+    self.modeSelectDialog = nil
+    self.adSettingsDialog = nil
 
     -- Remove the rows injected into the game's General settings page
-    pcall(function() WMGameSettings:delete() end)
+    WMGameSettings:delete()
 
     -- Cleanup in-vehicle HUD (also releases the mouse cursor if WM forced it on)
-    pcall(function()
-        if WMHud and WMHud.delete then
-            WMHud:delete()
-        end
-    end)
+    if WMHud and WMHud.delete then
+        WMHud:delete()
+    end
 
     -- Unregister developer console commands
-    pcall(function() WMConsoleCommands:delete() end)
+    WMConsoleCommands:delete()
 
     -- Reset remaining state
     self.guiVisible = false
@@ -1251,23 +1172,12 @@ end
 -- own shutdown cleanly via its own hooks.
 if FSBaseMission.delete ~= nil then
     FSBaseMission.delete = Utils.prependedFunction(FSBaseMission.delete, function()
-        pcall(function()
-            if not WorkflowManager.isInitialized then
-                return
-            end
-            WorkflowManager.isShuttingDown = true
-            WMLogger:info("FSBaseMission.delete - clearing AD handoffs and stopping AD routes before shutdown")
-            for vehicle, _ in pairs(WMExecutor.activeVehicles) do
-                local activeData = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
-                -- Clear AD->CP handoff flag FIRST to prevent AD from restarting CP
-                if activeData and activeData.vehicle then
-                    pcall(function() ADIntegration:clearCPHandoff(activeData.vehicle) end)
-                end
-                -- Stop AD only; CP shuts down cleanly via its own handlers
-                pcall(function() ADIntegration:stopRoute(vehicle) end)
-            end
-            WMExecutor.activeVehicles = {}
-        end)
+        if not WorkflowManager.isInitialized then
+            return
+        end
+        WorkflowManager.isShuttingDown = true
+        WMLogger:info("FSBaseMission.delete - clearing AD handoffs and stopping AD routes before shutdown")
+        WorkflowManager:releaseADForShutdown()
     end)
     WMLogger:info("Hooked FSBaseMission.delete for shutdown cleanup")
 end

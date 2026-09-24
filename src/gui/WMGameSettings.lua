@@ -194,19 +194,17 @@ function WMGameSettings:delete()
     for _, element in pairs(self.menuControls) do
         -- The option control is a child of the cloned row container; drop the container
         local root = element.parent ~= nil and element.parent ~= layout and element.parent or element
-        pcall(function()
-            if page ~= nil and page.controlsList ~= nil then
-                for i = #page.controlsList, 1, -1 do
-                    if page.controlsList[i] == root then
-                        table.remove(page.controlsList, i)
-                    end
+        if page ~= nil and page.controlsList ~= nil then
+            for i = #page.controlsList, 1, -1 do
+                if page.controlsList[i] == root then
+                    table.remove(page.controlsList, i)
                 end
             end
-            if root.parent ~= nil then
-                root.parent:removeElement(root)
-            end
-            root:delete()
-        end)
+        end
+        if root.parent ~= nil then
+            root.parent:removeElement(root)
+        end
+        root:delete()
     end
 
     self.menuControls = {}
@@ -216,6 +214,6 @@ function WMGameSettings:delete()
         page.wmCpAutoResumeControl = nil
     end
     if layout ~= nil then
-        pcall(function() layout:invalidateLayout() end)
+        layout:invalidateLayout()
     end
 end

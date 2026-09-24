@@ -1619,3 +1619,122 @@ No WM dialog defines an Enter handler. Needs a 2-second in-game check: open the 
 | 22:11 | Webeditor: round-trip <settings><general courseplayAutoResume> (import/export/localStorage) + README | webeditor/app.js, webeditor/README.md | 9/9 headless vm checks pass | ~6k |
 | 22:11 | Website docs sweep for ad6bb1d + 7f75d3a: AutoDrive optional, real hotkeys (Stop=K, Edit=T, F in mode/leader), resume-after-load + setting, <settings> XML | website/docs (15 files) | docusaurus build clean, 777 Lua tests pass; not committed | ~25k |
 | 22:12 | Session end: 41 writes across 18 files (app.js, README.md, intro.md, getting-started.md, installation.md) | 21 reads | ~75760 tok |
+
+## Session: 2026-09-11 22:23
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-09-11 22:23
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-09-13 21:21
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-09-20 13:25
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-09-20 13:25
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-09-20 13:36
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-09-23 21:08
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-09-23 21:09
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-09-23 21:09
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 21:15 | ModHub guidelines check: built zip, ran GIANTS TestRunner (FAIL: descVersion 108 vs 111, unused textures/white.dds), manual review | modDesc.xml, translations/*, textures/white.dds | report only, no edits | ~25000 |
+| 21:27 | Edited translations/translation_de.xml | removed 21 lines | ~16 |
+| 21:27 | Edited src/WorkflowManager.lua | 1.0 → 1.2 | ~6 |
+| 21:27 | Edited src/WorkflowManager.lua | "1.0.0.0" → "1.2.0.0" | ~10 |
+| 21:28 | Edited modDesc.xml | "108" → "111" | ~8 |
+| 21:28 | Edited modDesc.xml | 1.1 → 1.2 | ~8 |
+| 21:28 | Edited modDesc.xml | modified HOTKEYS() | ~505 |
+| 21:28 | Edited modDesc.xml | modified RZEL() | ~571 |
+| 21:28 | Edited modDesc.xml | 2→2 lines | ~61 |
+| 21:29 | ModHub fixes: descVersion 111, version 1.2.0.0 (modDesc + WorkflowManager.lua), hotkey list + v1.2.0 changelog EN/DE, DE v1.1.0 date 04-12->05-20, removed 17 orphan DE link keys, deleted textures/white.dds; tests 777/777, TestRunner PASS | modDesc.xml, src/WorkflowManager.lua, translations/translation_de.xml, textures/white.dds | done | ~12000 |
+| 21:29 | Session end: 8 writes across 3 files (translation_de.xml, WorkflowManager.lua, modDesc.xml) | 8 reads | ~20781 tok |
+| 21:36 | Re-ran TestRunner 0.9.21: FAIL - descVersion now 113 (min=max), new PublicLuaCheck: 84 pcall sites, 1 dynamic-code false positive (word "load (" in schema description string, WorkflowManagerSpec.lua:597), 1 collectgarbage (dead WMDebugUtil:getMemoryInfo). No edits. | - | report | ~6000 |
+| 21:35 | Session end: 8 writes across 3 files (translation_de.xml, WorkflowManager.lua, modDesc.xml) | 8 reads | ~20781 tok |
+| 21:49 | Session end: 8 writes across 3 files (translation_de.xml, WorkflowManager.lua, modDesc.xml) | 8 reads | ~20781 tok |
+| 21:52 | Edited src/integration/AutoDriveIntegration.lua | 11→9 lines | ~99 |
+| 21:52 | Edited src/integration/AutoDriveIntegration.lua | 12→9 lines | ~78 |
+| 21:52 | Edited src/integration/AutoDriveIntegration.lua | reduced (-7 lines) | ~28 |
+| 21:52 | Edited src/integration/AutoDriveIntegration.lua | reduced (-7 lines) | ~44 |
+| 21:52 | Edited src/integration/AutoDriveIntegration.lua | 4→4 lines | ~66 |
+| 21:52 | Edited src/integration/AutoDriveIntegration.lua | 4→4 lines | ~64 |
+| 21:52 | Edited src/integration/AutoDriveIntegration.lua | reduced (-8 lines) | ~327 |
+| 21:52 | Edited src/integration/AutoDriveIntegration.lua | 31→27 lines | ~267 |
+| 21:52 | Edited src/integration/AutoDriveIntegration.lua | 6→3 lines | ~60 |
+| 21:55 | Edited src/integration/CourseplayIntegration.lua | 11→9 lines | ~69 |
+| 21:55 | Edited src/integration/CourseplayIntegration.lua | removed 5 lines | ~8 |
+| 21:55 | Edited src/integration/CourseplayIntegration.lua | 19→22 lines | ~287 |
+| 21:55 | Edited src/integration/CourseplayIntegration.lua | 7→3 lines | ~18 |
+| 21:55 | Edited src/integration/CourseplayIntegration.lua | removed 8 lines | ~11 |
+| 21:55 | Edited src/integration/CourseplayIntegration.lua | pcall() → getCpFieldWorkProgress() | ~51 |
+| 21:55 | Edited src/integration/CourseplayIntegration.lua | pcall() → setCpFieldWorkCourse() | ~39 |
+| 21:55 | Edited src/integration/CourseplayIntegration.lua | inline fix | ~22 |
+| 21:55 | Edited src/integration/CourseplayIntegration.lua | inline fix | ~10 |
+| 21:55 | Edited tests/specs/CourseplayIntegration_spec.lua | 3→4 lines | ~48 |
+| 21:55 | Edited tests/specs/CourseplayIntegration_spec.lua | error() → is_false() | ~210 |
+| 21:55 | Edited tests/specs/CourseplayIntegration_spec.lua | is_false() → has_error() | ~93 |
+| 21:56 | Edited tests/specs/CourseplayIntegration_spec.lua | 3→3 lines | ~46 |
+| 21:56 | Edited src/gui/WMHud.lua | pcall() → getName() | ~93 |
+| 21:56 | Edited src/gui/WMHud.lua | reduced (-6 lines) | ~26 |
+| 21:56 | Edited src/gui/WMGameSettings.lua | 24→22 lines | ~156 |
+| 21:56 | Edited src/WorkflowManagerSpec.lua | 5→3 lines | ~55 |
+| 21:56 | Edited tests/specs/WorkflowManagerSpec_spec.lua | 15→14 lines | ~180 |
+| 21:57 | Edited src/WorkflowManager.lua | pcall() → fileExists() | ~57 |
+| 21:57 | Edited src/WorkflowManager.lua | 7→2 lines | ~14 |
+| 21:57 | Edited src/WorkflowManager.lua | removed 79 lines | ~155 |
+| 21:57 | Edited src/WorkflowManager.lua | modified WorkflowManager() | ~179 |
+| 21:57 | Edited src/WorkflowManager.lua | reduced (-11 lines) | ~267 |
+| 21:58 | Edited src/WorkflowManager.lua | reduced (-32 lines) | ~165 |
+| 21:58 | Edited src/WorkflowManager.lua | modified WorkflowManager() | ~292 |
+| 21:58 | Edited src/WorkflowManager.lua | reduced (-11 lines) | ~100 |
+| 21:58 | Edited src/utils/DebugUtil.lua | — | ~0 |
+| 21:58 | Edited src/WorkflowManagerSpec.lua | "Courseplay waypoint to co" → "Courseplay waypoint to co" | ~28 |
+| 21:58 | Edited modDesc.xml | "111" → "113" | ~8 |
+| 21:58 | Created tests/specs/WorkflowManagerLifecycle_spec.lua | — | ~1426 |
+| 21:58 | Edited tests/run_tests.lua | 1→2 lines | ~30 |
+| 21:59 | Edited tests/specs/AutoDriveIntegration_spec.lua | expanded (+11 lines) | ~252 |
+| 21:59 | Edited tests/specs/AutoDriveIntegration_spec.lua | expanded (+10 lines) | ~152 |
+| 21:59 | Edited tests/specs/AutoDriveIntegration_spec.lua | expanded (+8 lines) | ~130 |
+| 21:59 | Edited src/WorkflowManager.lua | 6→11 lines | ~245 |
+| 21:59 | Edited src/WorkflowManager.lua | modified WorkflowManager() | ~128 |
+| 21:59 | Edited tests/specs/WorkflowManagerLifecycle_spec.lua | expanded (+14 lines) | ~462 |
+| 22:00 | Edited CLAUDE.md | 2→3 lines | ~187 |
+| 22:00 | Edited CLAUDE.md | 1→2 lines | ~95 |
+| 22:00 | Edited CLAUDE.md | 777 → 789 | ~7 |
+| 22:02 | ModHub TestRunner 0.9.21 fixes: removed all 84 pcalls (+collectgarbage, load-string false positive), descVersion 113, releaseADForShutdown/loadDialog helpers, literal dialog XML paths, new WorkflowManagerLifecycle_spec; tests 789/789, TestRunner PASS | src/*, modDesc.xml, tests/*, CLAUDE.md | done | ~60000 |
+| 22:01 | Session end: 57 writes across 15 files (translation_de.xml, WorkflowManager.lua, modDesc.xml, AutoDriveIntegration.lua, CourseplayIntegration.lua) | 20 reads | ~126514 tok |
+
+## Session: 2026-09-24 08:39
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 09:08 | Edited src/integration/CourseplayIntegration.lua | expanded (+8 lines) | ~200 |
+| 09:09 | Edited tests/specs/CourseplayIntegration_spec.lua | expanded (+33 lines) | ~448 |
+| 09:10 | Fix HUD per-frame CP getProgress error: guard strategy instead of calling getCpFieldWorkProgress | src/integration/CourseplayIntegration.lua, tests/specs/CourseplayIntegration_spec.lua | 793 tests pass | ~6k |
+| 09:09 | Session end: 2 writes across 2 files (CourseplayIntegration.lua, CourseplayIntegration_spec.lua) | 1 reads | ~7214 tok |

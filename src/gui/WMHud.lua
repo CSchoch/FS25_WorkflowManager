@@ -494,13 +494,13 @@ function WMHud:draw()
 
         -- Render "<prefix>: <clickable vehicle name>" for the two waiting states.
         -- Shared by both branches; keeps allocations low in this per-frame path
-        -- (closure-free pcall, single concat).
+        -- (single concat).
         local function renderWaitingLine(prefixText, namedVehicle, boundsKey)
             setTextColor(1, 0.85, 0, 1)
             local name = nil
             if namedVehicle and namedVehicle.getName then
-                local ok, n = pcall(namedVehicle.getName, namedVehicle)
-                if ok and n and n ~= "" then name = n end
+                local n = namedVehicle:getName()
+                if n and n ~= "" then name = n end
             end
             if name then
                 local prefix = prefixText .. ": "
@@ -543,13 +543,7 @@ function WMHud:draw()
             local cpRunning = CPIntegration:isRunning(vehicle)
 
             if cpRunning then
-                local progress = nil
-                if vehicle.getCpFieldWorkProgress then
-                    local ok, p = pcall(vehicle.getCpFieldWorkProgress, vehicle)
-                    if ok and type(p) == "number" then
-                        progress = p
-                    end
-                end
+                local progress = CPIntegration:getProgress(vehicle)
                 setTextColor(0.4, 0.8, 1, 1)
                 if progress then
                     renderText(x + mx, lineY, self.smallSize,

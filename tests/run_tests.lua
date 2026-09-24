@@ -203,6 +203,7 @@ local testFiles = {
     "tests/specs/WorkflowStorage_spec.lua",
     "tests/specs/WorkflowManager_spec.lua",
     "tests/specs/WorkflowManagerADRequirement_spec.lua",
+    "tests/specs/WorkflowManagerLifecycle_spec.lua",
     "tests/specs/WorkflowExecutor_spec.lua",
     "tests/specs/AutoDriveIntegration_spec.lua",
     "tests/specs/WorkflowManagerSpec_spec.lua",

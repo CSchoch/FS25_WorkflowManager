@@ -216,25 +216,17 @@ function CPIntegration:loadCourse(vehicle, courseName)
     -- Try direct vehicle method if available
     if vehicle.loadCpCourse then
         WMLogger:debug("Trying vehicle:loadCpCourse('%s')", courseName)
-        local success, err = pcall(vehicle.loadCpCourse, vehicle, courseName)
-        if success then
-            WMLogger:info("Course loaded via loadCpCourse")
-            return true
-        else
-            WMLogger:debug("loadCpCourse failed: %s", tostring(err))
-        end
+        vehicle:loadCpCourse(courseName)
+        WMLogger:info("Course loaded via loadCpCourse")
+        return true
     end
 
     -- Try setCpCourse method
     if vehicle.setCpCourse then
         WMLogger:debug("Trying vehicle:setCpCourse('%s')", courseName)
-        local success, err = pcall(vehicle.setCpCourse, vehicle, courseName)
-        if success then
-            WMLogger:info("Course loaded via setCpCourse")
-            return true
-        else
-            WMLogger:debug("setCpCourse failed: %s", tostring(err))
-        end
+        vehicle:setCpCourse(courseName)
+        WMLogger:info("Course loaded via setCpCourse")
+        return true
     end
 
     WMLogger:error("Could not load course '%s' - no working API found", courseName)
@@ -252,15 +244,13 @@ function CPIntegration:isDirectoryEntry(entry)
     end
     local flag = entry.isDirectory
     if type(flag) == "function" then
-        local ok, result = pcall(flag, entry)
-        return ok and result == true
+        return entry:isDirectory() == true
     end
     if type(flag) == "boolean" then
         return flag
     end
     if type(entry.getIsDirectory) == "function" then
-        local ok, result = pcall(entry.getIsDirectory, entry)
-        return ok and result == true
+        return entry:getIsDirectory() == true
     end
     return false
 end
@@ -292,11 +282,7 @@ function CPIntegration:getViewEntries(view)
     if view == nil or type(view.getEntries) ~= "function" then
         return nil
     end
-    local success, entries = pcall(view.getEntries, view)
-    if not success then
-        return nil
-    end
-    return entries
+    return view:getEntries()
 end
 
 ---Find a non-folder entry with the given name directly inside a view (no recursion).
@@ -434,7 +420,7 @@ function CPIntegration:loadCourseFromStorage(vehicle, storage, courseName)
 end
 
 ---Try every known Courseplay API for loading a located course entry onto a vehicle.
----NOTE: these branches treat "the call did not raise" as success; the caller
+---NOTE: the first API that exists is called and treated as success; the caller
 ---(WMExecutor:startCourseplayStep) re-checks hasCourse() afterwards to catch a no-op.
 ---@param vehicle table Vehicle to load course onto
 ---@param entry table Located course entry
@@ -458,49 +444,33 @@ function CPIntegration:tryLoadEntry(vehicle, entry)
     -- Try entry:load(vehicle) pattern
     if type(entry.load) == "function" then
         WMLogger:debug("Trying entry:load(vehicle)")
-        local loadSuccess, loadErr = pcall(entry.load, entry, vehicle)
-        if loadSuccess then
-            WMLogger:info("Course loaded via entry:load()")
-            return true
-        else
-            WMLogger:debug("entry:load failed: %s", tostring(loadErr))
-        end
+        entry:load(vehicle)
+        WMLogger:info("Course loaded via entry:load()")
+        return true
     end
 
     -- Try entry:loadCourse(vehicle) pattern
     if type(entry.loadCourse) == "function" then
         WMLogger:debug("Trying entry:loadCourse(vehicle)")
-        local loadSuccess, loadErr = pcall(entry.loadCourse, entry, vehicle)
-        if loadSuccess then
-            WMLogger:info("Course loaded via entry:loadCourse()")
-            return true
-        else
-            WMLogger:debug("entry:loadCourse failed: %s", tostring(loadErr))
-        end
+        entry:loadCourse(vehicle)
+        WMLogger:info("Course loaded via entry:loadCourse()")
+        return true
     end
 
     -- Try vehicle methods with entry
     if vehicle.loadCpCourseFromFile then
         WMLogger:debug("Trying vehicle:loadCpCourseFromFile(entry)")
-        local loadSuccess, loadErr = pcall(vehicle.loadCpCourseFromFile, vehicle, entry)
-        if loadSuccess then
-            WMLogger:info("Course loaded via loadCpCourseFromFile")
-            return true
-        else
-            WMLogger:debug("loadCpCourseFromFile failed: %s", tostring(loadErr))
-        end
+        vehicle:loadCpCourseFromFile(entry)
+        WMLogger:info("Course loaded via loadCpCourseFromFile")
+        return true
     end
 
     -- Try vehicle:loadCourse(entry) pattern
     if vehicle.loadCourse then
         WMLogger:debug("Trying vehicle:loadCourse(entry)")
-        local loadSuccess, loadErr = pcall(vehicle.loadCourse, vehicle, entry)
-        if loadSuccess then
-            WMLogger:info("Course loaded via vehicle:loadCourse(entry)")
-            return true
-        else
-            WMLogger:debug("vehicle:loadCourse failed: %s", tostring(loadErr))
-        end
+        vehicle:loadCourse(entry)
+        WMLogger:info("Course loaded via vehicle:loadCourse(entry)")
+        return true
     end
 
     -- Try spec_cpCourseManager if available
@@ -509,23 +479,15 @@ function CPIntegration:tryLoadEntry(vehicle, entry)
         local courseManager = vehicle.spec_cpCourseManager
         if courseManager.loadCourse then
             WMLogger:debug("Trying courseManager:loadCourse(entry)")
-            local loadSuccess, loadErr = pcall(courseManager.loadCourse, courseManager, entry)
-            if loadSuccess then
-                WMLogger:info("Course loaded via spec_cpCourseManager:loadCourse")
-                return true
-            else
-                WMLogger:debug("courseManager:loadCourse failed: %s", tostring(loadErr))
-            end
+            courseManager:loadCourse(entry)
+            WMLogger:info("Course loaded via spec_cpCourseManager:loadCourse")
+            return true
         end
         if courseManager.setCourse then
             WMLogger:debug("Trying courseManager:setCourse(entry)")
-            local loadSuccess, loadErr = pcall(courseManager.setCourse, courseManager, entry)
-            if loadSuccess then
-                WMLogger:info("Course loaded via spec_cpCourseManager:setCourse")
-                return true
-            else
-                WMLogger:debug("courseManager:setCourse failed: %s", tostring(loadErr))
-            end
+            courseManager:setCourse(entry)
+            WMLogger:info("Course loaded via spec_cpCourseManager:setCourse")
+            return true
         end
     end
 
@@ -534,11 +496,9 @@ function CPIntegration:tryLoadEntry(vehicle, entry)
         local courseData = entry.course or entry
         if vehicle.setCpFieldWorkCourse then
             WMLogger:debug("Trying vehicle:setCpFieldWorkCourse(courseData)")
-            local loadSuccess = pcall(vehicle.setCpFieldWorkCourse, vehicle, courseData)
-            if loadSuccess then
-                WMLogger:info("Course loaded via setCpFieldWorkCourse")
-                return true
-            end
+            vehicle:setCpFieldWorkCourse(courseData)
+            WMLogger:info("Course loaded via setCpFieldWorkCourse")
+            return true
         end
     end
 
@@ -552,25 +512,17 @@ function CPIntegration:tryLoadEntry(vehicle, entry)
         -- This is how CpCourseManagerFrame loads courses
         if vehicle.appendLoadedCpCourse then
             WMLogger:debug("Trying vehicle:appendLoadedCpCourse(entity)")
-            local loadSuccess, loadErr = pcall(vehicle.appendLoadedCpCourse, vehicle, entity)
-            if loadSuccess then
-                WMLogger:info("Course loaded via appendLoadedCpCourse()")
-                return true
-            else
-                WMLogger:debug("appendLoadedCpCourse failed: %s", tostring(loadErr))
-            end
+            vehicle:appendLoadedCpCourse(entity)
+            WMLogger:info("Course loaded via appendLoadedCpCourse()")
+            return true
         end
 
         -- Fallback: Try vehicle methods with entity
         if vehicle.setCpFieldWorkCourse then
             WMLogger:debug("Trying vehicle:setCpFieldWorkCourse(entity)")
-            local loadSuccess, loadErr = pcall(vehicle.setCpFieldWorkCourse, vehicle, entity)
-            if loadSuccess then
-                WMLogger:info("Course loaded via setCpFieldWorkCourse(entity)")
-                return true
-            else
-                WMLogger:debug("setCpFieldWorkCourse(entity) failed: %s", tostring(loadErr))
-            end
+            vehicle:setCpFieldWorkCourse(entity)
+            WMLogger:info("Course loaded via setCpFieldWorkCourse(entity)")
+            return true
         end
     end
 
@@ -625,11 +577,14 @@ function CPIntegration:getResumeWaypointIx(vehicle)
 
     -- Live strategy first: only field work strategies implement this (bale finder /
     -- combine unloader strategies do not), hence the explicit function-type check.
+    -- getBestWaypointToContinueFieldWork indexes self.fieldWorkCourse unguarded, and this runs
+    -- while the savegame is written, so never call it on a strategy without a course.
     if vehicle.getCpDriveStrategy then
-        local ok, strategy = pcall(vehicle.getCpDriveStrategy, vehicle)
-        if ok and strategy ~= nil and type(strategy.getBestWaypointToContinueFieldWork) == "function" then
-            local wpOk, waypointIx = pcall(strategy.getBestWaypointToContinueFieldWork, strategy)
-            if wpOk and type(waypointIx) == "number" then
+        local strategy = vehicle:getCpDriveStrategy()
+        if strategy ~= nil and strategy.fieldWorkCourse ~= nil
+            and type(strategy.getBestWaypointToContinueFieldWork) == "function" then
+            local waypointIx = strategy:getBestWaypointToContinueFieldWork()
+            if type(waypointIx) == "number" then
                 return waypointIx
             end
         end
@@ -637,8 +592,8 @@ function CPIntegration:getResumeWaypointIx(vehicle)
 
     -- Fallback: whatever Courseplay remembered from the last clean stop
     if vehicle.getCpLastRememberedWaypointIx then
-        local ok, waypointIx = pcall(vehicle.getCpLastRememberedWaypointIx, vehicle)
-        if ok and type(waypointIx) == "number" then
+        local waypointIx = vehicle:getCpLastRememberedWaypointIx()
+        if type(waypointIx) == "number" then
             return waypointIx
         end
     end
@@ -661,11 +616,7 @@ function CPIntegration:setResumeWaypointIx(vehicle, waypointIx)
         return false
     end
 
-    local ok = pcall(vehicle.rememberCpLastWaypointIx, vehicle, waypointIx)
-    if not ok then
-        WMLogger:warning("Failed to seed Courseplay resume waypoint %d", waypointIx)
-        return false
-    end
+    vehicle:rememberCpLastWaypointIx(waypointIx)
 
     WMLogger:info("Seeded Courseplay resume waypoint: %d", waypointIx)
     return true
@@ -835,14 +786,7 @@ function CPIntegration:stopCourse(vehicle)
         return false
     end
 
-    -- Check if actually running (use pcall as vehicle may be in bad state during shutdown)
-    local isRunningOk, isRunning = pcall(self.isRunning, self, vehicle)
-    if not isRunningOk then
-        WMLogger:warning("Error checking Courseplay running state: %s", tostring(isRunning))
-        return false
-    end
-
-    if not isRunning then
+    if not self:isRunning(vehicle) then
         WMLogger:debug("Courseplay is not running, nothing to stop")
         return true
     end
@@ -850,7 +794,7 @@ function CPIntegration:stopCourse(vehicle)
     WMLogger:info("Stopping Courseplay")
     WMLogger:apiCall("Courseplay", "stopCurrentAIJob", vehicle)
 
-    -- Use the official stop method (wrapped in pcall for shutdown safety)
+    -- Use the official stop method
     if vehicle.stopCurrentAIJob then
         -- Need to pass a message - use the standard stopped by user message
         local AIMessageSuccessStoppedByUser = AIMessageSuccessStoppedByUser or
@@ -859,25 +803,17 @@ function CPIntegration:stopCourse(vehicle)
              g_currentMission.aiMessageManager.aiMessages.AIMessageSuccessStoppedByUser)
 
         if AIMessageSuccessStoppedByUser and AIMessageSuccessStoppedByUser.new then
-            local stopOk, stopErr = pcall(vehicle.stopCurrentAIJob, vehicle, AIMessageSuccessStoppedByUser.new())
-            if stopOk then
-                WMLogger:stateChange("Courseplay", "running", "stopped")
-                return true
-            else
-                WMLogger:warning("Error stopping Courseplay via stopCurrentAIJob: %s", tostring(stopErr))
-            end
+            vehicle:stopCurrentAIJob(AIMessageSuccessStoppedByUser.new())
+            WMLogger:stateChange("Courseplay", "running", "stopped")
+            return true
         end
     end
 
     -- Alternative: use cpStartStopDriver to toggle off
     if vehicle.cpStartStopDriver then
-        local toggleOk, toggleErr = pcall(vehicle.cpStartStopDriver, vehicle, false)
-        if toggleOk then
-            WMLogger:stateChange("Courseplay", "running", "stopped")
-            return true
-        else
-            WMLogger:warning("Error stopping Courseplay via cpStartStopDriver: %s", tostring(toggleErr))
-        end
+        vehicle:cpStartStopDriver(false)
+        WMLogger:stateChange("Courseplay", "running", "stopped")
+        return true
     end
 
     return false
@@ -1008,10 +944,18 @@ function CPIntegration:getProgress(vehicle)
         return nil
     end
 
-    if vehicle.getCpFieldWorkProgress then
-        local ok, progress = pcall(vehicle.getCpFieldWorkProgress, vehicle)
-        if ok and type(progress) == "number" then
-            return progress
+    -- Not via CP's getCpFieldWorkProgress: it calls strategy:getProgress() on whatever strategy
+    -- is active, and while CP is starting up (drive-to-start, unloader, bale finder) that one has
+    -- no getProgress - an error on every HUD draw frame. Only field work strategies implement it,
+    -- and it indexes self.fieldWorkCourse unguarded.
+    if vehicle.getCpDriveStrategy then
+        local strategy = vehicle:getCpDriveStrategy()
+        if strategy ~= nil and strategy.fieldWorkCourse ~= nil
+            and type(strategy.getProgress) == "function" then
+            local progress = strategy:getProgress()
+            if type(progress) == "number" then
+                return progress
+            end
         end
     end
 

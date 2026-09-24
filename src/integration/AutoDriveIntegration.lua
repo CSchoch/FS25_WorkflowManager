@@ -427,16 +427,14 @@ end
 ---@param obj table Implement/trailer object
 ---@return number|nil diffZ
 function ADIntegration:getRelativeZOffset(vehicle, obj)
-    if obj == nil or obj.components == nil or obj.components[1] == nil then
+    if obj == nil or obj.components == nil or obj.components[1] == nil or obj.components[1].node == nil then
         return nil
     end
-    local success, _, _, diffZ = pcall(function()
-        local x, y, z = getWorldTranslation(obj.components[1].node)
-        return AutoDrive.worldToLocal(vehicle, x, y, z)
-    end)
-    if not success then
+    if AutoDrive == nil or AutoDrive.worldToLocal == nil then
         return nil
     end
+    local x, y, z = getWorldTranslation(obj.components[1].node)
+    local _, _, diffZ = AutoDrive.worldToLocal(vehicle, x, y, z)
     return diffZ
 end
 
@@ -507,16 +505,13 @@ function ADIntegration:startParkRoute(vehicle)
         self:stopRoute(vehicle)
     end
 
-    vehicle.ad.stateModule:setParkDestinationAtJobFinished(parkId)
-
-    local success, errorMsg = pcall(function()
-        AutoDrive:StartDriving(vehicle, -1, -3)
-    end)
-
-    if not success then
-        WMLogger:error("AutoDrive:StartDriving (park) failed: %s", tostring(errorMsg))
+    if AutoDrive.StartDriving == nil then
+        WMLogger:error("Cannot start park route - AutoDrive:StartDriving not available")
         return false
     end
+
+    vehicle.ad.stateModule:setParkDestinationAtJobFinished(parkId)
+    AutoDrive:StartDriving(vehicle, -1, -3)
 
     WMLogger:info("Park route started (markerID: %d)", parkId)
     return true
@@ -535,7 +530,7 @@ function ADIntegration:startRefuelRoute(vehicle)
         return false, false
     end
 
-    if vehicle == nil or vehicle.ad == nil or vehicle.ad.stateModule == nil then
+    if vehicle == nil or vehicle.ad == nil or vehicle.ad.stateModule == nil or vehicle.startAutoDrive == nil then
         WMLogger:error("Cannot start refuel route - vehicle missing AutoDrive specialization")
         return false, false
     end
@@ -571,14 +566,7 @@ function ADIntegration:startRefuelRoute(vehicle)
     -- startAutoDrive() directly relies on ADTaskModule:RefuelIfNeeded() (its own idle-tick
     -- check) to pick up onRouteToRefuel and enqueue the actual RefuelTask - the same mechanism
     -- Repair already relies on.
-    local success, errorMsg = pcall(function()
-        vehicle:startAutoDrive()
-    end)
-
-    if not success then
-        WMLogger:error("vehicle:startAutoDrive (refuel) failed: %s", tostring(errorMsg))
-        return false, false
-    end
+    vehicle:startAutoDrive()
 
     WMLogger:info("Refuel route started")
     return true, false
@@ -595,7 +583,7 @@ function ADIntegration:startRepairRoute(vehicle)
         return false
     end
 
-    if vehicle == nil or vehicle.ad == nil or vehicle.ad.stateModule == nil then
+    if vehicle == nil or vehicle.ad == nil or vehicle.ad.stateModule == nil or vehicle.startAutoDrive == nil then
         WMLogger:error("Cannot start repair route - vehicle missing AutoDrive specialization")
         return false
     end
@@ -622,14 +610,7 @@ function ADIntegration:startRepairRoute(vehicle)
     -- No StartDriving sentinel exists for repair (only -1/-2/-3 are handled) - bootstrap AD
     -- directly the same way DriveToMode:start() does when not yet active. Completion is
     -- detected via polling isRefuelRepairComplete(), the same mechanism Refuel relies on.
-    local success, errorMsg = pcall(function()
-        vehicle:startAutoDrive()
-    end)
-
-    if not success then
-        WMLogger:error("vehicle:startAutoDrive (repair) failed: %s", tostring(errorMsg))
-        return false
-    end
+    vehicle:startAutoDrive()
 
     WMLogger:info("Repair route started")
     return true
@@ -764,36 +745,28 @@ function ADIntegration:startRoute(vehicle, targetName, action, unloadTargetName,
 
         WMLogger:debug("Calling AutoDrive:StartDriving(vehicle, %d, %d)",
             targetMarker.id, unloadDestinationID)
-        local success, errorMsg = pcall(function()
-            AutoDrive:StartDriving(
-                vehicle,
-                targetMarker.id,       -- destinationID (pickup/start location)
-                unloadDestinationID    -- unloadDestinationID (-1=none, -2=refuel, -3=park, >0=marker)
-            )
-        end)
+        AutoDrive:StartDriving(
+            vehicle,
+            targetMarker.id,       -- destinationID (pickup/start location)
+            unloadDestinationID    -- unloadDestinationID (-1=none, -2=refuel, -3=park, >0=marker)
+        )
+        WMLogger:info("AutoDrive:StartDriving called successfully (mode: %d)", mode)
 
-        if success then
-            WMLogger:info("AutoDrive:StartDriving called successfully (mode: %d)", mode)
-
-            -- Debug: Check vehicle state after starting
-            if vehicle.ad and vehicle.ad.stateModule then
-                local sm = vehicle.ad.stateModule
-                local isActive = sm.isActive and sm:isActive() or false
-                local currentMode = sm.getMode and sm:getMode() or "?"
-                local firstMarker = sm.getFirstMarker and sm:getFirstMarker() or "?"
-                local firstMarkerName = sm.getFirstMarkerName and sm:getFirstMarkerName() or "?"
-                local secondMarker = sm.getSecondMarker and sm:getSecondMarker() or "?"
-                WMLogger:debug("AD state after start: active=%s, mode=%s, firstMarker=%s (%s), secondMarker=%s",
-                    tostring(isActive), tostring(currentMode), tostring(firstMarker),
-                    tostring(firstMarkerName), tostring(secondMarker))
-            end
-
-            WMLogger:stateChange("AutoDrive", nil, "started")
-            return true
-        else
-            WMLogger:error("AutoDrive:StartDriving failed: %s", tostring(errorMsg))
-            return false
+        -- Debug: Check vehicle state after starting
+        if vehicle.ad and vehicle.ad.stateModule then
+            local sm = vehicle.ad.stateModule
+            local isActive = sm.isActive and sm:isActive() or false
+            local currentMode = sm.getMode and sm:getMode() or "?"
+            local firstMarker = sm.getFirstMarker and sm:getFirstMarker() or "?"
+            local firstMarkerName = sm.getFirstMarkerName and sm:getFirstMarkerName() or "?"
+            local secondMarker = sm.getSecondMarker and sm:getSecondMarker() or "?"
+            WMLogger:debug("AD state after start: active=%s, mode=%s, firstMarker=%s (%s), secondMarker=%s",
+                tostring(isActive), tostring(currentMode), tostring(firstMarker),
+                tostring(firstMarkerName), tostring(secondMarker))
         end
+
+        WMLogger:stateChange("AutoDrive", nil, "started")
+        return true
     end
 
     -- Fallback: Try direct mode start
@@ -831,11 +804,9 @@ function ADIntegration:stopRoute(vehicle)
     -- Primary method: Use AutoDrive's own stopAutoDrive function
     -- This properly handles braking, cruise control, module resets, etc.
     if vehicle.stopAutoDrive then
-        local success = pcall(function() vehicle:stopAutoDrive() end)
-        if success then
-            stopped = true
-            WMLogger:debug("Stopped via vehicle:stopAutoDrive()")
-        end
+        vehicle:stopAutoDrive()
+        stopped = true
+        WMLogger:debug("Stopped via vehicle:stopAutoDrive()")
     end
 
     -- Fallback: Manual stop if stopAutoDrive didn't work or isn't available
@@ -844,22 +815,20 @@ function ADIntegration:stopRoute(vehicle)
         if vehicle.ad.stateModule and vehicle.ad.stateModule.getCurrentMode then
             local currentMode = vehicle.ad.stateModule:getCurrentMode()
             if currentMode and currentMode.stop then
-                pcall(function() currentMode:stop() end)
+                currentMode:stop()
             end
         end
 
         -- Clear the active state
         if vehicle.ad.stateModule and vehicle.ad.stateModule.setActive then
-            pcall(function() vehicle.ad.stateModule:setActive(false) end)
+            vehicle.ad.stateModule:setActive(false)
             stopped = true
         end
 
         -- Disable cruise control
-        pcall(function()
-            if vehicle.setCruiseControlState then
-                vehicle:setCruiseControlState(Drivable.CRUISECONTROL_STATE_OFF)
-            end
-        end)
+        if vehicle.setCruiseControlState and Drivable ~= nil then
+            vehicle:setCruiseControlState(Drivable.CRUISECONTROL_STATE_OFF)
+        end
     end
 
     -- Verify the stop worked
@@ -1149,12 +1118,9 @@ function ADIntegration:applyWorkflowSettings(vehicle, settings)
             local d = math.abs(v - value)
             if d < bestDist then bestIdx, bestDist = i, d end
         end
-        local ok, err = pcall(AD.setSettingState, settingName, bestIdx, vehicle)
-        if ok then
-            WMLogger:debug("Applied AD setting '%s' = %s (index %d)", settingName, tostring(value), bestIdx)
-        else
-            WMLogger:warning("Failed to apply AD setting '%s': %s", settingName, tostring(err))
-        end
+        -- Static function: dot call, no self (see CLAUDE.md)
+        AD.setSettingState(settingName, bestIdx, vehicle)
+        WMLogger:debug("Applied AD setting '%s' = %s (index %d)", settingName, tostring(value), bestIdx)
     end
 
     applyNearest("unloadFillLevel", settings.unloadFillLevel)

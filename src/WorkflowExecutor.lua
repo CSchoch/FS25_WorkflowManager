@@ -625,7 +625,7 @@ function WMExecutor:stopCurrentStep(activeData)
     -- Always disarm AD's start-CP-on-completion flag: startCourseplayStep arms it on every
     -- CP start, and AD persists it in the vehicle savegame. Without this, stopping during a
     -- CP step leaves the vehicle auto-starting Courseplay on its next manual AD route.
-    pcall(function() ADIntegration:clearCPHandoff(vehicle) end)
+    ADIntegration:clearCPHandoff(vehicle)
 
     -- Wait states: no real AD/CP route was running. The global poller self-cleans next tick.
     if activeData.status == WorkflowManager.STATUS_WAITING_FOR_LEADER
@@ -636,9 +636,9 @@ function WMExecutor:stopCurrentStep(activeData)
     if WorkflowManager:isAutoDriveTrackedStepType(step.type) then
         -- Resume AD first if it was paused (HoldDriving), then stop
         if activeData.status == WorkflowManager.STATUS_PAUSED then
-            pcall(function() ADIntegration:resumeRoute(vehicle) end)
+            ADIntegration:resumeRoute(vehicle)
         end
-        pcall(function() ADIntegration:stopRoute(vehicle) end)
+        ADIntegration:stopRoute(vehicle)
         -- Mark that we just stopped AD - next AD start needs to wait a frame
         activeData.justStoppedAD = true
     elseif step.type == WorkflowManager.STEP_COURSEPLAY then
@@ -646,14 +646,14 @@ function WMExecutor:stopCurrentStep(activeData)
         -- Stop both AD and CP to ensure clean shutdown
         if activeData.cpHandedOffToAD or ADIntegration:isRunning(vehicle) then
             WMLogger:info("Stopping AutoDrive (running during CP step due to handoff)")
-            pcall(function() ADIntegration:stopRoute(vehicle) end)
+            ADIntegration:stopRoute(vehicle)
         end
 
         -- Unfreeze CP first if it was frozen (paused), then stop
         if activeData.status == WorkflowManager.STATUS_PAUSED then
-            pcall(function() CPIntegration:resumeCourse(vehicle) end)
+            CPIntegration:resumeCourse(vehicle)
         end
-        pcall(function() CPIntegration:stopCourse(vehicle) end)
+        CPIntegration:stopCourse(vehicle)
     end
 end
 
@@ -1095,7 +1095,7 @@ function WMExecutor:onWorkflowCompleted(activeData)
 
     -- Natural completion never runs stopCurrentStep, so disarm AD's start-CP-on-completion
     -- flag here too — otherwise a workflow ending on a CP step leaves it armed (and saved).
-    pcall(function() ADIntegration:clearCPHandoff(vehicle) end)
+    ADIntegration:clearCPHandoff(vehicle)
 
     -- Remove from active workflows
     vehicle.spec_workflowManagerSpec.wmExecution = nil
