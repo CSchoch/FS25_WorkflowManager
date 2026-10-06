@@ -394,4 +394,46 @@ describe("ADIntegration (park position)", function()
         end)
     end)
 
+    -- =========================================================================
+    -- startRoute: configuration problems reach the player
+    -- =========================================================================
+    describe("startRoute configuration errors", function()
+        local farmMessages, realGetDestinationByName
+
+        before_each(function()
+            farmMessages = {}
+            _G.WorkflowManager = {
+                notifyFarm = function(_, vehicle, isError, key, ...)
+                    table.insert(farmMessages, { isError = isError, key = key, args = { ... } })
+                end,
+                getVehicleDisplayName = function() return "Tractor" end,
+            }
+            realGetDestinationByName = ADIntegration.getDestinationByName
+            ADIntegration.getDestinationByName = function(_, name)
+                if name == "Farm" then return { id = 10, name = "Farm" } end
+                return nil
+            end
+        end)
+
+        local function restore()
+            ADIntegration.getDestinationByName = realGetDestinationByName
+        end
+
+        it("returns the destination-not-found message key for an unknown target", function()
+            local ok, errorKey = ADIntegration:startRoute(makeVehicle(), "Nowhere", "drive")
+            restore()
+            assert.is_false(ok)
+            assert.are.equal("wm_error_ad_target_not_found", errorKey)
+        end)
+
+        it("warns the farm about an unknown unload destination and still starts", function()
+            local ok = ADIntegration:startRoute(makeVehicle(), "Farm", "pickup_deliver", "Ghost Silo")
+            restore()
+            assert.is_true(ok)
+            assert.are.equal(1, #farmMessages)
+            assert.are.equal("wm_warning_ad_unload_not_found", farmMessages[1].key)
+            assert.are.same({ "Tractor", "Ghost Silo" }, farmMessages[1].args)
+        end)
+    end)
+
 end)

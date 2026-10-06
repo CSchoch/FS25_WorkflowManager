@@ -41,7 +41,7 @@ end
 function WMLeaderVehicleSelectDialog:onOpen()
     WMLeaderVehicleSelectDialog:superClass().onOpen(self)
     WMLogger:debug("WMLeaderVehicleSelectDialog:onOpen")
-    WMHud:onDialogOpened()
+    WMHud:onDialogOpened(self)
 
     self:registerInputEvents()
 
@@ -60,7 +60,7 @@ end
 function WMLeaderVehicleSelectDialog:onClose()
     WMLeaderVehicleSelectDialog:superClass().onClose(self)
     WMLogger:debug("WMLeaderVehicleSelectDialog:onClose")
-    WMHud:onDialogClosed()
+    WMHud:onDialogClosed(self)
     self:unregisterInputEvents()
 end
 

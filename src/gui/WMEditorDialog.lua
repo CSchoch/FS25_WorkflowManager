@@ -43,7 +43,7 @@ end
 function WMEditorDialog:onOpen()
     WMEditorDialog:superClass().onOpen(self)
     WMLogger:debug("WMEditorDialog:onOpen")
-    WMHud:onDialogOpened()
+    WMHud:onDialogOpened(self)
 
     self:registerInputEvents()
 
@@ -58,14 +58,29 @@ function WMEditorDialog:onOpen()
         self.stepList:setDataSource(self)
     end
 
+    self:showStatus("")
     self:loadDataCaches()
     self:refreshDisplay()
+end
+
+---Show a message in the dialog's status line (errors in red). Used instead of the game's
+---notifications, which are hidden behind an open dialog.
+---@param text string Message ("" clears the line)
+---@param isError boolean|nil
+function WMEditorDialog:showStatus(text, isError)
+    if self.statusText == nil then return end
+    if isError then
+        self.statusText:setTextColor(1, 0.35, 0.35, 1)
+    else
+        self.statusText:setTextColor(1, 1, 1, 1)
+    end
+    self.statusText:setText(text or "")
 end
 
 function WMEditorDialog:onClose()
     WMEditorDialog:superClass().onClose(self)
     WMLogger:debug("WMEditorDialog:onClose")
-    WMHud:onDialogClosed()
+    WMHud:onDialogClosed(self)
     self:unregisterInputEvents()
 end
 
@@ -85,19 +100,19 @@ end
 
 ---Write the edit buffer back into the live workflow table.
 ---Mutates the original in place instead of replacing it: a running execution holds a direct
----reference to it via activeData.workflow, as does WorkflowManager.workflows.
+---reference to it via activeData.workflow, as does WorkflowManager.workflows. A running
+---workflow therefore picks the edit up immediately (steps are matched by index).
 ---A workflow opened as new is added to the workflow list here, so it exists only once the
----user confirms with Save.
+---user confirms with Save. registerWorkflow is idempotent, so it is called for every save:
+---that also brings back a workflow removed from the file while the editor was open.
 function WMEditorDialog:commitToSource()
     local source, buffer = self.sourceWorkflow, self.workflow
     if source == nil or buffer == nil then return end
     source.name       = buffer.name
     source.steps      = deepCopy(buffer.steps or {})
     source.adSettings = deepCopy(buffer.adSettings)
-    if self.isNewWorkflow then
-        self.isNewWorkflow = false
-        WorkflowManager:registerWorkflow(source)
-    end
+    self.isNewWorkflow = false
+    WorkflowManager:registerWorkflow(source)
 end
 
 -- ============================================================
@@ -552,28 +567,19 @@ end
 -- ============================================================
 
 function WMEditorDialog:onClickSave()
-    -- A running execution holds a direct reference to the live workflow (activeData.workflow):
-    -- swapping its steps mid-run desyncs currentStep and the followers' sync maps. Block Save
-    -- while any vehicle is executing this workflow; the edit buffer stays open for the user.
-    if self.sourceWorkflow ~= nil and not self.isNewWorkflow and WMExecutor ~= nil
-    and WMExecutor.getActiveVehiclesForWorkflow ~= nil
-    and #WMExecutor:getActiveVehiclesForWorkflow(self.sourceWorkflow.id) > 0 then
-        local warningText = g_i18n:getText("wm_warning_workflow_running")
-            or "Cannot save: workflow is currently running. Stop it first."
-        if g_currentMission and g_currentMission.hud and g_currentMission.hud.showBlinkingWarning then
-            g_currentMission.hud:showBlinkingWarning(warningText, 2000)
-        end
-        WMLogger:warning("Save blocked: workflow '%s' is running", self.sourceWorkflow.name)
-        return
-    end
-
+    -- Saving a running workflow is allowed on purpose: the running vehicles see the new steps
+    -- right away (by index), and the followers' sync maps are rebuilt below.
     if self.workflow and self.nameInput then
         self.workflow.name = self.nameInput.text or self.workflow.name
     end
-    self:commitToSource()
+    -- Reload first so changes made to the file meanwhile (web editor) survive; this
+    -- workflow itself is replaced as a whole by the edit buffer.
+    WorkflowManager:applyWorkflowChange(function() self:commitToSource() end)
+    if WMExecutor ~= nil and WMExecutor.onWorkflowDefinitionsChanged ~= nil then
+        WMExecutor:onWorkflowDefinitionsChanged()
+    end
     if CPCoursesLoader then CPCoursesLoader:setGuiOpen(false) end
     if CPVehiclesLoader then CPVehiclesLoader:setGuiOpen(false) end
-    WorkflowManager:saveWorkflows()
     self:close()
     WorkflowManager:showMainDialog()
 end

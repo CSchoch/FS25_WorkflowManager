@@ -4,7 +4,8 @@
 
     Author: WorkflowManager Team
 
-    IMPORTANT: Set DEV_MODE to false before releasing the mod!
+    This file is excluded from release builds (create_release.ps1); WorkflowManager.lua then
+    falls back to a table with every flag off. Keep that table's keys in sync with this file.
 ]]
 
 ---@class WMDevConfig
@@ -12,7 +13,6 @@ WMDevConfig = {}
 
 -- ============================================================================
 -- DEVELOPMENT MODE
--- Set to false for release builds
 -- ============================================================================
 WMDevConfig.DEV_MODE = true
 
@@ -22,9 +22,6 @@ WMDevConfig.DEV_MODE = true
 
 -- Enable verbose logging (DEBUG level)
 WMDevConfig.DEBUG_LOGGING = true
-
--- Show debug overlay on screen
-WMDevConfig.SHOW_DEBUG_OVERLAY = false
 
 -- Log all API calls to AutoDrive/Courseplay
 WMDevConfig.LOG_API_CALLS = true
@@ -42,25 +39,12 @@ WMDevConfig.LOG_EVENTS = true
 -- Auto-create a test workflow on load (for testing)
 WMDevConfig.AUTO_CREATE_TEST_WORKFLOW = false
 
--- Skip vehicle checks (for testing without proper vehicle)
-WMDevConfig.SKIP_VEHICLE_CHECKS = false
-
--- Simulate AutoDrive completion after X milliseconds (0 = disabled)
-WMDevConfig.SIMULATE_AD_COMPLETION_MS = 0
-
--- Simulate Courseplay completion after X milliseconds (0 = disabled)
-WMDevConfig.SIMULATE_CP_COMPLETION_MS = 0
-
 -- ============================================================================
--- PERFORMANCE SETTINGS
+-- DEBUG OVERLAY
 -- ============================================================================
 
--- GUI refresh interval (ms)
-WMDevConfig.GUI_REFRESH_INTERVAL = 500
-
--- ============================================================================
--- UI SETTINGS
--- ============================================================================
+-- Show debug overlay on screen
+WMDevConfig.SHOW_DEBUG_OVERLAY = false
 
 -- Show FPS counter in debug overlay
 WMDevConfig.SHOW_FPS = true
@@ -117,11 +101,10 @@ function WMDevConfig:printConfig()
     print("==============================================")
     print("  DEV_MODE: " .. tostring(self.DEV_MODE))
     print("  DEBUG_LOGGING: " .. tostring(self.DEBUG_LOGGING))
-    print("  SHOW_DEBUG_OVERLAY: " .. tostring(self.SHOW_DEBUG_OVERLAY))
     print("  LOG_API_CALLS: " .. tostring(self.LOG_API_CALLS))
     print("  LOG_STATE_CHANGES: " .. tostring(self.LOG_STATE_CHANGES))
     print("  LOG_EVENTS: " .. tostring(self.LOG_EVENTS))
-    print("  SIMULATE_AD_COMPLETION_MS: " .. tostring(self.SIMULATE_AD_COMPLETION_MS))
-    print("  SIMULATE_CP_COMPLETION_MS: " .. tostring(self.SIMULATE_CP_COMPLETION_MS))
+    print("  AUTO_CREATE_TEST_WORKFLOW: " .. tostring(self.AUTO_CREATE_TEST_WORKFLOW))
+    print("  SHOW_DEBUG_OVERLAY: " .. tostring(self.SHOW_DEBUG_OVERLAY))
     print("==============================================")
 end

@@ -24,6 +24,18 @@ WMGameSettings = {}
 WMGameSettings.menuInjected = false
 WMGameSettings.menuControls = {}
 
+--- One cloned row per option. serverOnly: the option gates server-side executor behaviour,
+--- so on a multiplayer client the row is shown read-only (the host's value applies).
+WMGameSettings.ROWS = {
+    { name = "courseplayAutoResume", id = "wmCpAutoResume", callback = "onCpAutoResumeChanged",
+      labelKey = "wm_settings_cpAutoResume", tooltipKey = "wm_settings_cpAutoResume_tooltip",
+      serverOnly = true },
+    { name = "showHelpKeys", id = "wmShowHelpKeys", callback = "onShowHelpKeysChanged",
+      labelKey = "wm_settings_showHelpKeys", tooltipKey = "wm_settings_showHelpKeys_tooltip" },
+    { name = "debugMode", id = "wmDebugMode", callback = "onDebugModeChanged",
+      labelKey = "wm_settings_debugMode", tooltipKey = "wm_settings_debugMode_tooltip" },
+}
+
 -- ---------------------------------------------------------------------------
 -- Helpers
 -- ---------------------------------------------------------------------------
@@ -66,9 +78,11 @@ function WMGameSettings:ensureMenuInjected()
     -- A previous mission's copy of this module may still be hooked into the settings
     -- frame and inject first. The controls live on the page, so adopt them instead of
     -- adding a second row, and take over the callback target.
-    if page.wmCpAutoResumeControl ~= nil then
-        self.menuControls.cpAutoResume = page.wmCpAutoResumeControl
-        self.menuControls.cpAutoResume.target = self
+    if page.wmSettingsControls ~= nil then
+        for name, control in pairs(page.wmSettingsControls) do
+            self.menuControls[name] = control
+            control.target = self
+        end
         self.menuInjected = true
         return
     end
@@ -94,35 +108,37 @@ function WMGameSettings:ensureMenuInjected()
         end
     end
 
-    -- Courseplay auto-resume row
-    local box = rowPrefab:clone(layout)
-    if box == nil then
-        WMLogger:warning("Failed to clone the settings row - Workflow Manager options not shown")
-        return
-    end
-    box.id = "wmCpAutoResumeBox"
-
-    local control = box.elements[1]
-    if control ~= nil then
-        control.target = self
-        control.id     = "wmCpAutoResume"
-        control:setCallback("onClickCallback", "onCpAutoResumeChanged")
-        control:setDisabled(false)
-        local tooltip = control.elements[1]
-        if tooltip ~= nil then
-            tooltip:setText(g_i18n:getText("wm_settings_cpAutoResume_tooltip"))
+    page.wmSettingsControls = {}
+    for _, row in ipairs(self.ROWS) do
+        local box = rowPrefab:clone(layout)
+        if box == nil then
+            WMLogger:warning("Failed to clone the settings row - Workflow Manager options not shown")
+            return
         end
-    end
-    local label = box.elements[2]
-    if label ~= nil then
-        label:setText(g_i18n:getText("wm_settings_cpAutoResume"))
-    end
+        box.id = row.id .. "Box"
 
-    updateFocusIds(box)
-    table.insert(page.controlsList, box)
+        local control = box.elements[1]
+        if control ~= nil then
+            control.target = self
+            control.id     = row.id
+            control:setCallback("onClickCallback", row.callback)
+            control:setDisabled(false)
+            local tooltip = control.elements[1]
+            if tooltip ~= nil then
+                tooltip:setText(g_i18n:getText(row.tooltipKey))
+            end
+        end
+        local label = box.elements[2]
+        if label ~= nil then
+            label:setText(g_i18n:getText(row.labelKey))
+        end
 
-    self.menuControls.cpAutoResume = control
-    page.wmCpAutoResumeControl = control
+        updateFocusIds(box)
+        table.insert(page.controlsList, box)
+
+        self.menuControls[row.name] = control
+        page.wmSettingsControls[row.name] = control
+    end
 
     layout:invalidateLayout()
     self.menuInjected = true
@@ -134,21 +150,33 @@ end
 function WMGameSettings:refreshMenuState()
     self:ensureMenuInjected()
 
-    local control = self.menuControls.cpAutoResume
-    if control == nil then return end
-
-    control:setIsChecked(WMSettings:isCourseplayAutoResumeEnabled())
-
-    -- The executor runs server-side off the server's savegame, so a client toggling this
-    -- would change nothing. Show it, but read-only.
-    control:setDisabled(g_server == nil)
+    for _, row in ipairs(self.ROWS) do
+        local control = self.menuControls[row.name]
+        if control ~= nil then
+            control:setIsChecked(WMSettings[row.name] == true)
+            -- A server-side option toggled on a client would change nothing (the executor
+            -- runs on the host, with the host's settings). Show it, but read-only.
+            control:setDisabled(row.serverOnly == true and g_server == nil)
+        end
+    end
 end
 
----Option toggled by the player
+---Courseplay auto-resume toggled by the player
 ---@param state number CheckedOptionElement state
 function WMGameSettings:onCpAutoResumeChanged(state)
-    WMSettings.courseplayAutoResume = (state == CheckedOptionElement.STATE_CHECKED)
-    WMLogger:info("Setting courseplayAutoResume=%s", tostring(WMSettings.courseplayAutoResume))
+    WMSettings:setOption("courseplayAutoResume", state == CheckedOptionElement.STATE_CHECKED)
+end
+
+---"Show keys in the help window" toggled by the player
+---@param state number CheckedOptionElement state
+function WMGameSettings:onShowHelpKeysChanged(state)
+    WMSettings:setOption("showHelpKeys", state == CheckedOptionElement.STATE_CHECKED)
+end
+
+---Debug logging toggled by the player
+---@param state number CheckedOptionElement state
+function WMGameSettings:onDebugModeChanged(state)
+    WMSettings:setOption("debugMode", state == CheckedOptionElement.STATE_CHECKED)
 end
 
 -- ---------------------------------------------------------------------------
@@ -211,7 +239,7 @@ function WMGameSettings:delete()
     self.menuInjected = false
 
     if page ~= nil then
-        page.wmCpAutoResumeControl = nil
+        page.wmSettingsControls = nil
     end
     if layout ~= nil then
         layout:invalidateLayout()

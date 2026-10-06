@@ -9,6 +9,7 @@ describe("WMHud", function()
     local workflow
     local vehicle1, vehicle2
     local sentCommands  -- {cmd, vehicle} pairs
+    local userMessages  -- {text, isError} passed to WorkflowManager:showUserMessage
 
     -- Helper: create a vehicle with wmExecution set up
     local function makeVehicle(name, workflow_, status)
@@ -65,10 +66,11 @@ describe("WMHud", function()
             table.insert(sentCommands, { cmd = commandType, vehicle = vehicle })
         end
 
-        -- Stub notification (used by onClickStop)
-        _G.g_currentMission.addIngameNotification = function() end
-        _G.FSBaseMission = _G.FSBaseMission or {}
-        _G.FSBaseMission.INGAME_NOTIFICATION_OK = 0
+        -- Player feedback (used by onClickStop)
+        userMessages = {}
+        _G.WorkflowManager.showUserMessage = function(_, text, isError)
+            table.insert(userMessages, { text = text, isError = isError })
+        end
 
         -- Player is sitting in vehicle2
         _G.g_currentMission.controlledVehicle = vehicle2
@@ -101,6 +103,12 @@ describe("WMHud", function()
             _G.g_currentMission.controlledVehicle = nil
             WMHud:onClickStop()
             assert.are.equal(0, #sentCommands)
+        end)
+
+        it("reports the stop through showUserMessage as an info", function()
+            WMHud:onClickStop()
+            assert.are.equal(1, #userMessages)
+            assert.is_false(userMessages[1].isError)
         end)
     end)
 
@@ -359,6 +367,29 @@ describe("WMHud", function()
             WMHud:delete()
             assert.are.equal(0, WMHud.openDialogCount)
         end)
+
+        it("tracks the open dialog as the target for player messages", function()
+            local dialog = {}
+            WMHud:onDialogOpened(dialog)
+            assert.are.equal(dialog, WMHud.activeDialog)
+            WMHud:onDialogClosed(dialog)
+            assert.is_nil(WMHud.activeDialog)
+        end)
+
+        it("keeps the newer dialog when an older one closes after it opened", function()
+            -- main -> editor hand-over: the editor opens before main's close is counted
+            local main, editor = {}, {}
+            WMHud:onDialogOpened(main)
+            WMHud:onDialogOpened(editor)
+            WMHud:onDialogClosed(main)
+            assert.are.equal(editor, WMHud.activeDialog)
+        end)
+
+        it("forgets the dialog on delete", function()
+            WMHud:onDialogOpened({})
+            WMHud:delete()
+            assert.is_nil(WMHud.activeDialog)
+        end)
     end)
 
     -- =========================================================================
@@ -382,6 +413,26 @@ describe("WMHud", function()
         it("cancels an in-progress drag", function()
             WMHud.isDragging = true
             WMHud:delete()
+            assert.is_false(WMHud.isDragging)
+        end)
+    end)
+
+    -- =========================================================================
+    -- Dragging: the position is a per-player setting
+    -- =========================================================================
+    describe("drag end", function()
+        it("saves the position to the per-player settings file, not the workflow file", function()
+            local settingsSaves, workflowSaves = 0, 0
+            _G.WMSettings = { saveUserSettings = function() settingsSaves = settingsSaves + 1 end }
+            _G.WorkflowManager.saveWorkflows = function() workflowSaves = workflowSaves + 1 end
+            _G.Input = { MOUSE_BUTTON_LEFT = 1 }
+            WMHud.isVisible, WMHud.x, WMHud.y, WMHud.h = true, 0.1, 0.1, 0.1
+            WMHud.isDragging = true
+
+            assert.is_true(WMHud:mouseEvent(0.5, 0.5, false, true, 1))
+
+            assert.are.equal(1, settingsSaves)
+            assert.are.equal(0, workflowSaves)
             assert.is_false(WMHud.isDragging)
         end)
     end)

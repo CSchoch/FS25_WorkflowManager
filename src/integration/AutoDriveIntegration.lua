@@ -624,6 +624,7 @@ end
 ---@param unloadTargetName string|nil Second destination for pickup_deliver mode
 ---@param fillTypes table|nil Array of fill type name strings (optional, e.g. {"WHEAT","BARLEY"})
 ---@return boolean success True if route started successfully
+---@return string|nil errorKey i18n key of the player message for a configuration problem
 function ADIntegration:startRoute(vehicle, targetName, action, unloadTargetName, fillTypes)
     WMLogger:debug("ADIntegration:startRoute called - target: %s, action: %s, unloadTarget: %s, fillTypes: %s",
         tostring(targetName), tostring(action), tostring(unloadTargetName),
@@ -660,7 +661,7 @@ function ADIntegration:startRoute(vehicle, targetName, action, unloadTargetName,
     local targetMarker = self:getDestinationByName(targetName)
     if targetMarker == nil then
         WMLogger:error("AutoDrive destination not found: %s", targetName)
-        return false
+        return false, "wm_error_ad_target_not_found"
     end
 
     -- Determine the mode based on action
@@ -679,6 +680,8 @@ function ADIntegration:startRoute(vehicle, targetName, action, unloadTargetName,
                 WMLogger:info("Unload destination: %s (markerID: %d)", unloadTargetName, unloadDestinationID)
             else
                 WMLogger:warning("Unload destination not found: %s, using default", unloadTargetName)
+                WorkflowManager:notifyFarm(vehicle, true, "wm_warning_ad_unload_not_found",
+                    WorkflowManager:getVehicleDisplayName(vehicle), unloadTargetName)
             end
         else
             WMLogger:warning("Pickup & Deliver mode requires unload target, but none provided")

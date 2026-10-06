@@ -243,16 +243,23 @@ function WMHud:setMouseCursorActive(active)
     end
 end
 
----Called by every WM dialog from onOpen
-function WMHud:onDialogOpened()
+---Called by every WM dialog from onOpen. WM never stacks its dialogs, so the one opening is
+---the one the player sees: WorkflowManager:showUserMessage writes into its status line.
+---@param dialog table|nil The dialog that opened
+function WMHud:onDialogOpened(dialog)
     self.openDialogCount = self.openDialogCount + 1
+    self.activeDialog = dialog
 end
 
 ---Called by every WM dialog from onClose. Dialogs hand over to each other (main -> editor
 ----> step), so only the last one closing brings the count to zero -- that is when the
 ---cursor WM forced on is handed back to the game.
-function WMHud:onDialogClosed()
+---@param dialog table|nil The dialog that closed
+function WMHud:onDialogClosed(dialog)
     self.openDialogCount = math.max(0, self.openDialogCount - 1)
+    if self.activeDialog == dialog then
+        self.activeDialog = nil
+    end
 
     if self.openDialogCount == 0 then
         if self.pendingCursorGrant then
@@ -456,7 +463,9 @@ function WMHud:draw()
         if activeData.isMainVehicle == false then
             -- Support vehicle
             local mainData = WMExecutor:getMainActiveDataForWorkflow(workflow.id)
-            local mainStep = mainData and workflow.steps[mainData.currentStep]
+            -- Pinned to an earlier main step while finishing a sub-step ("finish before switching")
+            local mainIndex = mainData and WMExecutor:getSupportMainStepIndex(activeData, mainData)
+            local mainStep = mainIndex and workflow.steps[mainIndex]
             local supSteps = mainStep and mainStep.support or {}
             local css = activeData.currentSupportStep or 1
             local tss = #supSteps
@@ -465,7 +474,7 @@ function WMHud:draw()
                 renderText(x + mx, lineY, self.smallSize,
                     string.format("[%s] Step %s.%d/%d: %s",
                         WorkflowManager:getStepTypeShortcut(supStep.type),
-                        mainData and tostring(mainData.currentStep) or "?",
+                        mainIndex and tostring(mainIndex) or "?",
                         css, tss, supStep.target or "?"))
             end
         else
@@ -676,7 +685,7 @@ function WMHud:mouseEvent(posX, posY, isDown, isUp, button)
     -- Stop drag on left mouse up
     if isUp and button == Input.MOUSE_BUTTON_LEFT and self.isDragging then
         self.isDragging = false
-        WorkflowManager:saveWorkflows()  -- persist new position
+        WMSettings:saveUserSettings()  -- persist new position (per-player settings file)
         return true
     end
 
@@ -864,9 +873,8 @@ function WMHud:onClickStop()
 
     WorkflowManager:sendCommand(activeData.vehicle, "stop")
     WMLogger:info("Workflow stopped via HUD: %s", workflow.name)
-    g_currentMission:addIngameNotification(
-        FSBaseMission.INGAME_NOTIFICATION_OK,
-        string.format(g_i18n:getText("wm_workflow_stopped") or "Workflow stopped: %s", workflow.name))
+    WorkflowManager:showUserMessage(
+        string.format(g_i18n:getText("wm_workflow_stopped") or "Workflow stopped: %s", workflow.name), false)
 end
 
 function WMHud:onClickPrevious()
@@ -912,6 +920,7 @@ function WMHud:delete()
     self.vehicle = nil
     self.isDragging = false
     self.openDialogCount = 0
+    self.activeDialog = nil
     self:setMouseCursorActive(false)
 end
 

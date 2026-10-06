@@ -27,7 +27,7 @@ end
 function WMMainDialog:onOpen()
     WMMainDialog:superClass().onOpen(self)
     WMLogger:debug("WMMainDialog:onOpen")
-    WMHud:onDialogOpened()
+    WMHud:onDialogOpened(self)
 
     -- Register custom input events
     self:registerInputEvents()
@@ -54,14 +54,33 @@ function WMMainDialog:onOpen()
         self.workflowList:setDataSource(self)
     end
 
+    self:showStatus("")
+
+    -- Pick up changes made to the workflow file (web editor) while the game runs
+    WorkflowManager:reloadWorkflows()
+
     -- Refresh workflow list
     self:refreshWorkflowList()
+end
+
+---Show a message in the dialog's status line (errors in red). Used instead of the game's
+---notifications, which are hidden behind an open dialog.
+---@param text string Message ("" clears the line)
+---@param isError boolean|nil
+function WMMainDialog:showStatus(text, isError)
+    if self.statusText == nil then return end
+    if isError then
+        self.statusText:setTextColor(1, 0.35, 0.35, 1)
+    else
+        self.statusText:setTextColor(1, 1, 1, 1)
+    end
+    self.statusText:setText(text or "")
 end
 
 function WMMainDialog:onClose()
     WMMainDialog:superClass().onClose(self)
     WMLogger:debug("WMMainDialog:onClose")
-    WMHud:onDialogClosed()
+    WMHud:onDialogClosed(self)
 
     -- Unregister custom input events
     self:unregisterInputEvents()
@@ -226,8 +245,9 @@ function WMMainDialog:onClickDelete()
         YesNoDialog.show(
             function(dialog, clickOk)
                 if clickOk then
-                    WorkflowManager:deleteWorkflow(workflow.id)
-                    WorkflowManager:saveWorkflows()
+                    WorkflowManager:applyWorkflowChange(function()
+                        WorkflowManager:deleteWorkflow(workflow.id)
+                    end)
                     self:refreshWorkflowList()
                 end
             end,
@@ -245,9 +265,9 @@ function WMMainDialog:onClickStart()
         local workflow = self.workflows[self.selectedWorkflowIndex]
         local workflowName = workflow.name
 
-        if not WorkflowManager:canStartWorkflow(workflow.id) then
-            g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_CRITICAL,
-                g_i18n:getText("wm_workflow_error") or "Failed to start workflow")
+        local canStart, reason = WorkflowManager:canStartWorkflow(workflow.id)
+        if not canStart then
+            self:showStatus(reason or "", true)
             self:refreshWorkflowList()
             return
         end
@@ -260,8 +280,8 @@ function WMMainDialog:onClickStart()
         -- and hand the cursor to the HUD once the start command is actually dispatched
         -- (the callback never fires when the player cancels one of those dialogs).
         WorkflowManager:startWorkflow(workflow.id, function()
-            g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_OK,
-                string.format(g_i18n:getText("wm_workflow_started") or "Workflow started: %s", workflowName))
+            WorkflowManager:showUserMessage(
+                string.format(g_i18n:getText("wm_workflow_started") or "Workflow started: %s", workflowName), false)
             -- Closing the dialogs hides the cursor; hand it to the HUD, which releases it
             -- again when it is closed or the workflow ends
             WMHud:setMouseCursorActive(true)
@@ -276,8 +296,7 @@ function WMMainDialog:onClickStop()
     if self.selectedWorkflowIndex > 0 and self.selectedWorkflowIndex <= #self.workflows then
         local workflow = self.workflows[self.selectedWorkflowIndex]
         WorkflowManager:stopWorkflow(workflow.id)
-        g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_OK,
-            string.format(g_i18n:getText("wm_workflow_stopped") or "Workflow stopped: %s", workflow.name))
+        self:showStatus(string.format(g_i18n:getText("wm_workflow_stopped") or "Workflow stopped: %s", workflow.name))
         self:refreshWorkflowList()
     end
 end
@@ -292,8 +311,11 @@ function WMMainDialog:onClickADSettings()
     self:close()
     WorkflowManager:showADSettingsDialog(workflow.adSettings, function(settings)
         if settings ~= nil then
-            workflow.adSettings = settings
-            WorkflowManager:saveWorkflows()
+            WorkflowManager:applyWorkflowChange(function()
+                workflow.adSettings = settings
+                -- Re-adds it if the workflow was removed from the file meanwhile
+                WorkflowManager:registerWorkflow(workflow)
+            end)
         end
         WorkflowManager:showMainDialog()
     end)

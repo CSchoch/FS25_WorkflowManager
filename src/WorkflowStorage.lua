@@ -20,6 +20,7 @@ local function deepCopySupportStep(step)
         unloadTarget = step.unloadTarget,
         fillTypes    = step.fillTypes and {unpack(step.fillTypes)} or nil,
         seedFruitType = step.seedFruitType,
+        finishBeforeSwitch = step.finishBeforeSwitch,
     }
 end
 
@@ -43,6 +44,7 @@ end
 ---Initialize the storage system
 function WMStorage:init()
     self.isInitialized = true
+    self.syncedPath = nil
     WMLogger:debug("WorkflowStorage initialized")
 end
 
@@ -57,6 +59,19 @@ function WMStorage:getXmlPath()
     end
     -- Fallback to mod directory for testing
     return WorkflowManager.modDirectory .. "/" .. self.xmlFilename
+end
+
+---Path of the workflow file in the current savegame slot: the file that is read, and the
+---identity isInSyncWithDisk compares. While the game saves, savegameDirectory points to FS25's
+---"tempsavegame" folder, which starts empty and is copied into the slot afterwards - reading
+---from there found no file and wiped every workflow (bug-306). Writes still go to getXmlPath.
+---@return string path Full path to the slot's XML file
+function WMStorage:getSlotXmlPath()
+    local missionInfo = g_currentMission ~= nil and g_currentMission.missionInfo or nil
+    if missionInfo ~= nil and missionInfo.savegameIndex ~= nil then
+        return getUserProfileAppPath() .. "savegame" .. missionInfo.savegameIndex .. "/" .. self.xmlFilename
+    end
+    return self:getXmlPath()
 end
 
 ---Save all workflows to XML
@@ -137,23 +152,21 @@ function WMStorage:saveWorkflows(workflows)
                 if supportStep.seedFruitType ~= nil and supportStep.seedFruitType ~= "" then
                     xmlFile:setString(supportKey .. "#seedFruitType", supportStep.seedFruitType)
                 end
+                -- Support only: finish this sub-step before following main to its next step
+                if supportStep.finishBeforeSwitch == true then
+                    xmlFile:setBool(supportKey .. "#finishBeforeSwitch", true)
+                end
             end
         end
     end
 
-    -- Save HUD position
-    if WMHud.x ~= nil and WMHud.y ~= nil then
-        xmlFile:setFloat("WorkflowManager.settings.hud#posX", WMHud.x)
-        xmlFile:setFloat("WorkflowManager.settings.hud#posY", WMHud.y)
-    end
-
-    -- Save mod options (shown in the game's General settings page)
-    xmlFile:setBool("WorkflowManager.settings.general#courseplayAutoResume",
-        WMSettings.courseplayAutoResume)
+    -- Settings and the HUD position live in the per-player file (WMSettings), not here
 
     xmlFile:save()
     xmlFile:delete()
 
+    -- During a game save xmlPath is the temp folder; the data ends up in the slot
+    self.syncedPath = self:getSlotXmlPath()
     WMLogger:info("Saved %d workflows", #workflows)
     return true
 end
@@ -328,18 +341,19 @@ end
 
 ---Load all workflows from XML
 ---@return table workflows List of loaded workflows
+---@return boolean fileRead False only when the file exists but could not be read; callers
+---       merging into an existing list must not treat that empty result as "no workflows"
+---@return boolean fileFound False when there is no file. Correct as "no workflows" for a first
+---       load, but a merge must not take it as "every workflow was removed"
 function WMStorage:loadWorkflows()
     local workflows = {}
-    local xmlPath = self:getXmlPath()
-
-    -- Options are per savegame: drop the previous savegame's values before reading this
-    -- one, so loading a second savegame in the same session never inherits them.
-    WMSettings:reset()
+    local xmlPath = self:getSlotXmlPath()
 
     -- Check if file exists
     if not fileExists(xmlPath) then
         WMLogger:info("No saved workflows found at: %s", xmlPath)
-        return workflows
+        self.syncedPath = xmlPath
+        return workflows, true, false
     end
 
     WMLogger:info("Loading workflows from: %s", xmlPath)
@@ -347,7 +361,7 @@ function WMStorage:loadWorkflows()
     local xmlFile = XMLFile.load("workflowManager", xmlPath)
     if xmlFile == nil then
         WMLogger:error("Failed to load XML file: %s", xmlPath)
-        return workflows
+        return workflows, false, true
     end
 
     -- Format version (absent = 1 = old per-step sync flags, needs marker migration)
@@ -426,6 +440,7 @@ function WMStorage:loadWorkflows()
                     fillTypes    = parseFillTypes(xmlFile:getString(supportKey .. "#fillTypes"))
                                    or parseFillTypes(xmlFile:getString(supportKey .. "#fillType")),
                     seedFruitType = xmlFile:getString(supportKey .. "#seedFruitType"),
+                    finishBeforeSwitch = xmlFile:getBool(supportKey .. "#finishBeforeSwitch", false),
                 }
                 table.insert(step.support, supportStep)
                 supportIndex = supportIndex + 1
@@ -445,25 +460,26 @@ function WMStorage:loadWorkflows()
     -- Migrate old per-step sync flags to explicit wait/unlock marker steps
     workflows = self:migrateSyncFlagsToMarkers(workflows, formatVersion)
 
-    -- Load HUD position
-    local hudX = xmlFile:getFloat("WorkflowManager.settings.hud#posX")
-    local hudY = xmlFile:getFloat("WorkflowManager.settings.hud#posY")
-    if hudX ~= nil and hudY ~= nil then
-        WMHud.x = hudX
-        WMHud.y = hudY
-        WMLogger:info("Restored HUD position: x=%.4f y=%.4f", hudX, hudY)
-    end
-
-    -- Load mod options. Read with no default so an absent attribute (file written before
-    -- the option existed) keeps the default rather than reading as false.
-    local cpAutoResume = xmlFile:getBool("WorkflowManager.settings.general#courseplayAutoResume")
-    if cpAutoResume ~= nil then
-        WMSettings.courseplayAutoResume = cpAutoResume
-        WMLogger:info("Restored setting courseplayAutoResume=%s", tostring(cpAutoResume))
-    end
+    -- Settings and the HUD position used to be stored per savegame. They now live in the
+    -- per-player file; take a savegame's values over once if that file has none yet.
+    -- Read with no default so an absent attribute stays nil (= nothing to adopt).
+    WMSettings:adoptLegacySetting("courseplayAutoResume",
+        xmlFile:getBool("WorkflowManager.settings.general#courseplayAutoResume"))
+    WMSettings:adoptLegacyHudPosition(
+        xmlFile:getFloat("WorkflowManager.settings.hud#posX"),
+        xmlFile:getFloat("WorkflowManager.settings.hud#posY"))
 
     xmlFile:delete()
 
+    self.syncedPath = xmlPath
     WMLogger:info("Loaded %d workflows", #workflows)
-    return workflows
+    return workflows, true, true
+end
+
+---True when the in-memory workflows were last read from / written to the file the current
+---savegame uses. A save into another savegame slot changes the path, and that slot's file
+---must then never be merged in.
+---@return boolean inSync
+function WMStorage:isInSyncWithDisk()
+    return self.syncedPath ~= nil and self:getSlotXmlPath() == self.syncedPath
 end

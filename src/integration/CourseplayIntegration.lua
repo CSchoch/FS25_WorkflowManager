@@ -337,6 +337,7 @@ end
 ---@param folderPath string Folder path ("" for root level)
 ---@param baseName string Course file name without folder path
 ---@return table|nil entry
+---@return string|nil ambiguousFolder Folder of the chosen course when several share the name
 function CPIntegration:findCourseEntry(rootView, folderPath, baseName)
     if folderPath ~= "" then
         local folderView = self:navigateToFolder(rootView, folderPath)
@@ -377,6 +378,7 @@ function CPIntegration:findCourseEntry(rootView, folderPath, baseName)
     if #matches > 1 then
         WMLogger:warning("Course '%s' is ambiguous - %d files share this name and none sits under '%s'; using the one in '%s'",
             baseName, #matches, folderPath ~= "" and folderPath or "<root>", matches[1].folderPath)
+        return matches[1].entry, matches[1].folderPath
     end
     return matches[1].entry
 end
@@ -410,10 +412,15 @@ function CPIntegration:loadCourseFromStorage(vehicle, storage, courseName)
         return false
     end
 
-    local entry = self:findCourseEntry(rootView, folderPath, baseName)
+    local entry, ambiguousFolder = self:findCourseEntry(rootView, folderPath, baseName)
     if entry == nil then
         WMLogger:debug("Course entry not found: '%s'", courseName)
         return false
+    end
+    if ambiguousFolder ~= nil then
+        WorkflowManager:notifyFarm(vehicle, true, "wm_warning_cp_course_ambiguous",
+            WorkflowManager:getVehicleDisplayName(vehicle), baseName,
+            ambiguousFolder ~= "" and ambiguousFolder or "/")
     end
 
     return self:tryLoadEntry(vehicle, entry)
@@ -694,6 +701,8 @@ function CPIntegration:applySeedFruitType(vehicle, fruitTypeName)
                     -- enforcing the right one, so warn instead of aborting the workflow.
                     WMLogger:warning("Seed change not allowed on %s - keeping the seed the game selected",
                         child.getName ~= nil and child:getName() or "implement")
+                    WorkflowManager:notifyFarm(vehicle, false, "wm_info_seed_locked",
+                        WorkflowManager:getVehicleDisplayName(vehicle))
                 else
                     child:setSeedFruitType(fruitType.index)
                     WMLogger:info("Set seed type '%s' on %s", fruitTypeName,

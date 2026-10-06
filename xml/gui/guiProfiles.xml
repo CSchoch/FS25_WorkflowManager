@@ -102,6 +102,15 @@
         <textItalic value="true"/>
     </Profile>
 
+    <!-- Status line at the bottom of a dialog: errors/infos while the dialog is open.
+         The color is set per message (WMxxxDialog:showStatus). -->
+    <Profile name="wm_statusText" extends="baseReference">
+        <textSize value="16px"/>
+        <textColor value="1 1 1 1"/>
+        <textAlignment value="left"/>
+        <textVerticalAlignment value="middle"/>
+    </Profile>
+
     <!-- Button without hotkey (neutral style) -->
     <Profile name="wm_buttonNeutral" extends="buttonActivate">
     </Profile>

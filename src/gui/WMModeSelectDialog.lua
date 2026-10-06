@@ -26,7 +26,7 @@ end
 function WMModeSelectDialog:onOpen()
     WMModeSelectDialog:superClass().onOpen(self)
     WMLogger:debug("WMModeSelectDialog:onOpen")
-    WMHud:onDialogOpened()
+    WMHud:onDialogOpened(self)
 
     self:registerInputEvents()
 
@@ -44,7 +44,7 @@ end
 function WMModeSelectDialog:onClose()
     WMModeSelectDialog:superClass().onClose(self)
     WMLogger:debug("WMModeSelectDialog:onClose")
-    WMHud:onDialogClosed()
+    WMHud:onDialogClosed(self)
     self:unregisterInputEvents()
 end
 

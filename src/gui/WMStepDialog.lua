@@ -44,6 +44,9 @@ function WMStepDialog.new(target)
 
     -- Flag to suppress list-callback recursion (set before any reloadData inside a callback)
     self.isFiltering = false
+    -- true from onOpen until the first update: list selection events raised while the dialog
+    -- opens are the engine's, not the player's (see onOpen)
+    self.isOpening = false
 
     return self
 end
@@ -53,9 +56,14 @@ function WMStepDialog:onCreate()
 end
 
 function WMStepDialog:onOpen()
+    -- The dialog is reused, so from the second open on the lists still carry the previous
+    -- open's selection callbacks. Opening (and restoring focus onto a list) re-raises the list's
+    -- selection, which the fill type handler took for a click on row 1 and replaced the step's
+    -- fill types with the first entry. Ignore list selection events until the first update.
+    self.isOpening = true
     WMStepDialog:superClass().onOpen(self)
     WMLogger:debug("WMStepDialog:onOpen")
-    WMHud:onDialogOpened()
+    WMHud:onDialogOpened(self)
 
     -- Manually set callbacks for dropdowns (XML callback binding doesn't work for MultiTextOption)
     if self.typeDropdown ~= nil then
@@ -76,6 +84,13 @@ function WMStepDialog:onOpen()
             dialog:onSeedTypeChanged(nil, state)
         end
     end
+    if self.finishBeforeSwitchDropdown ~= nil then
+        local dialog = self
+        self.finishBeforeSwitchDropdown.onClickCallback = function(_, state)
+            dialog:onFinishBeforeSwitchChanged(nil, state)
+        end
+    end
+    self:showStatus("")
     -- Setup list data sources and callbacks
     local dialog = self
     if self.targetList ~= nil then
@@ -119,10 +134,31 @@ function WMStepDialog:onOpen()
     self:refreshDisplay()
 end
 
+---Show a message in the dialog's status line (errors in red). Used instead of the game's
+---notifications, which are hidden behind an open dialog.
+---@param text string Message ("" clears the line)
+---@param isError boolean|nil
+function WMStepDialog:showStatus(text, isError)
+    if self.statusText == nil then return end
+    if isError then
+        self.statusText:setTextColor(1, 0.35, 0.35, 1)
+    else
+        self.statusText:setTextColor(1, 1, 1, 1)
+    end
+    self.statusText:setText(text or "")
+end
+
+---The first frame after onOpen: showDialog has finished opening and restoring focus, so list
+---selection events from here on are the player's.
+function WMStepDialog:update(dt)
+    WMStepDialog:superClass().update(self, dt)
+    self.isOpening = false
+end
+
 function WMStepDialog:onClose()
     WMStepDialog:superClass().onClose(self)
     WMLogger:debug("WMStepDialog:onClose")
-    WMHud:onDialogClosed()
+    WMHud:onDialogClosed(self)
     self.ctrlPressed = false
 end
 
@@ -150,6 +186,7 @@ function WMStepDialog:setStep(step, callback, isSupportStep)
         self.stepUnloadTarget = step.unloadTarget or ""
         self.selectedFillTypes = step.fillTypes and {unpack(step.fillTypes)} or {}
         self.stepSeedFruitType = step.seedFruitType or ""
+        self.stepFinishBeforeSwitch = step.finishBeforeSwitch == true
     else
         self.step = nil
         -- A new step starts as AutoDrive, but that type cannot be authored (or run) without
@@ -165,6 +202,7 @@ function WMStepDialog:setStep(step, callback, isSupportStep)
         self.stepUnloadTarget = ""
         self.selectedFillTypes = {}
         self.stepSeedFruitType = ""
+        self.stepFinishBeforeSwitch = false
     end
 end
 
@@ -245,6 +283,9 @@ function WMStepDialog:refreshDisplay()
 
     -- Update seed type dropdown
     self:refreshSeedTypeDropdown()
+
+    -- Update "finish before switching" dropdown
+    self:refreshFinishBeforeSwitchDropdown()
 
     -- Update input field values
     self:setInputFieldValues()
@@ -376,6 +417,25 @@ function WMStepDialog:refreshSeedTypeDropdown()
     self.seedTypeDropdown:setState(currentIndex)
 end
 
+---"Finish before switching" applies to support sub-steps that run an AutoDrive/Courseplay
+---job (sync markers never appear as sub-steps and have nothing to finish).
+---@return boolean
+function WMStepDialog:canFinishBeforeSwitch()
+    return self.isSupportStep == true and not WorkflowManager:isMarkerStepType(self.stepType)
+end
+
+---Refresh the "finish before switching" dropdown (1 = No, 2 = Yes)
+function WMStepDialog:refreshFinishBeforeSwitchDropdown()
+    if self.finishBeforeSwitchDropdown == nil then
+        return
+    end
+    self.finishBeforeSwitchDropdown:setTexts({
+        g_i18n:getText("wm_option_no") or "No",
+        g_i18n:getText("wm_option_yes") or "Yes",
+    })
+    self.finishBeforeSwitchDropdown:setState(self.stepFinishBeforeSwitch and 2 or 1)
+end
+
 ---Get available actions based on step type
 function WMStepDialog:getAvailableActions()
     if self.stepType == WorkflowManager.STEP_AUTODRIVE then
@@ -413,8 +473,8 @@ end
 
 ---SmoothList data source: Called when selection changes (delegate method)
 function WMStepDialog:onListSelectionChanged(list, section, index)
-    -- Ignore selection changes during filtering to prevent feedback loop
-    if self.isFiltering then
+    -- Ignore selection changes during filtering (feedback loop) and while opening (see onOpen)
+    if self.isFiltering or self.isOpening then
         return
     end
 
@@ -549,6 +609,9 @@ function WMStepDialog:updateFieldVisibility()
 
     -- Seed type row (Courseplay field work only)
     if self.seedTypeRow then self.seedTypeRow:setVisible(needsSeedType) end
+
+    -- Finish before switching (support sub-steps only)
+    if self.finishBeforeSwitchRow then self.finishBeforeSwitchRow:setVisible(self:canFinishBeforeSwitch()) end
 
     -- Update unload target label based on action
     if self.unloadTargetLabel then
@@ -836,6 +899,17 @@ function WMStepDialog:onSeedTypeChanged(element, state)
     end
 end
 
+---Called when the "finish before switching" dropdown changes
+function WMStepDialog:onFinishBeforeSwitchChanged(element, state)
+    -- Handle both (state) and (element, state) signatures
+    if state == nil then
+        state = element
+    end
+    if state == 1 or state == 2 then
+        self.stepFinishBeforeSwitch = state == 2
+    end
+end
+
 ---Called when target search text changes
 function WMStepDialog:onTargetSearchChanged()
     if self.targetSearchInput then
@@ -845,6 +919,7 @@ end
 
 ---Called when target list selection changes
 function WMStepDialog:onTargetListSelectionChanged(list, section, index)
+    if self.isOpening then return end
     self.selectedTargetIndex = index
     if index > 0 and index <= #self.filteredTargetItems then
         local item = self.filteredTargetItems[index]
@@ -862,6 +937,7 @@ end
 
 ---Called when unload target list selection changes
 function WMStepDialog:onUnloadTargetListSelectionChanged(list, section, index)
+    if self.isOpening then return end
     self.selectedUnloadTargetIndex = index
     if index > 0 and index <= #self.filteredUnloadTargetItems then
         local item = self.filteredUnloadTargetItems[index]
@@ -880,7 +956,7 @@ end
 ---Called when fill type list selection changes
 ---Plain click = single-select; Ctrl+click = toggle (add/remove)
 function WMStepDialog:onFillTypeListSelectionChanged(list, section, index)
-    if self.isFiltering then return end
+    if self.isFiltering or self.isOpening then return end
     if index > 0 and index <= #self.filteredFillTypeItems then
         local item = self.filteredFillTypeItems[index]
         if self.ctrlPressed then
@@ -916,11 +992,8 @@ function WMStepDialog:onClickConfirm()
         -- Validate - target is required for AD/CP steps. Warn instead of returning silently:
         -- a dead OK button reads as a broken dialog.
         if self.stepTarget == "" then
-            local warningText = g_i18n:getText("wm_warning_no_target")
-                or "Select a target before confirming the step."
-            if g_currentMission and g_currentMission.hud and g_currentMission.hud.showBlinkingWarning then
-                g_currentMission.hud:showBlinkingWarning(warningText, 2000)
-            end
+            self:showStatus(g_i18n:getText("wm_warning_no_target")
+                or "Select a target before confirming the step.", true)
             WMLogger:warning("Step confirm blocked: no target selected for type '%s'", tostring(self.stepType))
             return
         end
@@ -944,6 +1017,11 @@ function WMStepDialog:onClickConfirm()
                 step.seedFruitType = self.stepSeedFruitType
             end
         end
+    end
+
+    -- After both branches: Park/Refuel/Repair sub-steps take the marker branch above
+    if self:canFinishBeforeSwitch() and self.stepFinishBeforeSwitch then
+        step.finishBeforeSwitch = true
     end
 
     self:close()

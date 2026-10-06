@@ -6,11 +6,14 @@
 
 describe("WMStepDialog", function()
 
+    -- Shared so a test can make the base class's onOpen raise list events like the engine does
+    local superStub = { onOpen = function() end, onClose = function() end, update = function() end }
+
     setup(function()
         _G.Class = function(cls, parent)
             if parent then
                 cls.superClass = function()
-                    return { onOpen = function() end, onClose = function() end }
+                    return superStub
                 end
             end
             return { __index = cls }
@@ -640,6 +643,10 @@ describe("WMStepDialog", function()
             local result, closed = nil, false
             d.callback = function(s) result = s end
             d.close = function() closed = true end
+            d.statusText = {
+                setText = function(self, t) self.text = t end,
+                setTextColor = function(self, r) self.red = r end,
+            }
             WMStepDialog.onClickConfirm(d)
             return result, closed
         end
@@ -654,14 +661,15 @@ describe("WMStepDialog", function()
             assert.is_false(closed)
         end)
 
-        it("warns the player instead of doing nothing", function()
+        it("warns the player in the dialog's status line instead of doing nothing", function()
             local d = makeDialog()
             d.stepType   = WorkflowManager.STEP_AUTODRIVE
             d.stepAction = "drive"
             d.stepTarget = ""
             confirm(d)
-            assert.are.equal(1, #warnings)
-            assert.are.equal("wm_warning_no_target", warnings[1].text)
+            assert.are.equal("wm_warning_no_target", d.statusText.text)
+            -- The game's blinking warning sits behind the open dialog: not used any more
+            assert.are.equal(0, #warnings)
         end)
 
         it("blocks a Courseplay step with no course selected", function()
@@ -672,7 +680,7 @@ describe("WMStepDialog", function()
             local step, closed = confirm(d)
             assert.is_nil(step)
             assert.is_false(closed)
-            assert.are.equal(1, #warnings)
+            assert.are.equal("wm_warning_no_target", d.statusText.text)
         end)
 
         it("confirms without warning once a target is set", function()
@@ -695,6 +703,173 @@ describe("WMStepDialog", function()
             assert.are.equal(WorkflowManager.STEP_PARK, step.type)
             assert.is_true(closed)
             assert.are.equal(0, #warnings)
+        end)
+    end)
+
+    -- =========================================================================
+    -- "Finish before switching" (support sub-steps)
+    -- =========================================================================
+    describe("finish before switching", function()
+        local function confirm(d)
+            local result
+            d.callback = function(s) result = s end
+            d.close = function() end
+            WMStepDialog.onClickConfirm(d)
+            return result
+        end
+
+        local function makeDropdown()
+            return {
+                setTexts = function(self, t) self.texts = t end,
+                setState = function(self, s) self.state = s end,
+            }
+        end
+
+        it("is offered for support sub-steps that run a job", function()
+            local d = makeDialog()
+            d.isSupportStep = true
+            for _, t in ipairs({ "autodrive", "courseplay", "park", "refuel", "repair" }) do
+                d.stepType = t
+                assert.is_true(d:canFinishBeforeSwitch())
+            end
+        end)
+
+        it("is not offered for main steps or sync markers", function()
+            local d = makeDialog()
+            d.isSupportStep = false
+            d.stepType = WorkflowManager.STEP_AUTODRIVE
+            assert.is_false(d:canFinishBeforeSwitch())
+            d.isSupportStep = true
+            d.stepType = WorkflowManager.STEP_WAIT_FOR_LEADER
+            assert.is_false(d:canFinishBeforeSwitch())
+        end)
+
+        it("loads the flag from the edited step; a new step starts with it off", function()
+            local d = makeDialog()
+            d:setStep({ type = "autodrive", action = "drive", target = "Silo", finishBeforeSwitch = true }, nil, true)
+            assert.is_true(d.stepFinishBeforeSwitch)
+            d:setStep(nil, nil, true)
+            assert.is_false(d.stepFinishBeforeSwitch)
+        end)
+
+        it("renders No/Yes and selects the current value", function()
+            local d = makeDialog()
+            d.finishBeforeSwitchDropdown = makeDropdown()
+            d.stepFinishBeforeSwitch = true
+            d:refreshFinishBeforeSwitchDropdown()
+            assert.are.same({ "wm_option_no", "wm_option_yes" }, d.finishBeforeSwitchDropdown.texts)
+            assert.are.equal(2, d.finishBeforeSwitchDropdown.state)
+        end)
+
+        it("maps the dropdown state onto the flag", function()
+            local d = makeDialog()
+            d:onFinishBeforeSwitchChanged(nil, 2)
+            assert.is_true(d.stepFinishBeforeSwitch)
+            d:onFinishBeforeSwitchChanged(1)
+            assert.is_false(d.stepFinishBeforeSwitch)
+        end)
+
+        it("saves the flag on a support sub-step", function()
+            local d = makeDialog()
+            d.isSupportStep = true
+            d.stepType, d.stepAction, d.stepTarget = "autodrive", "drive", "Silo"
+            d.stepFinishBeforeSwitch = true
+            assert.is_true(confirm(d).finishBeforeSwitch)
+        end)
+
+        it("saves the flag on a targetless support sub-step (Park)", function()
+            local d = makeDialog()
+            d.isSupportStep = true
+            d.stepType, d.stepTarget = WorkflowManager.STEP_PARK, ""
+            d.stepFinishBeforeSwitch = true
+            assert.is_true(confirm(d).finishBeforeSwitch)
+        end)
+
+        it("never writes the flag on a main step", function()
+            local d = makeDialog()
+            d.isSupportStep = false
+            d.stepType, d.stepAction, d.stepTarget = "autodrive", "drive", "Silo"
+            d.stepFinishBeforeSwitch = true
+            assert.is_nil(confirm(d).finishBeforeSwitch)
+        end)
+
+        it("writes nothing when the flag is off", function()
+            local d = makeDialog()
+            d.isSupportStep = true
+            d.stepType, d.stepAction, d.stepTarget = "autodrive", "drive", "Silo"
+            d.stepFinishBeforeSwitch = false
+            assert.is_nil(confirm(d).finishBeforeSwitch)
+        end)
+    end)
+
+    -- =========================================================================
+    -- Reopening the dialog (regression: fill types reset to the first list entry)
+    -- =========================================================================
+    describe("reopening", function()
+        local function makeList()
+            return {
+                setDataSource = function() end,
+                setCallback = function() end,
+                reloadData = function() end,
+                setSelectedIndex = function() end,
+            }
+        end
+
+        local function makeOpenableDialog()
+            _G.WMLogger = { debug = function() end }
+            _G.WMHud = { onDialogOpened = function() end }
+            WorkflowManager.editorDialog = {
+                getFillTypes = function()
+                    return { { name = "WHEAT", title = "Wheat" }, { name = "BARLEY", title = "Barley" } }
+                end,
+                getADDestinations = function() return { "Farm", "Silo" } end,
+                getCPCourses = function() return {} end,
+            }
+            local d = makeDialog()
+            d.fillTypeList, d.targetList, d.unloadTargetList = makeList(), makeList(), makeList()
+            return d
+        end
+
+        -- What FS25 does while a dialog opens: re-raise the list's current selection (row 1)
+        local function engineReraisesSelection(d)
+            d.fillTypeList.onSelectionChanged(d.fillTypeList, 1, 1)
+            d.targetList.onSelectionChanged(d.targetList, 1, 1)
+            d.unloadTargetList.onSelectionChanged(d.unloadTargetList, 1, 1)
+        end
+
+        local step = { type = "autodrive", action = "pickup_deliver", target = "Silo",
+                       unloadTarget = "Silo", fillTypes = { "BARLEY" } }
+
+        before_each(function()
+            superStub.onOpen = function() end
+            WorkflowManager.editorDialog = nil
+        end)
+
+        it("keeps the step's fill type when the list re-raises its selection on the second open", function()
+            local d = makeOpenableDialog()
+            d:setStep(step, function() end)
+            d:onOpen()
+            d:update(0)
+
+            d:setStep(step, function() end)
+            superStub.onOpen = engineReraisesSelection   -- callbacks from the first open are live
+            d:onOpen()
+            engineReraisesSelection(d)                   -- and again on focus restore, after onOpen
+            d:update(0)
+
+            assert.are.same({ "BARLEY" }, d.selectedFillTypes)
+            assert.are.equal("Silo", d.stepTarget)
+            assert.are.equal("Silo", d.stepUnloadTarget)
+        end)
+
+        it("applies list clicks again once the dialog has updated", function()
+            local d = makeOpenableDialog()
+            d:setStep(step, function() end)
+            d:onOpen()
+            d:update(0)
+
+            d.fillTypeList.onSelectionChanged(d.fillTypeList, 1, 1)
+            assert.are.same({ "WHEAT" }, d.selectedFillTypes)
         end)
     end)
 

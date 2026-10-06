@@ -23,11 +23,6 @@ if WMDevConfig == nil then
         LOG_STATE_CHANGES = false,
         LOG_EVENTS = false,
         AUTO_CREATE_TEST_WORKFLOW = false,
-        SKIP_VEHICLE_CHECKS = false,
-        SIMULATE_AD_COMPLETION_MS = 0,
-        SIMULATE_CP_COMPLETION_MS = 0,
-        EXECUTOR_UPDATE_INTERVAL = 1000,
-        GUI_REFRESH_INTERVAL = 500,
         SHOW_FPS = false,
         DEBUG_OVERLAY_X = 0.01,
         DEBUG_OVERLAY_Y = 0.95,
@@ -179,6 +174,9 @@ function WorkflowManager:init()
     end
 
     WMLogger:info("Initializing WorkflowManager v%s", self.version)
+
+    -- Per-player options + HUD position (independent of the savegame)
+    WMSettings:loadUserSettings()
 
     -- Initialize subsystems
     WMEventHandler:init()
@@ -332,7 +330,8 @@ function WorkflowManager:registerGlobalActions()
         true    -- startActive
     )
     if eventId ~= nil then
-        g_inputBinding:setActionEventTextVisibility(eventId, true)
+        self.globalGuiEventId = eventId
+        g_inputBinding:setActionEventTextVisibility(eventId, WMSettings.showHelpKeys ~= false)
         g_inputBinding:setActionEventTextPriority(eventId, GS_PRIO_NORMAL)
         WMLogger:info("Registered global input action WM_TOGGLE_GUI (eventId: %s)", tostring(eventId))
     else
@@ -349,6 +348,30 @@ function WorkflowManager:registerGlobalActions()
     if eventId ~= nil then
         g_inputBinding:setActionEventTextVisibility(eventId, false)
         WMLogger:debug("Registered WM_TOGGLE_HUD")
+    end
+end
+
+---Show or hide the WM keys in the F1 help window, following WMSettings.showHelpKeys.
+---Updates the already registered events in place: the on-foot Toggle GUI event and the two
+---events of the vehicle the local player sits in (re-registering the vehicle's events would
+---re-run onRegisterActionEvents, which also shows the HUD).
+function WorkflowManager:applyHelpKeyVisibility()
+    if g_inputBinding == nil then return end
+    local visible = WMSettings.showHelpKeys ~= false
+
+    if self.globalGuiEventId ~= nil then
+        g_inputBinding:setActionEventTextVisibility(self.globalGuiEventId, visible)
+    end
+
+    local vehicle = g_localPlayer ~= nil and g_localPlayer.getCurrentVehicle ~= nil
+        and g_localPlayer:getCurrentVehicle() or nil
+    local spec = vehicle ~= nil and vehicle.spec_workflowManagerSpec or nil
+    if spec == nil or spec.actionEvents == nil or InputAction == nil then return end
+    for _, action in ipairs({ InputAction.WM_TOGGLE_HUD, InputAction.WM_TOGGLE_GUI }) do
+        local actionEvent = spec.actionEvents[action]
+        if actionEvent ~= nil and actionEvent.actionEventId ~= nil then
+            g_inputBinding:setActionEventTextVisibility(actionEvent.actionEventId, visible)
+        end
     end
 end
 
@@ -604,10 +627,7 @@ end
 function WorkflowManager:deleteWorkflow(id)
     for i, workflow in ipairs(self.workflows) do
         if workflow.id == id then
-            -- Stop if running on any vehicle
-            if WMExecutor:isWorkflowActive(id) then
-                self:stopWorkflow(id)
-            end
+            self:stopWorkflowOnAllVehicles(id)
             table.remove(self.workflows, i)
             WMLogger:debug("Deleted workflow: %s", id)
             return true
@@ -643,19 +663,20 @@ function WorkflowManager:addStep(workflowId, stepType, target, action)
 end
 
 ---Check every condition startWorkflow validates and resolve the vehicle it would run on.
----Shows the matching in-game warning when a condition fails, so callers only react to nil.
+---On failure returns nil plus a localized reason for the player; the caller decides where
+---to show it (a dialog's status line, or the game's notification while no dialog is open).
 ---@param workflowId string Workflow ID to start
----@return table|nil workflow, table|nil vehicle
+---@return table|nil workflow, table|nil vehicle, string|nil reason
 function WorkflowManager:resolveStartTarget(workflowId)
     local workflow = self:getWorkflowById(workflowId)
     if workflow == nil then
         WMLogger:error("Cannot start: Workflow %s not found", workflowId)
-        return nil
+        return nil, nil, g_i18n:getText("wm_warning_workflow_not_found")
     end
 
     if #workflow.steps == 0 then
         WMLogger:error("Cannot start: Workflow %s has no steps", workflowId)
-        return nil
+        return nil, nil, string.format(g_i18n:getText("wm_warning_no_steps"), workflow.name)
     end
 
     -- Milestone 4: Get the current vehicle the player is driving
@@ -666,39 +687,26 @@ function WorkflowManager:resolveStartTarget(workflowId)
     end
 
     if currentVehicle == nil then
-        -- Show in-game warning to user
-        local warningText = g_i18n:getText("wm_warning_no_vehicle") or "Enter a vehicle to start the workflow"
-        if g_currentMission and g_currentMission.hud and g_currentMission.hud.showBlinkingWarning then
-            g_currentMission.hud:showBlinkingWarning(warningText, 2000)
-        end
         WMLogger:warning("Cannot start: Player is not in a vehicle")
-        return nil
+        return nil, nil, g_i18n:getText("wm_warning_no_vehicle") or "Enter a vehicle to start the workflow"
     end
 
     -- Prevent starting a new workflow on a vehicle that is already running one
     if WMExecutor:isWorkflowActiveOnVehicle(currentVehicle) then
         WMLogger:warning("Cannot start: Vehicle is already running a workflow")
-        local warningText = g_i18n:getText("wm_warning_vehicle_busy") or "Vehicle is already running a workflow"
-        if g_currentMission and g_currentMission.hud and g_currentMission.hud.showBlinkingWarning then
-            g_currentMission.hud:showBlinkingWarning(warningText, 2000)
-        end
-        return nil
+        return nil, nil, g_i18n:getText("wm_warning_vehicle_busy") or "Vehicle is already running a workflow"
     end
 
     -- Validate the vehicle supports every step type this workflow uses (CP always, AD on demand)
     if not self:isVehicleValid(currentVehicle, workflow) then
         local vehicleName = currentVehicle.getName and currentVehicle:getName() or "unknown"
-        -- Show in-game warning to user - name only the mods this workflow actually needs
+        -- Name only the mods this workflow actually needs
         local needsAD = self:workflowNeedsAutoDrive(workflow)
         local warningKey = needsAD and "wm_warning_incompatible_vehicle" or "wm_warning_incompatible_vehicle_cp"
         local fallback = needsAD and "Vehicle '%s' needs AutoDrive + Courseplay" or "Vehicle '%s' needs Courseplay"
-        local warningText = string.format(g_i18n:getText(warningKey) or fallback, vehicleName)
-        if g_currentMission and g_currentMission.hud and g_currentMission.hud.showBlinkingWarning then
-            g_currentMission.hud:showBlinkingWarning(warningText, 2000)
-        end
         WMLogger:warning("Cannot start: Vehicle '%s' does not support this workflow (needs %s)", vehicleName,
             needsAD and "AutoDrive + Courseplay" or "Courseplay")
-        return nil
+        return nil, nil, string.format(g_i18n:getText(warningKey) or fallback, vehicleName)
     end
 
     return workflow, currentVehicle
@@ -709,9 +717,11 @@ end
 ---startWorkflow: the start flow opens the mode/leader dialog on top, and closing the
 ---parent afterwards tears the GUI's cursor state out from under the child.
 ---@param workflowId string Workflow ID to start
----@return boolean
+---@return boolean ok
+---@return string|nil reason Localized reason when ok is false
 function WorkflowManager:canStartWorkflow(workflowId)
-    return self:resolveStartTarget(workflowId) ~= nil
+    local workflow, _, reason = self:resolveStartTarget(workflowId)
+    return workflow ~= nil, reason
 end
 
 ---Start a workflow
@@ -723,8 +733,11 @@ end
 ---                              (never called when the player cancels a dialog)
 ---@return boolean success False on immediate validation failure, true when the flow began
 function WorkflowManager:startWorkflow(workflowId, onStarted)
-    local workflow, currentVehicle = self:resolveStartTarget(workflowId)
+    local workflow, currentVehicle, reason = self:resolveStartTarget(workflowId)
     if workflow == nil or currentVehicle == nil then
+        if reason ~= nil then
+            self:showUserMessage(reason, true)
+        end
         return false
     end
 
@@ -970,6 +983,19 @@ function WorkflowManager:stopWorkflow(workflowId)
     return true
 end
 
+---Stop the workflow on every vehicle running it (main and support vehicles alike).
+---Routes through the network layer so it works in multiplayer.
+---@param workflowId string Workflow ID to stop
+---@return number count Number of vehicles a stop was sent to
+function WorkflowManager:stopWorkflowOnAllVehicles(workflowId)
+    -- getActiveVehiclesForWorkflow returns execution states, not vehicles
+    local executions = WMExecutor:getActiveVehiclesForWorkflow(workflowId)
+    for _, activeData in ipairs(executions) do
+        self:sendCommand(activeData.vehicle, "stop")
+    end
+    return #executions
+end
+
 ---Pause the workflow running on the given workflowId.
 ---@param workflowId string Workflow ID to pause
 ---@return boolean success
@@ -1032,6 +1058,186 @@ function WorkflowManager:loadWorkflows()
     self.workflows = WMStorage:loadWorkflows()
 end
 
+---Re-read the workflow file and merge it into the in-memory list, so changes made with the
+---web editor while the game runs are picked up. Workflows keep their table identity (a
+---running execution holds activeData.workflow by reference and sees the new steps); new
+---ones are added, and ones no longer in the file are dropped after stopping every vehicle
+---still running them. Server only: clients have no workflow file.
+---Skipped when the file could not be read, or when the savegame path changed since the
+---last load/save (that file belongs to another savegame and must not be merged in).
+---@return boolean reloaded
+function WorkflowManager:reloadWorkflows()
+    if g_server == nil or not WMStorage:isInSyncWithDisk() then
+        return false
+    end
+
+    local fresh, fileRead, fileFound = WMStorage:loadWorkflows()
+    if not fileRead then
+        return false
+    end
+    -- A missing file is no evidence that workflows were removed (bug-306: an empty
+    -- tempsavegame folder wiped every workflow). Keep the in-memory list.
+    if not fileFound then
+        if #self.workflows > 0 then
+            WMLogger:warning("Workflow file missing - keeping the %d workflows in memory", #self.workflows)
+        end
+        return false
+    end
+
+    local freshById = {}
+    for _, workflow in ipairs(fresh) do
+        freshById[workflow.id] = workflow
+    end
+
+    for _, workflow in ipairs(self.workflows) do
+        if freshById[workflow.id] == nil then
+            if self:stopWorkflowOnAllVehicles(workflow.id) > 0 then
+                self:showUserMessage(string.format(g_i18n:getText("wm_info_workflow_removed"), workflow.name), true)
+            end
+            WMLogger:info("Workflow '%s' no longer in the file - removed", workflow.name)
+        end
+    end
+
+    local merged = {}
+    for _, workflow in ipairs(fresh) do
+        local existing = self:getWorkflowById(workflow.id)
+        if existing ~= nil then
+            existing.name       = workflow.name
+            existing.steps      = workflow.steps
+            existing.adSettings = workflow.adSettings
+            table.insert(merged, existing)
+        else
+            table.insert(merged, workflow)
+        end
+    end
+    self.workflows = merged
+
+    WMExecutor:onWorkflowDefinitionsChanged()
+    return true
+end
+
+---Apply an in-game change to the workflows without losing edits made in the file meanwhile:
+---reload from disk, apply the change, write the file. The file is the source of truth.
+---Multiplayer clients have no workflow file, so they only apply the change in memory.
+---@param change function Mutates WorkflowManager.workflows
+function WorkflowManager:applyWorkflowChange(change)
+    if g_server == nil then
+        change()
+        return
+    end
+    self:reloadWorkflows()
+    change()
+    self:saveWorkflows()
+end
+
+---The game was saved: write the workflow file next to the savegame. When it is the file the
+---workflows came from, reload it first so edits made in the web editor are kept. A save into
+---a new or different slot writes the in-memory workflows there.
+function WorkflowManager:onSavegameSaved()
+    if g_server == nil then return end
+    self:reloadWorkflows()
+    self:saveWorkflows()
+end
+
+-- ============================================================
+-- Player messages
+-- ============================================================
+
+WorkflowManager.pendingUserMessages = {}
+
+---Show a message to the local player. While a WM dialog is open it goes to that dialog's
+---status line (the game's notifications sit behind the dialog); otherwise, and for dialogs
+---without a status line, it is queued and shown as an in-game notification once no WM dialog
+---is open any more.
+---@param text string Localized text
+---@param isError boolean|nil true = error (red / critical), false = info
+function WorkflowManager:showUserMessage(text, isError)
+    if text == nil or text == "" then return end
+    local dialog = WMHud ~= nil and WMHud.activeDialog or nil
+    if dialog ~= nil and dialog.showStatus ~= nil then
+        dialog:showStatus(text, isError == true)
+        return
+    end
+    table.insert(self.pendingUserMessages, { text = text, isError = isError == true })
+end
+
+---Show queued messages as in-game notifications, but only while no WM dialog is open.
+function WorkflowManager:flushUserMessages()
+    if #self.pendingUserMessages == 0 then return end
+    if WMHud ~= nil and (WMHud.openDialogCount or 0) > 0 then return end
+    if g_currentMission == nil or g_currentMission.hud == nil or g_currentMission.addIngameNotification == nil then
+        return
+    end
+    for _, message in ipairs(self.pendingUserMessages) do
+        local notificationType = message.isError and FSBaseMission.INGAME_NOTIFICATION_CRITICAL
+            or FSBaseMission.INGAME_NOTIFICATION_OK
+        g_currentMission:addIngameNotification(notificationType, message.text)
+    end
+    self.pendingUserMessages = {}
+end
+
+---Localize a message key and fill its %s placeholders. Missing arguments become "?", so a
+---call site and a translation disagreeing on the count can never raise a format error.
+---@param key string i18n key
+---@param args table|nil Argument strings
+---@return string text
+function WorkflowManager:formatUserMessage(key, args)
+    local text = g_i18n:getText(key) or key
+    local _, needed = string.gsub(text, "%%s", "")
+    if needed == 0 then return text end
+    local values = {}
+    for i = 1, needed do
+        local value = args ~= nil and args[i] or nil
+        values[i] = value ~= nil and tostring(value) or "?"
+    end
+    return string.format(text, unpack(values))
+end
+
+---Display name of a vehicle for player messages
+---@param vehicle table|nil
+---@return string name
+function WorkflowManager:getVehicleDisplayName(vehicle)
+    if vehicle ~= nil and vehicle.getName ~= nil then
+        return vehicle:getName()
+    end
+    return "?"
+end
+
+---Tell every player of the vehicle's farm about a problem (server side). Each machine
+---localizes the key itself, so the arguments travel as plain strings.
+---@param vehicle table Vehicle the message is about
+---@param isError boolean true = error, false = info
+---@param key string i18n key (placeholders: %s only)
+---@param ... any Arguments for the placeholders
+function WorkflowManager:notifyFarm(vehicle, isError, key, ...)
+    local args = {}
+    for i = 1, select("#", ...) do
+        local value = select(i, ...)
+        args[i] = value ~= nil and tostring(value) or ""
+    end
+    local farmId = vehicle ~= nil and vehicle.getOwnerFarmId ~= nil and vehicle:getOwnerFarmId() or nil
+
+    if g_server ~= nil and WMUserMessageEvent ~= nil then
+        -- Clients filter by farm on arrival (same as the base game's AI job notifications)
+        g_server:broadcastEvent(WMUserMessageEvent.new(farmId or 0, key, isError, args), false)
+    end
+    self:showFarmMessage(farmId, key, args, isError)
+end
+
+---Show a farm message if the local player belongs to that farm. A dedicated server has no
+---local player and shows nothing.
+---@param farmId number|nil
+---@param key string i18n key
+---@param args table Argument strings
+---@param isError boolean
+function WorkflowManager:showFarmMessage(farmId, key, args, isError)
+    if g_localPlayer == nil then return end
+    if farmId ~= nil and farmId ~= 0 and g_localPlayer.farmId ~= nil and g_localPlayer.farmId ~= farmId then
+        return
+    end
+    self:showUserMessage(self:formatUserMessage(key, args), isError)
+end
+
 -- FS25 Event Listeners
 
 ---Called when map is loaded
@@ -1074,8 +1280,9 @@ function WorkflowManager:deleteMap()
 
     self:releaseADForShutdown()
 
-    -- Save workflows
-    self:saveWorkflows()
+    -- No save here: every in-game change is written when it is made, and the game save hook
+    -- writes on save. Saving on quit would overwrite edits made with the web editor (and
+    -- write even when the player quits without saving).
 
     -- Cleanup new dialog-based GUI
     self.mainDialog = nil
@@ -1099,6 +1306,8 @@ function WorkflowManager:deleteMap()
     -- Reset remaining state
     self.guiVisible = false
     self.globalActionsRegistered = false
+    self.globalGuiEventId = nil
+    self.pendingUserMessages = {}
     self.isShuttingDown = false
 
     WMLogger:info("WorkflowManager cleanup completed")
@@ -1122,6 +1331,9 @@ function WorkflowManager:update(dt)
 
     -- Update in-vehicle HUD
     WMHud:update(dt)
+
+    -- Messages raised while a WM dialog was open or during loading
+    self:flushUserMessages()
 end
 
 ---Called for drawing
@@ -1159,7 +1371,7 @@ if FSBaseMission.saveSavegame ~= nil then
     FSBaseMission.saveSavegame = Utils.appendedFunction(FSBaseMission.saveSavegame, function()
         if WorkflowManager.isInitialized then
             WMLogger:info("Game saving - persisting workflows")
-            WorkflowManager:saveWorkflows()
+            WorkflowManager:onSavegameSaved()
         end
     end)
     WMLogger:info("Hooked FSBaseMission.saveSavegame for auto-save")

@@ -33,6 +33,7 @@ describe("WMMainDialog", function()
     -- Records what onClickNew / onClickEdit did, without touching the real manager
     local shown
     local notifications
+    local userMessages   -- WorkflowManager:showUserMessage calls (queued for after the dialog)
     local mouseCursorShown
     local events   -- ordered log of "close" / "start" for the start-flow ordering contract
 
@@ -61,7 +62,10 @@ describe("WMMainDialog", function()
             -- Models the async start contract: onStarted fires only when the start command
             -- is actually dispatched. startDeferred simulates a mode/leader dialog still
             -- being open (or the player cancelling it): flow initiated, nothing started yet.
-            canStartWorkflow = function(self) return self.startResult end,
+            canStartWorkflow = function(self)
+                if self.startResult then return true end
+                return false, "wm_warning_no_vehicle"
+            end,
             startWorkflow = function(self, id, onStarted)
                 table.insert(events, "start")
                 if self.startResult and not self.startDeferred and onStarted then onStarted() end
@@ -79,7 +83,21 @@ describe("WMMainDialog", function()
             end,
             showMainDialog = function() table.insert(events, "reopenMain") end,
             saveWorkflows  = function() table.insert(events, "save") end,
+            -- The file is the source of truth: reload, change, save
+            reloadWorkflows = function() table.insert(events, "reload") end,
+            applyWorkflowChange = function(self, change)
+                table.insert(events, "reload")
+                change()
+                table.insert(events, "save")
+            end,
+            registerWorkflow = function(self, wf) table.insert(events, "register") end,
+            deleteWorkflow = function(self, id) table.insert(events, "delete:" .. id) end,
+            stopWorkflow = function(self, id) table.insert(events, "stop:" .. id) end,
+            showUserMessage = function(self, text, isError)
+                table.insert(userMessages, { text = text, isError = isError })
+            end,
         }
+        userMessages = {}
 
         notifications = {}
         _G.FSBaseMission = { INGAME_NOTIFICATION_OK = 1, INGAME_NOTIFICATION_CRITICAL = 2 }
@@ -105,6 +123,11 @@ describe("WMMainDialog", function()
         d.closed = false
         d.close = function(self) self.closed = true; table.insert(events, "close") end
         d.workflowList = nil   -- refreshWorkflowList early-returns without a list
+        d.statusText = {
+            text = nil, color = nil,
+            setText = function(self, t) self.text = t end,
+            setTextColor = function(self, r, g, b, a) self.color = { r, g, b, a } end,
+        }
         return d
     end
 
@@ -181,12 +204,13 @@ describe("WMMainDialog", function()
             assert.is_true(d.closed)
         end)
 
-        it("still notifies the player that the workflow started", function()
+        it("still tells the player that the workflow started (queued, the dialog is closed)", function()
             WorkflowManager.startResult = true
             local d = makeStartDialog()
             d:onClickStart()
-            assert.are.equal(1, #notifications)
-            assert.are.equal(FSBaseMission.INGAME_NOTIFICATION_OK, notifications[1].kind)
+            assert.are.equal(1, #userMessages)
+            assert.is_false(userMessages[1].isError)
+            assert.are.equal(0, #notifications)
         end)
 
         it("hands the mouse cursor to the HUD so it stays clickable", function()
@@ -212,12 +236,21 @@ describe("WMMainDialog", function()
             assert.are.same({}, events)
         end)
 
-        it("stays open when the start fails", function()
+        it("stays open and shows the reason in its status line when the start fails", function()
             WorkflowManager.startResult = false
             local d = makeStartDialog()
             d:onClickStart()
             assert.is_false(d.closed)
-            assert.are.equal(FSBaseMission.INGAME_NOTIFICATION_CRITICAL, notifications[1].kind)
+            assert.are.equal("wm_warning_no_vehicle", d.statusText.text)
+            assert.are.equal(1, d.statusText.color[1])     -- red
+            assert.are.equal(0.35, d.statusText.color[2])
+        end)
+
+        it("does not use the game's notifications while the dialog is open", function()
+            WorkflowManager.startResult = false
+            local d = makeStartDialog()
+            d:onClickStart()
+            assert.are.equal(0, #notifications)
         end)
 
         it("does NOT claim success while a mode/leader dialog is still deciding (regression)", function()
@@ -230,7 +263,7 @@ describe("WMMainDialog", function()
             WorkflowManager.startDeferred = false
 
             assert.is_true(d.closed)              -- main dialog steps aside for the next dialog
-            assert.are.equal(0, #notifications)   -- but no success message yet
+            assert.are.equal(0, #userMessages)    -- but no success message yet
             assert.is_false(mouseCursorShown)     -- and the cursor was not handed over
         end)
 
@@ -241,6 +274,49 @@ describe("WMMainDialog", function()
             d:onClickStart()
             assert.is_false(d.closed)
             assert.are.equal(0, #notifications)
+        end)
+    end)
+
+    describe("onClickStop", function()
+        it("stops the workflow and reports it in the status line", function()
+            local d = makeDialog()
+            d.workflows = { { id = "wf_1", name = "Harvest", steps = {} } }
+            d.selectedWorkflowIndex = 1
+            d:onClickStop()
+            assert.are.same({ "stop:wf_1" }, events)
+            assert.are.equal("wm_workflow_stopped", d.statusText.text)
+            assert.are.equal(0, #notifications)
+        end)
+    end)
+
+    describe("onOpen", function()
+        it("reloads the workflow file and clears the status line", function()
+            _G.WMLogger = _G.WMLogger or { debug = function() end }
+            local d = makeDialog()
+            d.statusText.text = "old message"
+            d.registerInputEvents = function() end
+            local refreshedAfterReload = false
+            d.refreshWorkflowList = function() refreshedAfterReload = events[#events] == "reload" end
+
+            d:onOpen()
+
+            assert.are.equal("", d.statusText.text)
+            assert.are.same({ "reload" }, events)
+            assert.is_true(refreshedAfterReload)
+        end)
+    end)
+
+    describe("onClickDelete", function()
+        it("deletes through applyWorkflowChange (reload, delete, save)", function()
+            _G.YesNoDialog = { show = function(callback, target) callback(nil, true) end }
+            local d = makeDialog()
+            d.workflows = { { id = "wf_1", name = "Harvest", steps = {} } }
+            d.selectedWorkflowIndex = 1
+            d.refreshWorkflowList = function() end
+
+            d:onClickDelete()
+
+            assert.are.same({ "reload", "delete:wf_1", "save" }, events)
         end)
     end)
 
@@ -271,6 +347,13 @@ describe("WMMainDialog", function()
             WorkflowManager.adCallback({ unloadFillLevel = 0.8 })
             assert.are.equal("reopenMain", events[#events])
             assert.are.equal(0.8, d.workflows[1].adSettings.unloadFillLevel)
+        end)
+
+        it("stores confirmed settings through applyWorkflowChange", function()
+            local d = makeSettingsDialog()
+            d:onClickADSettings()
+            WorkflowManager.adCallback({ unloadFillLevel = 0.8 })
+            assert.are.same({ "close", "showAD", "reload", "register", "save", "reopenMain" }, events)
         end)
 
         it("reopens the main dialog when the settings dialog is cancelled", function()

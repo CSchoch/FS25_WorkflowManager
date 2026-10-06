@@ -104,7 +104,18 @@ describe("WorkflowManagerSpec", function()
                 end
                 return nil
             end,
+            -- Player messages (restore failures)
+            userMessages = {},
+            showUserMessage = function(self, text, isError)
+                table.insert(self.userMessages, { text = text, isError = isError })
+            end,
+            formatUserMessage = function(_, key, args)
+                return key .. ":" .. table.concat(args or {}, "|")
+            end,
+            getVehicleDisplayName = function(_, vehicle) return vehicle:getName() end,
         }
+
+        _G.WMSettings = { showHelpKeys = true }
 
         _G.WMHud = { show = function() end, hide = function() end }
 
@@ -292,6 +303,63 @@ describe("WorkflowManagerSpec", function()
             assert.are.equal(1, #_G.WMLogger.calls.warning)
         end)
 
+        it("tells the player which vehicle could not be restored", function()
+            _G.WorkflowManager.workflows = {}
+
+            local v = makeVehicle("Fendt")
+            WorkflowManagerSpec.onLoad(v, nil)
+            WorkflowManagerSpec.onPostLoad(v, {
+                key = "vehicles.vehicle(0)", resetVehicles = false,
+                xmlFile = makeSavegameXML({ [BASE_KEY .. "#workflowId"] = "wf_ghost" }),
+            })
+
+            assert.are.equal(1, #_G.WorkflowManager.userMessages)
+            assert.are.equal("wm_warning_restore_workflow_missing:wf_ghost|Fendt",
+                _G.WorkflowManager.userMessages[1].text)
+            assert.is_true(_G.WorkflowManager.userMessages[1].isError)
+        end)
+
+        it("restores a support vehicle pinned to an earlier main step (finish before switching)", function()
+            local wf = { id = "wf_pin", name = "Pinned", steps = {} }
+            _G.WorkflowManager.workflows = { wf }
+
+            local v = makeVehicle()
+            WorkflowManagerSpec.onLoad(v, nil)
+            WorkflowManagerSpec.onPostLoad(v, {
+                key = "vehicles.vehicle(0)", resetVehicles = false,
+                xmlFile = makeSavegameXML({
+                    [BASE_KEY .. "#workflowId"]           = "wf_pin",
+                    [BASE_KEY .. "#currentStep"]          = 3,
+                    [BASE_KEY .. "#isMainVehicle"]        = false,
+                    [BASE_KEY .. "#currentSupportStep"]   = 2,
+                    [BASE_KEY .. "#supportMainStepIndex"] = 1,
+                }),
+            })
+
+            local d = v.spec_workflowManagerSpec.wmExecution
+            assert.is_true(d.pendingMainStepSwitch)
+            assert.are.equal(1, d.supportMainStepIndex)
+        end)
+
+        it("restores an unpinned support vehicle without a pending switch", function()
+            local wf = { id = "wf_nopin", name = "Unpinned", steps = {} }
+            _G.WorkflowManager.workflows = { wf }
+
+            local v = makeVehicle()
+            WorkflowManagerSpec.onLoad(v, nil)
+            WorkflowManagerSpec.onPostLoad(v, {
+                key = "vehicles.vehicle(0)", resetVehicles = false,
+                xmlFile = makeSavegameXML({
+                    [BASE_KEY .. "#workflowId"]    = "wf_nopin",
+                    [BASE_KEY .. "#isMainVehicle"] = false,
+                }),
+            })
+
+            local d = v.spec_workflowManagerSpec.wmExecution
+            assert.is_nil(d.pendingMainStepSwitch)
+            assert.is_nil(d.supportMainStepIndex)
+        end)
+
         it("defaults currentStep to 1 when absent from XML", function()
             local wf = { id = "wf_step_dflt", name = "Step Default", steps = {} }
             _G.WorkflowManager.workflows = { wf }
@@ -382,6 +450,26 @@ describe("WorkflowManagerSpec", function()
 
             assert.are.equal(3, xml._data[BASE_KEY .. "#currentSupportStep"])
             assert.is_false(    xml._data[BASE_KEY .. "#isMainVehicle"])
+            assert.is_nil(xml._data[BASE_KEY .. "#supportMainStepIndex"])
+        end)
+
+        it("writes the pinned main step only while a support vehicle finishes a sub-step", function()
+            local wf = { id = "wf_save_pin", name = "Pin Save", steps = {} }
+            local v = makeVehicle()
+            WorkflowManagerSpec.onLoad(v, nil)
+            v.spec_workflowManagerSpec.wmExecution = {
+                workflow              = wf,
+                currentStep           = 3,
+                isMainVehicle         = false,
+                currentSupportStep    = 2,
+                pendingMainStepSwitch = true,
+                supportMainStepIndex  = 1,
+            }
+
+            local xml = makeSavegameXML()
+            WorkflowManagerSpec.saveToXMLFile(v, xml, BASE_KEY, {})
+
+            assert.are.equal(1, xml._data[BASE_KEY .. "#supportMainStepIndex"])
         end)
 
         it("save/restore round-trip preserves all fields", function()
@@ -1052,6 +1140,41 @@ describe("WorkflowManagerSpec", function()
 
             local ok = pcall(WorkflowManagerSpec.onDelete, v)
             assert.is_false(ok)
+        end)
+    end)
+
+    -- =========================================================================
+    -- onRegisterActionEvents: F1 help text follows the "Show keys" option
+    -- =========================================================================
+    describe("onRegisterActionEvents", function()
+        local visibility
+
+        before_each(function()
+            visibility = {}
+            _G.InputAction = { WM_TOGGLE_HUD = "WM_TOGGLE_HUD", WM_TOGGLE_GUI = "WM_TOGGLE_GUI" }
+            _G.g_inputBinding = {
+                setActionEventTextPriority   = function() end,
+                setActionEventTextVisibility = function(_, eventId, visible) visibility[eventId] = visible end,
+            }
+        end)
+
+        it("shows both WM keys in the help window by default", function()
+            local v = makeVehicle()
+            WorkflowManagerSpec.onLoad(v, nil)
+            WorkflowManagerSpec.onRegisterActionEvents(v, true, true)
+            assert.is_true(visibility["eventId_WM_TOGGLE_HUD"])
+            assert.is_true(visibility["eventId_WM_TOGGLE_GUI"])
+        end)
+
+        it("hides them when the option is off but still registers the keys", function()
+            _G.WMSettings.showHelpKeys = false
+            local v = makeVehicle()
+            WorkflowManagerSpec.onLoad(v, nil)
+            WorkflowManagerSpec.onRegisterActionEvents(v, true, true)
+            assert.is_false(visibility["eventId_WM_TOGGLE_HUD"])
+            assert.is_false(visibility["eventId_WM_TOGGLE_GUI"])
+            assert.is_not_nil(v.spec_workflowManagerSpec.actionEvents["WM_TOGGLE_HUD"])
+            assert.is_not_nil(v.spec_workflowManagerSpec.actionEvents["WM_TOGGLE_GUI"])
         end)
     end)
 

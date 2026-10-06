@@ -24,6 +24,9 @@ WMLogger.prefix = "[WorkflowManager]"
 -- Track if we've been initialized from dev config
 WMLogger.initializedFromConfig = false
 
+-- "Debug logging" mod option (WMSettings.debugMode), applied through setDebugMode
+WMLogger.debugMode = false
+
 ---Format a log message with variable arguments
 ---@param message string Format string
 ---@param ... any Arguments for format string
@@ -109,12 +112,22 @@ function WMLogger:initFromDevConfig()
     end
 end
 
----Log an API call (only if enabled in DevConfig)
+---Switch the "Debug logging" mod option on or off. Debug output is on while either the
+---option or the developer config asks for it (a release build has no DevConfig, so there the
+---option alone decides).
+---@param enabled boolean
+function WMLogger:setDebugMode(enabled)
+    self.debugMode = enabled == true
+    local devDebug = WMDevConfig ~= nil and WMDevConfig:isDebugLogging()
+    self.currentLevel = (self.debugMode or devDebug) and self.LEVEL_DEBUG or self.LEVEL_INFO
+end
+
+---Log an API call (only with the debug option on or enabled in DevConfig)
 ---@param apiName string API name (e.g., "AutoDrive", "Courseplay")
 ---@param methodName string Method being called
 ---@param ... any Additional parameters to log
 function WMLogger:apiCall(apiName, methodName, ...)
-    if WMDevConfig ~= nil and WMDevConfig:shouldLogAPICalls() then
+    if self.debugMode or (WMDevConfig ~= nil and WMDevConfig:shouldLogAPICalls()) then
         local params = ""
         local args = {...}
         if #args > 0 then
@@ -128,11 +141,11 @@ function WMLogger:apiCall(apiName, methodName, ...)
     end
 end
 
----Log an event (only if enabled in DevConfig)
+---Log an event (only with the debug option on or enabled in DevConfig)
 ---@param eventType string Event type
 ---@param data table|nil Event data
 function WMLogger:event(eventType, data)
-    if WMDevConfig ~= nil and WMDevConfig:shouldLogEvents() then
+    if self.debugMode or (WMDevConfig ~= nil and WMDevConfig:shouldLogEvents()) then
         local dataStr = ""
         if data ~= nil then
             local parts = {}
@@ -145,12 +158,12 @@ function WMLogger:event(eventType, data)
     end
 end
 
----Log a state change (only if enabled in DevConfig)
+---Log a state change (only with the debug option on or enabled in DevConfig)
 ---@param entity string Entity name (e.g., "Workflow", "Step")
 ---@param oldState string|nil Old state
 ---@param newState string New state
 function WMLogger:stateChange(entity, oldState, newState)
-    if WMDevConfig ~= nil and WMDevConfig:shouldLogStateChanges() then
+    if self.debugMode or (WMDevConfig ~= nil and WMDevConfig:shouldLogStateChanges()) then
         if oldState ~= nil then
             print(string.format("%s [STATE] %s: %s -> %s", self.prefix, entity, oldState, newState))
         else

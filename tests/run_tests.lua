@@ -217,7 +217,9 @@ local testFiles = {
     "tests/specs/CourseplayCoursesLoader_spec.lua",
     "tests/specs/WMConsoleCommands_spec.lua",
     "tests/specs/WMGameSettings_spec.lua",
-    "tests/specs/ModDescInputBindings_spec.lua"
+    "tests/specs/ModDescInputBindings_spec.lua",
+    "tests/specs/WMUserMessageEvent_spec.lua",
+    "tests/specs/Translations_spec.lua"
 }
 
 for _, testFile in ipairs(testFiles) do

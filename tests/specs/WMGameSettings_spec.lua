@@ -85,9 +85,10 @@ describe("WMGameSettings", function()
     end
 
     -- The elements the module injected
-    local function injectedBox()
+    local function injectedBox(id)
+        id = id or "wmCpAutoResume"
         for _, element in ipairs(layout.elements) do
-            if element.id == "wmCpAutoResumeBox" then return element end
+            if element.id == id .. "Box" then return element end
         end
         return nil
     end
@@ -121,6 +122,9 @@ describe("WMGameSettings", function()
             setGui = function() end,
         }
 
+        -- setOption persists to the per-player file
+        _G.getUserProfileAppPath = function() return "/profile/" end
+        _G.createFolder = function() end
         dofile("src/WMSettings.lua")
         dofile("src/gui/WMGameSettings.lua")
     end)
@@ -165,6 +169,19 @@ describe("WMGameSettings", function()
             assert.are.equal("wm_settings_title",                injectedHeader().text)
             assert.are.equal("wm_settings_cpAutoResume",         box.elements[2].text)
             assert.are.equal("wm_settings_cpAutoResume_tooltip", box.elements[1].elements[1].text)
+            assert.are.equal("wm_settings_showHelpKeys",         injectedBox("wmShowHelpKeys").elements[2].text)
+            assert.are.equal("wm_settings_debugMode_tooltip",
+                injectedBox("wmDebugMode").elements[1].elements[1].text)
+        end)
+
+        it("adds one row per option, in order", function()
+            WMGameSettings:ensureMenuInjected()
+
+            assert.is_not_nil(injectedBox("wmCpAutoResume"))
+            assert.is_not_nil(injectedBox("wmShowHelpKeys"))
+            assert.is_not_nil(injectedBox("wmDebugMode"))
+            assert.are.equal(injectedBox("wmShowHelpKeys"), page.controlsList[3])
+            assert.are.equal(injectedBox("wmDebugMode"),    page.controlsList[4])
         end)
 
         it("routes the click callback of the control to WMGameSettings", function()
@@ -173,13 +190,17 @@ describe("WMGameSettings", function()
             local control = injectedBox().elements[1]
             assert.are.equal(WMGameSettings, control.target)
             assert.are.equal("onCpAutoResumeChanged", control.callbacks.onClickCallback)
-            assert.are.equal(control, WMGameSettings.menuControls.cpAutoResume)
+            assert.are.equal(control, WMGameSettings.menuControls.courseplayAutoResume)
+            assert.are.equal("onShowHelpKeysChanged",
+                injectedBox("wmShowHelpKeys").elements[1].callbacks.onClickCallback)
+            assert.are.equal("onDebugModeChanged",
+                injectedBox("wmDebugMode").elements[1].callbacks.onClickCallback)
         end)
 
-        it("registers both elements in the controls list of the page", function()
+        it("registers the header and every row in the controls list of the page", function()
             WMGameSettings:ensureMenuInjected()
 
-            assert.are.equal(2, #page.controlsList)
+            assert.are.equal(4, #page.controlsList)
             assert.are.equal(injectedHeader(), page.controlsList[1])
             assert.are.equal(injectedBox(),    page.controlsList[2])
         end)
@@ -206,14 +227,14 @@ describe("WMGameSettings", function()
             WMGameSettings:ensureMenuInjected()
 
             assert.are.equal(count, #layout.elements)
-            assert.are.equal(2, #page.controlsList)
+            assert.are.equal(4, #page.controlsList)
         end)
 
         it("adopts a control a previous session already injected into the page", function()
             -- A stale copy of this module (previous mission) is still hooked and injects
             -- first; adding a second row would duplicate it in the menu.
             WMGameSettings:ensureMenuInjected()
-            local control = WMGameSettings.menuControls.cpAutoResume
+            local control = WMGameSettings.menuControls.courseplayAutoResume
             local elementCount = #layout.elements
 
             WMGameSettings.menuInjected = false
@@ -223,8 +244,9 @@ describe("WMGameSettings", function()
             WMGameSettings:ensureMenuInjected()
 
             assert.are.equal(elementCount, #layout.elements)
-            assert.are.equal(control, WMGameSettings.menuControls.cpAutoResume)
+            assert.are.equal(control, WMGameSettings.menuControls.courseplayAutoResume)
             assert.are.equal(WMGameSettings, control.target)  -- newest generation owns it
+            assert.is_not_nil(WMGameSettings.menuControls.debugMode)
         end)
 
         it("warns and injects nothing when the vanilla row prefab is missing", function()
@@ -284,6 +306,23 @@ describe("WMGameSettings", function()
             WMGameSettings:refreshMenuState()
             assert.is_true(injectedBox().elements[1].disabled)
         end)
+
+        it("keeps the per-player rows editable on a multiplayer client", function()
+            _G.g_server = nil
+            WMGameSettings:refreshMenuState()
+            assert.is_false(injectedBox("wmShowHelpKeys").elements[1].disabled)
+            assert.is_false(injectedBox("wmDebugMode").elements[1].disabled)
+        end)
+
+        it("shows the stored values of the per-player rows", function()
+            _G.WMSettings.showHelpKeys = false
+            _G.WMSettings.debugMode = true
+
+            WMGameSettings:refreshMenuState()
+
+            assert.is_false(injectedBox("wmShowHelpKeys").elements[1].checked)
+            assert.is_true(injectedBox("wmDebugMode").elements[1].checked)
+        end)
     end)
 
     -- =========================================================================
@@ -301,6 +340,23 @@ describe("WMGameSettings", function()
         it("switches the option off when the box is unchecked", function()
             WMGameSettings:onCpAutoResumeChanged(_G.CheckedOptionElement.STATE_UNCHECKED)
             assert.is_false(_G.WMSettings.courseplayAutoResume)
+        end)
+
+        it("writes the change to the per-player settings file", function()
+            WMGameSettings:onCpAutoResumeChanged(_G.CheckedOptionElement.STATE_UNCHECKED)
+            assert.is_not_nil(XMLFile._getDataForPath("/profile/modSettings/FS25_WorkflowManager.xml"))
+        end)
+    end)
+
+    describe("onShowHelpKeysChanged / onDebugModeChanged", function()
+        it("sets showHelpKeys through the settings model", function()
+            WMGameSettings:onShowHelpKeysChanged(_G.CheckedOptionElement.STATE_UNCHECKED)
+            assert.is_false(_G.WMSettings.showHelpKeys)
+        end)
+
+        it("sets debugMode through the settings model", function()
+            WMGameSettings:onDebugModeChanged(_G.CheckedOptionElement.STATE_CHECKED)
+            assert.is_true(_G.WMSettings.debugMode)
         end)
     end)
 
@@ -391,8 +447,8 @@ describe("WMGameSettings", function()
             WMGameSettings:delete()
 
             assert.is_false(WMGameSettings.menuInjected)
-            assert.is_nil(WMGameSettings.menuControls.cpAutoResume)
-            assert.is_nil(page.wmCpAutoResumeControl)
+            assert.is_nil(WMGameSettings.menuControls.courseplayAutoResume)
+            assert.is_nil(page.wmSettingsControls)
 
             WMGameSettings:ensureMenuInjected()
             assert.is_not_nil(injectedBox())

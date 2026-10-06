@@ -2,7 +2,7 @@
 <GUI inputContext="MENU" onOpen="onOpen" onClose="onClose" onCreate="onCreate">
     <GuiElement profile="newLayer"/>
     <Bitmap profile="dialogFullscreenBg"/>
-    <GuiElement profile="fs25_dialogBg" size="900px 990px">
+    <GuiElement profile="fs25_dialogBg" size="900px 1030px">
         <ThreePartBitmap profile="fs25_dialogBgMiddleSmall"/>
         <ThreePartBitmap profile="fs25_dialogBgTopSmall"/>
         <ThreePartBitmap profile="fs25_dialogBgBottom"/>
@@ -66,6 +66,12 @@
             <BoxLayout profile="wm_hBox" id="seedTypeRow" size="860px 45px">
                 <Text profile="wm_dialogText" text="$l10n_wm_editor_seed_type" size="150px 40px"/>
                 <MultiTextOption profile="fs25_settingsMultiTextOption" id="seedTypeDropdown" onStateChanged="onSeedTypeChanged" size="500px 40px"/>
+            </BoxLayout>
+
+            <!-- Finish before switching (conditional: support sub-steps that run an AD/CP job) -->
+            <BoxLayout profile="wm_hBox" id="finishBeforeSwitchRow" size="860px 45px">
+                <Text profile="wm_dialogText" text="$l10n_wm_editor_finish_before_switch" size="150px 40px"/>
+                <MultiTextOption profile="fs25_settingsMultiTextOption" id="finishBeforeSwitchDropdown" onStateChanged="onFinishBeforeSwitchChanged" size="500px 40px"/>
             </BoxLayout>
 
             <!-- Unload Target Section (conditional) -->
@@ -145,6 +151,9 @@
                     </ThreePartBitmap>
                 </BoxLayout>
             </BoxLayout>
+
+            <!-- Status line: errors and infos while the dialog is open -->
+            <Text profile="wm_statusText" id="statusText" text="" size="860px 30px" textOffset="8px 0px"/>
 
         </BoxLayout>
 

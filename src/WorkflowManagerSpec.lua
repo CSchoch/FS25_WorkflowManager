@@ -73,8 +73,12 @@ function WorkflowManagerSpec:onPostLoad(savegame)
             local isMainVehicle = savegame.xmlFile:getValue(key .. "#isMainVehicle")
             if isMainVehicle == nil then isMainVehicle = true end  -- default: main role
             local currentSupportStep = nil
+            -- Support vehicle finishing a sub-step of a main step main had already left
+            -- ("finish before switching"): currentSupportStep indexes that step's list
+            local supportMainStepIndex = nil
             if not isMainVehicle then
                 currentSupportStep = savegame.xmlFile:getValue(key .. "#currentSupportStep") or 1
+                supportMainStepIndex = savegame.xmlFile:getValue(key .. "#supportMainStepIndex")
             end
 
             local leaderVehicle = nil
@@ -205,6 +209,8 @@ function WorkflowManagerSpec:onPostLoad(savegame)
                 autoResumeUntil         = restoredAutoResume,
                 cpWasRunningAtSave      = cpWasRunningAtSave,
                 cpResumeWaypoint        = cpResumeWaypoint,
+                pendingMainStepSwitch   = supportMainStepIndex ~= nil or nil,
+                supportMainStepIndex    = supportMainStepIndex,
             }
             WMExecutor.activeVehicles[self] = true
             WMHud:show(self)
@@ -213,6 +219,9 @@ function WorkflowManagerSpec:onPostLoad(savegame)
                 self.getName and self:getName() or "unknown")
         else
             WMLogger:warning("Cannot restore workflow: id '%s' not found", workflowId)
+            WorkflowManager:showUserMessage(WorkflowManager:formatUserMessage(
+                "wm_warning_restore_workflow_missing",
+                { workflowId, WorkflowManager:getVehicleDisplayName(self) }), true)
         end
     end
 end
@@ -246,6 +255,9 @@ function WorkflowManagerSpec:saveToXMLFile(xmlFile, key, usedModNames)
     xmlFile:setValue(key .. "#isMainVehicle", activeData.isMainVehicle ~= false)
     if activeData.isMainVehicle == false then
         xmlFile:setValue(key .. "#currentSupportStep", activeData.currentSupportStep or 1)
+        if activeData.pendingMainStepSwitch and activeData.supportMainStepIndex ~= nil then
+            xmlFile:setValue(key .. "#supportMainStepIndex", activeData.supportMainStepIndex)
+        end
     end
     -- Save wait statuses so vehicles are restored correctly and the auto-resume path
     -- (which bypasses sync logic) is never triggered on reload.
@@ -435,7 +447,7 @@ function WorkflowManagerSpec:onRegisterActionEvents(isActiveForInput, isActiveFo
 
     if hudEventId ~= nil then
         g_inputBinding:setActionEventTextPriority(hudEventId, GS_PRIO_HIGH)
-        g_inputBinding:setActionEventTextVisibility(hudEventId, true)
+        g_inputBinding:setActionEventTextVisibility(hudEventId, WMSettings.showHelpKeys ~= false)
     end
 
     -- Register WM_TOGGLE_GUI action so the main dialog is also accessible from vehicles
@@ -453,7 +465,7 @@ function WorkflowManagerSpec:onRegisterActionEvents(isActiveForInput, isActiveFo
 
     if guiEventId ~= nil then
         g_inputBinding:setActionEventTextPriority(guiEventId, GS_PRIO_HIGH)
-        g_inputBinding:setActionEventTextVisibility(guiEventId, true)
+        g_inputBinding:setActionEventTextVisibility(guiEventId, WMSettings.showHelpKeys ~= false)
     end
 
     -- Show HUD when player enters a vehicle that has an active workflow
@@ -589,6 +601,8 @@ function WorkflowManagerSpec.initSpecialization()
         "Workflow status at save time (only written for waiting_for_leader)")
     schema:register(XMLValueType.INT, key .. "#waitingForMainStepIndex",
         "Main vehicle step index when support entered WAITING_FOR_MAIN (support vehicles only)")
+    schema:register(XMLValueType.INT, key .. "#supportMainStepIndex",
+        "Main step whose sub-step a support vehicle finishes before following main (support vehicles only)")
     schema:register(XMLValueType.BOOL, key .. "#cpWasRunning",
         "true = Courseplay was driving this vehicle at save time (Courseplay never auto-resumes)")
     schema:register(XMLValueType.INT, key .. "#cpResumeWaypoint",

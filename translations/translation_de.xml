@@ -80,6 +80,9 @@
         <text name="wm_editor_return_target" text="Zurueck zu"/>
         <text name="wm_editor_fill_type" text="Fuelltyp"/>
         <text name="wm_editor_seed_type" text="Saatgut"/>
+        <text name="wm_editor_finish_before_switch" text="Vor dem Wechsel abschliessen"/>
+        <text name="wm_option_no" text="Nein"/>
+        <text name="wm_option_yes" text="Ja"/>
         <text name="wm_editor_no_steps" text="Keine Schritte definiert. Klicken Sie +, um einen Schritt hinzuzufuegen."/>
 
         <!-- Tooltips -->
@@ -124,7 +127,6 @@
         <text name="wm_workflow_resumed" text="Workflow fortgesetzt: %s (Schritt %d)"/>
         <text name="wm_workflow_stopped" text="Workflow gestoppt: %s"/>
         <text name="wm_workflow_reset" text="Workflow zurückgesetzt: %s"/>
-        <text name="wm_workflow_error" text="Workflow-Fehler: %s"/>
         <text name="wm_workflows_count" text="%d Workflow(s)"/>
         <text name="wm_new_workflow_name" text="Neuer Workflow"/>
         <text name="wm_unnamed" text="Unbenannt"/>
@@ -138,7 +140,24 @@
         <text name="wm_warning_incompatible_vehicle" text="Fahrzeug '%s' benoetigt AutoDrive + Courseplay"/>
         <text name="wm_warning_incompatible_vehicle_cp" text="Fahrzeug '%s' benoetigt Courseplay"/>
         <text name="wm_warning_vehicle_busy" text="Fahrzeug fuehrt bereits einen Workflow aus"/>
-        <text name="wm_warning_workflow_running" text="Speichern nicht moeglich: Workflow laeuft gerade. Bitte zuerst stoppen."/>
+        <text name="wm_warning_workflow_not_found" text="Workflow nicht gefunden - eventuell wurde er aus der Datei entfernt"/>
+        <text name="wm_warning_no_steps" text="Workflow '%s' hat keine Schritte"/>
+        <text name="wm_info_workflow_removed" text="Workflow '%s' wurde aus der Datei entfernt und gestoppt"/>
+        <text name="wm_warning_restore_workflow_missing" text="Workflow '%s' existiert nicht mehr - '%s' wurde nicht wiederhergestellt"/>
+        <!-- Schritt-Fehler / Warnungen (erstes %s = Fahrzeugname) -->
+        <text name="wm_error_step_failed" text="%s: Workflow-Schritt fehlgeschlagen - siehe log.txt"/>
+        <text name="wm_error_ad_target_not_found" text="%s: AutoDrive-Ziel '%s' nicht gefunden"/>
+        <text name="wm_error_ad_start_failed" text="%s: AutoDrive konnte nicht gestartet werden"/>
+        <text name="wm_error_no_park_position" text="%s: keine AutoDrive-Parkposition fuer Fahrzeug oder Anbaugeraete gesetzt"/>
+        <text name="wm_error_no_repair_station" text="%s: keine Werkstatt per AutoDrive erreichbar"/>
+        <text name="wm_error_seed_type" text="%s: Saatgut '%s' kann an der angehaengten Saemaschine nicht eingestellt werden"/>
+        <text name="wm_error_cp_course_load" text="%s: Courseplay-Kurs '%s' konnte nicht geladen werden"/>
+        <text name="wm_error_cp_start_failed" text="%s: Courseplay-Feldarbeit konnte nicht gestartet werden"/>
+        <text name="wm_error_unknown_step_type" text="%s: unbekannter Schritttyp '%s'"/>
+        <text name="wm_warning_ad_unload_not_found" text="%s: Abladeziel '%s' nicht gefunden - AutoDrive nutzt seine Voreinstellung"/>
+        <text name="wm_warning_cp_course_ambiguous" text="%s: mehrere Kurse heissen '%s' - verwendet wird der in '%s'"/>
+        <text name="wm_info_seed_locked" text="%s: Saatgut ist durch einen Auftrag gesperrt - nicht geaendert"/>
+        <text name="wm_warning_cp_no_resume_waypoint" text="%s: kein gespeicherter Courseplay-Wegpunkt - Workflow bleibt pausiert, bitte Weiter druecken"/>
         <text name="wm_warning_no_target" text="Bitte zuerst ein Ziel auswaehlen"/>
 
         <!-- HUD texts -->
@@ -193,6 +212,10 @@
         <!-- Spieleinstellungen (ESC -> Einstellungen -> Allgemein) -->
         <text name="wm_settings_title" text="Workflow Manager"/>
         <text name="wm_settings_cpAutoResume" text="Courseplay nach dem Laden fortsetzen"/>
-        <text name="wm_settings_cpAutoResume_tooltip" text="Setzt die Courseplay-Feldarbeit nach dem Laden eines Spielstands am gespeicherten Wegpunkt fort. Wenn aus, bleibt der Workflow pausiert, bis du Weiter drueckst."/>
+        <text name="wm_settings_cpAutoResume_tooltip" text="Setzt die Courseplay-Feldarbeit nach dem Laden eines Spielstands am gespeicherten Wegpunkt fort. Wenn aus, bleibt der Workflow pausiert, bis du Weiter drueckst. Gespeichert auf diesem Computer; im Mehrspieler gilt die Einstellung des Hosts."/>
+        <text name="wm_settings_showHelpKeys" text="Tasten im Hilfefenster anzeigen"/>
+        <text name="wm_settings_showHelpKeys_tooltip" text="Zeigt die Workflow-Manager-Tasten im F1-Hilfefenster. Die Tasten funktionieren in jedem Fall."/>
+        <text name="wm_settings_debugMode" text="Debug-Protokoll"/>
+        <text name="wm_settings_debugMode_tooltip" text="Schreibt ausfuehrliche Meldungen in die log.txt, fuer Fehlerberichte. Gilt nur fuer diesen Computer."/>
     </texts>
 </l10n>

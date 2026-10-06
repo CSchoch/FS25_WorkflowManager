@@ -198,6 +198,19 @@ function WMExecutor:buildSyncMaps(activeData)
     activeData.syncTargets = syncTargets
 end
 
+---Workflow definitions were changed while vehicles may be running them (in-game editor Save,
+---or a reload of the workflow file). Running executions hold their workflow by reference and
+---see the new steps already; the followers' leader sync maps are derived from the steps at
+---start, so rebuild them.
+function WMExecutor:onWorkflowDefinitionsChanged()
+    for vehicle, _ in pairs(self.activeVehicles) do
+        local activeData = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
+        if activeData ~= nil and activeData.leaderVehicle ~= nil then
+            self:buildSyncMaps(activeData)
+        end
+    end
+end
+
 ---Snap the leader execution reference and detect a leader that has finished, stopped,
 ---or restarted since being selected. Frees the follower (clears leaderVehicle) as soon
 ---as this is detected, regardless of the follower's current step/status, so it becomes
@@ -516,7 +529,8 @@ function WMExecutor:executeCurrentStep(activeData)
                 tostring(supportSubStep.type))
             self:onStepCompleted(activeData)
         else
-            self:handleStepError(activeData, "Unknown support sub-step type: " .. tostring(supportSubStep.type))
+            self:handleStepError(activeData, "Unknown support sub-step type: " .. tostring(supportSubStep.type),
+                "wm_error_unknown_step_type", supportSubStep.type)
         end
         return
     end
@@ -524,6 +538,14 @@ function WMExecutor:executeCurrentStep(activeData)
     -- ===== Main vehicle path =====
     local step = workflow.steps[activeData.currentStep]
     if step == nil then
+        -- Steps were removed while the workflow ran (in-game editor / web editor): the run is
+        -- past its last step, so finish it instead of leaving the vehicle RUNNING with no job.
+        if activeData.currentStep > #workflow.steps then
+            WMLogger:info("Step %d no longer exists in workflow %s - finishing the workflow",
+                activeData.currentStep, workflow.name)
+            self:onWorkflowCompleted(activeData)
+            return
+        end
         WMLogger:error("Step %d not found in workflow %s", activeData.currentStep, workflow.id)
         return
     end
@@ -598,7 +620,8 @@ function WMExecutor:executeCurrentStep(activeData)
             WorkflowManager:broadcastState(activeData.vehicle)
         end
     else
-        self:handleStepError(activeData, "Unknown step type: " .. tostring(step.type))
+        self:handleStepError(activeData, "Unknown step type: " .. tostring(step.type),
+            "wm_error_unknown_step_type", step.type)
     end
 end
 
@@ -757,7 +780,7 @@ function WMExecutor:startAutoDriveStep(activeData, vehicle, step)
     -- internally anyway, so calling clear first is safe and idempotent.)
     ADIntegration:clearCPHandoff(vehicle)
 
-    local success = ADIntegration:startRoute(
+    local success, errorKey = ADIntegration:startRoute(
         vehicle,
         step.target,
         step.action,
@@ -775,7 +798,8 @@ function WMExecutor:startAutoDriveStep(activeData, vehicle, step)
         ADIntegration:applyWorkflowSettings(vehicle, workflow.adSettings)
         WMLogger:info("AutoDrive step started successfully, waiting for completion")
     else
-        self:handleStepError(activeData, "Failed to start AutoDrive route: " .. (step.target or "nil"))
+        self:handleStepError(activeData, "Failed to start AutoDrive route: " .. (step.target or "nil"),
+            errorKey or "wm_error_ad_start_failed", step.target)
     end
 end
 
@@ -787,8 +811,9 @@ end
 ---@param stepType string WorkflowManager.STEP_PARK / STEP_REFUEL / STEP_REPAIR
 ---@param startRoute function () -> success[, skipped]
 ---@param errorMessage string handleStepError text when the route cannot start
+---@param errorKey string i18n key of the player message when the route cannot start
 ---@param skippedMessage string|nil Log text when the route reports skipped (instant success)
-function WMExecutor:startSimpleADStep(activeData, vehicle, stepType, startRoute, errorMessage, skippedMessage)
+function WMExecutor:startSimpleADStep(activeData, vehicle, stepType, startRoute, errorMessage, errorKey, skippedMessage)
     local workflow = activeData.workflow
 
     ADIntegration:clearCPHandoff(vehicle)
@@ -806,7 +831,7 @@ function WMExecutor:startSimpleADStep(activeData, vehicle, stepType, startRoute,
         WMLogger:info(skippedMessage or (stepType .. " step skipped"))
         self:onStepCompleted(activeData)
     else
-        self:handleStepError(activeData, errorMessage)
+        self:handleStepError(activeData, errorMessage, errorKey)
     end
 end
 
@@ -817,7 +842,8 @@ end
 function WMExecutor:startParkStep(activeData, vehicle, step)
     self:startSimpleADStep(activeData, vehicle, WorkflowManager.STEP_PARK,
         function() return ADIntegration:startParkRoute(vehicle) end,
-        "No park position configured for vehicle or any attached implement")
+        "No park position configured for vehicle or any attached implement",
+        "wm_error_no_park_position")
 end
 
 ---Start a Refuel step (extracted for reuse by deferred start)
@@ -828,6 +854,7 @@ function WMExecutor:startRefuelStep(activeData, vehicle, step)
     self:startSimpleADStep(activeData, vehicle, WorkflowManager.STEP_REFUEL,
         function() return ADIntegration:startRefuelRoute(vehicle) end,
         "AutoDrive not available or vehicle missing AutoDrive specialization",
+        "wm_error_ad_start_failed",
         "Refuel step skipped - vehicle already fueled or no station reachable")
 end
 
@@ -838,7 +865,8 @@ end
 function WMExecutor:startRepairStep(activeData, vehicle, step)
     self:startSimpleADStep(activeData, vehicle, WorkflowManager.STEP_REPAIR,
         function() return ADIntegration:startRepairRoute(vehicle) end,
-        "No repair station reachable for vehicle")
+        "No repair station reachable for vehicle",
+        "wm_error_no_repair_station")
 end
 
 ---Start a Courseplay step (extracted for reuse by deferred start)
@@ -851,7 +879,8 @@ function WMExecutor:startCourseplayStep(activeData, vehicle, step)
     if step.seedFruitType ~= nil and step.seedFruitType ~= "" then
         local seedOk, seedReason = CPIntegration:applySeedFruitType(vehicle, step.seedFruitType)
         if not seedOk then
-            self:handleStepError(activeData, "Cannot set seed type: " .. (seedReason or "unsupported"))
+            self:handleStepError(activeData, "Cannot set seed type: " .. (seedReason or "unsupported"),
+                "wm_error_seed_type", step.seedFruitType)
             return
         end
     end
@@ -877,7 +906,8 @@ function WMExecutor:startCourseplayStep(activeData, vehicle, step)
         WMLogger:info("Loading course for step: %s (current: %s)", step.target or "nil", currentCourse or "none")
         local loadSuccess = CPIntegration:loadCourse(vehicle, step.target)
         if not loadSuccess then
-            self:handleStepError(activeData, "Failed to load Courseplay course: " .. (step.target or "nil"))
+            self:handleStepError(activeData, "Failed to load Courseplay course: " .. (step.target or "nil"),
+                "wm_error_cp_course_load", step.target)
             return
         end
     else
@@ -886,7 +916,8 @@ function WMExecutor:startCourseplayStep(activeData, vehicle, step)
 
     -- Verify course is now loaded
     if not CPIntegration:hasCourse(vehicle) then
-        self:handleStepError(activeData, "Vehicle has no Courseplay course loaded for step: " .. (step.target or "nil"))
+        self:handleStepError(activeData, "Vehicle has no Courseplay course loaded for step: " .. (step.target or "nil"),
+            "wm_error_cp_course_load", step.target)
         return
     end
 
@@ -915,7 +946,7 @@ function WMExecutor:startCourseplayStep(activeData, vehicle, step)
         ADIntegration:setStartCPOnCompletion(vehicle, true)
         WMLogger:info("Courseplay step started successfully, polling for completion")
     else
-        self:handleStepError(activeData, "Failed to start Courseplay field work")
+        self:handleStepError(activeData, "Failed to start Courseplay field work", "wm_error_cp_start_failed")
     end
 end
 
@@ -948,6 +979,8 @@ function WMExecutor:resumeCourseplayAfterLoad(activeData)
             .. "recorded at save time; staying paused (restarting would re-drive the whole course). "
             .. "Use next/previous step to move on.",
             workflow.name, activeData.currentStep)
+        WorkflowManager:notifyFarm(vehicle, true, "wm_warning_cp_no_resume_waypoint",
+            WorkflowManager:getVehicleDisplayName(vehicle))
         return false
     end
 
@@ -1041,6 +1074,19 @@ function WMExecutor:onStepCompleted(activeData)
             return
         end
 
+        -- The sub-step that just finished was allowed to complete although main had moved on
+        -- ("finish before switching"): now follow main to its current step, sub-step 1.
+        if activeData.pendingMainStepSwitch then
+            WMLogger:info("Support vehicle: deferred sub-step finished - following main to step %d",
+                mainActiveData.currentStep)
+            activeData.pendingMainStepSwitch = nil
+            activeData.supportMainStepIndex = nil
+            activeData.currentSupportStep = 1
+            self:executeCurrentStep(activeData)
+            WorkflowManager:broadcastState(activeData.vehicle)
+            return
+        end
+
         local mainStep = workflow.steps[mainActiveData.currentStep]
         local supportSteps = mainStep and mainStep.support or {}
 
@@ -1066,11 +1112,13 @@ function WMExecutor:onStepCompleted(activeData)
     -- ===== Main vehicle: advance currentStep =====
     activeData.currentStep = activeData.currentStep + 1
 
-    -- Helper: notify all support vehicles that main moved to a new step
+    -- Helper: notify all support vehicles that main moved to a new step. Passes the step main
+    -- just finished: currentStep is already incremented, and a support vehicle allowed to
+    -- finish its sub-step first must stay on that step's support list.
     local function notifySupport()
         local supportDataList = self:getSupportActiveDataListForWorkflow(workflow.id)
         for _, supportActiveData in ipairs(supportDataList) do
-            self:onMainStepChanged(supportActiveData, activeData.currentStep)
+            self:onMainStepChanged(supportActiveData, activeData.currentStep, completedStepNum)
         end
     end
 
@@ -1111,12 +1159,18 @@ function WMExecutor:onWorkflowCompleted(activeData)
     })
 end
 
----Handle step error
+---Handle step error: log it, tell the players of the vehicle's farm, stop the workflow.
 ---@param activeData table Per-vehicle execution state
----@param errorMessage string Error message
-function WMExecutor:handleStepError(activeData, errorMessage)
+---@param errorMessage string Error message (log)
+---@param userKey string|nil i18n key of the player message (first %s = vehicle name);
+---       nil = the generic "step failed, see log.txt"
+---@param userArg string|nil Second placeholder of the player message (target, course, ...)
+function WMExecutor:handleStepError(activeData, errorMessage, userKey, userArg)
     local workflow = activeData.workflow
     WMLogger:error("Step error in workflow %s: %s", workflow.name, errorMessage)
+
+    WorkflowManager:notifyFarm(activeData.vehicle, true, userKey or "wm_error_step_failed",
+        WorkflowManager:getVehicleDisplayName(activeData.vehicle), userArg)
 
     activeData.status = WorkflowManager.STATUS_ERROR
 
@@ -1241,15 +1295,9 @@ function WMExecutor:update(dt)
             -- Auto-resume check: poll every tick for the first 10 seconds after restore.
             -- If AD auto-started after load we catch it as soon as it begins running.
             if activeData.status == WorkflowManager.STATUS_PAUSED and activeData.autoResumeUntil ~= nil then
-                -- KNOWN ISSUE (unfixed, pre-dates the CP resume work — see buglog bug-247):
-                -- this reads the MAIN step list directly. For a support vehicle the live step is
-                -- steps[main.currentStep].support[currentSupportStep], so a restored support
-                -- vehicle can auto-resume with the wrong currentStepType (e.g. "autodrive" when
-                -- its sub-step is Courseplay), which then routes completion detection through the
-                -- wrong branch below. self:getCurrentStep(activeData) resolves both roles and is
-                -- what resumeCourseplayAfterLoad uses. Not changed here because it also alters
-                -- the AD auto-resume path for support vehicles and wants its own test pass.
-                local step = workflow.steps[activeData.currentStep]
+                -- getCurrentStep (not workflow.steps[currentStep]) so a support vehicle resumes
+                -- with its own sub-step's type, not the main vehicle's step type.
+                local step = self:getCurrentStep(activeData)
                 local adRunning = step and ADIntegration:isRunning(vehicle)
                 local cpRunning = step and CPIntegration:isRunning(vehicle)
 
@@ -1518,6 +1566,12 @@ function WMExecutor:getCurrentStep(activeData)
     if activeData.isMainVehicle ~= false then
         return workflow.steps[activeData.currentStep]
     else
+        -- Finishing a sub-step of a main step main has already left: resolve through the
+        -- pinned step. Checked first so it still works once the main vehicle is gone.
+        if activeData.pendingMainStepSwitch and activeData.supportMainStepIndex ~= nil then
+            local pinnedStep = workflow.steps[activeData.supportMainStepIndex]
+            return pinnedStep ~= nil and (pinnedStep.support or {})[activeData.currentSupportStep] or nil
+        end
         local mainActiveData = self:getMainActiveDataForWorkflow(workflow.id)
         if mainActiveData == nil then return nil end
         local mainStep = workflow.steps[mainActiveData.currentStep]
@@ -1527,11 +1581,61 @@ function WMExecutor:getCurrentStep(activeData)
     end
 end
 
+---Index of the main step whose support list a support vehicle is working through: the step
+---it is pinned to while finishing a sub-step ("finish before switching"), otherwise main's
+---current step.
+---@param activeData table Support vehicle's execution state
+---@param mainActiveData table Main vehicle's execution state
+---@return number index
+function WMExecutor:getSupportMainStepIndex(activeData, mainActiveData)
+    if activeData.pendingMainStepSwitch and activeData.supportMainStepIndex ~= nil then
+        return activeData.supportMainStepIndex
+    end
+    return mainActiveData.currentStep
+end
+
+---True when a support vehicle should finish its current sub-step before following main:
+---the sub-step is flagged finishBeforeSwitch and actually in progress (running or paused),
+---not idle, waiting or merely staged.
+---@param supportActiveData table Support vehicle's execution state
+---@param mainStepIndex number Main step whose support list the sub-step belongs to
+---@return boolean
+function WMExecutor:shouldFinishSubStepFirst(supportActiveData, mainStepIndex)
+    local status = supportActiveData.status
+    if status ~= WorkflowManager.STATUS_RUNNING and status ~= WorkflowManager.STATUS_PAUSED then
+        return false
+    end
+    if supportActiveData.waitingForMainStep or supportActiveData.pendingExecuteOnResume then
+        return false
+    end
+    local mainStep = supportActiveData.workflow.steps[mainStepIndex]
+    local subStep = mainStep ~= nil and (mainStep.support or {})[supportActiveData.currentSupportStep] or nil
+    return subStep ~= nil and subStep.finishBeforeSwitch == true
+end
+
 ---Called when the main vehicle advances to a new step.
----Stops the current support sub-step, resets to sub-step 1, and executes the new one.
+---Stops the current support sub-step, resets to sub-step 1, and executes the new one -
+---unless the running sub-step is flagged "finish before switching": then the support vehicle
+---stays on it and follows main once it completes (see onStepCompleted).
 ---@param supportActiveData table Support vehicle's execution state
 ---@param newMainStep number New main step index (1-based, for logging)
-function WMExecutor:onMainStepChanged(supportActiveData, newMainStep)
+---@param finishedMainStep number|nil Main step that just completed normally. nil = manual
+---       navigation or idle poll, which always switches immediately.
+function WMExecutor:onMainStepChanged(supportActiveData, newMainStep, finishedMainStep)
+    if finishedMainStep ~= nil then
+        -- Main may advance several times while the sub-step runs: stay on the first pin
+        local pinnedIndex = supportActiveData.pendingMainStepSwitch
+            and supportActiveData.supportMainStepIndex or finishedMainStep
+        if self:shouldFinishSubStepFirst(supportActiveData, pinnedIndex) then
+            supportActiveData.supportMainStepIndex = pinnedIndex
+            supportActiveData.pendingMainStepSwitch = true
+            WMLogger:info("Main step changed to %d - support vehicle finishes sub-step %d.%d first",
+                newMainStep, pinnedIndex, supportActiveData.currentSupportStep)
+            WorkflowManager:broadcastState(supportActiveData.vehicle)
+            return
+        end
+    end
+
     WMLogger:info("Main step changed to %d - resetting support vehicle to sub-step 1", newMainStep)
     self:stopCurrentStep(supportActiveData)
     supportActiveData.currentSupportStep = 1
@@ -1650,6 +1754,8 @@ function WMExecutor:resetStepTrackingState(activeData)
     activeData.waitingForMainStepIndex = nil
     activeData.pendingExecuteOnResume = nil
     activeData.pendingAutoStep = nil
+    activeData.pendingMainStepSwitch = nil
+    activeData.supportMainStepIndex = nil
     -- Post-load CP resume markers are only valid for the step that was running at save time
     activeData.cpWasRunningAtSave = nil
     activeData.cpResumeWaypoint = nil

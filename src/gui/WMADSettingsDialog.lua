@@ -25,7 +25,7 @@ end
 function WMADSettingsDialog:onOpen()
     WMADSettingsDialog:superClass().onOpen(self)
     WMLogger:debug("WMADSettingsDialog:onOpen")
-    WMHud:onDialogOpened()
+    WMHud:onDialogOpened(self)
 
     local s = self.adSettings or {}
 
@@ -46,7 +46,7 @@ end
 function WMADSettingsDialog:onClose()
     WMADSettingsDialog:superClass().onClose(self)
     WMLogger:debug("WMADSettingsDialog:onClose")
-    WMHud:onDialogClosed()
+    WMHud:onDialogClosed(self)
 end
 
 ---Prepare the dialog before showing it.

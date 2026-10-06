@@ -42,8 +42,10 @@ describe("WMStorage", function()
         -- WMHud stub for HUD position save/restore
         _G.WMHud = { x = nil, y = nil }
 
-        -- Real settings module: WMStorage resets and persists it (globals are restored
-        -- between spec files, so this spec has to own it)
+        -- Real settings module: WMStorage hands legacy savegame values to it (globals are
+        -- restored between spec files, so this spec has to own it)
+        _G.getUserProfileAppPath = function() return "/profile/" end
+        _G.createFolder = function() end
         dofile("src/WMSettings.lua")
 
         dofile("src/WorkflowStorage.lua")
@@ -58,6 +60,8 @@ describe("WMStorage", function()
         XMLFile._clearAll()
         _G.WMHud = { x = nil, y = nil }
         _G.WMSettings:reset()
+        _G.WMSettings.storedKeys = {}
+        WMStorage.syncedPath = nil
         -- Default: no file exists on disk
         _G.fileExists = function(path) return false end
         -- Reset logger
@@ -341,53 +345,70 @@ describe("WMStorage", function()
             assert.are.equal("Gamma", loaded[3].name)
         end)
 
-        it("saves and restores HUD position", function()
+        it("writes neither the options nor the HUD position into the workflow file", function()
+            -- Both live in the per-player settings file now
             _G.WMHud.x = 0.75
             _G.WMHud.y = 0.25
-            WMStorage:saveWorkflows({})
-
-            -- Reset HUD state, then load and verify it is restored
-            _G.WMHud.x = nil
-            _G.WMHud.y = nil
-            _G.fileExists = function() return true end
-            WMStorage:loadWorkflows()
-            assert.are.equal(0.75, _G.WMHud.x)
-            assert.are.equal(0.25, _G.WMHud.y)
-        end)
-
-        it("saves and restores the Courseplay auto-resume option", function()
             _G.WMSettings.courseplayAutoResume = false
             WMStorage:saveWorkflows({})
 
-            _G.WMSettings.courseplayAutoResume = true
-            _G.fileExists = function() return true end
-            WMStorage:loadWorkflows()
-
-            assert.is_false(_G.WMSettings.courseplayAutoResume)
+            local f = XMLFile.load("check", WMStorage:getXmlPath())
+            assert.is_nil(f:getBool("WorkflowManager.settings.general#courseplayAutoResume"))
+            assert.is_nil(f:getFloat("WorkflowManager.settings.hud#posX"))
         end)
 
-        it("keeps the option enabled for a file written before it existed", function()
-            -- Save, then strip the attribute the way an older savegame would have it
-            WMStorage:saveWorkflows({})
-            local data = XMLFile._getDataForPath(WMStorage:getXmlPath())
-            data.WorkflowManager.settings["general#courseplayAutoResume"] = nil
-
-            _G.WMSettings.courseplayAutoResume = false
-            _G.fileExists = function() return true end
-            WMStorage:loadWorkflows()
-
-            assert.is_true(_G.WMSettings.courseplayAutoResume)
-        end)
-
-        it("resets the option to its default when no file exists", function()
-            -- Options are per savegame: a value from the previously loaded savegame must
-            -- not survive into one that has no settings of its own.
+        it("leaves the per-player options alone when loading a savegame", function()
+            -- Options are no longer per savegame: loading one must not reset them
             _G.WMSettings.courseplayAutoResume = false
             _G.fileExists = function() return false end
 
             WMStorage:loadWorkflows()
 
+            assert.is_false(_G.WMSettings.courseplayAutoResume)
+        end)
+
+        it("adopts the Courseplay auto-resume option from a savegame written before the move", function()
+            local f = XMLFile.create("workflowManager", WMStorage:getXmlPath(), "WorkflowManager")
+            f:setBool("WorkflowManager.settings.general#courseplayAutoResume", false)
+            _G.fileExists = function() return true end
+
+            WMStorage:loadWorkflows()
+
+            assert.is_false(_G.WMSettings.courseplayAutoResume)
+            assert.is_true(_G.WMSettings.storedKeys.courseplayAutoResume)
+        end)
+
+        it("ignores the savegame's option once the per-player file has it", function()
+            local f = XMLFile.create("workflowManager", WMStorage:getXmlPath(), "WorkflowManager")
+            f:setBool("WorkflowManager.settings.general#courseplayAutoResume", false)
+            _G.WMSettings.storedKeys.courseplayAutoResume = true
+            _G.fileExists = function() return true end
+
+            WMStorage:loadWorkflows()
+
             assert.is_true(_G.WMSettings.courseplayAutoResume)
+        end)
+
+        it("keeps the option enabled for a savegame that never stored it", function()
+            WMStorage:saveWorkflows({})
+            _G.fileExists = function() return true end
+
+            WMStorage:loadWorkflows()
+
+            assert.is_true(_G.WMSettings.courseplayAutoResume)
+            assert.is_nil(_G.WMSettings.storedKeys.courseplayAutoResume)
+        end)
+
+        it("adopts the HUD position from a savegame written before the move", function()
+            local f = XMLFile.create("workflowManager", WMStorage:getXmlPath(), "WorkflowManager")
+            f:setFloat("WorkflowManager.settings.hud#posX", 0.75)
+            f:setFloat("WorkflowManager.settings.hud#posY", 0.25)
+            _G.fileExists = function() return true end
+
+            WMStorage:loadWorkflows()
+
+            assert.are.equal(0.75, _G.WMHud.x)
+            assert.are.equal(0.25, _G.WMHud.y)
         end)
 
         it("persists adSettings when all three fields are set", function()
@@ -904,6 +925,153 @@ describe("WMStorage", function()
             assert.are.equal(0.85, ads.unloadFillLevel)
             assert.are.equal(-1.5, ads.pipeOffset)
             assert.are.equal(0.6,  ads.preCallLevel)
+        end)
+    end)
+    -- =========================================================================
+    -- Read status / disk sync (used by WorkflowManager:reloadWorkflows)
+    -- =========================================================================
+    describe("read status and disk sync", function()
+        it("reports a missing file as read but not found", function()
+            _G.fileExists = function() return false end
+            local workflows, fileRead, fileFound = WMStorage:loadWorkflows()
+            assert.are.equal(0, #workflows)
+            assert.is_true(fileRead)
+            assert.is_false(fileFound)
+        end)
+
+        it("reports an unreadable file as not read", function()
+            -- fileExists says yes, but XMLFile.load has nothing for the path
+            _G.fileExists = function() return true end
+            local workflows, fileRead = WMStorage:loadWorkflows()
+            assert.are.equal(0, #workflows)
+            assert.is_false(fileRead)
+        end)
+
+        it("reports a loaded file as read", function()
+            WMStorage:saveWorkflows({ { id = "wf_r", name = "R", steps = {} } })
+            _G.fileExists = function() return true end
+            local workflows, fileRead, fileFound = WMStorage:loadWorkflows()
+            assert.are.equal(1, #workflows)
+            assert.is_true(fileRead)
+            assert.is_true(fileFound)
+        end)
+
+        it("is not in sync before anything was loaded or saved", function()
+            assert.is_false(WMStorage:isInSyncWithDisk())
+        end)
+
+        it("is in sync after a load and after a save", function()
+            _G.fileExists = function() return false end
+            WMStorage:loadWorkflows()
+            assert.is_true(WMStorage:isInSyncWithDisk())
+
+            WMStorage.syncedPath = nil
+            WMStorage:saveWorkflows({})
+            assert.is_true(WMStorage:isInSyncWithDisk())
+        end)
+
+        it("is not in sync after a failed read", function()
+            _G.fileExists = function() return true end
+            WMStorage:loadWorkflows()
+            assert.is_false(WMStorage:isInSyncWithDisk())
+        end)
+
+        it("is not in sync once the savegame path changed (save into another slot)", function()
+            _G.g_currentMission.missionInfo = { savegameDirectory = "/saves/slot1" }
+            WMStorage:saveWorkflows({})
+            _G.g_currentMission.missionInfo = { savegameDirectory = "/saves/slot2" }
+            assert.is_false(WMStorage:isInSyncWithDisk())
+            _G.g_currentMission.missionInfo = nil
+        end)
+
+        -- bug-306: FS25 writes a save into an empty "tempsavegame" folder and copies it into
+        -- the slot afterwards. Treating that folder as the workflow file wiped every workflow
+        -- on the second save of a session.
+        describe("game save through the tempsavegame folder", function()
+            local SLOT_FILE = "/profile/savegame2/workflowManager.xml"
+            local TEMP_FILE = "/profile/tempsavegame/workflowManager.xml"
+            local inSlot = { savegameDirectory = "/profile/savegame2", savegameIndex = 2 }
+            local saving = { savegameDirectory = "/profile/tempsavegame", savegameIndex = 2 }
+
+            it("resolves the slot file from the savegame index, also while saving", function()
+                _G.g_currentMission.missionInfo = saving
+                assert.are.equal(SLOT_FILE, WMStorage:getSlotXmlPath())
+                assert.are.equal(TEMP_FILE, WMStorage:getXmlPath())
+                _G.g_currentMission.missionInfo = nil
+            end)
+
+            it("writes into the temp folder but stays in sync with the slot", function()
+                _G.g_currentMission.missionInfo = saving
+                WMStorage:saveWorkflows({ { id = "wf_t", name = "T", steps = {} } })
+                assert.is_not_nil(XMLFile._getDataForPath(TEMP_FILE))
+                assert.is_true(WMStorage:isInSyncWithDisk())
+
+                _G.g_currentMission.missionInfo = inSlot  -- save finished
+                assert.is_true(WMStorage:isInSyncWithDisk())
+                _G.g_currentMission.missionInfo = nil
+            end)
+
+            it("reads the slot file, never the empty temp folder, on a second save", function()
+                _G.g_currentMission.missionInfo = inSlot
+                WMStorage:saveWorkflows({ { id = "wf_keep", name = "Keep", steps = {} } })
+                _G.fileExists = function(path) return path == SLOT_FILE end
+
+                _G.g_currentMission.missionInfo = saving
+                local workflows, fileRead, fileFound = WMStorage:loadWorkflows()
+
+                assert.is_true(fileRead)
+                assert.is_true(fileFound)
+                assert.are.equal(1, #workflows)
+                assert.are.equal("wf_keep", workflows[1].id)
+                _G.g_currentMission.missionInfo = nil
+            end)
+
+            it("is not in sync after switching to another slot", function()
+                _G.g_currentMission.missionInfo = inSlot
+                WMStorage:saveWorkflows({})
+                _G.g_currentMission.missionInfo = { savegameDirectory = "/profile/savegame3", savegameIndex = 3 }
+                assert.is_false(WMStorage:isInSyncWithDisk())
+                _G.g_currentMission.missionInfo = nil
+            end)
+        end)
+
+        it("init forgets the synced path", function()
+            WMStorage:saveWorkflows({})
+            WMStorage:init()
+            assert.is_false(WMStorage:isInSyncWithDisk())
+        end)
+    end)
+
+    -- =========================================================================
+    -- finishBeforeSwitch (support sub-steps only)
+    -- =========================================================================
+    describe("finishBeforeSwitch", function()
+        local function workflowWithSupport(flag)
+            return { id = "wf_fbs", name = "FBS", steps = {
+                { type = "courseplay", target = "F1", action = "fieldwork", support = {
+                    { type = "autodrive", target = "Silo", action = "drive", finishBeforeSwitch = flag },
+                } },
+            } }
+        end
+
+        it("round-trips the flag on a support sub-step", function()
+            WMStorage:saveWorkflows({ workflowWithSupport(true) })
+            _G.fileExists = function() return true end
+            local loaded = WMStorage:loadWorkflows()
+            assert.is_true(loaded[1].steps[1].support[1].finishBeforeSwitch)
+        end)
+
+        it("writes nothing when the flag is off, and reads that back as false", function()
+            WMStorage:saveWorkflows({ workflowWithSupport(false) })
+            local data = XMLFile._getDataForPath(WMStorage:getXmlPath())
+            -- The mock keeps "<element>(i)#<attr>" path tails as one key
+            local step = data.WorkflowManager.workflows.workflow[1].step[1]
+            assert.are.equal("autodrive", step["support(0)#type"])
+            assert.is_nil(step["support(0)#finishBeforeSwitch"])
+
+            _G.fileExists = function() return true end
+            local loaded = WMStorage:loadWorkflows()
+            assert.is_false(loaded[1].steps[1].support[1].finishBeforeSwitch)
         end)
     end)
 end)

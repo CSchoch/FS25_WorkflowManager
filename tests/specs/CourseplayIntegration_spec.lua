@@ -12,8 +12,21 @@
 
 describe("CPIntegration (course resolution)", function()
 
+    local farmMessages
+
     setup(function()
         dofile("src/integration/CourseplayIntegration.lua")
+    end)
+
+    before_each(function()
+        -- Configuration warnings go to the vehicle's farm through WorkflowManager
+        farmMessages = {}
+        _G.WorkflowManager = {
+            notifyFarm = function(_, vehicle, isError, key, ...)
+                table.insert(farmMessages, { isError = isError, key = key, args = { ... } })
+            end,
+            getVehicleDisplayName = function() return "Tractor" end,
+        }
     end)
 
     -- -------------------------------------------------------------------------
@@ -227,6 +240,28 @@ describe("CPIntegration (course resolution)", function()
             local f34  = folder("F34", { file("Kalken") })
             local root = view({ folder("SomeOtherRootName", { f09, f34 }) })
             assert.are.equal(f34.getEntries()[1], CPIntegration:findCourseEntry(root, "F34", "Kalken"))
+        end)
+
+        it("reports the chosen folder when the name is ambiguous", function()
+            local root = makeLegacyStorage()
+            local _, ambiguousFolder = CPIntegration:findCourseEntry(root, "", "Kalken")
+            assert.are.equal("Singleplayer/F09", ambiguousFolder)
+        end)
+
+        it("reports no ambiguity for a unique match", function()
+            local root = makeLegacyStorage()
+            local entry, ambiguousFolder = CPIntegration:findCourseEntry(root, "F34", "Kalken")
+            assert.is_not_nil(entry)
+            assert.is_nil(ambiguousFolder)
+        end)
+
+        it("tells the farm which course it picked when loading an ambiguous name", function()
+            local root = makeLegacyStorage()
+            local v = makeVehicle()
+            assert.is_true(CPIntegration:loadCourseFromStorage(v, { rootDirectoryView = root }, "Kalken"))
+            assert.are.equal(1, #farmMessages)
+            assert.are.equal("wm_warning_cp_course_ambiguous", farmMessages[1].key)
+            assert.are.same({ "Tractor", "Kalken", "Singleplayer/F09" }, farmMessages[1].args)
         end)
     end)
 
@@ -543,6 +578,14 @@ describe("CPIntegration (course resolution)", function()
                 local s = seeder("Seeder", {WHEAT}, false)
                 assert.is_true(CPIntegration:applySeedFruitType(vehicleWith({s}), "WHEAT"))
                 assert.is_nil(s.applied)
+            end)
+
+            it("tells the farm (as info) that a mission locked the seed", function()
+                local s = seeder("Seeder", {WHEAT}, false)
+                CPIntegration:applySeedFruitType(vehicleWith({s}), "WHEAT")
+                assert.are.equal(1, #farmMessages)
+                assert.are.equal("wm_info_seed_locked", farmMessages[1].key)
+                assert.is_false(farmMessages[1].isError)
             end)
 
             it("fails for an unknown fruit type name", function()

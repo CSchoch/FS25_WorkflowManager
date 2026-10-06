@@ -57,6 +57,55 @@ describe("WMLogger", function()
         _G.print = capturingPrint
         WMLogger.currentLevel = WMLogger.LEVEL_INFO
         WMLogger.initializedFromConfig = false
+        WMLogger.debugMode = false
+        _G.WMDevConfig.isDebugLogging = function() return false end
+        _G.WMDevConfig.shouldLogAPICalls = function() return false end
+        _G.WMDevConfig.shouldLogEvents = function() return false end
+        _G.WMDevConfig.shouldLogStateChanges = function() return false end
+    end)
+
+    -- =========================================================================
+    -- setDebugMode ("Debug logging" mod option)
+    -- =========================================================================
+    describe("setDebugMode", function()
+        it("switches to DEBUG level when the option is turned on", function()
+            WMLogger:setDebugMode(true)
+            assert.are.equal(WMLogger.LEVEL_DEBUG, WMLogger.currentLevel)
+            assert.is_true(WMLogger.debugMode)
+        end)
+
+        it("returns to INFO level when the option is turned off", function()
+            WMLogger:setDebugMode(true)
+            WMLogger:setDebugMode(false)
+            assert.are.equal(WMLogger.LEVEL_INFO, WMLogger.currentLevel)
+        end)
+
+        it("keeps DEBUG level when the developer config asks for it", function()
+            _G.WMDevConfig.isDebugLogging = function() return true end
+            WMLogger:setDebugMode(false)
+            assert.are.equal(WMLogger.LEVEL_DEBUG, WMLogger.currentLevel)
+        end)
+
+        it("logs API calls, events and state changes with every dev flag off", function()
+            -- A release build has no DevConfig flags at all; the option alone decides
+            WMLogger:setDebugMode(true)
+
+            WMLogger:apiCall("AutoDrive", "StartDriving")
+            WMLogger:event("STEP", nil)
+            WMLogger:stateChange("Workflow", "ready", "running")
+
+            assert.are.equal(3, #_G._loggerTestOutput)
+        end)
+
+        it("stays silent for those lines when both the option and the dev flags are off", function()
+            WMLogger:setDebugMode(false)
+
+            WMLogger:apiCall("AutoDrive", "StartDriving")
+            WMLogger:event("STEP", nil)
+            WMLogger:stateChange("Workflow", "ready", "running")
+
+            assert.are.equal(0, #_G._loggerTestOutput)
+        end)
     end)
 
     describe("log level constants", function()

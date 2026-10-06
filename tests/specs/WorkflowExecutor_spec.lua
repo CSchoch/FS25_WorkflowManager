@@ -51,6 +51,14 @@ describe("WMExecutor (real)", function()
                     or stepType == self.STEP_UNLOCK_FOLLOWER
             end,
             broadcastState            = function() end,
+            -- Player messages: recorded so tests can assert the key/args the farm is told
+            farmMessages              = {},
+            notifyFarm = function(self, vehicle, isError, key, ...)
+                table.insert(self.farmMessages, { vehicle = vehicle, isError = isError, key = key, args = { ... } })
+            end,
+            getVehicleDisplayName = function(self, vehicle)
+                return vehicle ~= nil and vehicle.getName ~= nil and vehicle:getName() or "?"
+            end,
         }
 
         -- Executor runs server-side only; make tests act as the server
@@ -150,6 +158,8 @@ describe("WMExecutor (real)", function()
 
         -- Mod options gate the post-load Courseplay restart; start every test at the defaults
         _G.WMSettings:reset()
+
+        _G.WorkflowManager.farmMessages = {}
 
         -- Reset logger call tracking
         _G.WMLogger.calls = { debug = {}, info = {}, warning = {}, error = {} }
@@ -2817,6 +2827,39 @@ describe("WMExecutor (real)", function()
             assert.are.equal(88, CPIntegration._seededWaypoints[support])
         end)
 
+        it("auto-resumes a support vehicle with its own sub-step type, not main's (bug-247)", function()
+            -- Main step 1 is AutoDrive; the support's sub-step is Courseplay and CP restarted on
+            -- its own inside the window. Reading workflow.steps[currentStep] directly took
+            -- "autodrive", routing completion detection through the wrong branch.
+            local wf = {
+                id = "wf_support_autoresume", name = "Support auto-resume",
+                steps = {
+                    { type = "autodrive", target = "Farm", action = "drive", support = {
+                        { type = "courseplay", target = "Field9", action = "fieldwork" },
+                    }},
+                },
+            }
+            local main = restoreVehicle(wf, { name = "Main", currentStep = 1 })
+            activeData(main).status = WorkflowManager.STATUS_RUNNING
+            activeData(main).autoResumeUntil = nil
+
+            local support = restoreVehicle(wf, {
+                name = "Support", isMainVehicle = false,
+                currentStep = 1, currentSupportStep = 1,
+            })
+
+            local origIsRunning = CPIntegration.isRunning
+            CPIntegration.isRunning = function(_, v) return v == support end
+            _G.g_currentMission.time = 5000  -- still inside the window
+            triggerPoll()
+            CPIntegration.isRunning = origIsRunning
+
+            local d = activeData(support)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, d.status)
+            assert.are.equal(WorkflowManager.STEP_COURSEPLAY, d.currentStepType)
+            assert.is_true(d.cpWasRunning)
+        end)
+
         it("manual Resume restarts CP instead of skipping the step", function()
             -- Previously this path attached monitoring to a job that was never running, so the
             -- completion poll saw "never started" and marked the field work complete.
@@ -2969,6 +3012,288 @@ describe("WMExecutor (real)", function()
 
             assert.are.equal("applySeedFruitType", table.concat(CPIntegration._callLog, ","))
             assert.is_false(CPIntegration:isRunning(v))
+        end)
+    end)
+
+    -- Replace a field of a SHARED mock table for the duration of body, restoring it even when
+    -- an assertion fails (the shared mocks would otherwise leak into later tests/specs).
+    local function stubbed(tbl, key, fn, body)
+        local orig = tbl[key]
+        tbl[key] = fn
+        local ok, err = pcall(body)
+        tbl[key] = orig
+        if not ok then error(err, 0) end
+    end
+
+    -- =========================================================================
+    -- "Finish before switching" on support sub-steps
+    -- =========================================================================
+    describe("finish before switching", function()
+        -- Every main step has support work; sub-step 1.1 carries the flag
+        local function makeFbsWorkflow(id, flag)
+            return {
+                id = id, name = "FBS",
+                steps = {
+                    { type = "autodrive", target = "Farm", action = "drive", support = {
+                        { type = "autodrive", target = "Silo", action = "deliver", finishBeforeSwitch = flag },
+                        { type = "autodrive", target = "Yard", action = "drive" },
+                    }},
+                    { type = "autodrive", target = "Field", action = "drive", support = {
+                        { type = "autodrive", target = "Field", action = "unload" },
+                    }},
+                    { type = "autodrive", target = "Farm2", action = "drive", support = {
+                        { type = "autodrive", target = "Farm2", action = "unload" },
+                    }},
+                },
+            }
+        end
+
+        -- Main on step 1, support running sub-step 1.1
+        local function startPair(id, flag)
+            local wf = makeFbsWorkflow(id, flag)
+            local vm, vs = makeVehicle("Main"), makeVehicle("Support")
+            WMExecutor:startWorkflow(wf, vm, true)
+            WMExecutor:startWorkflow(wf, vs, false)
+            return wf, vm, vs
+        end
+
+        local function countStops(vehicle, body)
+            local stops = 0
+            stubbed(ADIntegration, "stopRoute", function(_, v) if v == vehicle then stops = stops + 1 end end, body)
+            return stops
+        end
+
+        it("keeps the support vehicle on its flagged sub-step when main finishes a step", function()
+            local _, vm, vs = startPair("wf_fbs1", true)
+            local stops = countStops(vs, function() WMExecutor:onStepCompleted(activeData(vm)) end)
+
+            local d = activeData(vs)
+            assert.are.equal(0, stops)
+            assert.is_true(d.pendingMainStepSwitch)
+            assert.are.equal(1, d.supportMainStepIndex)
+            assert.are.equal(1, d.currentSupportStep)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, d.status)
+        end)
+
+        it("resolves the current sub-step through the pinned main step", function()
+            local _, vm, vs = startPair("wf_fbs2", true)
+            WMExecutor:onStepCompleted(activeData(vm))
+            assert.are.equal("Silo", WMExecutor:getCurrentStep(activeData(vs)).target)
+            assert.are.equal(1, WMExecutor:getSupportMainStepIndex(activeData(vs), activeData(vm)))
+        end)
+
+        it("follows main to sub-step 1 of its current step once the sub-step is done", function()
+            local _, vm, vs = startPair("wf_fbs3", true)
+            WMExecutor:onStepCompleted(activeData(vm))
+
+            WMExecutor:onStepCompleted(activeData(vs))
+
+            local d = activeData(vs)
+            assert.is_nil(d.pendingMainStepSwitch)
+            assert.is_nil(d.supportMainStepIndex)
+            assert.are.equal(1, d.currentSupportStep)
+            assert.are.equal("Field", WMExecutor:getCurrentStep(d).target)
+            assert.is_true(d.waitingForCompletion)
+        end)
+
+        it("skips the steps main passed meanwhile and joins main's current step", function()
+            local _, vm, vs = startPair("wf_fbs4", true)
+            WMExecutor:onStepCompleted(activeData(vm))   -- main 1 -> 2
+            WMExecutor:onStepCompleted(activeData(vm))   -- main 2 -> 3
+            assert.are.equal(1, activeData(vs).supportMainStepIndex)
+
+            WMExecutor:onStepCompleted(activeData(vs))
+
+            assert.are.equal("Farm2", WMExecutor:getCurrentStep(activeData(vs)).target)
+        end)
+
+        it("switches immediately when the sub-step is not flagged (unchanged behaviour)", function()
+            local _, vm, vs = startPair("wf_fbs5", false)
+            local stops = countStops(vs, function() WMExecutor:onStepCompleted(activeData(vm)) end)
+
+            local d = activeData(vs)
+            assert.are.equal(1, stops)
+            assert.is_nil(d.pendingMainStepSwitch)
+            assert.are.equal("Field", WMExecutor:getCurrentStep(d).target)
+        end)
+
+        it("does not affect the support vehicle's own progress within the same main step", function()
+            local _, _, vs = startPair("wf_fbs6", true)
+            WMExecutor:onStepCompleted(activeData(vs))
+            assert.are.equal(2, activeData(vs).currentSupportStep)
+            assert.are.equal("Yard", WMExecutor:getCurrentStep(activeData(vs)).target)
+        end)
+
+        it("manual step navigation still switches at once and stops the pinned job", function()
+            local _, vm, vs = startPair("wf_fbs7", true)
+            WMExecutor:onStepCompleted(activeData(vm))
+
+            local stops = countStops(vs, function() WMExecutor:goToNextStep(vm) end)
+
+            local d = activeData(vs)
+            assert.are.equal(1, stops)
+            assert.is_nil(d.pendingMainStepSwitch)
+            assert.are.equal(1, d.currentSupportStep)
+        end)
+
+        it("a paused support vehicle keeps its sub-step and finishes it after Resume", function()
+            local _, vm, vs = startPair("wf_fbs8", true)
+            WMExecutor:pauseWorkflow(vs)
+            WMExecutor:onStepCompleted(activeData(vm))
+
+            local d = activeData(vs)
+            assert.is_true(d.pendingMainStepSwitch)
+            assert.is_nil(d.pendingExecuteOnResume)
+
+            WMExecutor:resumeWorkflow(vs)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, d.status)
+            assert.are.equal("Silo", WMExecutor:getCurrentStep(d).target)
+
+            WMExecutor:onStepCompleted(d)
+            assert.are.equal("Field", WMExecutor:getCurrentStep(d).target)
+        end)
+
+        it("finishes the sub-step and then stops when main completed the whole workflow", function()
+            local _, vm, vs = startPair("wf_fbs9", true)
+            WMExecutor:onStepCompleted(activeData(vm))
+            WMExecutor:onWorkflowCompleted(activeData(vm))
+
+            -- Still finishing: the pinned sub-step resolves without a main vehicle
+            assert.are.equal("Silo", WMExecutor:getCurrentStep(activeData(vs)).target)
+
+            WMExecutor:onStepCompleted(activeData(vs))
+            assert.is_nil(activeData(vs))
+        end)
+
+        it("switches at once when the flag was removed while the sub-step was finishing", function()
+            local wf, vm, vs = startPair("wf_fbs10", true)
+            WMExecutor:onStepCompleted(activeData(vm))
+            wf.steps[1].support[1].finishBeforeSwitch = false   -- live edit
+
+            local stops = countStops(vs, function() WMExecutor:onStepCompleted(activeData(vm)) end)
+
+            local d = activeData(vs)
+            assert.are.equal(1, stops)
+            assert.is_nil(d.pendingMainStepSwitch)
+            assert.are.equal("Farm2", WMExecutor:getCurrentStep(d).target)
+        end)
+
+        it("does not defer an idle support vehicle", function()
+            local _, vm, vs = startPair("wf_fbs11", true)
+            local d = activeData(vs)
+            d.status = WorkflowManager.STATUS_WAITING_FOR_MAIN
+            d.waitingForMainStep = true
+
+            WMExecutor:onStepCompleted(activeData(vm))
+
+            assert.is_nil(d.pendingMainStepSwitch)
+        end)
+
+        it("resetStepTrackingState clears the pending switch", function()
+            local _, vm, vs = startPair("wf_fbs12", true)
+            WMExecutor:onStepCompleted(activeData(vm))
+            WMExecutor:resetStepTrackingState(activeData(vs))
+            assert.is_nil(activeData(vs).pendingMainStepSwitch)
+            assert.is_nil(activeData(vs).supportMainStepIndex)
+        end)
+    end)
+
+    -- =========================================================================
+    -- Edits to a running workflow (no edit lock)
+    -- =========================================================================
+    describe("workflow edited while running", function()
+        it("finishes the workflow when the current step was removed", function()
+            local wf = makeWorkflow("wf_shrunk")
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(wf, v)
+            activeData(v).currentStep = 3
+            table.remove(wf.steps)   -- only 2 steps left
+
+            WMExecutor:executeCurrentStep(activeData(v))
+
+            assert.is_nil(activeData(v))
+        end)
+
+        it("onWorkflowDefinitionsChanged rebuilds the followers' sync maps", function()
+            local leaderWf, followerWf = makeLeaderWF("wf_l_edit"), makeFollowerWF("wf_f_edit")
+            local vl, vf = makeVehicle("Leader"), makeVehicle("Follower")
+            WMExecutor:startWorkflow(leaderWf, vl)
+            WMExecutor:startWorkflow(followerWf, vf, true, vl)
+            -- Edit: a second wait marker at the end of the follower workflow
+            table.insert(followerWf.steps, { type = "wait_for_leader", target = "", support = {} })
+
+            WMExecutor:onWorkflowDefinitionsChanged()
+
+            assert.are.equal(2, activeData(vf).syncSourceOrdinals[4])
+        end)
+    end)
+
+    -- =========================================================================
+    -- Step errors reach the vehicle's farm
+    -- =========================================================================
+    describe("step error messages", function()
+        it("handleStepError tells the farm, with the generic message by default", function()
+            local v = makeVehicle("Fendt")
+            WMExecutor:startWorkflow(makeWorkflow("wf_err1"), v)
+            WorkflowManager.farmMessages = {}
+
+            WMExecutor:handleStepError(activeData(v), "boom")
+
+            local m = WorkflowManager.farmMessages[1]
+            assert.are.equal("wm_error_step_failed", m.key)
+            assert.is_true(m.isError)
+            assert.are.equal(v, m.vehicle)
+            assert.are.equal("Fendt", m.args[1])
+        end)
+
+        it("passes AutoDrive's destination-not-found key and the target", function()
+            local v = makeVehicle()
+            stubbed(ADIntegration, "startRoute", function() return false, "wm_error_ad_target_not_found" end, function()
+                WMExecutor:startWorkflow(makeWorkflow("wf_err2"), v)
+            end)
+            local m = WorkflowManager.farmMessages[1]
+            assert.are.equal("wm_error_ad_target_not_found", m.key)
+            assert.are.equal("Farm", m.args[2])
+        end)
+
+        it("uses the AutoDrive start message for other AutoDrive failures", function()
+            local v = makeVehicle()
+            stubbed(ADIntegration, "startRoute", function() return false end, function()
+                WMExecutor:startWorkflow(makeWorkflow("wf_err3"), v)
+            end)
+            assert.are.equal("wm_error_ad_start_failed", WorkflowManager.farmMessages[1].key)
+        end)
+
+        it("reports a missing park position", function()
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(makeWorkflow("wf_err4"), v)
+            WorkflowManager.farmMessages = {}
+            stubbed(ADIntegration, "startParkRoute", function() return false end, function()
+                WMExecutor:startParkStep(activeData(v), v, { type = "park", target = "" })
+            end)
+            assert.are.equal("wm_error_no_park_position", WorkflowManager.farmMessages[1].key)
+        end)
+
+        it("reports a course that could not be loaded, with its name", function()
+            local v = makeVehicle()
+            WMExecutor:startWorkflow(makeWorkflow("wf_err5"), v)
+            WorkflowManager.farmMessages = {}
+            stubbed(CPIntegration, "loadCourse", function() return false end, function()
+                WMExecutor:startCourseplayStep(activeData(v), v,
+                    { type = "courseplay", target = "F34/Kalken", action = "fieldwork" })
+            end)
+            local m = WorkflowManager.farmMessages[1]
+            assert.are.equal("wm_error_cp_course_load", m.key)
+            assert.are.equal("F34/Kalken", m.args[2])
+        end)
+
+        it("reports an unknown step type", function()
+            local v = makeVehicle()
+            local wf = { id = "wf_err6", name = "Bad", steps = { { type = "teleport", target = "", support = {} } } }
+            WMExecutor:startWorkflow(wf, v)
+            local m = WorkflowManager.farmMessages[1]
+            assert.are.equal("wm_error_unknown_step_type", m.key)
+            assert.are.equal("teleport", m.args[2])
         end)
     end)
 

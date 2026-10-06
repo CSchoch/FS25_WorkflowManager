@@ -48,11 +48,11 @@ Individual runners: `tests\run_executor_spec.lua`, `tests\run_storage_spec.lua`,
 | --- | --- |
 | `EventHandler_spec.lua` | WMEventHandler (subscribe, fire, remove) |
 | `Logger_spec.lua` | WMLogger (levels, formatting, api/event/state helpers) |
-| `WMSettings_spec.lua` | WMSettings defaults, reset, Courseplay auto-resume accessor |
+| `WMSettings_spec.lua` | WMSettings defaults, per-player file load/save, setOption/apply, one-time legacy adoption from a savegame |
 | `WorkflowStorage_spec.lua` | WMStorage save/load, adSettings, mod options, old-format migration |
 | `WorkflowManager_spec.lua` | CRUD, vehicle validation, network command dispatch |
 | `WorkflowManagerADRequirement_spec.lua` | Real `workflowNeedsAutoDrive` / `isVehicleValid`: AutoDrive is required only for workflows that use AD-driven steps |
-| `WorkflowManagerLifecycle_spec.lua` | Real module: DevConfig sourced only if present, `loadDialog`, literal dialog XML paths, `releaseADForShutdown` (skips deleted vehicles, never stops CP) |
+| `WorkflowManagerLifecycle_spec.lua` | Real module: DevConfig sourced only if present, `loadDialog`, literal dialog XML paths, `releaseADForShutdown` (skips deleted vehicles, never stops CP), `reloadWorkflows` merge, `applyWorkflowChange`, save hook / no save in `deleteMap`, start-validation reasons, player messages (`showUserMessage`, `notifyFarm`), help-key visibility |
 | `WorkflowExecutor_spec.lua` | Full state machine: start/stop/pause/resume/step nav, support vehicles, MP roles |
 | `AutoDriveIntegration_spec.lua` | AD destinations, park/refuel/repair route resolution |
 | `WorkflowManagerSpec_spec.lua` | Vehicle spec: onLoad, onPostLoad, saveToXMLFile, onWriteStream/onReadStream, onDelete |
@@ -65,8 +65,10 @@ Individual runners: `tests\run_executor_spec.lua`, `tests\run_storage_spec.lua`,
 | `CourseplayIntegration_spec.lua` | Course entry resolution from the root view, legacy-name fallback, folder navigation, seed type selection |
 | `CourseplayCoursesLoader_spec.lua` | Course enumeration from the root view, root-relative names |
 | `WMConsoleCommands_spec.lua` | Console command registration/removal; wmPrintState reports the executor's real sync gate |
-| `WMGameSettings_spec.lua` | Settings-row injection: clones the vanilla row/header, focus ids, controls list, MP read-only, hook-once, delete |
+| `WMGameSettings_spec.lua` | Settings-row injection: clones the vanilla row/header (one row per option), focus ids, controls list, MP read-only for server-only options, hook-once, delete |
 | `ModDescInputBindings_spec.lua` | modDesc hotkey defaults: Edit is KEY_t, Stop is KEY_k; no `WM_GUI_*` action on a confirmed menu-owned key (Q/E/X) |
+| `WMUserMessageEvent_spec.lua` | Server -> client farm message event: stream round trip, ignored on the server |
+| `Translations_spec.lua` | Every `wm_` key in en and de, equal `%s` counts, all player-message keys present |
 
 **Courseplay resume after savegame load:** Courseplay never auto-resumes — it overwrites the
 base-game `AIFieldWorker#isActive` to `false` at save time on purpose. It also only writes its own
@@ -80,17 +82,24 @@ must happen **after** any course load (loading a course clears CP's remembered i
 ordering in `startCourseplayStep`. With no recorded waypoint the workflow deliberately stays
 PAUSED rather than restarting from scratch.
 
-Current total: **793**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
+Current total: **936**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
 or they will not run.
 
-**Mod options (game settings):** `WMSettings` holds the player-facing options; `WMGameSettings`
-appends rows to the base game's **General** settings list on the first
-`InGameMenuSettingsFrame:onFrameOpen`. The rows are **clones of the vanilla ones** — page is
+**Mod options (game settings):** `WMSettings` holds the player-facing options
+(`courseplayAutoResume`, `showHelpKeys`, `debugMode`) plus the HUD position; `WMGameSettings`
+appends one row per entry of `WMGameSettings.ROWS` to the base game's **General** settings list on
+the first `InGameMenuSettingsFrame:onFrameOpen`. The rows are **clones of the vanilla ones** — page is
 `g_gui.screenControllers[InGameMenu].pageSettings`, layout is `page.generalSettingsLayout`, the
 row prefab is `page.checkWoodHarvesterAutoCutBox` and the header prefab is the layout element
-named `sectionHeader` — so there is no GUI XML of our own. Values are persisted per savegame by
-`WMStorage` under `WorkflowManager.settings.general`, so in multiplayer the server's savegame is
-authoritative and the control is disabled for clients (`g_server == nil`).
+named `sectionHeader` — so there is no GUI XML of our own. Values are stored **per player /
+machine** in `getUserProfileAppPath() .. "modSettings/FS25_WorkflowManager.xml"`
+(`WMSettings:loadUserSettings` at `init`, `setOption` saves immediately), not in the savegame. A
+`settings` block in an old `workflowManager.xml` is adopted once (`adoptLegacySetting` /
+`adoptLegacyHudPosition`, only while the per-player file lacks the key). `courseplayAutoResume`
+gates server-side behaviour, so in MP the host's value applies and that row (`serverOnly`) is
+disabled for clients; the other rows are each player's own. `debugMode` → `WMLogger:setDebugMode`
+(DEBUG level + API/event/state lines, ORed with DevConfig); `showHelpKeys` →
+`WorkflowManager:applyHelpKeyVisibility` (updates the registered events in place).
 `courseplayAutoResume` gates **only** the automatic post-load Courseplay restart in
 `WMExecutor:update`; the manual Resume path must keep calling `resumeCourseplayAfterLoad` or it
 falls through to the monitor branch and marks the field work complete.
@@ -130,10 +139,38 @@ real types after AD is removed. A new step then defaults to Courseplay/`fieldwor
 AutoDrive/`drive`, or the dropdown and the saved step disagree. Every `ADIntegration` entry point
 already early-outs on `isAvailable` / `vehicle.ad == nil`, so nothing else needs guarding.
 
+**Workflow file is the source of truth (web editor while the game runs):**
+`WorkflowManager:reloadWorkflows()` re-reads `workflowManager.xml` and merges it **in place by id**
+(a running execution holds `activeData.workflow` by reference and sees new steps; removed ids stop
+every vehicle running them). It runs on main-dialog open and inside
+`applyWorkflowChange(fn)` (reload → change → save), which every in-game write goes through (editor
+Save, Delete, AD/CP settings). Reads and the sync identity use the **slot** file (`WMStorage:getSlotXmlPath`, from `savegameIndex`), writes go to `savegameDirectory` — during a game save that is FS25's empty `tempsavegame` folder, and reading it once wiped every workflow. A missing file is never merged (`loadWorkflows` returns `workflows, fileRead, fileFound`; reload keeps the in-memory list). Server only; skipped when `WMStorage:isInSyncWithDisk()` is false
+(save into another slot) or the read failed (`loadWorkflows` returns `workflows, fileRead`).
+`deleteMap` does **not** save. There is **no edit lock**: Save works on running workflows;
+`executeCurrentStep` finishes a workflow whose current step was deleted, and
+`WMExecutor:onWorkflowDefinitionsChanged` rebuilds follower sync maps.
+
+**Player messages:** never call `showBlinkingWarning` / `addIngameNotification` directly — use
+`WorkflowManager:showUserMessage(text, isError)` (open WM dialog's `showStatus` line, else queued
+and flushed as a notification once no WM dialog is open; `WMHud.activeDialog` tracks the dialog).
+Step/config errors from the executor go through `handleStepError(activeData, msg, userKey, userArg)`
+→ `notifyFarm` → `WMUserMessageEvent` (i18n key + string args, filtered by
+`g_localPlayer.farmId` on each machine). Message keys use `%s` only; `formatUserMessage` pads
+missing args with `?`.
+
+**Finish before switching:** support sub-step flag `finishBeforeSwitch` (`#finishBeforeSwitch`,
+written only when true). `onMainStepChanged(sad, newStep, finishedMainStep)` pins the support
+vehicle (`pendingMainStepSwitch`, `supportMainStepIndex`) instead of stopping it; the pin is read
+**first** in `getCurrentStep` (works after main is gone) and cleared in `onStepCompleted` (then
+sub-step 1 of main's *current* step) and `resetStepTrackingState`. Only a normal main completion
+passes `finishedMainStep`; manual navigation and the idle poll pass nil and switch at once. The
+pin is saved as `#supportMainStepIndex`.
+
 **Workflow lifecycle:** `WorkflowManager:buildWorkflow(name)` returns an *unregistered* workflow;
 `registerWorkflow(wf)` adds it to the list (idempotent by id); `createWorkflow(name)` is both at once.
 The editor's New flow deliberately uses `buildWorkflow` and defers registration to Save, so Cancel
-leaves no trace — do not "simplify" it back to `createWorkflow`.
+leaves no trace — do not "simplify" it back to `createWorkflow`. `commitToSource` calls
+`registerWorkflow` on every Save, which also re-adds a workflow removed from the file meanwhile.
 
 **Test framework note**: `run_tests.lua` snapshots and restores **all of `_G`** around every spec file — globals a spec adds are removed, globals it replaces are restored. Every spec must therefore own its stubs (never rely on a module or stub leaked by an earlier spec file). Loading real modules via `dofile` in `setup()` is fine; mutating the *insides* of a shared mock table still leaks, so restore those in the spec itself.
 
@@ -204,4 +241,4 @@ For multi-step tasks, state a brief plan:
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
-**Last updated**: 2026-05-20
+**Last updated**: 2026-10-04

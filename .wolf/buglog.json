@@ -4066,13 +4066,12 @@
     {
       "id": "bug-247",
       "timestamp": "2026-08-19T20:40:00.000Z",
-      "error_message": "OPEN / NOT FIXED - after a savegame load, a restored SUPPORT vehicle can auto-resume with the wrong currentStepType.",
+      "error_message": "FIXED 2026-10-05 - after a savegame load, a restored SUPPORT vehicle can auto-resume with the wrong currentStepType.",
       "file": "src/WorkflowExecutor.lua (WMExecutor:update, auto-resume branch)",
       "root_cause": "The auto-resume poll reads the step as workflow.steps[activeData.currentStep], i.e. the MAIN vehicle step list. For a support vehicle the live step is workflow.steps[main.currentStep].support[activeData.currentSupportStep]. If AD or CP is detected running inside the 10s window, activeData.currentStepType is set from the main step instead of the support sub-step, so completion detection afterwards runs through the wrong per-step-type branch (e.g. AD route polling for what is really a CP sub-step). WMExecutor:getCurrentStep already resolves both roles correctly.",
-      "fix": "NOT APPLIED - documented only. A KNOWN ISSUE comment marks the line. The fix is to use self:getCurrentStep(activeData) there, but it also changes the AutoDrive auto-resume path for support vehicles, so it needs its own test pass and was kept out of the Courseplay resume-after-load change. New code added in that change (WMExecutor:resumeCourseplayAfterLoad) already uses getCurrentStep and has a regression test covering the support-vehicle case.",
+      "fix": "2026-10-05: the auto-resume poll in WMExecutor:update now uses self:getCurrentStep(activeData); KNOWN ISSUE comment removed. Regression test 'auto-resumes a support vehicle with its own sub-step type, not main's (bug-247)' in WorkflowExecutor_spec (main step AD, support sub-step CP, CP restarts in the window -> currentStepType courseplay). If main's execution is not restored yet, getCurrentStep returns nil and the poll simply keeps waiting until the window expires.",
       "tags": [
-        "open",
-        "not-fixed",
+        "fixed",
         "support-vehicle",
         "savegame",
         "auto-resume",
@@ -4854,6 +4853,395 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-09-24T09:10:00Z"
+    },
+    {
+      "id": "bug-293",
+      "timestamp": "2026-10-04T21:24:08.800Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowStorage.lua",
+      "root_cause": "8 lines replaced/restructured",
+      "fix": "Rewrote 15→8 lines (8 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-04T21:24:08.800Z"
+    },
+    {
+      "id": "bug-294",
+      "timestamp": "2026-10-04T21:25:06.207Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/gui/WMGameSettings.lua",
+      "root_cause": "9 lines replaced/restructured",
+      "fix": "Rewrote 18→30 lines (9 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-04T21:25:06.207Z"
+    },
+    {
+      "id": "bug-295",
+      "timestamp": "2026-10-04T21:25:07.386Z",
+      "error_message": "Wrong reference: wmCpAutoResumeControl should be wmSettingsControls",
+      "file": "src/gui/WMGameSettings.lua",
+      "root_cause": "Used \"wmCpAutoResumeControl\" instead of \"wmSettingsControls\"",
+      "fix": "Changed wmCpAutoResumeControl → wmSettingsControls",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-04T21:25:07.387Z"
+    },
+    {
+      "id": "bug-296",
+      "timestamp": "2026-10-04T21:25:32.178Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/gui/WMHud.lua",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 10→17 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-04T21:25:32.178Z"
+    },
+    {
+      "id": "bug-297",
+      "timestamp": "2026-10-04T21:26:40.686Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowManager.lua",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 15→16 lines (4 removed) | Also: -- Show in-game warning to user; local warningText = g_i18n:getText(\"wm_warning_no_ | Also: -- Save workflows; self:saveWorkflows()",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-10-04T21:27:40.810Z"
+    },
+    {
+      "id": "bug-298",
+      "timestamp": "2026-10-04T21:28:48.909Z",
+      "error_message": "Significant refactor of ",
+      "file": "tests/specs/WorkflowStorage_spec.lua",
+      "root_cause": "12 lines replaced/restructured",
+      "fix": "Rewrote 48→64 lines (12 removed) | Also: -- Real settings module: WMStorage resets and pers; -- between spec files, so this spec has to own it) | Also: local data = XMLFile._getDataForPath(WMStorage:get; assert.is_nil(data.WorkflowManager.settings)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-10-04T21:29:32.785Z"
+    },
+    {
+      "id": "bug-299",
+      "timestamp": "2026-10-04T23:55:00Z",
+      "error_message": "Main dialog start failure showed the literal text 'Workflow error: %s' as a critical notification behind the open dialog",
+      "file": "src/gui/WMMainDialog.lua",
+      "root_cause": "onClickStart passed g_i18n:getText('wm_workflow_error') (a '%s' template) to addIngameNotification without string.format, and the real reason (no vehicle / busy / incompatible) was a separate blinking warning hidden behind the dialog",
+      "fix": "resolveStartTarget/canStartWorkflow now return the localized reason; the dialog shows it in its own status line. wm_workflow_error removed from both translations",
+      "tags": [
+        "gui",
+        "i18n",
+        "notification",
+        "dialog",
+        "status-line"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-04T23:55:00Z"
+    },
+    {
+      "id": "bug-300",
+      "timestamp": "2026-10-04T23:55:00Z",
+      "error_message": "Configuration errors (course not found, no park position, unknown AD destination, seeder cannot sow) only reached log.txt - the vehicle silently stopped",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "handleStepError logged, fired EVENT_STEP_ERROR (no subscriber) and stopped the workflow; nothing told the player",
+      "fix": "handleStepError(activeData, msg, userKey, userArg) calls WorkflowManager:notifyFarm, which broadcasts WMUserMessageEvent (i18n key + string args) and shows it locally to players of the vehicle's farm; integrations report non-fatal config warnings the same way",
+      "tags": [
+        "executor",
+        "error-handling",
+        "multiplayer",
+        "notification",
+        "config"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-04T23:55:00Z"
+    },
+    {
+      "id": "bug-301",
+      "timestamp": "2026-10-04T23:55:00Z",
+      "error_message": "Edits made with the web editor while the game ran were overwritten: on quit (even without saving), on every game save, and on a HUD drag",
+      "file": "src/WorkflowManager.lua",
+      "root_cause": "The workflow file was read only at loadMap; deleteMap, the saveSavegame hook and WMHud's drag end all rewrote the whole file from the in-memory copy. MP clients also wrote workflowManager.xml into the mod folder on a HUD drag (getXmlPath fallback)",
+      "fix": "reloadWorkflows merges the file in place by id on main-dialog open and inside applyWorkflowChange (reload -> change -> save) for every in-game write; save hook reloads first when isInSyncWithDisk; deleteMap no longer saves; HUD position moved to the per-player settings file",
+      "tags": [
+        "storage",
+        "webeditor",
+        "reload",
+        "save",
+        "multiplayer"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-04T23:55:00Z"
+    },
+    {
+      "id": "bug-302",
+      "timestamp": "2026-10-04T23:55:00Z",
+      "error_message": "Edit-script replacements silently matched nothing; sed -i converted CRLF files to LF",
+      "file": "src/WorkflowStorage.lua",
+      "root_cause": "Source files in the working tree are CRLF (core.autocrlf=true); PowerShell here-strings and a perl insert used LF/CRLF inconsistently, and Git-Bash sed -i rewrote line endings",
+      "fix": "Use the Edit tool, or a Python replace helper that normalizes to LF, asserts exactly one match per edit, and writes back with the file's original line ending; restore CRLF with perl -pi -e 's/\\r?\\n/\\r\\n/' after a sed -i",
+      "tags": [
+        "tooling",
+        "line-endings",
+        "crlf",
+        "windows"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-04T23:55:00Z"
+    },
+    {
+      "id": "bug-303",
+      "timestamp": "2026-10-05T10:25:43.720Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowManager.lua",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 6→3 lines (4 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-05T10:25:43.720Z"
+    },
+    {
+      "id": "bug-304",
+      "timestamp": "2026-10-05T10:26:00.226Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "9 lines replaced/restructured",
+      "fix": "Rewrote 9→3 lines (9 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-05T10:26:00.226Z"
+    },
+    {
+      "id": "bug-305",
+      "timestamp": "2026-10-05T10:30:00.000Z",
+      "error_message": "Deleting a workflow from the main dialog stops only one of the vehicles running it.",
+      "file": "src/WorkflowManager.lua (deleteWorkflow, reloadWorkflows)",
+      "root_cause": "deleteWorkflow called WorkflowManager:stopWorkflow(id), which stops only the first vehicle findVehicleForWorkflow returns; other main/support vehicles kept running a workflow that no longer exists. Related: reloadWorkflows (workflow removed from the file / web editor) passed the results of WMExecutor:getActiveVehiclesForWorkflow to stopWorkflow as vehicles, but that function returns activeData tables, so WMExecutor:stopWorkflow found no spec_workflowManagerSpec and stopped nothing. The Lifecycle spec stub returned vehicles, masking it; WorkflowManager_spec stubs deleteWorkflow itself.",
+      "fix": "New WorkflowManager:stopWorkflowOnAllVehicles(workflowId): sendCommand(activeData.vehicle, 'stop') for every execution of the workflow (works from MP clients), returns the count. deleteWorkflow and reloadWorkflows both use it. Lifecycle spec: reload stub now returns activeData; new deleteWorkflow tests (all vehicles stopped, other workflows untouched, MP client sends one stop per vehicle).",
+      "tags": [
+        "fixed",
+        "delete",
+        "support-vehicle",
+        "multi-vehicle",
+        "reload",
+        "test-stub-mismatch",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-05T10:30:00.000Z"
+    },
+    {
+      "id": "bug-306",
+      "timestamp": "2026-10-05T10:27:11.711Z",
+      "error_message": "Wrong reference: 925 should be 929",
+      "file": "CLAUDE.md",
+      "root_cause": "Used \"925\" instead of \"929\"",
+      "fix": "Changed 925 → 929",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-05T10:27:11.711Z"
+    },
+    {
+      "id": "bug-307",
+      "timestamp": "2026-10-05T12:41:39.737Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/WorkflowStorage.lua",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 12→14 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-05T12:41:39.737Z"
+    },
+    {
+      "id": "bug-308",
+      "timestamp": "2026-10-05T12:41:40.939Z",
+      "error_message": "Wrong return value",
+      "file": "src/WorkflowStorage.lua",
+      "root_cause": "Was returning: workflows, true",
+      "fix": "Now returns: workflows, true, true",
+      "tags": [
+        "auto-detected",
+        "return-value",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-05T12:41:40.939Z"
+    },
+    {
+      "id": "bug-309",
+      "timestamp": "2026-10-05T12:41:42.194Z",
+      "error_message": "Wrong reference: getXmlPath should be getSlotXmlPath",
+      "file": "src/WorkflowStorage.lua",
+      "root_cause": "Used \"getXmlPath\" instead of \"getSlotXmlPath\"",
+      "fix": "Changed getXmlPath → getSlotXmlPath",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-10-05T12:42:17.458Z"
+    },
+    {
+      "id": "bug-310",
+      "timestamp": "2026-10-05T12:43:31.825Z",
+      "error_message": "Wrong reference: end should be _G",
+      "file": "tests/specs/WorkflowStorage_spec.lua",
+      "root_cause": "Used \"end\" instead of \"_G\"",
+      "fix": "Changed end → _G",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-10-05T12:43:34.237Z"
+    },
+    {
+      "id": "bug-306",
+      "timestamp": "2026-10-05T14:50:00.000Z",
+      "error_message": "Workflow definitions lost: the second game save of a session logged 'No saved workflows found at .../tempsavegame/workflowManager.xml', removed all 20 workflows ('no longer in the file'), stopped every running vehicle and saved 0 workflows into savegame2.",
+      "file": "src/WorkflowStorage.lua (getXmlPath/isInSyncWithDisk/loadWorkflows), src/WorkflowManager.lua (reloadWorkflows)",
+      "root_cause": "FS25 points missionInfo.savegameDirectory at an empty 'tempsavegame' folder while saving and copies it into the slot afterwards. Save 1: getXmlPath (tempsavegame) != syncedPath (savegame2) -> reload skipped as 'another slot', write, syncedPath := tempsavegame. Save 2: now 'in sync' -> reload read the fresh empty tempsavegame; a missing file returned (empty, fileRead=true), which the merge took as 'every workflow removed'. Also hit savegame3 at 13:04. Introduced with the uncommitted web-editor reload-on-save work.",
+      "fix": "WMStorage:getSlotXmlPath() = getUserProfileAppPath()..'savegame'..savegameIndex..'/workflowManager.xml' (same as AutoDrive XML.lua). Reads and the sync identity use the slot path; writes still go to getXmlPath (tempsavegame during a save); saveWorkflows records syncedPath = slot path. loadWorkflows returns a 3rd value fileFound; reloadWorkflows keeps the in-memory list (warning) when the file is missing. Tests: WorkflowStorage_spec 'game save through the tempsavegame folder' (4), Lifecycle 'keeps every workflow ... when the file is missing'. User data recovered from savegameBackup/savegame2_backup2026-10-05_14-27.",
+      "tags": [
+        "fixed",
+        "data-loss",
+        "savegame",
+        "tempsavegame",
+        "reload",
+        "web-editor",
+        "workflow-storage",
+        "lua"
+      ],
+      "related_bugs": [
+        "bug-305"
+      ],
+      "occurrences": 2,
+      "last_seen": "2026-10-05T14:27:18.000Z"
+    },
+    {
+      "id": "bug-312",
+      "timestamp": "2026-10-05T20:23:37.596Z",
+      "error_message": "Significant refactor of ",
+      "file": "webeditor/app.js",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 13→17 lines (4 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-05T20:23:37.596Z"
+    },
+    {
+      "id": "bug-313",
+      "timestamp": "2026-10-05T20:23:38.814Z",
+      "error_message": "Missing error handling in idbHandles",
+      "file": "webeditor/app.js",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-05T20:23:38.815Z"
+    },
+    {
+      "id": "bug-314",
+      "timestamp": "2026-10-05T20:23:40.019Z",
+      "error_message": "Incorrect value in code",
+      "file": "webeditor/app.js",
+      "root_cause": "Had \"btnExport\"",
+      "fix": "Changed to \"btnOpenSavegame\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-05T20:23:40.019Z"
+    },
+    {
+      "id": "bug-315",
+      "timestamp": "2026-10-06T22:20:00",
+      "error_message": "Editing an AutoDrive step with fill types: first open shows the step's fill type, every later open shows the first fill type in the list",
+      "file": "src/gui/WMStepDialog.lua",
+      "root_cause": "The step dialog is reused. From the second open on, the SmoothLists still carry the previous open's onSelectionChanged callbacks, and opening the dialog / restoring focus re-raises the list's current selection (row 1 for the fill-type list, which is multi-select via checkmarks and never gets its index set). onFillTypeListSelectionChanged took that for a click and replaced selectedFillTypes with the first entry.",
+      "fix": "isOpening flag: set at the start of onOpen, cleared in a new WMStepDialog:update(dt) after the first frame. onFillTypeListSelectionChanged, onTargetListSelectionChanged, onUnloadTargetListSelectionChanged and the onListSelectionChanged delegate ignore events while it is set. 2 regression tests in WMStepDialog_spec 'reopening'.",
+      "tags": [
+        "gui",
+        "SmoothList",
+        "onSelectionChanged",
+        "fillTypes",
+        "WMStepDialog",
+        "dialog-reuse"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-06T22:20:00"
     }
   ]
 }

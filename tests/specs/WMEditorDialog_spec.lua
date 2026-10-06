@@ -75,6 +75,14 @@ describe("WMEditorDialog", function()
                 table.insert(self.workflows, workflow)
                 return true
             end,
+            -- Production: reload the file, apply the change, write the file
+            saveOrder = {},
+            applyWorkflowChange = function(self, change)
+                table.insert(self.saveOrder, "reload")
+                if self.onReload then self.onReload() end
+                change()
+                table.insert(self.saveOrder, "save")
+            end,
         }
 
         _G.CPCoursesLoader  = nil
@@ -222,26 +230,55 @@ describe("WMEditorDialog", function()
     -- Save commits
     -- =========================================================================
     describe("onClickSave", function()
-        it("blocks Save while the workflow is executing on a vehicle", function()
-            -- Regression: Save swapped steps under a running execution, desyncing
-            -- currentStep and the followers' sync maps.
+        before_each(function()
+            WorkflowManager.saveOrder = {}
+            WorkflowManager.onReload = nil
+        end)
+
+        it("saves while the workflow is executing, and tells the executor (no edit lock)", function()
             local wf = makeWorkflow()
             local d = makeDialog(wf)
+            local heldByExecution = wf     -- stand-in for activeData.workflow
             table.insert(d.workflow.steps, { type = "park", target = "", support = {} })
 
             local origExec = _G.WMExecutor
+            local definitionsChanged = 0
             _G.WMExecutor = {
-                getActiveVehiclesForWorkflow = function(self, workflowId)
-                    if workflowId == wf.id then return { { vehicle = {} } } end
-                    return {}
-                end,
+                getActiveVehiclesForWorkflow = function() return { {} } end,
+                onWorkflowDefinitionsChanged = function() definitionsChanged = definitionsChanged + 1 end,
             }
             d:onClickSave()
             _G.WMExecutor = origExec
 
-            -- Nothing committed; the edit buffer is still open
-            assert.are.equal(2, #wf.steps)
-            assert.is_not_nil(d.workflow)
+            assert.are.equal(3, #heldByExecution.steps)
+            assert.are.equal(1, definitionsChanged)
+        end)
+
+        it("reloads the file before committing and saves after it", function()
+            local wf = makeWorkflow()
+            local d = makeDialog(wf)
+            local nameAtReload
+            WorkflowManager.onReload = function() nameAtReload = wf.name end
+            d.workflow.name = "Renamed"
+
+            d:onClickSave()
+
+            assert.are.same({ "reload", "save" }, WorkflowManager.saveOrder)
+            assert.are.equal("Original Name", nameAtReload)   -- not committed yet at reload
+            assert.are.equal("Renamed", wf.name)
+        end)
+
+        it("re-adds a workflow that was removed from the file while the editor was open", function()
+            local wf = makeWorkflow()
+            WorkflowManager.workflows = { wf }
+            local d = makeDialog(wf)
+            -- The reload inside Save finds the workflow gone from the file
+            WorkflowManager.onReload = function() WorkflowManager.workflows = {} end
+
+            d:onClickSave()
+
+            assert.are.equal(1, #WorkflowManager.workflows)
+            assert.are.equal(wf, WorkflowManager.workflows[1])
         end)
 
         it("applies an added step to the live workflow", function()

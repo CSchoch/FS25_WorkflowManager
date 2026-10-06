@@ -80,6 +80,9 @@
         <text name="wm_editor_return_target" text="Return To"/>
         <text name="wm_editor_fill_type" text="Fill Type"/>
         <text name="wm_editor_seed_type" text="Seed Type"/>
+        <text name="wm_editor_finish_before_switch" text="Finish before switching"/>
+        <text name="wm_option_no" text="No"/>
+        <text name="wm_option_yes" text="Yes"/>
         <text name="wm_editor_no_steps" text="No steps defined. Click + to add a step."/>
 
 
@@ -126,7 +129,6 @@
         <text name="wm_workflow_resumed" text="Workflow resumed: %s (Step %d)"/>
         <text name="wm_workflow_stopped" text="Workflow stopped: %s"/>
         <text name="wm_workflow_reset" text="Workflow reset: %s"/>
-        <text name="wm_workflow_error" text="Workflow error: %s"/>
         <text name="wm_workflows_count" text="%d workflow(s)"/>
         <text name="wm_new_workflow_name" text="New Workflow"/>
         <text name="wm_unnamed" text="Unnamed"/>
@@ -140,7 +142,24 @@
         <text name="wm_warning_incompatible_vehicle" text="Vehicle '%s' needs AutoDrive + Courseplay"/>
         <text name="wm_warning_incompatible_vehicle_cp" text="Vehicle '%s' needs Courseplay"/>
         <text name="wm_warning_vehicle_busy" text="Vehicle is already running a workflow"/>
-        <text name="wm_warning_workflow_running" text="Cannot save: workflow is currently running. Stop it first."/>
+        <text name="wm_warning_workflow_not_found" text="Workflow not found - it may have been removed from the file"/>
+        <text name="wm_warning_no_steps" text="Workflow '%s' has no steps"/>
+        <text name="wm_info_workflow_removed" text="Workflow '%s' was removed from the file and has been stopped"/>
+        <text name="wm_warning_restore_workflow_missing" text="Workflow '%s' no longer exists - '%s' was not restored"/>
+        <!-- Step errors / warnings (first %s = vehicle name) -->
+        <text name="wm_error_step_failed" text="%s: workflow step failed - see log.txt"/>
+        <text name="wm_error_ad_target_not_found" text="%s: AutoDrive destination '%s' not found"/>
+        <text name="wm_error_ad_start_failed" text="%s: AutoDrive could not be started"/>
+        <text name="wm_error_no_park_position" text="%s: no AutoDrive park position set for the vehicle or its implements"/>
+        <text name="wm_error_no_repair_station" text="%s: no workshop reachable with AutoDrive"/>
+        <text name="wm_error_seed_type" text="%s: seed type '%s' cannot be set on the attached seeder"/>
+        <text name="wm_error_cp_course_load" text="%s: Courseplay course '%s' could not be loaded"/>
+        <text name="wm_error_cp_start_failed" text="%s: Courseplay field work could not be started"/>
+        <text name="wm_error_unknown_step_type" text="%s: unknown step type '%s'"/>
+        <text name="wm_warning_ad_unload_not_found" text="%s: unload destination '%s' not found - AutoDrive uses its default"/>
+        <text name="wm_warning_cp_course_ambiguous" text="%s: several courses are named '%s' - using the one in '%s'"/>
+        <text name="wm_info_seed_locked" text="%s: the seed is locked by a mission - seed type not changed"/>
+        <text name="wm_warning_cp_no_resume_waypoint" text="%s: no saved Courseplay waypoint - workflow stays paused, press Resume"/>
         <text name="wm_warning_no_target" text="Select a target before confirming the step"/>
 
         <!-- HUD texts -->
@@ -195,6 +214,10 @@
         <!-- Game settings page (ESC -> Settings -> General) -->
         <text name="wm_settings_title" text="Workflow Manager"/>
         <text name="wm_settings_cpAutoResume" text="Resume Courseplay after loading"/>
-        <text name="wm_settings_cpAutoResume_tooltip" text="Restart the Courseplay field work at the saved waypoint after loading a savegame. When off, the workflow stays paused until you press Resume."/>
+        <text name="wm_settings_cpAutoResume_tooltip" text="Restart the Courseplay field work at the saved waypoint after loading a savegame. When off, the workflow stays paused until you press Resume. Stored on this computer; in multiplayer the host's setting applies."/>
+        <text name="wm_settings_showHelpKeys" text="Show keys in the help window"/>
+        <text name="wm_settings_showHelpKeys_tooltip" text="Lists the Workflow Manager keys in the F1 help window. The keys work either way."/>
+        <text name="wm_settings_debugMode" text="Debug logging"/>
+        <text name="wm_settings_debugMode_tooltip" text="Writes detailed messages to log.txt, for bug reports. Applies to this computer only."/>
     </texts>
 </l10n>

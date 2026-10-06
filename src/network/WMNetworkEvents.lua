@@ -4,6 +4,7 @@
 
     WMCommandEvent  : Client -> Server  (start/stop/pause/resume/next_step/prev_step)
     WMStateSyncEvent: Server -> All Clients  (current step + status per vehicle)
+    WMUserMessageEvent: Server -> All Clients (step errors / warnings for one farm's players)
 
     Architecture:
     - WMExecutor.update() only runs on the server (g_server ~= nil).
@@ -185,6 +186,62 @@ function WMStateSyncEvent:run(connection)
 
     WMLogger:debug("WMStateSyncEvent: synced vehicle step=%d status=%s wf=%s",
         self.currentStep, self.status, self.workflowId)
+end
+
+-- ============================================================
+-- WMUserMessageEvent  (Server -> All Clients)
+-- A message for the players of one farm (step errors, configuration warnings). Carries the
+-- i18n key plus string arguments, so each client shows it in its own language; clients of
+-- other farms ignore it.
+-- ============================================================
+WMUserMessageEvent = {}
+local WMUserMessageEvent_mt = Class(WMUserMessageEvent, Event)
+InitEventClass(WMUserMessageEvent, "WMUserMessageEvent")
+
+function WMUserMessageEvent.emptyNew()
+    return Event.new(WMUserMessageEvent_mt)
+end
+
+---@param farmId  number  Farm the message is for (0 = everyone)
+---@param key     string  i18n key
+---@param isError boolean
+---@param args    table   Argument strings for the key's %s placeholders
+function WMUserMessageEvent.new(farmId, key, isError, args)
+    local self = WMUserMessageEvent.emptyNew()
+    self.farmId  = farmId
+    self.key     = key
+    self.isError = isError == true
+    self.args    = args or {}
+    return self
+end
+
+function WMUserMessageEvent:writeStream(streamId, connection)
+    streamWriteInt32(streamId, self.farmId)
+    streamWriteString(streamId, self.key)
+    streamWriteBool(streamId, self.isError)
+    streamWriteUInt8(streamId, #self.args)
+    for _, arg in ipairs(self.args) do
+        streamWriteString(streamId, arg)
+    end
+end
+
+function WMUserMessageEvent:readStream(streamId, connection)
+    self.farmId  = streamReadInt32(streamId)
+    self.key     = streamReadString(streamId)
+    self.isError = streamReadBool(streamId)
+    self.args    = {}
+    local count  = streamReadUInt8(streamId)
+    for i = 1, count do
+        self.args[i] = streamReadString(streamId)
+    end
+    self:run(connection)
+end
+
+function WMUserMessageEvent:run(connection)
+    -- Only clients show it; the server already showed it locally when it sent the event
+    if connection:getIsServer() then
+        WorkflowManager:showFarmMessage(self.farmId, self.key, self.args, self.isError)
+    end
 end
 
 print("[WorkflowManager] WMNetworkEvents module loaded")
