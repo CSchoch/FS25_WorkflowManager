@@ -54,7 +54,7 @@ Individual runners: `tests\run_executor_spec.lua`, `tests\run_storage_spec.lua`,
 | `WorkflowManagerADRequirement_spec.lua` | Real `workflowNeedsAutoDrive` / `isVehicleValid`: AutoDrive is required only for workflows that use AD-driven steps |
 | `WorkflowManagerLifecycle_spec.lua` | Real module: DevConfig sourced only if present, `loadDialog`, literal dialog XML paths, `releaseADForShutdown` (skips deleted vehicles, never stops CP), `reloadWorkflows` merge, `applyWorkflowChange`, save hook / no save in `deleteMap`, start-validation reasons, player messages (`showUserMessage`, `notifyFarm`), help-key visibility |
 | `WorkflowExecutor_spec.lua` | Full state machine: start/stop/pause/resume/step nav, support vehicles, MP roles |
-| `AutoDriveIntegration_spec.lua` | AD destinations, park/refuel/repair route resolution |
+| `AutoDriveIntegration_spec.lua` | AD destinations, park/refuel/repair route resolution, driving farm (`actualFarmId`) set on every start |
 | `WorkflowManagerSpec_spec.lua` | Vehicle spec: onLoad, onPostLoad, saveToXMLFile, onWriteStream/onReadStream, onDelete |
 | `WMHud_spec.lua` | HUD button handlers, vehicle targeting |
 | `WMLeaderVehicleSelectDialog_spec.lua` | Leader candidate list building, No-Leader hotkey |
@@ -82,7 +82,7 @@ must happen **after** any course load (loading a course clears CP's remembered i
 ordering in `startCourseplayStep`. With no recorded waypoint the workflow deliberately stays
 PAUSED rather than restarting from scratch.
 
-Current total: **936**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
+Current total: **942**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
 or they will not run.
 
 **Mod options (game settings):** `WMSettings` holds the player-facing options

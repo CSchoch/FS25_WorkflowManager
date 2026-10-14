@@ -2189,3 +2189,38 @@ No WM dialog defines an Enter handler. Needs a 2-second in-game check: open the 
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+
+## Session: 2026-10-14 22:14
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-10-14 22:14
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-10-14 22:32
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-10-14 22:32
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-10-14 22:32
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 22:39 | Edited src/integration/AutoDriveIntegration.lua | modified ADIntegration() | ~235 |
+| 22:39 | Edited src/integration/AutoDriveIntegration.lua | 2→3 lines | ~39 |
+| 22:39 | Edited src/integration/AutoDriveIntegration.lua | 2→3 lines | ~26 |
+| 22:39 | Edited src/integration/AutoDriveIntegration.lua | 2→3 lines | ~42 |
+| 22:39 | Edited src/integration/AutoDriveIntegration.lua | 3→5 lines | ~40 |
+| 22:39 | Edited tests/specs/AutoDriveIntegration_spec.lua | 5→9 lines | ~108 |
+| 22:39 | Edited tests/specs/AutoDriveIntegration_spec.lua | expanded (+47 lines) | ~628 |
+| 22:39 | Edited tests/specs/AutoDriveIntegration_spec.lua | 1→2 lines | ~47 |
+| 22:41 | Fix: AD did not restart 6R 250/Fendt after load (actualFarmId=0 on API starts) - ADIntegration:assignDrivingFarm + 6 tests, 942 pass | src/integration/AutoDriveIntegration.lua, tests/specs/AutoDriveIntegration_spec.lua | fixed | ~9000 |
+| 22:40 | Session end: 8 writes across 2 files (AutoDriveIntegration.lua, AutoDriveIntegration_spec.lua) | 5 reads | ~1248 tok |

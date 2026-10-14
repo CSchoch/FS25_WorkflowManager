@@ -5978,6 +5978,18 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-10-08T00:30:00.000Z"
+    },
+    {
+      "id": "bug-361",
+      "timestamp": "2026-10-14T22:40:00.000Z",
+      "error_message": "After reloading the game the 6R 250 (Hacken) and one Fendt (Duengen) did not restart their AutoDrive route although AutoDrive is set to restart helpers after load; WM logged 'Auto-resume window expired ..., staying paused'",
+      "file": "src/integration/AutoDriveIntegration.lua",
+      "root_cause": "AutoDrive:autostartHelpers (AD loadMap) restarts only vehicles with activeBeforeSave AND stateModule.actualFarmId ~= FarmManager.SPECTATOR_FARM_ID (0). AD sets actualFarmId only on player enter/leave or its own start key; WM starts AD via StartDriving/startAutoDrive, so vehicles the player never sat in were saved with actualFarmId=0 (savegame2/vehicles.xml: failing vehicles 320/338 had actualFarmId=0, working 323/333 had 1).",
+      "fix": "New ADIntegration:assignDrivingFarm(vehicle) calls stateModule:setActualFarmId(vehicle:getOwnerFarmId()) (owner farm > 0 only) right before every WM AD start: startRoute, startParkRoute, startRefuelRoute, startRepairRoute. 6 tests in AutoDriveIntegration_spec.",
+      "tags": ["autodrive", "auto-resume", "savegame", "farmId", "restart"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-14T22:40:00.000Z"
     }
   ]
 }

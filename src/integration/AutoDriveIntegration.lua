@@ -479,6 +479,22 @@ function ADIntegration:getVehicleParkDestinationId(vehicle)
     return vehicleId
 end
 
+---Record the vehicle's owner farm as AutoDrive's driving farm (stateModule.actualFarmId).
+---AD only sets it when a player enters/leaves the vehicle or presses AD's own start key, so a
+---vehicle started only through the API keeps the spectator farm (0) - and AD's "restart helpers
+---after load" (AutoDrive:autostartHelpers) skips every vehicle whose actualFarmId is 0.
+---@param vehicle table Vehicle about to be started by AutoDrive
+function ADIntegration:assignDrivingFarm(vehicle)
+    local stateModule = vehicle.ad and vehicle.ad.stateModule
+    if stateModule == nil or stateModule.setActualFarmId == nil or vehicle.getOwnerFarmId == nil then
+        return
+    end
+    local farmId = vehicle:getOwnerFarmId()
+    if farmId ~= nil and farmId > 0 then
+        stateModule:setActualFarmId(farmId)
+    end
+end
+
 ---Start driving vehicle to its resolved AutoDrive park position
 ---Uses AutoDrive:StartDriving() with unloadDestinationID = -3 (AD's "park" sentinel)
 ---@param vehicle table Vehicle to control
@@ -511,6 +527,7 @@ function ADIntegration:startParkRoute(vehicle)
     end
 
     vehicle.ad.stateModule:setParkDestinationAtJobFinished(parkId)
+    self:assignDrivingFarm(vehicle)
     AutoDrive:StartDriving(vehicle, -1, -3)
 
     WMLogger:info("Park route started (markerID: %d)", parkId)
@@ -566,6 +583,7 @@ function ADIntegration:startRefuelRoute(vehicle)
     -- startAutoDrive() directly relies on ADTaskModule:RefuelIfNeeded() (its own idle-tick
     -- check) to pick up onRouteToRefuel and enqueue the actual RefuelTask - the same mechanism
     -- Repair already relies on.
+    self:assignDrivingFarm(vehicle)
     vehicle:startAutoDrive()
 
     WMLogger:info("Refuel route started")
@@ -610,6 +628,7 @@ function ADIntegration:startRepairRoute(vehicle)
     -- No StartDriving sentinel exists for repair (only -1/-2/-3 are handled) - bootstrap AD
     -- directly the same way DriveToMode:start() does when not yet active. Completion is
     -- detected via polling isRefuelRepairComplete(), the same mechanism Refuel relies on.
+    self:assignDrivingFarm(vehicle)
     vehicle:startAutoDrive()
 
     WMLogger:info("Repair route started")
@@ -690,6 +709,8 @@ function ADIntegration:startRoute(vehicle, targetName, action, unloadTargetName,
 
     WMLogger:info("Starting AutoDrive route to: %s (markerID: %d), unloadDest: %d",
         targetName, targetMarker.id, unloadDestinationID)
+
+    self:assignDrivingFarm(vehicle)
 
     -- Use the official StartDriving API with callback
     if AutoDrive.StartDriving then

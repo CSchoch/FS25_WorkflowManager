@@ -1,7 +1,8 @@
 --[[
     ADIntegration Unit Tests: AD "Park"/"Refuel"/"Repair" resolution and route start
     Covers getObjectParkDestination, getVehicleParkDestinationId, startParkRoute,
-    startRefuelRoute, and startRepairRoute (Park/Refuel/Repair WM step types).
+    startRefuelRoute, and startRepairRoute (Park/Refuel/Repair WM step types), plus the
+    driving farm every start records so AD's restart-after-load picks the vehicle up.
 ]]
 
 describe("ADIntegration (park position)", function()
@@ -93,8 +94,12 @@ describe("ADIntegration (park position)", function()
                     setMode = function(self, mode)
                         vehicle._mode = mode
                     end,
+                    setActualFarmId = function(self, farmId)
+                        vehicle._actualFarmId = farmId
+                    end,
                 },
             },
+            getOwnerFarmId = opts.ownerFarmId ~= nil and function(self) return opts.ownerFarmId end or nil,
             getAttachedImplements = function(self)
                 local list = {}
                 for i, parkId in ipairs(opts.implementParkIds or {}) do
@@ -433,6 +438,53 @@ describe("ADIntegration (park position)", function()
             assert.are.equal(1, #farmMessages)
             assert.are.equal("wm_warning_ad_unload_not_found", farmMessages[1].key)
             assert.are.same({ "Tractor", "Ghost Silo" }, farmMessages[1].args)
+        end)
+    end)
+
+    -- =========================================================================
+    -- Driving farm: AD restarts a helper after load only when actualFarmId ~= 0
+    -- =========================================================================
+    describe("driving farm (AD restart after load)", function()
+        it("startRoute records the owner farm as AD's actualFarmId", function()
+            local realGetDestinationByName = ADIntegration.getDestinationByName
+            ADIntegration.getDestinationByName = function() return { id = 10, name = "Farm" } end
+            local v = makeVehicle({ ownerFarmId = 1 })
+            local ok = ADIntegration:startRoute(v, "Farm", "drive")
+            ADIntegration.getDestinationByName = realGetDestinationByName
+            assert.is_true(ok)
+            assert.are.equal(1, v._actualFarmId)
+        end)
+
+        it("startParkRoute records the owner farm", function()
+            local v = makeVehicle({ vehicleParkId = 10, ownerFarmId = 2 })
+            assert.is_true(ADIntegration:startParkRoute(v))
+            assert.are.equal(2, v._actualFarmId)
+        end)
+
+        it("startRefuelRoute records the owner farm", function()
+            _G.__refuelDestinationResult = 42
+            local v = makeVehicle({ ownerFarmId = 1 })
+            assert.is_true((ADIntegration:startRefuelRoute(v)))
+            assert.are.equal(1, v._actualFarmId)
+        end)
+
+        it("startRepairRoute records the owner farm", function()
+            _G.__repairTriggerResult = 99
+            local v = makeVehicle({ ownerFarmId = 1 })
+            assert.is_true(ADIntegration:startRepairRoute(v))
+            assert.are.equal(1, v._actualFarmId)
+        end)
+
+        it("leaves actualFarmId alone for a spectator-owned vehicle", function()
+            local v = makeVehicle({ vehicleParkId = 10, ownerFarmId = 0 })
+            ADIntegration:startParkRoute(v)
+            assert.is_nil(v._actualFarmId)
+        end)
+
+        it("leaves actualFarmId alone when the start is rejected", function()
+            local v = makeVehicle({ ownerFarmId = 1 })  -- no park position configured
+            assert.is_false(ADIntegration:startParkRoute(v))
+            assert.is_nil(v._actualFarmId)
         end)
     end)
 

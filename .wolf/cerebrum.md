@@ -97,6 +97,8 @@ follow the same one-dialog-at-a-time discipline.
 
 - **Website is bilingual (2026-10-08): English default + German at `/de/`.** German docs live in `website/i18n/de/docusaurus-plugin-content-docs/current/` (same file names as `docs/`); homepage strings are `<Translate>`/`translate()` ids `home.*` in `i18n/de/code.json`; navbar/footer in `i18n/de/docusaurus-theme-classic/`. Any docs change must be mirrored in the German copy. German terminology = the in-game/web-editor labels (du-form, real umlauts): Hilfsfahrzeug/Hauptfahrzeug, Unterstützungsschritt, Anführer/Folger, Fahren zu, Drescher abfahren, Abholen (=Load), Abladen (=Deliver), Saatgut, (keins). Headings that other pages link to keep the English anchor via `{/* #english-id */}`. The footer copyright year is hard-coded in footer.json (de).
 
+- **AD restart-after-load needs a driving farm (2026-10-14):** `AutoDrive:autostartHelpers` (AD loadMap, SP only, setting `autostartHelpers`) restarts a vehicle only if its saved `AutoDrive#active` is true **and** `stateModule.actualFarmId ~= 0`. AD sets `actualFarmId` only on player enter/leave or its own start key — API starts (`StartDriving`, `startAutoDrive`) do not. So every WM AD start goes through `ADIntegration:assignDrivingFarm(vehicle)` (owner farm). Diagnose with `savegameN/vehicles.xml` → `<AutoDrive ... active= actualFarmId=>`.
+
 ## Do-Not-Repeat
 
 [2026-10-08] **Never write `## Heading {#id}` in website docs** — MDX 3 parses `{#id}` as a JS expression and the build fails (`Could not parse expression with acorn`). Use `## Heading {/* #id */}`.
