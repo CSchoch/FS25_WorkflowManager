@@ -19,6 +19,8 @@
 - [2026-10-08] For bulk work that splits into independent files (e.g. translating 22 doc pages), the user wants one parallel agent per file rather than doing them one by one — give the agents a shared glossary/rules file so results stay consistent.
 
 ## Key Learnings
+
+- **AD route flags are not saved:** `vehicle.ad.onRouteToRefuel` / `onRouteToRepair` reset to false on load. A refuel/repair step can never be *attached to* after a load (its completion check reads that flag) - `WMExecutor:restartRefuelRepairAfterLoad` re-issues it from both the auto-resume and manual-Resume paths. (2026-10-15)
 - **Adding `registerInputEvents()` to a dialog's `onOpen` breaks that dialog's existing `onOpen` specs.** They never needed `InputAction` / `g_inputBinding` before. Install those stubs at *file* scope in the spec (in `setup()`, with a `resetInputStubs()` for per-test isolation), not inside the new binding describe — otherwise the pre-existing tests either fail or get watered down. Button stubs also need `setText` wherever `updateButtons` relabels a button.
 
 - **AutoDrive is an OPTIONAL dependency (2026-09-07).** `modDesc.xml` has no `<dependency>` block and every `ADIntegration` entry point already early-outs on `self.isAvailable` / `vehicle.ad == nil`, so the mod loads and CP-only workflows execute fine without AutoDrive. The *only* thing that blocked it was `WorkflowManager:isVehicleValid` returning `hasAutoDrive and hasCP`. It now takes the workflow: CP always required, AD only when `workflowNeedsAutoDrive(workflow)` finds an AD-tracked step (`autodrive`/`park`/`refuel`/`repair`) in `steps` **or** in any `step.support`. Called with a nil workflow it still demands AD (a caller with no workflow can't prove otherwise) — that keeps the older single-argument contract intact. `WMStepDialog:getStepTypes` hides the four AD types when AD is missing, except the type the edited step already has; `setStep` must then default a NEW step to Courseplay/`fieldwork`, otherwise the hidden-but-current AutoDrive default re-adds itself to the dropdown.
@@ -100,6 +102,8 @@ follow the same one-dialog-at-a-time discipline.
 - **AD restart-after-load needs a driving farm (2026-10-14):** `AutoDrive:autostartHelpers` (AD loadMap, SP only, setting `autostartHelpers`) restarts a vehicle only if its saved `AutoDrive#active` is true **and** `stateModule.actualFarmId ~= 0`. AD sets `actualFarmId` only on player enter/leave or its own start key — API starts (`StartDriving`, `startAutoDrive`) do not. So every WM AD start goes through `ADIntegration:assignDrivingFarm(vehicle)` (owner farm). Diagnose with `savegameN/vehicles.xml` → `<AutoDrive ... active= actualFarmId=>`.
 
 ## Do-Not-Repeat
+
+- [2026-10-15] The custom test runner (`tests/run_tests.lua`) has no `after_each` - calling it aborts the whole spec file and nests all later specs. Restore shared-mock overrides inline before the asserts.
 
 [2026-10-08] **Never write `## Heading {#id}` in website docs** — MDX 3 parses `{#id}` as a JS expression and the build fails (`Could not parse expression with acorn`). Use `## Heading {/* #id */}`.
 - [2026-09-24] Never call CP's convenience wrappers (getCpFieldWorkProgress etc.) that forward to strategy methods: the active CP strategy may not be a field work one. Get `vehicle:getCpDriveStrategy()` and check `fieldWorkCourse ~= nil` + `type(strategy.method) == "function"`. Every removed pcall around a CP call needs an equivalent guard.

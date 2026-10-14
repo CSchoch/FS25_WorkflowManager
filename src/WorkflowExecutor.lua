@@ -425,6 +425,11 @@ function WMExecutor:resumeWorkflow(vehicle)
             return self:resumeCourseplayAfterLoad(activeData)
         end
 
+        if step ~= nil and (step.type == WorkflowManager.STEP_REFUEL or step.type == WorkflowManager.STEP_REPAIR) then
+            self:restartRefuelRepairAfterLoad(activeData, step)
+            return true
+        end
+
         -- Post-load resume markers are spent once we attach to an already-running job
         activeData.cpWasRunningAtSave = nil
         activeData.cpResumeWaypoint = nil
@@ -1005,6 +1010,39 @@ function WMExecutor:resumeCourseplayAfterLoad(activeData)
     return true
 end
 
+---Re-issue a Refuel/Repair step after a savegame load instead of attaching to AD.
+---AD saves neither onRouteToRefuel nor onRouteToRepair (its onLoad resets both to false), so
+---a job AD resumed on its own drives to its last destination, not the station — and the
+---completion check, which watches that flag, reports the step done on the first poll.
+---@param activeData table Per-vehicle execution state
+---@param step table The current Refuel/Repair step (main step or support sub-step)
+function WMExecutor:restartRefuelRepairAfterLoad(activeData, step)
+    local vehicle  = activeData.vehicle
+    local workflow = activeData.workflow
+
+    activeData.autoResumeUntil = nil
+    activeData.cpWasRunningAtSave = nil
+    activeData.cpResumeWaypoint = nil
+
+    if ADIntegration:isRunning(vehicle) then
+        ADIntegration:stopRoute(vehicle)
+        activeData.justStoppedAD = true
+    end
+
+    WMLogger:info("Restarting %s step %d of '%s' after savegame load",
+        tostring(step.type), activeData.currentStep, workflow.name)
+
+    activeData.status = WorkflowManager.STATUS_RUNNING
+    self:deferOrStartADStep(activeData, vehicle, step)
+
+    WMEventHandler:fireEvent(WMEventHandler.EVENT_WORKFLOW_RESUMED, {
+        workflowId = workflow.id,
+        vehicle = vehicle,
+        currentStep = activeData.currentStep
+    })
+    WorkflowManager:broadcastState(vehicle)
+end
+
 ---Pause the current step
 ---@param activeData table Per-vehicle execution state
 function WMExecutor:pauseCurrentStep(activeData)
@@ -1301,7 +1339,10 @@ function WMExecutor:update(dt)
                 local adRunning = step and ADIntegration:isRunning(vehicle)
                 local cpRunning = step and CPIntegration:isRunning(vehicle)
 
-                if adRunning or cpRunning then
+                if adRunning and (step.type == WorkflowManager.STEP_REFUEL
+                        or step.type == WorkflowManager.STEP_REPAIR) then
+                    self:restartRefuelRepairAfterLoad(activeData, step)
+                elseif adRunning or cpRunning then
                     activeData.autoResumeUntil = nil  -- found - stop polling
                     -- A job restarted on its own; the post-load resume markers are spent and
                     -- must not seed a later CP step with this step's waypoint.

@@ -2224,3 +2224,14 @@ No WM dialog defines an Enter handler. Needs a 2-second in-game check: open the 
 | 22:39 | Edited tests/specs/AutoDriveIntegration_spec.lua | 1→2 lines | ~47 |
 | 22:41 | Fix: AD did not restart 6R 250/Fendt after load (actualFarmId=0 on API starts) - ADIntegration:assignDrivingFarm + 6 tests, 942 pass | src/integration/AutoDriveIntegration.lua, tests/specs/AutoDriveIntegration_spec.lua | fixed | ~9000 |
 | 22:40 | Session end: 8 writes across 2 files (AutoDriveIntegration.lua, AutoDriveIntegration_spec.lua) | 5 reads | ~1248 tok |
+
+## Session: 2026-10-14 00:00
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 00:02 | Edited src/WorkflowExecutor.lua | modified WMExecutor() | ~391 |
+| 00:02 | Edited src/WorkflowExecutor.lua | 4→9 lines | ~84 |
+| 00:02 | Edited src/WorkflowExecutor.lua | 3→6 lines | ~93 |
+| 00:03 | Edited tests/specs/WorkflowExecutor_spec.lua | modified in() | ~1699 |
+| 00:04 | Fix refuel/repair step skipped after savegame load (re-issue instead of attach); 6 tests, 948 pass | src/WorkflowExecutor.lua, tests/specs/WorkflowExecutor_spec.lua, CLAUDE.md | done | ~25k |
+| 00:04 | Session end: 4 writes across 2 files (WorkflowExecutor.lua, WorkflowExecutor_spec.lua) | 0 reads | ~2430 tok |

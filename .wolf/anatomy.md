@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-10-14T20:39:34.959Z
-> Files: 2 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-10-14T22:03:17.945Z
+> Files: 4 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -74,6 +74,7 @@
 
 ## src/
 
+- `WorkflowExecutor.lua` — init, startWorkflow, stopWorkflow, buildSyncMaps, onWorkflowDefinitionsChanged (~24616 tok)
 
 ## src/dev/
 
@@ -106,6 +107,7 @@
 ## tests/specs/
 
 - `AutoDriveIntegration_spec.lua` — makeImplement, makeVehicle (~6308 tok)
+- `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport, makeLeaderWF (~42623 tok)
 
 ## textures/
 

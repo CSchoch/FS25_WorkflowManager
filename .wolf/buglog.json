@@ -5986,10 +5986,37 @@
       "file": "src/integration/AutoDriveIntegration.lua",
       "root_cause": "AutoDrive:autostartHelpers (AD loadMap) restarts only vehicles with activeBeforeSave AND stateModule.actualFarmId ~= FarmManager.SPECTATOR_FARM_ID (0). AD sets actualFarmId only on player enter/leave or its own start key; WM starts AD via StartDriving/startAutoDrive, so vehicles the player never sat in were saved with actualFarmId=0 (savegame2/vehicles.xml: failing vehicles 320/338 had actualFarmId=0, working 323/333 had 1).",
       "fix": "New ADIntegration:assignDrivingFarm(vehicle) calls stateModule:setActualFarmId(vehicle:getOwnerFarmId()) (owner farm > 0 only) right before every WM AD start: startRoute, startParkRoute, startRefuelRoute, startRepairRoute. 6 tests in AutoDriveIntegration_spec.",
-      "tags": ["autodrive", "auto-resume", "savegame", "farmId", "restart"],
+      "tags": [
+        "autodrive",
+        "auto-resume",
+        "savegame",
+        "farmId",
+        "restart"
+      ],
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-10-14T22:40:00.000Z"
+    },
+    {
+      "id": "bug-362",
+      "timestamp": "2026-10-15T12:00:00.000Z",
+      "error_message": "If i reload the game and ad was in repair/refuel step it advances to the next step",
+      "file": "src/WorkflowExecutor.lua",
+      "root_cause": "AD does not save vehicle.ad.onRouteToRefuel/onRouteToRepair (Specialization onLoad resets both to false). After load the auto-resume branch (AD running inside the 10 s window) and the manual Resume-after-load path attached monitoring to the existing job; the refuel/repair completion poll (isRefuelRepairComplete) reads exactly that flag, so it reported done on the first poll, stopped AD and advanced.",
+      "fix": "New WMExecutor:restartRefuelRepairAfterLoad: clears the post-load markers, stops AD's auto-resumed route (justStoppedAD) and re-issues the step via deferOrStartADStep. Called from the update auto-resume branch when AD is running on a refuel/repair step, and from resumeWorkflow's no-pausedTrackingState branch. 6 tests in WorkflowExecutor_spec.",
+      "tags": [
+        "autodrive",
+        "refuel",
+        "repair",
+        "auto-resume",
+        "savegame",
+        "step-skip"
+      ],
+      "related_bugs": [
+        "bug-361"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-10-15T12:00:00.000Z"
     }
   ]
 }

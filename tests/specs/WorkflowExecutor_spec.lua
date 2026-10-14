@@ -2945,6 +2945,166 @@ describe("WMExecutor (real)", function()
     end)
 
     -- =========================================================================
+    -- Refuel / Repair resume after savegame load
+    --
+    -- AD does not save onRouteToRefuel / onRouteToRepair (its onLoad resets both to false),
+    -- and the completion poll watches exactly that flag. Attaching to the job AD resumed on
+    -- its own therefore reported the step done on the first poll and skipped it.
+    -- =========================================================================
+    describe("Refuel/Repair resume after savegame load", function()
+        local orig = {}
+        local adRunning
+        local calls
+
+        before_each(function()
+            adRunning = {}
+            calls = { stopRoute = 0, startRefuelRoute = 0, startRepairRoute = 0 }
+            for _, k in ipairs({ "isRunning", "stopRoute", "startRefuelRoute",
+                                  "startRepairRoute", "isRefuelRepairComplete" }) do
+                orig[k] = ADIntegration[k]
+            end
+            -- Model AD's real flag semantics
+            ADIntegration.isRunning = function(_, v) return adRunning[v] == true end
+            ADIntegration.stopRoute = function(_, v)
+                calls.stopRoute = calls.stopRoute + 1
+                adRunning[v] = nil
+                v.ad.onRouteToRefuel = false
+                v.ad.onRouteToRepair = false
+            end
+            ADIntegration.startRefuelRoute = function(_, v)
+                calls.startRefuelRoute = calls.startRefuelRoute + 1
+                adRunning[v] = true
+                v.ad.onRouteToRefuel = true
+                return true, false
+            end
+            ADIntegration.startRepairRoute = function(_, v)
+                calls.startRepairRoute = calls.startRepairRoute + 1
+                adRunning[v] = true
+                v.ad.onRouteToRepair = true
+                return true
+            end
+            ADIntegration.isRefuelRepairComplete = function(_, v, flagName)
+                return not v.ad[flagName]
+            end
+        end)
+
+        -- The runner has no after_each: every test calls this before its asserts
+        local function restoreAD()
+            for k, fn in pairs(orig) do ADIntegration[k] = fn end
+        end
+
+        -- wmExecution as onPostLoad rebuilds it; AD's route flags are back to false
+        local function restoreVehicle(stepType, adAutoResumed)
+            local wf = {
+                id = "wf_" .. stepType .. "_load", name = stepType .. " after load",
+                steps = {
+                    { type = stepType,    target = "",     support = {} },
+                    { type = "autodrive", target = "Farm", action = "drive", support = {} },
+                },
+            }
+            local v = makeVehicle()
+            v.ad = { onRouteToRefuel = false, onRouteToRepair = false }
+            v.spec_workflowManagerSpec.wmExecution = {
+                workflow             = wf,
+                vehicle              = v,
+                status               = WorkflowManager.STATUS_PAUSED,
+                currentStep          = 1,
+                isMainVehicle        = true,
+                startTime            = 0,
+                waitingForCompletion = false,
+                autoResumeUntil      = 10000,
+            }
+            WMExecutor.activeVehicles[v] = true
+            adRunning[v] = adAutoResumed or nil
+            return v
+        end
+
+        local function pollInsideWindow(times)
+            _G.g_currentMission.time = 5000
+            for _ = 1, times do triggerPoll() end
+        end
+
+        it("restarts a Refuel step AD auto-resumed instead of completing it", function()
+            local v = restoreVehicle("refuel", true)
+
+            pollInsideWindow(4)
+            restoreAD()
+
+            local d = activeData(v)
+            assert.are.equal(1, calls.stopRoute)
+            assert.are.equal(1, calls.startRefuelRoute)
+            assert.are.equal(1, d.currentStep)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, d.status)
+            assert.are.equal(WorkflowManager.STEP_REFUEL, d.currentStepType)
+            assert.is_true(v.ad.onRouteToRefuel)
+            assert.is_nil(d.autoResumeUntil)
+        end)
+
+        it("restarts a Repair step AD auto-resumed instead of completing it", function()
+            local v = restoreVehicle("repair", true)
+
+            pollInsideWindow(4)
+            restoreAD()
+
+            local d = activeData(v)
+            assert.are.equal(1, calls.startRepairRoute)
+            assert.are.equal(1, d.currentStep)
+            assert.are.equal(WorkflowManager.STEP_REPAIR, d.currentStepType)
+            assert.is_true(v.ad.onRouteToRepair)
+        end)
+
+        it("defers the restart until AD has stopped its auto-resumed route", function()
+            local v = restoreVehicle("refuel", true)
+
+            pollInsideWindow(1)
+            restoreAD()
+
+            local d = activeData(v)
+            assert.are.equal(1, calls.stopRoute)
+            assert.are.equal(0, calls.startRefuelRoute)
+            assert.is_true(d.pendingADStart)
+        end)
+
+        it("still completes the step once AD clears the flag after the restart", function()
+            local v = restoreVehicle("refuel", true)
+            pollInsideWindow(4)
+
+            v.ad.onRouteToRefuel = false  -- RefuelTask:finished()
+            triggerPoll()
+            restoreAD()
+
+            assert.are.equal(2, activeData(v).currentStep)
+        end)
+
+        it("manual Resume re-issues a Refuel step instead of attaching to it", function()
+            local v = restoreVehicle("refuel", false)
+
+            local resumed = WMExecutor:resumeWorkflow(v)
+            triggerPoll()
+            restoreAD()
+
+            assert.is_true(resumed)
+            local d = activeData(v)
+            assert.are.equal(1, calls.startRefuelRoute)
+            assert.are.equal(1, d.currentStep)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, d.status)
+            assert.is_nil(d.autoResumeUntil)
+        end)
+
+        it("manual Resume re-issues a Repair step instead of attaching to it", function()
+            local v = restoreVehicle("repair", false)
+
+            local resumed = WMExecutor:resumeWorkflow(v)
+            triggerPoll()
+            restoreAD()
+
+            assert.is_true(resumed)
+            assert.are.equal(1, calls.startRepairRoute)
+            assert.are.equal(1, activeData(v).currentStep)
+        end)
+    end)
+
+    -- =========================================================================
     -- Courseplay step seed type
     --
     -- The seed lives on the attached sowing machine (base game), not in Courseplay. It has
