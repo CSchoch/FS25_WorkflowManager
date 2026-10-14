@@ -1938,3 +1938,254 @@ No WM dialog defines an Enter handler. Needs a 2-second in-game check: open the 
 | 22:15 | Edited src/gui/WMStepDialog.lua | modified WMStepDialog() | ~89 |
 | 22:20 | Fix: step dialog reopen reset fill types to first entry (isOpening guard until first update) + 2 tests | src/gui/WMStepDialog.lua, tests/specs/WMStepDialog_spec.lua | 936 pass | ~6000 |
 | 22:18 | Session end: 3 writes across 1 files (WMStepDialog.lua) | 2 reads | ~324 tok |
+
+## Session: 2026-10-07 12:01
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-10-07 12:01
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-10-07 12:04
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-10-07 12:04
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 12:29 | Edited webeditor/app.js | added optional chaining | ~491 |
+| 12:29 | Edited webeditor/app.js | test() → isCourseFile() | ~147 |
+| 12:29 | Edited webeditor/app.js | modified name() | ~91 |
+| 12:29 | Edited webeditor/app.js | added 2 condition(s) | ~368 |
+| 12:29 | Edited webeditor/app.js | modified loadState() | ~9 |
+| 12:30 | Edited webeditor/app.js | 4→3 lines | ~27 |
+| 12:30 | Edited webeditor/app.js | modified catch() | ~44 |
+| 12:31 | Edited webeditor/app.js | 2→6 lines | ~128 |
+| 12:31 | Edited webeditor/app.js | added optional chaining | ~2156 |
+| 12:31 | Edited webeditor/app.js | modified harvestWorkflowTargets() | ~231 |
+| 12:31 | Edited webeditor/app.js | 7→10 lines | ~96 |
+| 12:31 | Edited webeditor/app.js | 1→2 lines | ~36 |
+| 12:31 | Edited webeditor/app.js | modified t() | ~58 |
+| 12:31 | Edited webeditor/app.js | modified renderTargetsModal() | ~117 |
+| 12:32 | Edited webeditor/app.js | 5→9 lines | ~318 |
+| 12:32 | Edited webeditor/app.js | expanded (+10 lines) | ~278 |
+| 12:32 | Edited webeditor/app.js | 5→9 lines | ~344 |
+| 12:32 | Edited webeditor/app.js | expanded (+10 lines) | ~298 |
+| 12:32 | Edited webeditor/app.js | "AutoDrive map marker name" → "AutoDrive destination as " | ~35 |
+| 12:32 | Edited webeditor/app.js | "Name des AutoDrive-Karten" → "AutoDrive-Ziel wie im Spi" | ~33 |
+| 12:32 | Edited webeditor/index.html | 2→6 lines | ~100 |
+| 12:32 | Edited webeditor/index.html | 1→2 lines | ~102 |
+| 12:32 | Edited webeditor/index.html | 2→4 lines | ~142 |
+| 12:32 | Edited webeditor/style.css | CSS: margin, font-weight | ~37 |
+| 12:33 | Edited ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/1f0925d3-0b9b-4c72-9c34-ae7d822f3884/scratchpad/we_savegame_check.mjs | inline fix | ~6 |
+| 12:34 | Created ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/1f0925d3-0b9b-4c72-9c34-ae7d822f3884/scratchpad/we_targets_check.mjs | — | ~3675 |
+| 12:34 | Edited ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/1f0925d3-0b9b-4c72-9c34-ae7d822f3884/scratchpad/we_targets_check.mjs | 1→5 lines | ~113 |
+| 12:35 | Edited website/docs/web-editor.md | 4→8 lines | ~163 |
+| 12:35 | Edited website/docs/web-editor.md | expanded (+12 lines) | ~309 |
+| 12:35 | Edited webeditor/README.md | 2→4 lines | ~87 |
+| 12:35 | Edited webeditor/README.md | 4→8 lines | ~188 |
+| 12:35 | Edited webeditor/README.md | inline fix | ~26 |
+| 12:37 | Webeditor: Reload button, per-savegame target lists, auto-scan AD (AutoDrive_config.xml) + CP (linked Courses/<mapId>), fixed AD group/name + extension-less CP import; docs updated | webeditor/app.js, index.html, style.css, README.md, website/docs/web-editor.md | 46+25 CDP checks pass, docs build ok, 936 Lua tests pass | ~60000 |
+| 12:37 | Session end: 32 writes across 7 files (app.js, index.html, style.css, we_savegame_check.mjs, we_targets_check.mjs) | 5 reads | ~38786 tok |
+| 22:06 | Edited webeditor/app.js | added 1 condition(s) | ~64 |
+| 22:06 | Edited webeditor/app.js | added 2 condition(s) | ~84 |
+| 22:07 | Edited webeditor/app.js | modified courseNamesForMap() | ~93 |
+| 22:07 | Edited webeditor/app.js | inline fix | ~28 |
+| 22:07 | Edited webeditor/app.js | 1→2 lines | ~42 |
+| 22:07 | Edited webeditor/app.js | modified linkCoursesFolder() | ~237 |
+| 22:07 | Edited webeditor/app.js | inline fix | ~27 |
+| 22:07 | Edited webeditor/app.js | added nullish coalescing | ~24 |
+| 22:07 | Edited webeditor/app.js | 2→3 lines | ~56 |
+| 22:07 | Edited webeditor/app.js | modified t() | ~45 |
+| 22:07 | Edited webeditor/app.js | 1→2 lines | ~80 |
+| 22:07 | Edited webeditor/app.js | 1→2 lines | ~89 |
+| 22:07 | Edited webeditor/app.js | 1→2 lines | ~92 |
+| 22:07 | Edited webeditor/app.js | 1→2 lines | ~98 |
+| 22:07 | Edited ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/1f0925d3-0b9b-4c72-9c34-ae7d822f3884/scratchpad/we_targets_check.mjs | added 1 condition(s) | ~416 |
+| 22:09 | Edited website/docs/web-editor.md | 3→4 lines | ~83 |
+| 22:09 | Webeditor: Link Courseplay folder also accepts a map folder (Courses/<mapId>), warns on map mismatch | webeditor/app.js, website/docs/web-editor.md | 52 CDP checks pass | ~8000 |
+| 22:10 | Session end: 48 writes across 7 files (app.js, index.html, style.css, we_savegame_check.mjs, we_targets_check.mjs) | 5 reads | ~43095 tok |
+| 22:11 | Edited webeditor/app.js | modified once() | ~96 |
+| 22:11 | Edited webeditor/app.js | modified Courses() | ~107 |
+| 22:11 | Edited webeditor/app.js | 1→2 lines | ~30 |
+| 22:11 | Edited ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/1f0925d3-0b9b-4c72-9c34-ae7d822f3884/scratchpad/we_targets_check.mjs | 1→2 lines | ~59 |
+| 22:12 | Webeditor: tooltip on Link Courseplay folder + map-folder option in its hint | webeditor/app.js | 53 CDP checks pass | ~2000 |
+| 22:12 | Session end: 52 writes across 7 files (app.js, index.html, style.css, we_savegame_check.mjs, we_targets_check.mjs) | 5 reads | ~43391 tok |
+| 22:19 | Created ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/1f0925d3-0b9b-4c72-9c34-ae7d822f3884/scratchpad/we_targets_shot.mjs | — | ~1605 |
+| 22:20 | Edited webeditor/index.html | expanded (+14 lines) | ~730 |
+| 22:21 | Edited webeditor/app.js | expanded (+10 lines) | ~553 |
+| 22:21 | Edited webeditor/app.js | expanded (+10 lines) | ~602 |
+| 22:21 | Edited webeditor/app.js | added optional chaining | ~1234 |
+| 22:21 | Edited webeditor/app.js | modified for() | ~165 |
+| 22:21 | Edited webeditor/app.js | 1→5 lines | ~53 |
+| 22:22 | Edited webeditor/style.css | modified media() | ~1152 |
+| 22:23 | Edited webeditor/style.css | CSS: margin-left | ~41 |
+| 22:25 | Edited ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/1f0925d3-0b9b-4c72-9c34-ae7d822f3884/scratchpad/we_targets_check.mjs | inline fix | ~4 |
+| 22:26 | Edited ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/1f0925d3-0b9b-4c72-9c34-ae7d822f3884/scratchpad/we_targets_check.mjs | 4→9 lines | ~201 |
+| 22:26 | Edited ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/1f0925d3-0b9b-4c72-9c34-ae7d822f3884/scratchpad/we_targets_check.mjs | inline fix | ~34 |
+| 22:27 | Edited website/docs/web-editor.md | 9→11 lines | ~234 |
+| 22:27 | Edited webeditor/README.md | 1→2 lines | ~48 |
+| 22:27 | Webeditor: reworked Targets & Courses dialog (frontend-design) — split halves w/ subgrid, source status line per system, filter-or-add field, lists grouped by AD group / CP field folder w/ sticky tinted headers + tree guides, numeric sort | webeditor/index.html, style.css, app.js, README.md, website/docs/web-editor.md | 68+25 CDP checks, before/after screenshots | ~40000 |
+| 22:27 | Session end: 66 writes across 8 files (app.js, index.html, style.css, we_savegame_check.mjs, we_targets_check.mjs) | 15 reads | ~58888 tok |
+| 22:32 | Edited webeditor/app.js | added optional chaining | ~573 |
+| 22:32 | Edited webeditor/app.js | added 2 condition(s) | ~376 |
+| 22:32 | Edited webeditor/app.js | added 1 condition(s) | ~75 |
+| 22:32 | Edited webeditor/app.js | expanded (+9 lines) | ~206 |
+| 22:32 | Edited webeditor/app.js | expanded (+9 lines) | ~221 |
+| 22:32 | Edited webeditor/index.html | 1→2 lines | ~42 |
+| 22:32 | Edited webeditor/index.html | 1→2 lines | ~42 |
+| 22:33 | Edited webeditor/style.css | modified media() | ~500 |
+| 22:33 | Edited webeditor/style.css | inline fix | ~28 |
+| 22:33 | Edited ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/1f0925d3-0b9b-4c72-9c34-ae7d822f3884/scratchpad/we_targets_check.mjs | expanded (+50 lines) | ~1180 |
+| 22:35 | Edited website/docs/web-editor.md | 2→3 lines | ~68 |
+| 22:35 | Webeditor Targets dialog: collapsible groups (focus kept, filter ignores folds), remove group+entries (confirm unless 1), Clear per list (filtered = matches only) | webeditor/app.js, index.html, style.css, website/docs/web-editor.md | 85+25 CDP checks pass | ~15000 |
+| 22:35 | Session end: 77 writes across 8 files (app.js, index.html, style.css, we_savegame_check.mjs, we_targets_check.mjs) | 16 reads | ~63488 tok |
+
+## Session: 2026-10-07 22:41
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 22:45 | Edited webeditor/index.html | expanded (+6 lines) | ~821 |
+| 22:47 | Edited webeditor/app.js | added optional chaining | ~204 |
+| 22:47 | Edited webeditor/app.js | added 1 condition(s) | ~1247 |
+| 22:47 | Edited webeditor/app.js | modified renderFillChips() | ~161 |
+| 22:47 | Edited webeditor/app.js | renderFillPicker() → renderFillChips() | ~77 |
+| 22:47 | Edited webeditor/app.js | added 3 condition(s) | ~334 |
+| 22:48 | Edited webeditor/style.css | modified has() | ~1836 |
+| 22:55 | Reworked webeditor Edit Step dialog: job picker (type+mode in one), route stops in driving order, fixed height, collapsible fill list, switch; 32 CDP checks + 936 Lua tests pass | webeditor/index.html, app.js, style.css | done | ~9000 |
+| 22:50 | Session end: 7 writes across 3 files (index.html, app.js, style.css) | 14 reads | ~46304 tok |
+| 22:55 | Edited webeditor/app.js | modified stepRefs() | ~160 |
+| 22:55 | Edited webeditor/app.js | added 5 condition(s) | ~721 |
+| 22:55 | Edited webeditor/app.js | added 1 condition(s) | ~152 |
+| 22:55 | Edited webeditor/app.js | modified applyStepModal() | ~102 |
+| 22:55 | Edited webeditor/app.js | 7→4 lines | ~30 |
+| 23:10 | Step dialog: prev/next step pager in header (applies edits like Save, blocks on missing target, skips unchanged); 47 CDP checks + 936 Lua tests pass | webeditor/app.js, index.html, style.css | done | ~4000 |
+| 22:57 | Session end: 12 writes across 3 files (index.html, app.js, style.css) | 16 reads | ~48304 tok |
+
+## Session: 2026-10-07 22:58
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 23:02 | Edited webeditor/index.html | 19→24 lines | ~399 |
+| 23:02 | Edited webeditor/index.html | 4→4 lines | ~31 |
+| 23:02 | Edited webeditor/index.html | 15→20 lines | ~349 |
+| 23:03 | Edited webeditor/app.js | 3→6 lines | ~73 |
+| 23:03 | Edited webeditor/app.js | modified for() | ~381 |
+| 23:03 | Edited webeditor/app.js | 5→4 lines | ~63 |
+| 23:03 | Edited webeditor/app.js | added 4 condition(s) | ~768 |
+| 23:03 | Edited webeditor/app.js | 9→7 lines | ~116 |
+| 23:05 | Created ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/8a1e8b13-f83b-480d-bc48-dd91656bedf4/scratchpad/main.css | — | ~4373 |
+| 23:07 | Edited webeditor/style.css | CSS: position | ~21 |
+| 23:07 | Edited webeditor/style.css | inline fix | ~20 |
+| 23:08 | Created ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/8a1e8b13-f83b-480d-bc48-dd91656bedf4/scratchpad/check_body.mjs | — | ~1742 |
+| 23:30 | Reworked webeditor main page: steps as a route (spine, system-coloured stops, sync gates, support branches), summary button opens dialog, hover/focus actions, sticky toolbar, sidebar route strips, empty-state route sample, mobile strip layout; fixed Load shown in reverse driving order (bug-351) | webeditor/index.html, app.js, style.css | 23 main + 47 step + targets/savegame CDP checks pass, 936 Lua tests pass | ~30000 |
+| 23:10 | Session end: 12 writes across 5 files (index.html, app.js, main.css, style.css, check_body.mjs) | 13 reads | ~53188 tok |
+| 23:20 | Created ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/8a1e8b13-f83b-480d-bc48-dd91656bedf4/scratchpad/rest_body.mjs | — | ~514 |
+| 23:22 | Edited webeditor/style.css | inline fix | ~14 |
+| 23:22 | Edited webeditor/style.css | inline fix | ~23 |
+| 23:22 | Edited webeditor/style.css | inline fix | ~12 |
+| 23:24 | Created ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/8a1e8b13-f83b-480d-bc48-dd91656bedf4/scratchpad/site_body.mjs | — | ~388 |
+| 23:25 | Created website/src/pages/index.tsx | — | ~2499 |
+| 23:26 | Created website/src/pages/index.module.css | — | ~2058 |
+| 23:27 | Created ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/8a1e8b13-f83b-480d-bc48-dd91656bedf4/scratchpad/site_shot.mjs | — | ~1203 |
+| 23:55 | Webeditor follow-ups: gate dash inside summary button (bug-352), list keeps always-visible duplicate/delete + wider sidebar (header copies removed), no strips/support count in list, welcome page Open savegame + folder drop anywhere (getAsFileSystemHandle -> openSavegameDir), confirm dialog restyle + step count; website: new home page (route hero, step groups, screenshots), site tokens/fonts, 3 new web editor screenshots, web-editor.md (step list, dialogs, folder drop) | webeditor/*, website/src/pages/*, website/src/css/custom.css, website/docs/web-editor.md, website/static/img/screenshots/web-editor*.png | 40 main + 47 step + targets/savegame CDP checks, site build, 936 Lua tests pass | ~60000 |
+| 23:31 | Created ../../../../../.claude/projects/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/memory/feedback_webeditor_workflow_list.md | — | ~246 |
+| 23:31 | Session end: 21 writes across 11 files (index.html, app.js, main.css, style.css, check_body.mjs) | 33 reads | ~62079 tok |
+| 23:40 | Edited webeditor/app.js | modified readAdTargets() | ~556 |
+| 23:40 | Edited webeditor/app.js | added optional chaining | ~531 |
+| 23:40 | Edited webeditor/app.js | added error handling | ~1027 |
+| 23:40 | Edited webeditor/app.js | 3→4 lines | ~34 |
+| 23:40 | Edited webeditor/app.js | inline fix | ~30 |
+| 23:40 | Edited webeditor/app.js | added 1 condition(s) | ~35 |
+| 23:40 | Edited webeditor/app.js | inline fix | ~20 |
+| 23:40 | Edited webeditor/app.js | 5→1 lines | ~18 |
+| 23:41 | Edited webeditor/app.js | added optional chaining | ~501 |
+| 23:41 | Edited webeditor/index.html | inline fix | ~20 |
+| 23:41 | Edited webeditor/index.html | inline fix | ~20 |
+| 23:41 | Edited webeditor/index.html | expanded (+18 lines) | ~220 |
+| 23:41 | Created ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/8a1e8b13-f83b-480d-bc48-dd91656bedf4/scratchpad/i18n_patch.py | — | ~1553 |
+| 23:42 | Edited webeditor/style.css | expanded (+27 lines) | ~481 |
+| 23:43 | Created ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/8a1e8b13-f83b-480d-bc48-dd91656bedf4/scratchpad/autofind_body.mjs | — | ~2665 |
+| 23:45 | Created ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/8a1e8b13-f83b-480d-bc48-dd91656bedf4/scratchpad/autofind_shot_body.mjs | — | ~649 |
+| 23:46 | Edited webeditor/style.css | inline fix | ~30 |
+| 23:46 | Edited webeditor/style.css | CSS: flex-wrap, flex-basis, overflow-wrap | ~124 |
+| 23:47 | Created ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/8a1e8b13-f83b-480d-bc48-dd91656bedf4/scratchpad/zwsp_escape.py | — | ~53 |
+| 23:47 | Edited website/docs/web-editor.md | 4→7 lines | ~152 |
+| 23:47 | Edited website/docs/web-editor.md | folder() → read() | ~508 |
+| 23:47 | Edited website/docs/web-editor.md | 1→2 lines | ~41 |
+| 00:20 | Webeditor: auto-discover targets — FarmingSimulator2025 folder (pick/drop) links Courses + savegame chooser; failed discovery opens Targets with a per-half request (unlinked/permission/otherMap/failed, AD missing when used); docs table | webeditor/app.js, index.html, style.css, website/docs/web-editor.md | 33 autofind + 40 main + 47 step + targets/savegame checks, site build, 936 Lua tests pass | ~40000 |
+| 23:49 | Session end: 43 writes across 16 files (index.html, app.js, main.css, style.css, check_body.mjs) | 37 reads | ~71599 tok |
+
+## Session: 2026-10-07 23:54
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 23:57 | Created website/src/pages/index.tsx | — | ~3717 |
+| 23:58 | Created ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/e98283e4-7c21-4e7d-a8d1-50a35fe9d7df/scratchpad/fill_de.py | — | ~1541 |
+| 23:59 | Created website/i18n/de/docusaurus-plugin-content-docs/current/intro.md | — | ~1051 |
+| 23:59 | Created website/i18n/de/docusaurus-plugin-content-docs/current/getting-started.md | — | ~1118 |
+| 23:59 | Created website/i18n/de/docusaurus-plugin-content-docs/current/installation.md | — | ~830 |
+| 00:00 | Created website/i18n/de/docusaurus-plugin-content-docs/current/web-editor.md | — | ~3060 |
+| 00:00 | Created website/i18n/de/docusaurus-plugin-content-docs/current/faq.md | — | ~2183 |
+| 00:01 | Created website/i18n/de/docusaurus-plugin-content-docs/current/troubleshooting.md | — | ~3217 |
+| 00:02 | Created website/i18n/de/docusaurus-plugin-content-docs/current/workflows/creating-workflows.md | — | ~2280 |
+| 00:02 | Created website/i18n/de/docusaurus-plugin-content-docs/current/workflows/step-types.md | — | ~3030 |
+| 00:03 | Created website/i18n/de/docusaurus-plugin-content-docs/current/workflows/executing-workflows.md | — | ~2786 |
+| 00:04 | Created website/i18n/de/docusaurus-plugin-content-docs/current/workflows/linked-workflows.md | — | ~2248 |
+| 00:04 | Created website/i18n/de/docusaurus-plugin-content-docs/current/workflows/queue-system.md | — | ~1616 |
+| 00:05 | Created ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/e98283e4-7c21-4e7d-a8d1-50a35fe9d7df/scratchpad/de_glossary.md | — | ~1705 |
+| 00:06 | Edited website/README.md | expanded (+16 lines) | ~255 |
+| 00:06 | Session end: 15 writes across 15 files (index.tsx, fill_de.py, intro.md, getting-started.md, installation.md) | 17 reads | ~40402 tok |
+| 00:06 | Created website/i18n/de/docusaurus-plugin-content-docs/current/ui/ad-settings-dialog.md | — | ~635 |
+| 00:06 | Created website/i18n/de/docusaurus-plugin-content-docs/current/ui/mode-dialog.md | — | ~745 |
+| 00:06 | Created website/i18n/de/docusaurus-plugin-content-docs/current/api/courseplay.md | — | ~941 |
+| 00:06 | Created website/i18n/de/docusaurus-plugin-content-docs/current/ui/leader-select-dialog.md | — | ~781 |
+| 00:06 | Created website/i18n/de/docusaurus-plugin-content-docs/current/api/autodrive.md | — | ~880 |
+| 00:06 | Session end: 20 writes across 20 files (index.tsx, fill_de.py, intro.md, getting-started.md, installation.md) | 17 reads | ~44667 tok |
+| 00:06 | Created website/i18n/de/docusaurus-plugin-content-docs/current/ui/main-dialog.md | — | ~1489 |
+| 00:06 | Session end: 21 writes across 21 files (index.tsx, fill_de.py, intro.md, getting-started.md, installation.md) | 17 reads | ~46262 tok |
+| 00:06 | Created website/i18n/de/docusaurus-plugin-content-docs/current/ui/editor-dialog.md | — | ~1640 |
+| 00:06 | Session end: 22 writes across 22 files (index.tsx, fill_de.py, intro.md, getting-started.md, installation.md) | 17 reads | ~48019 tok |
+| 00:06 | Created website/i18n/de/docusaurus-plugin-content-docs/current/api/console-commands.md | — | ~1744 |
+| 00:06 | Session end: 23 writes across 23 files (index.tsx, fill_de.py, intro.md, getting-started.md, installation.md) | 17 reads | ~49887 tok |
+| 00:06 | Session end: 23 writes across 23 files (index.tsx, fill_de.py, intro.md, getting-started.md, installation.md) | 17 reads | ~49887 tok |
+| 00:06 | Session end: 23 writes across 23 files (index.tsx, fill_de.py, intro.md, getting-started.md, installation.md) | 17 reads | ~49887 tok |
+| 00:06 | Created website/i18n/de/docusaurus-plugin-content-docs/current/ui/hud-controls.md | — | ~2136 |
+| 00:06 | Session end: 24 writes across 24 files (index.tsx, fill_de.py, intro.md, getting-started.md, installation.md) | 17 reads | ~52175 tok |
+| 00:06 | Created website/i18n/de/docusaurus-plugin-content-docs/current/ui/step-dialog.md | — | ~1933 |
+| 00:06 | Session end: 25 writes across 25 files (index.tsx, fill_de.py, intro.md, getting-started.md, installation.md) | 17 reads | ~54246 tok |
+| 00:06 | Created website/i18n/de/docusaurus-plugin-content-docs/current/api/xml-format.md | — | ~3156 |
+| 00:06 | Session end: 26 writes across 26 files (index.tsx, fill_de.py, intro.md, getting-started.md, installation.md) | 17 reads | ~57627 tok |
+| 00:30 | Website German locale: i18n config + localeDropdown, homepage via <Translate>, 22 docs translated to i18n/de (11 by parallel agents w/ shared glossary), heading IDs {/* #id */}; npm run build OK for en+de | website/* | done | ~60k |
+| 00:08 | Created ../../../../../.claude/projects/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/memory/feedback_parallel_agents_bulk_work.md | — | ~212 |
+| 00:08 | Session end: 27 writes across 27 files (index.tsx, fill_de.py, intro.md, getting-started.md, installation.md) | 17 reads | ~57854 tok |
+
+## Session: 2026-10-13 22:24
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-10-13 22:24
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-10-13 22:29
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-10-13 22:29
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-10-14 21:54
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|

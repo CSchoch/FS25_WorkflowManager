@@ -1,44 +1,12 @@
 {
-  "session_id": "session-2026-10-06-2212",
-  "started": "2026-10-06T20:12:43.190Z",
-  "files_read": {
-    "c:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMStepDialog.lua": {
-      "count": 4,
-      "tokens": 0,
-      "first_read": "2026-10-06T20:14:24.876Z"
-    },
-    "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/tests/run_tests.lua": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-10-06T20:17:01.558Z"
-    }
-  },
-  "files_written": [
-    {
-      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMStepDialog.lua",
-      "action": "edit",
-      "tokens": 92,
-      "at": "2026-10-06T20:15:56.228Z"
-    },
-    {
-      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMStepDialog.lua",
-      "action": "edit",
-      "tokens": 137,
-      "at": "2026-10-06T20:15:57.528Z"
-    },
-    {
-      "file": "C:/Users/Chef/Documents/My Games/FarmingSimulator2025/mods/FS25_WorkflowManager/src/gui/WMStepDialog.lua",
-      "action": "edit",
-      "tokens": 95,
-      "at": "2026-10-06T20:15:58.796Z"
-    }
-  ],
-  "edit_counts": {
-    "src/gui/WMStepDialog.lua": 3
-  },
+  "session_id": "session-2026-10-14-2154",
+  "started": "2026-10-14T19:54:25.301Z",
+  "files_read": {},
+  "files_written": [],
+  "edit_counts": {},
   "anatomy_hits": 0,
-  "anatomy_misses": 2,
-  "repeated_reads_warned": 3,
+  "anatomy_misses": 0,
+  "repeated_reads_warned": 0,
   "cerebrum_warnings": 0,
-  "stop_count": 1
+  "stop_count": 0
 }

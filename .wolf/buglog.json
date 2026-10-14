@@ -5242,6 +5242,742 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-10-06T22:20:00"
+    },
+    {
+      "id": "bug-316",
+      "timestamp": "2026-10-07T10:29:25.100Z",
+      "error_message": "Null/undefined access in ",
+      "file": "webeditor/app.js",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check) | Also: idbHandles(\"readwrite\", (s) => s.put({ dir: link.dir, mtime:; function storeCoursesLink() {",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-10-07T10:31:22.741Z"
+    },
+    {
+      "id": "bug-317",
+      "timestamp": "2026-10-07T10:29:26.708Z",
+      "error_message": "Missing await",
+      "file": "webeditor/app.js",
+      "root_cause": "Async call without await — returned Promise instead of value",
+      "fix": "Added await to async call",
+      "tags": [
+        "auto-detected",
+        "async-fix",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T10:29:26.708Z"
+    },
+    {
+      "id": "bug-318",
+      "timestamp": "2026-10-07T10:29:38.763Z",
+      "error_message": "Significant refactor of ",
+      "file": "webeditor/app.js",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 15→31 lines (2 removed) | Also: targetsHint: \"The game reads AutoDrive destination; importCpHint: \"Pick your Courseplay “Courses” fold | Also: targetsHint: \"Das Spiel liest AutoDrive-Ziele und ; importCpHint: \"Wähle deinen Courseplay-Ordner „Cou",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-10-07T10:32:13.693Z"
+    },
+    {
+      "id": "bug-319",
+      "timestamp": "2026-10-07T10:29:59.662Z",
+      "error_message": "Wrong reference: useLibrary should be try",
+      "file": "webeditor/app.js",
+      "root_cause": "Used \"useLibrary\" instead of \"try\"",
+      "fix": "Changed useLibrary → try",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T10:29:59.662Z"
+    },
+    {
+      "id": "bug-320",
+      "timestamp": "2026-10-07T10:31:43.731Z",
+      "error_message": "Incorrect value in code",
+      "file": "webeditor/app.js",
+      "root_cause": "Had \"exportLabel\"",
+      "fix": "Changed to \"btnReload\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-10-07T10:32:23.060Z"
+    },
+    {
+      "id": "bug-321",
+      "timestamp": "2026-10-07T10:32:36.117Z",
+      "error_message": "Incorrect value in code",
+      "file": "webeditor/index.html",
+      "root_cause": "Had \"hint\"",
+      "fix": "Changed to \"targets-scope\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "html"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T10:32:36.117Z"
+    },
+    {
+      "id": "bug-322",
+      "timestamp": "2026-10-07T10:34:49.270Z",
+      "error_message": "Wrong operator: || should be &&",
+      "file": "../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/1f0925d3-0b9b-4c72-9c34-ae7d822f3884/scratchpad/we_targets_check.mjs",
+      "root_cause": "Used \"||\" instead of \"&&\"",
+      "fix": "Changed operator || → &&",
+      "tags": [
+        "auto-detected",
+        "operator-fix",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T10:34:49.270Z"
+    },
+    {
+      "id": "bug-323",
+      "timestamp": "2026-10-07T10:35:39.875Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/docs/web-editor.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 4→8 lines (2 removed) | Also: The editor doesn't know your map, so target fields; your names three ways:",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-10-07T10:35:41.197Z"
+    },
+    {
+      "id": "bug-324",
+      "timestamp": "2026-10-07T10:35:43.840Z",
+      "error_message": "Significant refactor of ",
+      "file": "webeditor/README.md",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 4→8 lines (4 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T10:35:43.840Z"
+    },
+    {
+      "id": "bug-325",
+      "timestamp": "2026-10-07T10:37:07.254Z",
+      "error_message": "Web editor: Courseplay course import does not work at all (0 courses imported)",
+      "file": "webeditor/app.js",
+      "root_cause": "importCpCourseFiles skipped every file not ending in .xml, but Courseplay course files have NO extension (modSettings/FS25_Courseplay/Courses/<mapId>/Singleplayer/F01/Kalken)",
+      "fix": "Detect course files by content (first 512 bytes contain <Courses) via isCourseFile(); dropped the .xml strip from courseNameFromFile",
+      "tags": [
+        "webeditor",
+        "courseplay",
+        "import",
+        "file-extension"
+      ],
+      "related_bugs": [
+        "bug-233"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T10:37:07.254Z"
+    },
+    {
+      "id": "bug-326",
+      "timestamp": "2026-10-07T10:37:07.254Z",
+      "error_message": "Web editor: AutoDrive import produces targets different from the mod",
+      "file": "webeditor/app.js",
+      "root_cause": "importAdConfigXml stored bare <name>, but the in-game step dialog stores ADIntegration:getDestinations displayName = group/name (bare only for group All)",
+      "fix": "adMarkerNames() builds group/name from <mapmarker><mmN><name>/<group>, mirroring getDestinations",
+      "tags": [
+        "webeditor",
+        "autodrive",
+        "import",
+        "targets"
+      ],
+      "related_bugs": [
+        "bug-233"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T10:37:07.254Z"
+    },
+    {
+      "id": "bug-327",
+      "timestamp": "2026-10-07T20:06:59.925Z",
+      "error_message": "Missing guard clause",
+      "file": "webeditor/app.js",
+      "root_cause": "No early return/throw for edge case: !mapId",
+      "fix": "Added guard clause: if (!mapId)",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T20:06:59.925Z"
+    },
+    {
+      "id": "bug-328",
+      "timestamp": "2026-10-07T20:07:10.714Z",
+      "error_message": "Wrong condition in logic",
+      "file": "webeditor/app.js",
+      "root_cause": "Condition was: if (!courses.mapId)",
+      "fix": "Changed to: if (mapId)",
+      "tags": [
+        "auto-detected",
+        "logic-fix",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T20:07:10.714Z"
+    },
+    {
+      "id": "bug-329",
+      "timestamp": "2026-10-07T20:07:11.908Z",
+      "error_message": "Wrong reference: mapId should be courses",
+      "file": "webeditor/app.js",
+      "root_cause": "Used \"mapId\" instead of \"courses\"",
+      "fix": "Changed mapId → courses",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-10-07T20:07:25.697Z"
+    },
+    {
+      "id": "bug-330",
+      "timestamp": "2026-10-07T20:07:24.498Z",
+      "error_message": "Significant refactor of ",
+      "file": "webeditor/app.js",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 11→15 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T20:07:24.498Z"
+    },
+    {
+      "id": "bug-331",
+      "timestamp": "2026-10-07T20:07:26.907Z",
+      "error_message": "Null/undefined access in ",
+      "file": "webeditor/app.js",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T20:07:26.907Z"
+    },
+    {
+      "id": "bug-332",
+      "timestamp": "2026-10-07T20:07:43.132Z",
+      "error_message": "Incorrect value in code",
+      "file": "webeditor/app.js",
+      "root_cause": "Had \"cpFolderLinkedHint\"",
+      "fix": "Changed to \"cpFolderHint\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 5,
+      "last_seen": "2026-10-07T20:11:46.713Z"
+    },
+    {
+      "id": "bug-327",
+      "timestamp": "2026-10-07T20:09:21.976Z",
+      "error_message": "Web editor: linking Courses/FS25_NDL.NDL as Courseplay folder errors, while importing the same folder works",
+      "file": "webeditor/app.js",
+      "root_cause": "linkCoursesFolder only accepted a folder named Courses (or a parent of it); the manual import hint tells users to pick the map folder, so users naturally linked that",
+      "fix": "Also accept a map folder (one holding Singleplayer): courses.mapId = folder name, stored in IDB; scan uses it directly and warns when the open savegame is on another map",
+      "tags": [
+        "webeditor",
+        "courseplay",
+        "folder-link"
+      ],
+      "related_bugs": [
+        "bug-325"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T20:09:21.976Z"
+    },
+    {
+      "id": "bug-334",
+      "timestamp": "2026-10-07T20:21:43.990Z",
+      "error_message": "Significant refactor of ",
+      "file": "webeditor/app.js",
+      "root_cause": "10 lines replaced/restructured",
+      "fix": "Rewrote 11→21 lines (10 removed) | Also: targetsHint: \"Die Schritt-Dialoge schlagen diese N; targetsScope: (d) => `Listen für ${d}`, targetsSco",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-10-07T20:21:45.213Z"
+    },
+    {
+      "id": "bug-335",
+      "timestamp": "2026-10-07T20:21:46.418Z",
+      "error_message": "Null/undefined access in ",
+      "file": "webeditor/app.js",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T20:21:46.418Z"
+    },
+    {
+      "id": "bug-336",
+      "timestamp": "2026-10-07T20:22:49.197Z",
+      "error_message": "Significant refactor of ",
+      "file": "webeditor/style.css",
+      "root_cause": "26 lines replaced/restructured",
+      "fix": "Rewrote 31→86 lines (26 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "css"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T20:22:49.197Z"
+    },
+    {
+      "id": "bug-337",
+      "timestamp": "2026-10-07T20:26:00.316Z",
+      "error_message": "Significant refactor of ",
+      "file": "../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/1f0925d3-0b9b-4c72-9c34-ae7d822f3884/scratchpad/we_targets_check.mjs",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 4→9 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T20:26:00.316Z"
+    },
+    {
+      "id": "bug-338",
+      "timestamp": "2026-10-07T20:27:16.448Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/docs/web-editor.md",
+      "root_cause": "8 lines replaced/restructured",
+      "fix": "Rewrote 9→11 lines (8 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T20:27:16.448Z"
+    },
+    {
+      "id": "bug-339",
+      "timestamp": "2026-10-07T20:32:26.608Z",
+      "error_message": "Null/undefined access in ",
+      "file": "webeditor/app.js",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check) | Also: if (focusGroup != null) {; ul.querySelector(`.tg-toggle[data-group=\"${CSS.escape(focusG",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-10-07T20:32:29.076Z"
+    },
+    {
+      "id": "bug-340",
+      "timestamp": "2026-10-07T20:32:27.900Z",
+      "error_message": "Missing guard clause",
+      "file": "webeditor/app.js",
+      "root_cause": "No early return/throw for edge case: set.has(group",
+      "fix": "Added guard clause: if (set.has(group)",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T20:32:27.900Z"
+    },
+    {
+      "id": "bug-341",
+      "timestamp": "2026-10-07T20:33:06.728Z",
+      "error_message": "Significant refactor of ",
+      "file": "webeditor/style.css",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 8→33 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "css"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T20:33:06.728Z"
+    },
+    {
+      "id": "bug-342",
+      "timestamp": "2026-10-07T20:33:08.429Z",
+      "error_message": "CSS fix: tg-item",
+      "file": "webeditor/style.css",
+      "root_cause": "tg-item: hover .tg-remove, .tg-remove:focus-visible { opacity: 1 → hover .tg-remove, .tg-group:hover .tg-remove, .tg-remove:focus-visible { opacity: 1",
+      "fix": "Changed tg-item: hover .tg-remove, .tg-remove:focus-visible { opacity: 1 → hover .tg-remove, .tg-group:hover .tg-remove, .tg-remove:focus-visible { opacity: 1",
+      "tags": [
+        "auto-detected",
+        "style-fix",
+        "css"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T20:33:08.429Z"
+    },
+    {
+      "id": "bug-343",
+      "timestamp": "2026-10-07T20:33:51.619Z",
+      "error_message": "Missing await",
+      "file": "../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/1f0925d3-0b9b-4c72-9c34-ae7d822f3884/scratchpad/we_targets_check.mjs",
+      "root_cause": "Async call without await — returned Promise instead of value",
+      "fix": "Added await to async call",
+      "tags": [
+        "auto-detected",
+        "async-fix",
+        "mjs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T20:33:51.619Z"
+    },
+    {
+      "id": "bug-344",
+      "timestamp": "2026-10-07T20:47:11.534Z",
+      "error_message": "Null/undefined access in ",
+      "file": "webeditor/app.js",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T20:47:11.534Z"
+    },
+    {
+      "id": "bug-345",
+      "timestamp": "2026-10-07T20:47:12.759Z",
+      "error_message": "Significant refactor of ",
+      "file": "webeditor/app.js",
+      "root_cause": "26 lines replaced/restructured",
+      "fix": "Rewrote 71→99 lines (26 removed) | Also: $(\"stepAction\").addEventListener(\"change\", () => {; $(\"stepFinishBeforeSwitch\").addEventListener(\"chan",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-10-07T20:47:42.631Z"
+    },
+    {
+      "id": "bug-346",
+      "timestamp": "2026-10-07T20:48:21.740Z",
+      "error_message": "Significant refactor of ",
+      "file": "webeditor/style.css",
+      "root_cause": "19 lines replaced/restructured",
+      "fix": "Rewrote 33→112 lines (19 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "css"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T20:48:21.740Z"
+    },
+    {
+      "id": "bug-347",
+      "timestamp": "2026-10-07T20:55:27.659Z",
+      "error_message": "Null/undefined access in ",
+      "file": "webeditor/app.js",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T20:55:27.659Z"
+    },
+    {
+      "id": "bug-348",
+      "timestamp": "2026-10-07T20:55:28.847Z",
+      "error_message": "Missing guard clause",
+      "file": "webeditor/app.js",
+      "root_cause": "No early return/throw for edge case: !$(\"stepModal\"",
+      "fix": "Added guard clause: if (!$(\"stepModal\")",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T20:55:28.847Z"
+    },
+    {
+      "id": "bug-349",
+      "timestamp": "2026-10-07T20:55:30.086Z",
+      "error_message": "Significant refactor of ",
+      "file": "webeditor/app.js",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 10→18 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T20:55:30.086Z"
+    },
+    {
+      "id": "bug-350",
+      "timestamp": "2026-10-07T21:03:18.079Z",
+      "error_message": "Significant refactor of ",
+      "file": "webeditor/app.js",
+      "root_cause": "5 lines replaced/restructured",
+      "fix": "Rewrote 10→17 lines (5 removed) | Also: class: `step-row${isSupport ? \" support-row\" : \"\"}; const line1 = el(\"div\", { class: \"step-line1\" }, | Also: miniBtn(\"edit\", t(\"edit\"), () => openStepModal(wf,; row.addEventListener(\"dblclick\", () => openStepMod",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-10-07T21:03:39.977Z"
+    },
+    {
+      "id": "bug-351",
+      "timestamp": "2026-10-07T23:30:00Z",
+      "error_message": "Web editor step list showed Load steps as 'Return To -> Load At' (reverse of driving order) while the step dialog shows Load At first",
+      "file": "webeditor/app.js",
+      "root_cause": "stepRow always rendered target -> unloadTarget; the step dialog's driving-order rule (Load visits unloadTarget first) was only applied in renderStepModal",
+      "fix": "stepRow builds the stops list in driving order (unshift unloadTarget for action 'load'), same rule as renderStepModal",
+      "tags": [
+        "webeditor",
+        "step-list",
+        "driving-order",
+        "load",
+        "consistency"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T23:30:00Z"
+    },
+    {
+      "id": "bug-352",
+      "timestamp": "2026-10-07T23:50:00Z",
+      "error_message": "the dashes in wait for leader / unlock follower are overlaying the buttons",
+      "file": "webeditor/style.css",
+      "root_cause": "The sync-gate dashed line was a ::after on the whole .step-row (left: spine, right: 10px), so it ran under the hover-revealed .step-actions buttons",
+      "fix": "Draw the dash as .gate .step-open::after (flex: 1 after the label) inside the summary button, so it ends where the actions column starts; mobile keeps flex-direction: row for gates",
+      "tags": [
+        "webeditor",
+        "css",
+        "gate",
+        "overlap",
+        "step-list"
+      ],
+      "related_bugs": [
+        "bug-351"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T23:50:00Z"
+    },
+    {
+      "id": "bug-353",
+      "timestamp": "2026-10-07T21:40:41.211Z",
+      "error_message": "Significant refactor of ",
+      "file": "webeditor/app.js",
+      "root_cause": "9 lines replaced/restructured",
+      "fix": "Rewrote 25→36 lines (9 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T21:40:41.211Z"
+    },
+    {
+      "id": "bug-354",
+      "timestamp": "2026-10-07T21:40:42.391Z",
+      "error_message": "Null/undefined access in ",
+      "file": "webeditor/app.js",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check) | Also: // A savegame scan replaces the list, so a manual import onl; // or when the scan did not find the file, and then it is th",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-10-07T21:41:09.806Z"
+    },
+    {
+      "id": "bug-355",
+      "timestamp": "2026-10-07T21:40:43.577Z",
+      "error_message": "Missing error handling in function",
+      "file": "webeditor/app.js",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T21:40:43.577Z"
+    },
+    {
+      "id": "bug-356",
+      "timestamp": "2026-10-07T21:40:56.983Z",
+      "error_message": "Wrong reference: linkCoursesFolder should be onCpFolderButton",
+      "file": "webeditor/app.js",
+      "root_cause": "Used \"linkCoursesFolder\" instead of \"onCpFolderButton\"",
+      "fix": "Changed linkCoursesFolder → onCpFolderButton",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-07T21:40:56.983Z"
+    },
+    {
+      "id": "bug-357",
+      "timestamp": "2026-10-07T21:41:21.276Z",
+      "error_message": "Incorrect value in code",
+      "file": "webeditor/index.html",
+      "root_cause": "Had \"adTitle\"",
+      "fix": "Changed to \"adPanel\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "html"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-10-07T21:41:22.499Z"
+    },
+    {
+      "id": "bug-358",
+      "timestamp": "2026-10-07T21:46:15.493Z",
+      "error_message": "CSS fix: grid-template-columns",
+      "file": "webeditor/style.css",
+      "root_cause": "grid-template-columns: 1fr 1fr → repeat(2, minmax(0, 1fr))",
+      "fix": "Changed grid-template-columns: 1fr 1fr → repeat(2, minmax(0, 1fr))",
+      "tags": [
+        "auto-detected",
+        "style-fix",
+        "css"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-10-07T21:46:16.679Z"
+    },
+    {
+      "id": "bug-359",
+      "timestamp": "2026-10-07T21:47:47.481Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/docs/web-editor.md",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 4→7 lines (4 removed) | Also: (`.../FarmingSimulator2025/modSettings/FS25_Course; **Link folder** in the Courseplay half once and pi",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-10-07T21:47:48.652Z"
+    },
+    {
+      "id": "bug-360",
+      "timestamp": "2026-10-08T00:30:00.000Z",
+      "error_message": "MDX compilation failed ... Could not parse expression with acorn (German docs, every heading with {#id})",
+      "file": "website/i18n/de/docusaurus-plugin-content-docs/current/**/*.md",
+      "root_cause": "Docusaurus 3 / MDX 3 parses {#id} after a heading as a JS expression",
+      "fix": "Use the MDX-comment form: ## Heading {/* #english-id */}",
+      "tags": [
+        "docusaurus",
+        "mdx",
+        "i18n",
+        "heading-id",
+        "website"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-08T00:30:00.000Z"
     }
   ]
 }
