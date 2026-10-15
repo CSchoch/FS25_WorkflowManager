@@ -2945,6 +2945,105 @@ describe("WMExecutor (real)", function()
     end)
 
     -- =========================================================================
+    -- Save written inside the 2s deferred step start
+    --
+    -- The next step (here CP) was never started, so no job and no CP marker survive the load.
+    -- Resume used to take the "monitor existing AD/CP" path, log "Courseplay never started"
+    -- and mark the step complete.
+    -- =========================================================================
+    describe("deferred step start saved before load", function()
+        before_each(function()
+            CPIntegration._callLog = {}
+        end)
+
+        -- wmExecution as onPostLoad rebuilds it from #pendingStepStart: CP step 2, nothing running
+        local function restoreVehicle(id, timerWasRunning)
+            local v = makeVehicle()
+            v.spec_workflowManagerSpec.wmExecution = {
+                workflow             = makeWorkflow(id),
+                vehicle              = v,
+                status               = WorkflowManager.STATUS_PAUSED,
+                currentStep          = 2,
+                isMainVehicle        = true,
+                startTime            = 0,
+                waitingForCompletion = false,
+                autoResumeUntil      = 10000,
+                pausedTrackingState  = { waitingForCompletion = false, hadPendingAutoStep = true },
+                deferredStartAtSave  = timerWasRunning or nil,
+            }
+            WMExecutor.activeVehicles[v] = true
+            return v
+        end
+
+        it("re-arms the deferred start when the auto-resume window expires", function()
+            local v = restoreVehicle("wf_def_auto", true)
+
+            _G.g_currentMission.time = 20000
+            triggerPoll()
+
+            local d = activeData(v)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, d.status)
+            assert.are.equal(22000, d.pendingAutoStep)
+            assert.is_nil(d.deferredStartAtSave)
+            assert.is_nil(d.pausedTrackingState)
+        end)
+
+        it("starts the saved step once the re-armed timer elapses instead of skipping it", function()
+            local v = restoreVehicle("wf_def_start", true)
+
+            _G.g_currentMission.time = 20000
+            triggerPoll()
+            _G.g_currentMission.time = 22000
+            triggerPoll()
+
+            local d = activeData(v)
+            assert.are.equal(2, d.currentStep)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, d.status)
+            assert.is_true(CPIntegration:isRunning(v))
+        end)
+
+        it("stays paused at expiry when the save was paused inside the window", function()
+            local v = restoreVehicle("wf_def_paused", false)
+
+            _G.g_currentMission.time = 20000
+            triggerPoll()
+
+            local d = activeData(v)
+            assert.are.equal(WorkflowManager.STATUS_PAUSED, d.status)
+            assert.is_nil(d.pendingAutoStep)
+            assert.is_true(d.pausedTrackingState.hadPendingAutoStep)
+        end)
+
+        it("manual Resume re-arms the start instead of marking the step complete", function()
+            local v = restoreVehicle("wf_def_manual", false)
+            _G.g_currentMission.time = 5000
+
+            assert.is_true(WMExecutor:resumeWorkflow(v))
+            local d = activeData(v)
+            assert.are.equal(7000, d.pendingAutoStep)
+            assert.is_nil(d.autoResumeUntil)
+
+            _G.g_currentMission.time = 7000
+            triggerPoll()
+
+            assert.are.equal(2, d.currentStep)
+            assert.is_true(CPIntegration:isRunning(v))
+        end)
+
+        it("Previous step while paused drops the saved marker", function()
+            local v = restoreVehicle("wf_def_prev", true)
+            _G.g_currentMission.time = 5000
+
+            assert.is_true(WMExecutor:goToPreviousStep(v))
+
+            local d = activeData(v)
+            assert.are.equal(1, d.currentStep)
+            assert.are.equal(WorkflowManager.STATUS_RUNNING, d.status)
+            assert.is_nil(d.deferredStartAtSave)
+        end)
+    end)
+
+    -- =========================================================================
     -- Refuel / Repair resume after savegame load
     --
     -- AD does not save onRouteToRefuel / onRouteToRepair (its onLoad resets both to false),

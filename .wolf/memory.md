@@ -2235,3 +2235,36 @@ No WM dialog defines an Enter handler. Needs a 2-second in-game check: open the 
 | 00:03 | Edited tests/specs/WorkflowExecutor_spec.lua | modified in() | ~1699 |
 | 00:04 | Fix refuel/repair step skipped after savegame load (re-issue instead of attach); 6 tests, 948 pass | src/WorkflowExecutor.lua, tests/specs/WorkflowExecutor_spec.lua, CLAUDE.md | done | ~25k |
 | 00:04 | Session end: 4 writes across 2 files (WorkflowExecutor.lua, WorkflowExecutor_spec.lua) | 0 reads | ~2430 tok |
+
+## Session: 2026-10-15 21:58
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-10-15 21:58
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-10-15 22:00
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-10-15 22:00
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 22:11 | Edited src/integration/CourseplayIntegration.lua | expanded (+7 lines) | ~119 |
+| 22:11 | Edited src/WorkflowManagerSpec.lua | expanded (+10 lines) | ~186 |
+| 22:11 | Edited src/WorkflowManagerSpec.lua | expanded (+7 lines) | ~154 |
+| 22:11 | Edited src/WorkflowManagerSpec.lua | 2→4 lines | ~65 |
+| 22:11 | Edited src/WorkflowManagerSpec.lua | 1→3 lines | ~72 |
+| 22:11 | Edited src/WorkflowExecutor.lua | expanded (+7 lines) | ~207 |
+| 22:11 | Edited src/WorkflowExecutor.lua | 3→6 lines | ~113 |
+| 22:11 | Edited src/WorkflowExecutor.lua | 3→4 lines | ~33 |
+| 22:12 | Edited tests/specs/WorkflowManagerSpec_spec.lua | modified saveWith() | ~916 |
+| 22:12 | Edited tests/specs/WorkflowExecutor_spec.lua | modified restoreVehicle() | ~1144 |
+| 22:12 | Edited tests/specs/CourseplayIntegration_spec.lua | modified cpVehicle() | ~397 |
+| 22:16 | Fix: save inside 2s deferred step start skipped the step after load (#pendingStepStart) + guard CP unfreezeCp with isRunning; 13 tests, 961 pass | src/WorkflowManagerSpec.lua, src/WorkflowExecutor.lua, src/integration/CourseplayIntegration.lua, tests, CLAUDE.md | bug-363 fixed | ~45k |
+| 22:13 | Session end: 11 writes across 6 files (CourseplayIntegration.lua, WorkflowManagerSpec.lua, WorkflowExecutor.lua, WorkflowManagerSpec_spec.lua, WorkflowExecutor_spec.lua) | 6 reads | ~95502 tok |

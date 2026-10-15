@@ -886,6 +886,13 @@ function CPIntegration:resumeCourse(vehicle)
         return false
     end
 
+    -- No CP job, no drive strategy: CP's unfreezeCp indexes it unguarded and crashes
+    -- (e.g. Previous step on a CP step restored from a save that never started).
+    if not self:isRunning(vehicle) then
+        WMLogger:debug("resumeCourse: CP not running, skipping unfreeze")
+        return false
+    end
+
     -- Only unfreeze if CP has the unfreeze method (it may not be frozen if CP was just started)
     if not vehicle.unfreezeCp then
         WMLogger:debug("resumeCourse: unfreezeCp not available, skipping")

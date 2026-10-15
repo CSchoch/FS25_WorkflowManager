@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-10-14T22:03:17.945Z
-> Files: 4 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-10-15T20:12:55.714Z
+> Files: 8 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -74,7 +74,8 @@
 
 ## src/
 
-- `WorkflowExecutor.lua` — init, startWorkflow, stopWorkflow, buildSyncMaps, onWorkflowDefinitionsChanged (~24616 tok)
+- `WorkflowExecutor.lua` — init, startWorkflow, stopWorkflow, buildSyncMaps, onWorkflowDefinitionsChanged (~24838 tok)
+- `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad (~8632 tok)
 
 ## src/dev/
 
@@ -85,6 +86,7 @@
 ## src/integration/
 
 - `AutoDriveIntegration.lua` — init, completeInitialization, update, checkAvailability, getDestinations (~11936 tok)
+- `CourseplayIntegration.lua` — init, completeInitialization, update, checkAvailability, hasSpec (~10171 tok)
 
 ## src/network/
 
@@ -107,7 +109,9 @@
 ## tests/specs/
 
 - `AutoDriveIntegration_spec.lua` — makeImplement, makeVehicle (~6308 tok)
-- `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport, makeLeaderWF (~42623 tok)
+- `CourseplayIntegration_spec.lua` — file, folder, view, makeStorage, makeVehicle (~7980 tok)
+- `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport, makeLeaderWF (~42855 tok)
+- `WorkflowManagerSpec_spec.lua` — makeVehicle, makeSavegameXML (~15011 tok)
 
 ## textures/
 

@@ -608,4 +608,33 @@ describe("CPIntegration (course resolution)", function()
         end)
     end)
 
+    -- =========================================================================
+    -- resumeCourse: CP's unfreezeCp indexes its drive strategy unguarded, so calling it with
+    -- no CP job crashed (Previous step on a CP step restored from a save, never started).
+    -- =========================================================================
+    describe("resumeCourse", function()
+        before_each(function()
+            CPIntegration.isAvailable = true
+        end)
+
+        local function cpVehicle(active)
+            local v = { spec_cpAIWorker = {}, unfrozen = 0 }
+            v.getIsCpActive = function() return active end
+            v.unfreezeCp = function(self) self.unfrozen = self.unfrozen + 1 end
+            return v
+        end
+
+        it("skips unfreezeCp when no Courseplay job is running", function()
+            local v = cpVehicle(false)
+            assert.is_false(CPIntegration:resumeCourse(v))
+            assert.are.equal(0, v.unfrozen)
+        end)
+
+        it("unfreezes a running (frozen) Courseplay job", function()
+            local v = cpVehicle(true)
+            assert.is_true(CPIntegration:resumeCourse(v))
+            assert.are.equal(1, v.unfrozen)
+        end)
+    end)
+
 end)

@@ -6017,6 +6017,28 @@
       ],
       "occurrences": 1,
       "last_seen": "2026-10-15T12:00:00.000Z"
+    },
+    {
+      "id": "bug-363",
+      "timestamp": "2026-10-15T22:15:00.000Z",
+      "error_message": "Saved during the AD->CP transition; after reload the workflow was paused, Previous step crashed (CpAIWorker.lua:442: attempt to index nil with 'unfreeze'), Resume skipped the CP step ('Courseplay never started') and finished the workflow",
+      "file": "src/WorkflowManagerSpec.lua, src/WorkflowExecutor.lua, src/integration/CourseplayIntegration.lua",
+      "root_cause": "The save landed inside the 2s deferred step start (pendingAutoStep) after the AD step completed. pendingAutoStep was never persisted and CP was not running yet, so no #cpWasRunning either. After load the step was PAUSED with no pausedTrackingState: Resume took the 'monitor existing AD/CP' branch, saw CP not running and completed the step. Separately, stopCurrentStep on a paused CP step calls CPIntegration:resumeCourse, which called vehicle:unfreezeCp() with no CP job; CP indexes getCpDriveStrategy() unguarded.",
+      "fix": "saveToXMLFile writes #pendingStepStart (true = timer running, false = paused in window); onPostLoad rebuilds pausedTrackingState{hadPendingAutoStep=true} and deferredStartAtSave. At auto-resume window expiry deferredStartAtSave calls resumeWorkflow (re-arms the 2s start); the hadPendingAutoStep resume branch clears autoResumeUntil/deferredStartAtSave; resetStepTrackingState clears deferredStartAtSave. CPIntegration:resumeCourse returns false when CP is not running. 13 tests.",
+      "tags": [
+        "savegame",
+        "deferred-start",
+        "pendingAutoStep",
+        "courseplay",
+        "unfreezeCp",
+        "step-skip",
+        "auto-resume"
+      ],
+      "related_bugs": [
+        "bug-362"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-10-15T22:15:00.000Z"
     }
   ]
 }

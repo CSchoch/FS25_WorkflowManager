@@ -398,6 +398,9 @@ function WMExecutor:resumeWorkflow(vehicle)
             -- there is no AD/CP job to resume — re-arm the timer and let update() start it.
             activeData.status = WorkflowManager.STATUS_RUNNING
             activeData.pendingAutoStep = g_currentMission.time + 2000
+            -- Also the restore of a save written inside the window: the post-load markers are spent
+            activeData.autoResumeUntil = nil
+            activeData.deferredStartAtSave = nil
             WMLogger:info("Resume re-armed deferred start of step %d", activeData.currentStep)
         else
             activeData.status = WorkflowManager.STATUS_RUNNING
@@ -1379,7 +1382,14 @@ function WMExecutor:update(dt)
                     -- through to the monitor branch and marks the field work complete.
                     -- (WMSettings is absent in unit specs — nil reads as enabled.)
                     local autoResumeEnabled = WMSettings == nil or WMSettings.courseplayAutoResume ~= false
-                    if activeData.cpWasRunningAtSave and not autoResumeEnabled then
+                    if activeData.deferredStartAtSave then
+                        -- Saved while the next step's 2s deferred start was counting down: that
+                        -- step never started, so continue exactly as if no save had happened.
+                        WMLogger:info("Auto-resume window expired for '%s' - re-arming the deferred "
+                            .. "start of step %d saved before load", workflow.name, activeData.currentStep)
+                        self:resumeWorkflow(vehicle)
+                        WorkflowManager:broadcastState(vehicle)
+                    elseif activeData.cpWasRunningAtSave and not autoResumeEnabled then
                         -- Markers stay set so a later Resume press still restarts at the waypoint
                         WMLogger:info("Auto-resume window expired for '%s' - Courseplay auto-resume is "
                             .. "disabled in the settings; staying paused. Press Resume to restart at "
@@ -1800,6 +1810,7 @@ function WMExecutor:resetStepTrackingState(activeData)
     -- Post-load CP resume markers are only valid for the step that was running at save time
     activeData.cpWasRunningAtSave = nil
     activeData.cpResumeWaypoint = nil
+    activeData.deferredStartAtSave = nil
 end
 
 

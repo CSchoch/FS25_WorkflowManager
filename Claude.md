@@ -82,7 +82,15 @@ must happen **after** any course load (loading a course clears CP's remembered i
 ordering in `startCourseplayStep`. With no recorded waypoint the workflow deliberately stays
 PAUSED rather than restarting from scratch.
 
-Current total: **948**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
+**Save inside the 2 s deferred step start:** after a step completes, the next one waits 2 s
+(`pendingAutoStep`) before starting, so a save in that window has no running AD/CP job and no CP
+marker. `saveToXMLFile` writes `#pendingStepStart` (true = timer running, false = paused in the
+window); `onPostLoad` rebuilds `pausedTrackingState.hadPendingAutoStep` (so Resume re-arms the
+start instead of "monitoring" and skipping the step) and `deferredStartAtSave` (re-armed on its own
+when the auto-resume window expires). `CPIntegration:resumeCourse` must stay guarded on
+`isRunning`: CP's `unfreezeCp` indexes the drive strategy unguarded and crashes with no job.
+
+Current total: **961**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
 or they will not run.
 
 **Mod options (game settings):** `WMSettings` holds the player-facing options

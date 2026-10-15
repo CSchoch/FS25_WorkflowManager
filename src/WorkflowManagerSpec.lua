@@ -189,6 +189,13 @@ function WorkflowManagerSpec:onPostLoad(savegame)
             -- executor restarts it once the auto-resume window expires — at this waypoint.
             local cpWasRunningAtSave = savegame.xmlFile:getValue(key .. "#cpWasRunning")
             local cpResumeWaypoint   = savegame.xmlFile:getValue(key .. "#cpResumeWaypoint")
+            -- Saved inside the deferred-start window: rebuild the paused-in-window state so
+            -- Resume re-arms the step start (see WMExecutor:resumeWorkflow).
+            local pendingStepStart   = savegame.xmlFile:getValue(key .. "#pendingStepStart")
+            local restoredPausedTrackingState = nil
+            if pendingStepStart ~= nil then
+                restoredPausedTrackingState = { waitingForCompletion = false, hadPendingAutoStep = true }
+            end
 
             self.spec_workflowManagerSpec.wmExecution = {
                 workflow                = workflow,
@@ -209,6 +216,8 @@ function WorkflowManagerSpec:onPostLoad(savegame)
                 autoResumeUntil         = restoredAutoResume,
                 cpWasRunningAtSave      = cpWasRunningAtSave,
                 cpResumeWaypoint        = cpResumeWaypoint,
+                pausedTrackingState     = restoredPausedTrackingState,
+                deferredStartAtSave     = pendingStepStart == true or nil,
                 pendingMainStepSwitch   = supportMainStepIndex ~= nil or nil,
                 supportMainStepIndex    = supportMainStepIndex,
             }
@@ -277,6 +286,16 @@ function WorkflowManagerSpec:saveToXMLFile(xmlFile, key, usedModNames)
             WMLogger:warning("Leader vehicle '%s' has no uniqueId — leader not saved",
                 activeData.leaderVehicle.getName and activeData.leaderVehicle:getName() or "?")
         end
+    end
+
+    -- Saved inside the 2s deferred-start window: the next step was never started, so no AD/CP
+    -- job marks it and a post-load Resume would "monitor" nothing and skip the step.
+    -- true = the timer was counting down; false = the workflow was paused inside the window.
+    local pts = activeData.pausedTrackingState
+    if activeData.pendingAutoStep ~= nil then
+        xmlFile:setValue(key .. "#pendingStepStart", true)
+    elseif activeData.status == WorkflowManager.STATUS_PAUSED and pts ~= nil and pts.hadPendingAutoStep then
+        xmlFile:setValue(key .. "#pendingStepStart", false)
     end
 
     -- Courseplay never restarts itself after a load (it clears the base-game AIFieldWorker
@@ -607,6 +626,8 @@ function WorkflowManagerSpec.initSpecialization()
         "true = Courseplay was driving this vehicle at save time (Courseplay never auto-resumes)")
     schema:register(XMLValueType.INT, key .. "#cpResumeWaypoint",
         "Courseplay waypoint to continue field work from after loading; absent = unknown, stay paused")
+    schema:register(XMLValueType.BOOL, key .. "#pendingStepStart",
+        "Saved inside the 2s deferred step start: true = timer was running, false = paused in it")
     print("[WorkflowManager] Registered savegame XML schema")
 end
 

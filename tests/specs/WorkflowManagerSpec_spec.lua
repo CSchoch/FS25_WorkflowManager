@@ -825,6 +825,72 @@ describe("WorkflowManagerSpec", function()
     end)
 
     -- =========================================================================
+    -- Save inside the 2s deferred step start: the next step never started, so without
+    -- this key a post-load Resume monitored nothing and skipped the step.
+    -- =========================================================================
+    describe("deferred step start marker", function()
+        local function saveWith(fields)
+            local v = makeVehicle()
+            WorkflowManagerSpec.onLoad(v, nil)
+            local exec = { workflow = { id = "wf_def", name = "Def", steps = {} },
+                           currentStep = 2, isMainVehicle = true }
+            for k, val in pairs(fields) do exec[k] = val end
+            v.spec_workflowManagerSpec.wmExecution = exec
+            local xml = makeSavegameXML()
+            WorkflowManagerSpec.saveToXMLFile(v, xml, BASE_KEY, {})
+            return xml._data[BASE_KEY .. "#pendingStepStart"]
+        end
+
+        local function restoreWith(pendingStepStart)
+            _G.WorkflowManager.workflows = { { id = "wf_def", name = "Def", steps = {} } }
+            local v = makeVehicle()
+            WorkflowManagerSpec.onLoad(v, nil)
+            local xml = makeSavegameXML({
+                [BASE_KEY .. "#workflowId"]       = "wf_def",
+                [BASE_KEY .. "#currentStep"]      = 2,
+                [BASE_KEY .. "#isMainVehicle"]    = true,
+                [BASE_KEY .. "#pendingStepStart"] = pendingStepStart,
+            })
+            WorkflowManagerSpec.onPostLoad(v, { key = "vehicles.vehicle(0)", resetVehicles = false, xmlFile = xml })
+            return v.spec_workflowManagerSpec.wmExecution
+        end
+
+        it("saves true while the deferred start timer is counting down", function()
+            assert.is_true(saveWith({ status = "running", pendingAutoStep = 14000 }))
+        end)
+
+        it("saves false when the workflow was paused inside the window", function()
+            assert.is_false(saveWith({ status = "paused",
+                pausedTrackingState = { hadPendingAutoStep = true } }))
+        end)
+
+        it("writes nothing outside the window", function()
+            assert.is_nil(saveWith({ status = "running" }))
+            assert.is_nil(saveWith({ status = "paused", pausedTrackingState = { hadPendingAutoStep = false } }))
+        end)
+
+        it("restores a running timer as paused-in-window plus the auto-continue flag", function()
+            local exec = restoreWith(true)
+            assert.are.equal("paused", exec.status)
+            assert.is_true(exec.pausedTrackingState.hadPendingAutoStep)
+            assert.is_false(exec.pausedTrackingState.waitingForCompletion)
+            assert.is_true(exec.deferredStartAtSave)
+        end)
+
+        it("restores a paused-in-window save without the auto-continue flag", function()
+            local exec = restoreWith(false)
+            assert.is_true(exec.pausedTrackingState.hadPendingAutoStep)
+            assert.is_nil(exec.deferredStartAtSave)
+        end)
+
+        it("restores neither for a save without the key", function()
+            local exec = restoreWith(nil)
+            assert.is_nil(exec.pausedTrackingState)
+            assert.is_nil(exec.deferredStartAtSave)
+        end)
+    end)
+
+    -- =========================================================================
     -- onWriteStream / onReadStream (multiplayer mid-session join)
     -- =========================================================================
     describe("onWriteStream / onReadStream", function()

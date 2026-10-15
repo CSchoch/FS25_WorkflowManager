@@ -102,6 +102,8 @@ follow the same one-dialog-at-a-time discipline.
 - **AD restart-after-load needs a driving farm (2026-10-14):** `AutoDrive:autostartHelpers` (AD loadMap, SP only, setting `autostartHelpers`) restarts a vehicle only if its saved `AutoDrive#active` is true **and** `stateModule.actualFarmId ~= 0`. AD sets `actualFarmId` only on player enter/leave or its own start key — API starts (`StartDriving`, `startAutoDrive`) do not. So every WM AD start goes through `ADIntegration:assignDrivingFarm(vehicle)` (owner farm). Diagnose with `savegameN/vehicles.xml` → `<AutoDrive ... active= actualFarmId=>`.
 
 ## Do-Not-Repeat
+- [2026-10-15] **Every transient step state that a save can land in must be persisted (or reconstructible) — the post-load monitor branch otherwise skips the step.** A save inside the 2s `pendingAutoStep` window (after any step completes) left step N+1 never started, with no AD/CP job and no `#cpWasRunning`; Resume hit `resumeWorkflow`'s no-pausedTrackingState branch, logged "Courseplay never started" and completed the step (bug-363). Fixed via `#pendingStepStart`. Also: never call CP's `unfreezeCp`/`freezeCp` without `CPIntegration:isRunning` — they index `getCpDriveStrategy()` unguarded.
+
 
 - [2026-10-15] The custom test runner (`tests/run_tests.lua`) has no `after_each` - calling it aborts the whole spec file and nests all later specs. Restore shared-mock overrides inline before the asserts.
 
