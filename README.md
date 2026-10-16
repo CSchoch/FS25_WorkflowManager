@@ -15,6 +15,7 @@
   <img src="https://img.shields.io/badge/Farming%20Simulator-25-4c9a2a" alt="Farming Simulator 25">
   <img src="https://img.shields.io/badge/multiplayer-supported-blue" alt="Multiplayer supported">
   <a href="https://cschoch.github.io/FS25_WorkflowManagerDocs/"><img src="https://img.shields.io/badge/docs-EN%20%7C%20DE-informational" alt="Documentation"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License"></a>
 </p>
 
 <p align="center">
@@ -145,3 +146,7 @@ Clone with submodules: `git clone --recurse-submodules https://github.com/CSchoc
 Workflow Manager builds on the work of the
 [AutoDrive](https://github.com/Stephan-S/FS25_AutoDrive) and
 [Courseplay](https://github.com/Courseplay/Courseplay_FS25) teams.
+
+## License
+
+[MIT](LICENSE) © 2026 Christian Schoch

@@ -2283,3 +2283,8 @@ No WM dialog defines an Enter handler. Needs a 2-second in-game check: open the 
 | 00:14 | Session end: 1 writes across 1 files (README.md) | 1 reads | ~1911 tok |
 | 00:15 | Session end: 1 writes across 1 files (README.md) | 1 reads | ~1911 tok |
 | 00:18 | Session end: 1 writes across 1 files (README.md) | 1 reads | ~1911 tok |
+| 00:33 | Created LICENSE | — | ~287 |
+| 00:33 | Edited README.md | 2→3 lines | ~72 |
+| 00:33 | Edited README.md | 2→6 lines | ~32 |
+| 00:33 | Added MIT LICENSE (2026 Christian Schoch) + README license badge/section | LICENSE, README.md | done | ~1k |
+| 00:33 | Session end: 4 writes across 2 files (README.md, LICENSE) | 1 reads | ~2329 tok |
