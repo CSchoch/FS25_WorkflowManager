@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-10-15T20:12:55.714Z
-> Files: 8 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-10-16T22:14:12.394Z
+> Files: 9 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -50,6 +50,7 @@
 
 ## ./
 
+- `README.md` — Project documentation (~1672 tok)
 
 ## .claude/
 
