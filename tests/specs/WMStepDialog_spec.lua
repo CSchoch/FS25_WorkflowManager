@@ -46,6 +46,7 @@ describe("WMStepDialog", function()
                     or stepType == self.STEP_REPAIR
             end,
             getStepTypeLabel = function(self, stepType) return stepType end,
+            getCourseDisplayName = function(self, name) return (string.gsub(name or "", "^Singleplayer/", "")) end,
             editorDialog = nil,
         }
 
@@ -331,7 +332,9 @@ describe("WMStepDialog", function()
             local d = makeDialog()
             d.stepType         = WorkflowManager.STEP_AUTODRIVE
             d.stepAction       = "load"
-            d.stepTarget       = "Silo"
+            -- Load shows the route in driving order: first block = load point, second = target
+            d.stepTarget       = "Farm"
+            d.stepUnloadTarget = "Silo"
             d.selectedFillTypes = {"wheat"}
             local step = confirm(d)
             assert.is_not_nil(step.fillTypes)
@@ -372,7 +375,8 @@ describe("WMStepDialog", function()
             local d = makeDialog()
             d.stepType          = WorkflowManager.STEP_AUTODRIVE
             d.stepAction        = "load"
-            d.stepTarget        = "Silo"
+            d.stepTarget        = "Farm"   -- load point (first block for Load)
+            d.stepUnloadTarget  = "Silo"   -- target
             d.stepSeedFruitType = "WHEAT"  -- must be ignored for AD
             local step = confirm(d)
             assert.is_nil(step.seedFruitType)
@@ -870,6 +874,125 @@ describe("WMStepDialog", function()
 
             d.fillTypeList.onSelectionChanged(d.fillTypeList, 1, 1)
             assert.are.same({ "WHEAT" }, d.selectedFillTypes)
+        end)
+    end)
+
+    -- =========================================================================
+    -- UI review 2026-10-17: Load in driving order, subtitle, "(none)" line, course names
+    -- =========================================================================
+    describe("Load shows the route in driving order", function()
+        local function textEl()
+            local el = {}
+            el.setText = function(self, t) self.text = t end
+            el.setTextColor = function(self, r, g, b, a) self.color = { r, g, b, a } end
+            el.setVisible = function(self, v) self.visible = v end
+            return el
+        end
+
+        local function confirm(d)
+            local result
+            d.close = function() end
+            d.callback = function(s) result = s end
+            WMStepDialog.onClickConfirm(d)
+            return result
+        end
+
+        before_each(function()
+            _G.g_i18n = { getText = function(_, key) return key end }
+            _G.WMLogger = { debug = function() end, warning = function() end }
+        end)
+
+        local loadStep = { type = "autodrive", action = "load", target = "Field 9", unloadTarget = "Grain Silo" }
+
+        it("puts the load point in the first block when a Load step opens", function()
+            local d = makeDialog()
+            d:setStep(loadStep, function() end)
+            assert.are.equal("Grain Silo", d.stepTarget)
+            assert.are.equal("Field 9", d.stepUnloadTarget)
+        end)
+
+        it("saves target and load point unchanged", function()
+            local d = makeDialog()
+            d:setStep(loadStep, function() end)
+            local step = confirm(d)
+            assert.are.equal("Field 9", step.target)
+            assert.are.equal("Grain Silo", step.unloadTarget)
+        end)
+
+        it("leaves the order of other actions alone", function()
+            local d = makeDialog()
+            d:setStep({ type = "autodrive", action = "pickup_deliver", target = "Field 9", unloadTarget = "Silo" },
+                function() end)
+            assert.are.equal("Field 9", d.stepTarget)
+            assert.are.equal("Silo", d.stepUnloadTarget)
+        end)
+
+        it("moves the values when the action changes into and out of Load", function()
+            local d = makeDialog()
+            d:setStep({ type = "autodrive", action = "pickup_deliver", target = "Field 9", unloadTarget = "Silo" },
+                function() end)
+            d:onActionChanged(nil, 4)   -- load
+            assert.are.equal("Silo", d.stepTarget)
+            assert.are.equal("Field 9", d.stepUnloadTarget)
+            d:onActionChanged(nil, 2)   -- pickup_deliver
+            assert.are.equal("Field 9", d.stepTarget)
+            assert.are.equal("Silo", d.stepUnloadTarget)
+        end)
+
+        it("asks for the target (second block) when a Load step has none", function()
+            local d = makeDialog()
+            d.showStatus = function(self, text) self.status = text end
+            d:setStep({ type = "autodrive", action = "load", target = "", unloadTarget = "Grain Silo" }, function() end)
+            assert.is_nil(confirm(d))
+            assert.are.equal("wm_warning_no_target", d.status)
+        end)
+
+        it("labels the blocks Load At / Deliver To for Load, Target otherwise", function()
+            local d = makeDialog()
+            d.targetLabel, d.unloadTargetLabel = textEl(), textEl()
+            d:setStep(loadStep, function() end)
+            d:updateFieldVisibility()
+            assert.are.equal("wm_editor_load_target", d.targetLabel.text)
+            assert.are.equal("wm_editor_unload_target", d.unloadTargetLabel.text)
+            d.stepAction = "drive"
+            d:updateFieldVisibility()
+            assert.are.equal("wm_editor_target", d.targetLabel.text)
+        end)
+
+        it("shows the subtitle the editor passes, and hides an empty one", function()
+            local d = makeDialog()
+            d.titleElement, d.subtitleElement = textEl(), textEl()
+            d:setStep(nil, function() end, false, "Grass Chopping · step 3")
+            d:refreshDisplay()
+            assert.are.equal("Grass Chopping · step 3", d.subtitleElement.text)
+            assert.is_true(d.subtitleElement.visible)
+            d:setStep(nil, function() end)
+            d:refreshDisplay()
+            assert.is_false(d.subtitleElement.visible)
+        end)
+
+        it("says (none) in amber when no target is selected", function()
+            local d = makeDialog()
+            d.selectedUnloadTargetLabel = textEl()
+            d:updateSelectedLabel("unloadTarget", nil)
+            assert.are.equal("wm_step_selected: wm_step_selected_none", d.selectedUnloadTargetLabel.text)
+            assert.are.same({ 1, 0.8, 0.3, 1 }, d.selectedUnloadTargetLabel.color)
+            d:updateSelectedLabel("unloadTarget", "Silo")
+            assert.are.equal("wm_step_selected: Silo", d.selectedUnloadTargetLabel.text)
+            assert.are.same({ 1, 1, 1, 1 }, d.selectedUnloadTargetLabel.color)
+        end)
+
+        it("lists courses without the Singleplayer/ prefix but keeps the stored name", function()
+            WorkflowManager.editorDialog = {
+                getADDestinations = function() return {} end,
+                getCPCourses = function() return { "Singleplayer/F49/Chopping" } end,
+            }
+            local d = makeDialog()
+            d.stepType = WorkflowManager.STEP_COURSEPLAY
+            d:refreshTargetList()
+            assert.are.equal("Singleplayer/F49/Chopping", d.targetItems[1].name)
+            assert.are.equal("F49/Chopping", d.targetItems[1].display)
+            WorkflowManager.editorDialog = nil
         end)
     end)
 

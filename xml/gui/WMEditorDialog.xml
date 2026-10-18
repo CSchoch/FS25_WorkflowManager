@@ -30,16 +30,16 @@
                 <Button profile="buttonOK" id="addStepButton" text="$l10n_wm_button_new" onClick="onClickAddStep" size="80px 40px" focusId="addBtn"/>
                 <Button profile="buttonActivate" id="editStepButton" text="$l10n_wm_button_edit" onClick="onClickEditStep" size="110px 40px" focusId="editBtn"/>
                 <Button profile="buttonActivate" id="removeStepButton" text="$l10n_wm_button_delete" onClick="onClickRemoveStep" size="110px 40px" focusId="removeBtn"/>
-                <Button profile="buttonActivate" id="moveUpButton" text="$l10n_wm_button_up" onClick="onClickMoveUp" size="100px 40px" focusId="upBtn"/>
-                <Button profile="buttonActivate" id="moveDownButton" text="$l10n_wm_button_down" onClick="onClickMoveDown" size="100px 40px" focusId="downBtn"/>
+                <Button profile="buttonActivate" id="moveUpButton" text="$l10n_wm_button_up" onClick="onClickMoveUp" size="60px 40px" focusId="upBtn"/>
+                <Button profile="buttonActivate" id="moveDownButton" text="$l10n_wm_button_down" onClick="onClickMoveDown" size="60px 40px" focusId="downBtn"/>
                 <Button profile="buttonOK" id="addSupportStepButton" text="$l10n_wm_button_add_support" onClick="onClickAddSupportStep" size="200px 40px" focusId="addSupBtn"/>
             </BoxLayout>
 
             <!-- Column Headers for Steps: # | Type | Action | Target -->
             <!-- Width matches list outer container (1260px); 40px spacer aligns with slider -->
             <BoxLayout flowDirection="horizontal" size="1260px 30px">
-                <Text profile="wm_columnHeader" text="#" size="50px 30px" textOffset="8px 0px"/>
-                <Text profile="wm_columnHeader" text="$l10n_wm_editor_type" size="150px 30px" textOffset="8px 0px"/>
+                <Text profile="wm_columnHeader" text="#" size="70px 30px" textOffset="8px 0px"/>
+                <Text profile="wm_columnHeader" text="$l10n_wm_editor_type" size="130px 30px" textOffset="8px 0px"/>
                 <Text profile="wm_columnHeader" text="$l10n_wm_editor_action" size="250px 30px" textOffset="8px 0px"/>
                 <Text profile="wm_columnHeader" text="$l10n_wm_editor_target" size="770px 30px" textOffset="8px 0px"/>
                 <GuiElement size="40px 30px"/>
@@ -53,9 +53,16 @@
                             size="1220px 420px"
                             focusId="stepList">
                     <ListItem profile="wm_listItem" size="1220px 38px">
+                        <!-- Support sub-steps get a darker band (visible per cell) -->
+                        <Bitmap name="rowTint" profile="wm_rowTint"/>
                         <BoxLayout flowDirection="horizontal" alignmentY="middle" size="100% 100%">
-                            <Text name="stepNum" profile="wm_listItemText" size="50px 100%"/>
-                            <Text name="stepType" profile="wm_listItemText" size="150px 100%"/>
+                            <Text name="stepNum" profile="wm_listItemText" size="70px 100%"/>
+                            <!-- Type as a coloured AD / CP / WM chip -->
+                            <GuiElement size="130px 100%">
+                                <Bitmap name="stepTypeChip" profile="wm_typeChip">
+                                    <Text name="stepType" profile="wm_typeChipText"/>
+                                </Bitmap>
+                            </GuiElement>
                             <Text name="stepAction" profile="wm_listItemText" size="250px 100%"/>
                             <Text name="stepTarget" profile="wm_listItemText" size="770px 100%"/>
                         </BoxLayout>

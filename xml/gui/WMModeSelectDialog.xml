@@ -2,7 +2,8 @@
 <GUI inputContext="MENU" onOpen="onOpen" onClose="onClose" onCreate="onCreate">
     <GuiElement profile="newLayer"/>
     <Bitmap profile="dialogFullscreenBg"/>
-    <GuiElement profile="fs25_dialogBg" size="700px 240px">
+    <!-- 900px wide: the three footer buttons are sized by their labels and overflowed 700px -->
+    <GuiElement profile="fs25_dialogBg" size="900px 300px">
         <ThreePartBitmap profile="fs25_dialogBgMiddleSmall"/>
         <ThreePartBitmap profile="fs25_dialogBgTopSmall"/>
         <ThreePartBitmap profile="fs25_dialogBgBottom"/>
@@ -15,7 +16,17 @@
             <!-- Description -->
             <Text profile="wm_dialogText" id="descriptionElement"
                   text="$l10n_wm_mode_select_description"
-                  size="660px 50px"/>
+                  size="840px 30px"/>
+
+            <!-- What each role does: label 200 + text 630 = 830 -->
+            <BoxLayout profile="wm_hBox" size="860px 30px">
+                <Text profile="wm_dialogText" text="$l10n_wm_button_run_as_main" textBold="true" size="200px 30px"/>
+                <Text profile="wm_dialogText" text="$l10n_wm_mode_main_info" size="630px 30px"/>
+            </BoxLayout>
+            <BoxLayout profile="wm_hBox" size="860px 30px">
+                <Text profile="wm_dialogText" text="$l10n_wm_button_run_as_support" textBold="true" size="200px 30px"/>
+                <Text profile="wm_dialogText" text="$l10n_wm_mode_support_info" size="630px 30px"/>
+            </BoxLayout>
         </BoxLayout>
 
         <!-- Buttons -->

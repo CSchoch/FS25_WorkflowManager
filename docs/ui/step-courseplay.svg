@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="924" height="1102" viewBox="0 0 924 1102" font-family="'Nunito Sans', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif">
+<title>Step dialog: Courseplay field work with seed</title>
+<defs><linearGradient id="separator" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#ffffff" stop-opacity="0"/><stop offset="0.5" stop-color="#ffffff" stop-opacity="0.75"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></linearGradient></defs>
+<rect x="0" y="0" width="924" height="1102" rx="10" fill="#0b0b0b"/>
+<rect x="12" y="4" width="900" height="1030" rx="8" fill="#232323" stroke="#3a3a3a" stroke-width="1"/>
+<text xml:space="preserve" x="466" y="46.4" font-size="24" fill="#ffffff" font-weight="700" text-anchor="middle">EDIT STEP</text>
+<text xml:space="preserve" x="466" y="84.3" font-size="15" fill="#bfbfbf" text-anchor="middle">Grass Chopping · step 4</text>
+<rect x="76.5" y="106" width="779" height="2" fill="url(#separator)"/>
+<text xml:space="preserve" x="101" y="154.1" font-size="16" fill="#ffffff" text-anchor="start">Type</text>
+<rect x="332" y="129.5" width="498" height="38" rx="6" fill="#1e1e1e" stroke="#4c4c4c" stroke-width="2"/>
+<path d="M340 148.5 l7 -5 v10 z" fill="#bbbbbb"/>
+<path d="M822 148.5 l-7 -5 v10 z" fill="#bbbbbb"/>
+<text xml:space="preserve" x="581" y="154.5" font-size="17" fill="#e6e6e6" text-anchor="middle">COURSEPLAY</text>
+<text xml:space="preserve" x="101" y="209.1" font-size="16" fill="#ffffff" text-anchor="start">Action</text>
+<rect x="332" y="184.5" width="498" height="38" rx="6" fill="#1e1e1e" stroke="#4c4c4c" stroke-width="2"/>
+<path d="M822 203.5 l-7 -5 v10 z" fill="#bbbbbb"/>
+<text xml:space="preserve" x="581" y="209.5" font-size="17" fill="#e6e6e6" text-anchor="middle">FIELD WORK</text>
+<text xml:space="preserve" x="101" y="261.6" font-size="16" fill="#ffffff" text-anchor="start">Target</text>
+<rect x="331" y="238.5" width="460" height="35" rx="4" fill="#2c2c2c"/>
+<text xml:space="preserve" x="331" y="301.9" font-size="14" fill="#ffffff" text-anchor="start">Selected: F48/Sowing</text>
+<clipPath id="clip1"><rect x="331" y="318" width="500" height="120"/></clipPath>
+<g clip-path="url(#clip1)">
+<rect x="331" y="318" width="500" height="30" rx="0" fill="#5c5c5c"/>
+<text xml:space="preserve" x="339" y="337.9" font-size="14" fill="#ffffff" text-anchor="start">F48/Liming</text>
+<rect x="331" y="348" width="500" height="30" rx="0" fill="#00b8e6"/>
+<text xml:space="preserve" x="339" y="367.9" font-size="14" fill="#ffffff" text-anchor="start">F48/Sowing</text>
+<rect x="331" y="378" width="500" height="30" rx="0" fill="#5c5c5c"/>
+<text xml:space="preserve" x="339" y="397.9" font-size="14" fill="#ffffff" text-anchor="start">F49/Fertilizing</text>
+<rect x="331" y="408" width="500" height="30" rx="0" fill="#6b6b6b"/>
+<text xml:space="preserve" x="339" y="427.9" font-size="14" fill="#ffffff" text-anchor="start">F49/Chopping</text>
+<rect x="331" y="438" width="500" height="30" rx="0" fill="#5c5c5c"/>
+<text xml:space="preserve" x="339" y="457.9" font-size="14" fill="#ffffff" text-anchor="start">F50/Chopping</text>
+</g>
+<rect x="835" y="318" width="6" height="120" rx="3" fill="#3a3a3a"/>
+<rect x="835" y="318" width="6" height="80" rx="3" fill="#8a8a8a"/>
+<text xml:space="preserve" x="101" y="476.1" font-size="16" fill="#ffffff" text-anchor="start">Seed Type</text>
+<rect x="332" y="451.5" width="498" height="38" rx="6" fill="#1e1e1e" stroke="#4c4c4c" stroke-width="2"/>
+<path d="M340 470.5 l7 -5 v10 z" fill="#bbbbbb"/>
+<path d="M822 470.5 l-7 -5 v10 z" fill="#bbbbbb"/>
+<text xml:space="preserve" x="581" y="476.5" font-size="17" fill="#e6e6e6" text-anchor="middle">WHEAT</text>
+<rect x="579" y="1049" width="54" height="38" rx="4" fill="#1b2617"/>
+<path d="M613 1061 v6 h-14 m5 -5 l-5 5 l5 5" fill="none" stroke="#8cc63f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<text xml:space="preserve" x="647" y="1074.5" font-size="18" fill="#ffffff" font-weight="700">SAVE</text>
+<rect x="721.4" y="1050" width="1" height="36" rx="0" fill="#4a4a4a"/>
+<rect x="736.4" y="1049" width="70" height="38" rx="4" fill="#1b2617"/>
+<text xml:space="preserve" x="771.4" y="1075" font-size="20" fill="#8cc63f" font-weight="700" text-anchor="middle">ESC</text>
+<text xml:space="preserve" x="820.4" y="1074.5" font-size="18" fill="#ffffff" font-weight="700">CANCEL</text>
+</svg>

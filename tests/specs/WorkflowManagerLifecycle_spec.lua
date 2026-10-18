@@ -628,4 +628,24 @@ describe("WorkflowManager lifecycle", function()
             assert.is_nil(next(visibility))
         end)
     end)
+    -- UI review 2026-10-17: chip colours and course display names (real module)
+    describe("step type colours and course display names", function()
+        it("colours AD-driven types (incl. Park/Refuel/Repair) blue, Courseplay green, markers amber", function()
+            local WM = loadModule(false)
+            for _, t in ipairs({ WM.STEP_AUTODRIVE, WM.STEP_PARK, WM.STEP_REFUEL, WM.STEP_REPAIR }) do
+                assert.are.equal(WM.STEP_COLOR_AD, WM:getStepTypeColor(t))
+            end
+            assert.are.equal(WM.STEP_COLOR_CP, WM:getStepTypeColor(WM.STEP_COURSEPLAY))
+            assert.are.equal(WM.STEP_COLOR_MARKER, WM:getStepTypeColor(WM.STEP_WAIT_FOR_LEADER))
+        end)
+
+        it("drops only a leading Singleplayer/ from course names", function()
+            local WM = loadModule(false)
+            assert.are.equal("F34/Kalken", WM:getCourseDisplayName("Singleplayer/F34/Kalken"))
+            assert.are.equal("F34/Kalken", WM:getCourseDisplayName("F34/Kalken"))   -- legacy names
+            assert.are.equal("A/Singleplayer/B", WM:getCourseDisplayName("A/Singleplayer/B"))
+            assert.are.equal("", WM:getCourseDisplayName(nil))
+        end)
+    end)
+
 end)

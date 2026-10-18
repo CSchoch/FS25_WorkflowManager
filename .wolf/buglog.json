@@ -6039,6 +6039,287 @@
       ],
       "occurrences": 1,
       "last_seen": "2026-10-15T22:15:00.000Z"
+    },
+    {
+      "id": "bug-364",
+      "timestamp": "2026-10-16T22:52:05.762Z",
+      "error_message": "Significant refactor of ",
+      "file": "../../../../../.claude/plans/somehow-in-vehicle-sync-spicy-sutherland.md",
+      "root_cause": "12 lines replaced/restructured",
+      "fix": "Rewrote 15→53 lines (12 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-16T22:52:05.762Z"
+    },
+    {
+      "id": "bug-365",
+      "timestamp": "2026-10-16T22:52:11.026Z",
+      "error_message": "Incorrect value in code",
+      "file": "../../../../../.claude/plans/somehow-in-vehicle-sync-spicy-sutherland.md",
+      "root_cause": "Had `translations/translation_de.xml`",
+      "fix": "Changed to `translations/translation_en.xml`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-10-16T22:52:19.550Z"
+    },
+    {
+      "id": "bug-366",
+      "timestamp": "2026-10-16T22:52:14.859Z",
+      "error_message": "Wrong reference: German should be English",
+      "file": "../../../../../.claude/plans/somehow-in-vehicle-sync-spicy-sutherland.md",
+      "root_cause": "Used \"German\" instead of \"English\"",
+      "fix": "Changed German → English",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-16T22:52:14.859Z"
+    },
+    {
+      "id": "bug-367",
+      "timestamp": "2026-10-16T23:01:49.963Z",
+      "error_message": "Wrong reference: Utils should be fileExists",
+      "file": "tools/render_ui_preview.lua",
+      "root_cause": "Used \"Utils\" instead of \"fileExists\"",
+      "fix": "Changed Utils → fileExists",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-16T23:01:49.963Z"
+    },
+    {
+      "id": "bug-368",
+      "timestamp": "2026-10-16T23:02:33.855Z",
+      "error_message": "Wrong return value",
+      "file": "tools/render_ui_preview.lua",
+      "root_cause": "Was returning: assert(text, \"missing text \" .. tostring(key))",
+      "fix": "Now returns: text",
+      "tags": [
+        "auto-detected",
+        "return-value",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-16T23:02:33.855Z"
+    },
+    {
+      "id": "bug-369",
+      "timestamp": "2026-10-16T23:03:14.960Z",
+      "error_message": "Significant refactor of ",
+      "file": "tools/render_ui_preview.lua",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 6→9 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-16T23:03:14.960Z"
+    },
+    {
+      "id": "bug-370",
+      "timestamp": "2026-10-16T23:06:25.404Z",
+      "error_message": "Incorrect value in code",
+      "file": "tests/specs/RenderUiPreview_spec.lua",
+      "root_cause": "Had \"Finish before switching\"",
+      "fix": "Changed to \"Finish before\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-16T23:06:25.404Z"
+    },
+    {
+      "id": "bug-371",
+      "timestamp": "2026-10-16T23:13:17.766Z",
+      "error_message": "Incorrect value in code",
+      "file": "../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/d56930fa-4909-4eed-a87e-36e514f99657/scratchpad/review/index.html",
+      "root_cause": "Had \"left:250px; top:104px\"",
+      "fix": "Changed to \"left:150px; top:104px\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "html"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-16T23:13:17.766Z"
+    },
+    {
+      "id": "bug-372",
+      "timestamp": "2026-10-17T01:15:00",
+      "error_message": "render_ui_preview: attempt to index local 'text' (a function value) / attempt to compare number with function / bad argument #2 to 'insert' / setGuiOpen nil under test runner",
+      "file": "tools/render_ui_preview.lua",
+      "root_cause": "Fake element __index returned noop for data fields; getText returned assert's 2 values; runner-preloaded CPVehiclesLoader mock leaked into the tool's environment",
+      "fix": "DATA_FIELDS whitelist returning nil, getText returns a single value, tool sets CPVehiclesLoader = nil itself",
+      "tags": [
+        "tools",
+        "render",
+        "fake-elements",
+        "test-runner",
+        "globals"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-17T01:15:00"
+    },
+    {
+      "id": "bug-373",
+      "timestamp": "2026-10-17T01:15:00",
+      "error_message": "HUD: 'Step' not translated; leader/main name tooltip overlaps the step line; mode-select footer overflows 700px; German editor toolbar overflows (found by UI renders, NOT fixed yet)",
+      "file": "src/gui/WMHud.lua, xml/gui/WMModeSelectDialog.xml, xml/gui/WMEditorDialog.xml",
+      "root_cause": "Hard-coded format at WMHud.lua:475/489; drawButtonTooltip places all tooltips above bounds; auto-width FS25 buttons exceed fixed dialog widths",
+      "fix": "Fixed 2026-10-17: wm_hud_step / wm_hud_support_step keys (unused wm_hud_step_format removed); name tooltips drawn below the name on a backing box; mode select 900px; editor Up/Down as arrows and \"+ Support\"/\"+ Unterstützung\"; leader list sorted",
+      "tags": [
+        "hud",
+        "i18n",
+        "layout",
+        "fixed"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-17T01:50:00"
+    },
+    {
+      "id": "bug-374",
+      "timestamp": "2026-10-17T20:11:24.036Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/gui/WMMainDialog.lua",
+      "root_cause": "5 lines replaced/restructured",
+      "fix": "Rewrote 8→11 lines (5 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-17T20:11:24.036Z"
+    },
+    {
+      "id": "bug-375",
+      "timestamp": "2026-10-17T20:11:51.246Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/gui/WMEditorDialog.lua",
+      "root_cause": "11 lines replaced/restructured",
+      "fix": "Rewrote 29→55 lines (11 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-17T20:11:51.246Z"
+    },
+    {
+      "id": "bug-376",
+      "timestamp": "2026-10-17T20:14:04.162Z",
+      "error_message": "Wrong reference: then should be nil",
+      "file": "src/gui/WMStepDialog.lua",
+      "root_cause": "Used \"then\" instead of \"nil\"",
+      "fix": "Changed then → nil",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-10-17T20:14:05.354Z"
+    },
+    {
+      "id": "bug-374",
+      "timestamp": "2026-10-17T01:50:00",
+      "error_message": "Fill-type list marks selected entries with '✓ ', but the FS25 font has no U+2713 glyph (not fixed; reported)",
+      "file": "src/gui/WMStepDialog.lua",
+      "root_cause": "Character outside the single FS25 font's glyph table",
+      "fix": "Open - selected rows are still green, so selection stays visible; replace the check mark with an available glyph if wanted",
+      "tags": [
+        "font",
+        "glyph",
+        "step-dialog",
+        "open"
+      ],
+      "related_bugs": [
+        "bug-373"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-10-17T01:50:00"
+    },
+    {
+      "id": "bug-375",
+      "timestamp": "2026-10-18T12:00:00Z",
+      "error_message": "Workflow editor step list: AD/CP type chips render as a garbled noisy texture instead of a solid coloured badge",
+      "file": "xml/gui/guiProfiles.xml",
+      "root_cause": "wm_typeChip and wm_rowTint set imageSliceId=\"noSlice\", which is not a solid-colour slice; it discards baseReference's plain-colour image so the full UI atlas is drawn into the 64x22 chip",
+      "fix": "Removed imageSliceId from both profiles (inherit baseReference like wm_listItem); preview tool now treats Bitmap with imageColor and no imageSliceId as a solid block; regression test in WMEditorDialog_spec",
+      "tags": [
+        "gui",
+        "xml",
+        "bitmap",
+        "imageSliceId",
+        "editor",
+        "fs25"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-18T12:00:00Z"
+    },
+    {
+      "id": "bug-379",
+      "timestamp": "2026-10-18T19:27:36.822Z",
+      "error_message": "Wrong reference: 280 should be 320",
+      "file": "src/gui/WMHud.lua",
+      "root_cause": "Used \"280\" instead of \"320\"",
+      "fix": "Changed 280 → 320",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-18T19:27:36.822Z"
+    },
+    {
+      "id": "bug-380",
+      "timestamp": "2026-10-18T19:32:33.946Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/gui/WMHud.lua",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 5→14 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-10-18T19:32:33.946Z"
     }
   ]
 }

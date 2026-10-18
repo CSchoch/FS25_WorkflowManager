@@ -246,34 +246,60 @@ function WMEditorDialog:populateCellForItemInSection(list, section, index, cell)
     end
     if step == nil then return end
 
-    -- # column: step number for main rows, "└" for support sub-steps
+    -- Cells are reused while scrolling: every branch below sets its value and colour
+
+    -- Support sub-steps: darker band, "→ 2.1" in the # column, indented texts
+    -- (TextElement has no offset setter, so the indent stays a two-space prefix)
+    local indent = item.isMain and "" or "  "
+    local tintEl = cell:getDescendantByName("rowTint")
+    if tintEl then
+        tintEl:setVisible(not item.isMain)
+    end
+
     local numEl = cell:getDescendantByName("stepNum")
     if numEl then
-        numEl:setText(item.isMain and tostring(item.stepIndex) or (tostring(item.stepIndex) .. "." .. tostring(item.supportIndex)))
+        numEl:setText(item.isMain and tostring(item.stepIndex)
+            or ("→ " .. tostring(item.stepIndex) .. "." .. tostring(item.supportIndex)))
     end
 
-    -- Type column (indent support steps with "  " prefix)
+    -- Type column: coloured AD / CP / WM chip
     local typeEl = cell:getDescendantByName("stepType")
     if typeEl then
-        local typeText = WorkflowManager:getStepTypeLabel(step.type)
-        typeEl:setText(item.isMain and typeText or ("  " .. typeText))
+        typeEl:setText(WorkflowManager:getStepTypeShortcut(step.type))
+    end
+    local chipEl = cell:getDescendantByName("stepTypeChip")
+    if chipEl then
+        chipEl:setImageColor(nil, unpack(WorkflowManager:getStepTypeColor(step.type)))
     end
 
-    -- Action column (indent support steps; marker/Park steps have no action)
+    -- Action column: the type's name for steps without action/target (markers in amber)
     local actionEl = cell:getDescendantByName("stepAction")
     if actionEl then
-        local actionText = ""
-        if not WorkflowManager:isTargetlessStepType(step.type) then
+        local actionText
+        if WorkflowManager:isTargetlessStepType(step.type) then
+            actionText = WorkflowManager:getStepTypeLabel(step.type)
+        else
             actionText = self:getActionDisplayName(step.action) or step.action or ""
         end
-        actionEl:setText(item.isMain and actionText or ("  " .. actionText))
+        actionEl:setText(indent .. actionText)
+        if WorkflowManager:isMarkerStepType(step.type) then
+            actionEl:setTextColor(0.94, 0.78, 0.38, 1)
+        else
+            actionEl:setTextColor(1, 1, 1, 1)
+        end
     end
 
-    -- Target column (indent support steps)
+    -- Target column: course names without "Singleplayer/"; flag "finish before switching"
     local targetEl = cell:getDescendantByName("stepTarget")
     if targetEl then
         local targetText = step.target or ""
-        targetEl:setText(item.isMain and targetText or ("  " .. targetText))
+        if step.type == WorkflowManager.STEP_COURSEPLAY then
+            targetText = WorkflowManager:getCourseDisplayName(targetText)
+        end
+        if not item.isMain and step.finishBeforeSwitch then
+            targetText = targetText .. "  · " .. (g_i18n:getText("wm_editor_finish_first") or "finish first")
+        end
+        targetEl:setText(indent .. targetText)
     end
 
 end
@@ -397,6 +423,22 @@ function WMEditorDialog:onNameEnterPressed()
     end
 end
 
+---Line under the step dialog's title: the workflow and the step being edited
+---@param stepIndex number|nil Main step, nil for a new step
+---@param supportIndex number|nil Support sub-step of that main step
+---@return string
+function WMEditorDialog:getStepSubtitle(stepIndex, supportIndex)
+    local name = self.workflow and self.workflow.name or ""
+    if stepIndex == nil then
+        return string.format(g_i18n:getText("wm_step_subtitle_new"), name)
+    end
+    if supportIndex ~= nil then
+        return string.format(g_i18n:getText("wm_step_subtitle_support"), name,
+            tostring(stepIndex) .. "." .. tostring(supportIndex))
+    end
+    return string.format(g_i18n:getText("wm_step_subtitle"), name, tostring(stepIndex))
+end
+
 ---Add a new main step at the end of the workflow.
 function WMEditorDialog:onClickAddStep()
     self:suspendForChildDialog()
@@ -410,7 +452,7 @@ function WMEditorDialog:onClickAddStep()
             self:refreshStepList()
         end
         self:resumeAfterChildDialog()
-    end)
+    end, false, self:getStepSubtitle(nil))
 end
 
 ---Edit the currently selected row (main step or support sub-step).
@@ -430,7 +472,7 @@ function WMEditorDialog:onClickEditStep()
                 self:refreshStepList()
             end
             self:resumeAfterChildDialog()
-        end)
+        end, false, self:getStepSubtitle(si))
     else
         local mainStep = self.workflow.steps[item.stepIndex]
         if mainStep == nil or mainStep.support == nil then return end
@@ -448,7 +490,7 @@ function WMEditorDialog:onClickEditStep()
                 self:refreshStepList()
             end
             self:resumeAfterChildDialog()
-        end, true)
+        end, true, self:getStepSubtitle(si, sj))
     end
 end
 
@@ -559,7 +601,7 @@ function WMEditorDialog:onClickAddSupportStep()
             self:refreshStepList()
         end
         self:resumeAfterChildDialog()
-    end, true)
+    end, true, self:getStepSubtitle(nil))
 end
 
 -- ============================================================

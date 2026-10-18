@@ -129,14 +129,17 @@ function WMMainDialog:populateCellForItemInSection(list, section, index, cell)
     local currentStep = isThisWorkflow and activeData.currentStep or 1
     local status = isThisWorkflow and activeData.status or nil
 
-    -- Set workflow name (with support steps indicator), colored by status
+    -- Support column: "Yes" for workflows with support sub-steps
+    local supportElement = cell:getDescendantByName("workflowSupport")
+    if supportElement then
+        local hasSupport = WorkflowManager:hasSupportSteps(workflow.id)
+        supportElement:setText(hasSupport and (g_i18n:getText("wm_option_yes") or "Yes") or "")
+    end
+
+    -- Set workflow name, colored by status
     local nameElement = cell:getDescendantByName("workflowName")
     if nameElement then
-        local displayName = workflow.name or "Unnamed"
-        if WorkflowManager:hasSupportSteps(workflow.id) then
-            displayName = displayName .. " [+S]"
-        end
-        nameElement:setText(displayName)
+        nameElement:setText(workflow.name or "Unnamed")
 
         -- Color name by workflow status on current vehicle
         if status == WorkflowManager.STATUS_RUNNING then

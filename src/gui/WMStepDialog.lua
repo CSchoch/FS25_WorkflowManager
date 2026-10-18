@@ -173,8 +173,9 @@ end
 ---@param step table|nil Step to edit, or nil for new
 ---@param callback function Callback when done: callback(step) or callback(nil) if cancelled
 ---@param isSupportStep boolean|nil true when this is a support sub-step (hides sync marker types)
-function WMStepDialog:setStep(step, callback, isSupportStep)
+function WMStepDialog:setStep(step, callback, isSupportStep, subtitle)
     self.callback = callback
+    self.subtitle = subtitle
     self.isEditMode = step ~= nil
     self.isSupportStep = isSupportStep == true
 
@@ -204,6 +205,25 @@ function WMStepDialog:setStep(step, callback, isSupportStep)
         self.stepSeedFruitType = ""
         self.stepFinishBeforeSwitch = false
     end
+
+    if self:isLoadOrder() then
+        self:swapRouteFields()
+    end
+end
+
+---Load drives to its load point (unloadTarget, AutoDrive's second marker) BEFORE the target
+---(AD LoadMode: STATE_TO_TARGET loads at the second marker, then drives to the first). The
+---dialog shows the route in driving order, so while the action is Load the first block edits
+---the load point: stepTarget and stepUnloadTarget hold each other's values. setStep and
+---onActionChanged swap in, onClickConfirm swaps back.
+---@return boolean
+function WMStepDialog:isLoadOrder()
+    return self.stepType == WorkflowManager.STEP_AUTODRIVE and self.stepAction == "load"
+end
+
+---Exchange the values of the two route blocks (see isLoadOrder)
+function WMStepDialog:swapRouteFields()
+    self.stepTarget, self.stepUnloadTarget = self.stepUnloadTarget, self.stepTarget
 end
 
 ---Load available data from caches
@@ -249,7 +269,7 @@ function WMStepDialog:refreshTargetList()
         if editor then
             local courses = editor:getCPCourses()
             for _, course in ipairs(courses) do
-                table.insert(self.targetItems, {name = course, display = course})
+                table.insert(self.targetItems, {name = course, display = WorkflowManager:getCourseDisplayName(course)})
             end
         end
     end
@@ -273,6 +293,10 @@ function WMStepDialog:refreshDisplay()
     if self.titleElement then
         local titleKey = self.isEditMode and "wm_dialog_edit_step" or "wm_dialog_add_step"
         self.titleElement:setText(g_i18n:getText(titleKey))
+    end
+    if self.subtitleElement then
+        self.subtitleElement:setText(self.subtitle or "")
+        self.subtitleElement:setVisible(self.subtitle ~= nil and self.subtitle ~= "")
     end
 
     -- Update type dropdown
@@ -613,13 +637,16 @@ function WMStepDialog:updateFieldVisibility()
     -- Finish before switching (support sub-steps only)
     if self.finishBeforeSwitchRow then self.finishBeforeSwitchRow:setVisible(self:canFinishBeforeSwitch()) end
 
-    -- Update unload target label based on action
-    if self.unloadTargetLabel then
-        if self.stepAction == "load" then
-            self.unloadTargetLabel:setText(g_i18n:getText("wm_editor_load_point") or "Load Point")
+    -- Route labels: for Load the first block is the load point (driving order, see isLoadOrder)
+    if self.targetLabel then
+        if self:isLoadOrder() then
+            self.targetLabel:setText(g_i18n:getText("wm_editor_load_target") or "Load At")
         else
-            self.unloadTargetLabel:setText(g_i18n:getText("wm_editor_unload_target") or "Deliver To")
+            self.targetLabel:setText(g_i18n:getText("wm_editor_target") or "Target")
         end
+    end
+    if self.unloadTargetLabel then
+        self.unloadTargetLabel:setText(g_i18n:getText("wm_editor_unload_target") or "Deliver To")
     end
 
     -- Unload target section, selected label, and list
@@ -755,12 +782,22 @@ end
 ---@param displayName string|nil The selected item's display name, or nil to clear
 function WMStepDialog:updateSelectedLabel(field, displayName)
     local prefix = g_i18n:getText("wm_step_selected") or "Selected"
-    local text = displayName and (prefix .. ": " .. displayName) or ""
+    -- Nothing selected: say so in amber instead of leaving the line blank
+    local text = prefix .. ": " .. (displayName or g_i18n:getText("wm_step_selected_none") or "(none)")
 
-    if field == "target" and self.selectedTargetLabel then
-        self.selectedTargetLabel:setText(text)
-    elseif field == "unloadTarget" and self.selectedUnloadTargetLabel then
-        self.selectedUnloadTargetLabel:setText(text)
+    local label
+    if field == "target" then
+        label = self.selectedTargetLabel
+    elseif field == "unloadTarget" then
+        label = self.selectedUnloadTargetLabel
+    end
+    if label then
+        label:setText(text)
+        if displayName then
+            label:setTextColor(1, 1, 1, 1)
+        else
+            label:setTextColor(1, 0.8, 0.3, 1)
+        end
     end
 end
 
@@ -853,7 +890,13 @@ function WMStepDialog:onActionChanged(element, state)
 
     local actions = self:getAvailableActions()
     if type(state) == "number" and state > 0 and state <= #actions then
+        local wasLoadOrder = self:isLoadOrder()
         self.stepAction = actions[state]
+        -- Switching into or out of Load moves the values between the two route blocks
+        local swapped = wasLoadOrder ~= self:isLoadOrder()
+        if swapped then
+            self:swapRouteFields()
+        end
 
         -- Clear unload target if new action doesn't need it
         if not self:actionNeedsUnloadTarget() then
@@ -877,6 +920,9 @@ function WMStepDialog:onActionChanged(element, state)
         end
         self:refreshSeedTypeDropdown()
 
+        if swapped then
+            self:refreshTargetDisplay()
+        end
         self:updateFieldVisibility()
     end
 end
@@ -991,7 +1037,13 @@ function WMStepDialog:onClickConfirm()
     else
         -- Validate - target is required for AD/CP steps. Warn instead of returning silently:
         -- a dead OK button reads as a broken dialog.
-        if self.stepTarget == "" then
+        -- Back to the stored meaning of the two route blocks (see isLoadOrder)
+        local target, unloadTarget = self.stepTarget, self.stepUnloadTarget
+        if self:isLoadOrder() then
+            target, unloadTarget = unloadTarget, target
+        end
+
+        if target == nil or target == "" then
             self:showStatus(g_i18n:getText("wm_warning_no_target")
                 or "Select a target before confirming the step.", true)
             WMLogger:warning("Step confirm blocked: no target selected for type '%s'", tostring(self.stepType))
@@ -1001,13 +1053,13 @@ function WMStepDialog:onClickConfirm()
         step = {
             type = self.stepType,
             action = self.stepAction,
-            target = self.stepTarget
+            target = target
         }
 
         -- Add AD-specific fields
         if self.stepType == WorkflowManager.STEP_AUTODRIVE then
-            if self:actionNeedsUnloadTarget() and self.stepUnloadTarget ~= "" then
-                step.unloadTarget = self.stepUnloadTarget
+            if self:actionNeedsUnloadTarget() and unloadTarget ~= nil and unloadTarget ~= "" then
+                step.unloadTarget = unloadTarget
             end
             if self:actionNeedsFillType() and #self.selectedFillTypes > 0 then
                 step.fillTypes = {unpack(self.selectedFillTypes)}

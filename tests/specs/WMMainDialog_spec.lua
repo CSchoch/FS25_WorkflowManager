@@ -471,4 +471,36 @@ describe("WMMainDialog", function()
         end)
     end)
 
+    -- UI review 2026-10-17: Support column instead of "[+S]" in the name
+    describe("workflow list cells", function()
+        local function makeCell()
+            local named = {}
+            return {
+                getDescendantByName = function(_, name)
+                    named[name] = named[name] or {
+                        setText = function(self, t) self.text = t end,
+                        setTextColor = function() end,
+                    }
+                    return named[name]
+                end,
+                named = named,
+            }
+        end
+
+        it("shows Yes in the Support column and keeps the name clean", function()
+            _G.g_i18n = { getText = function(_, key) return key == "wm_option_yes" and "Yes" or key end }
+            WorkflowManager.hasSupportSteps = function(_, id) return id == "wf_sup" end
+            WorkflowManager.getVehicleWorkflowState = function() return nil end
+            local d = WMMainDialog.new()
+            d.workflows = { { id = "wf_sup", name = "Chopping", steps = { {} } },
+                            { id = "wf_plain", name = "Mowing", steps = {} } }
+            local c1, c2 = makeCell(), makeCell()
+            d:populateCellForItemInSection(nil, 1, 1, c1)
+            d:populateCellForItemInSection(nil, 1, 2, c2)
+            assert.are.equal("Chopping", c1.named.workflowName.text)
+            assert.are.equal("Yes", c1.named.workflowSupport.text)
+            assert.are.equal("", c2.named.workflowSupport.text)
+        end)
+    end)
+
 end)

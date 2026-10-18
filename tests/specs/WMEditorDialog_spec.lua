@@ -815,4 +815,93 @@ describe("WMEditorDialog", function()
         end)
     end)
 
+    -- UI review 2026-10-17: support rows, type chips, course names, step dialog subtitle
+    describe("step list cells and subtitle", function()
+        -- Fields added to the shared WorkflowManager stub; removed again in the last test
+        -- (this runner has no after_each)
+        local added = { "getStepTypeShortcut", "getStepTypeColor", "isMarkerStepType", "getCourseDisplayName" }
+
+        local function makeCell()
+            local named = {}
+            return {
+                getDescendantByName = function(_, name)
+                    named[name] = named[name] or {
+                        setText = function(self, t) self.text = t end,
+                        setTextColor = function(self, r, g, b, a) self.color = { r, g, b, a } end,
+                        setVisible = function(self, v) self.visible = v end,
+                        setImageColor = function(self, _, r, g, b, a) self.imageColor = { r, g, b, a } end,
+                    }
+                    return named[name]
+                end,
+                named = named,
+            }
+        end
+
+        before_each(function()
+            _G.g_i18n = { getText = function(_, key)
+                local texts = {
+                    wm_editor_finish_first = "finish first",
+                    wm_step_subtitle = "%s · step %s",
+                    wm_step_subtitle_support = "%s · support step %s",
+                    wm_step_subtitle_new = "%s · new step",
+                }
+                return texts[key] or key
+            end }
+            WorkflowManager.getStepTypeShortcut = function(_, t) return t == "courseplay" and "CP" or "AD" end
+            WorkflowManager.getStepTypeColor = function(_, t)
+                return t == "courseplay" and { 0, 1, 0, 1 } or { 0, 0, 1, 1 }
+            end
+            WorkflowManager.isMarkerStepType = function() return false end
+            WorkflowManager.getCourseDisplayName = function(_, n) return (string.gsub(n or "", "^Singleplayer/", "")) end
+        end)
+
+        it("marks support rows with an arrow, a tint and the finish-first flag", function()
+            local d = WMEditorDialog.new()
+            d.workflow = { name = "Chopping", steps = {
+                { type = WorkflowManager.STEP_COURSEPLAY, action = "fieldwork", target = "Singleplayer/F49/Chopping",
+                  support = { { type = "autodrive", action = "unload", target = "Field 50", finishBeforeSwitch = true } } },
+            } }
+            d:buildFlatList()
+            local main, sup = makeCell(), makeCell()
+            d:populateCellForItemInSection(nil, 1, 1, main)
+            d:populateCellForItemInSection(nil, 1, 2, sup)
+
+            assert.are.equal("1", main.named.stepNum.text)
+            assert.is_false(main.named.rowTint.visible)
+            assert.are.equal("CP", main.named.stepType.text)
+            assert.are.same({ 0, 1, 0, 1 }, main.named.stepTypeChip.imageColor)
+            assert.are.equal("F49/Chopping", main.named.stepTarget.text)
+
+            assert.are.equal("→ 1.1", sup.named.stepNum.text)
+            assert.is_true(sup.named.rowTint.visible)
+            assert.are.equal("  Field 50  · finish first", sup.named.stepTarget.text)
+        end)
+
+        it("builds the step dialog subtitle for new, main and support steps", function()
+            local d = WMEditorDialog.new()
+            d.workflow = { name = "Chopping", steps = {} }
+            assert.are.equal("Chopping · new step", d:getStepSubtitle(nil))
+            assert.are.equal("Chopping · step 3", d:getStepSubtitle(3))
+            assert.are.equal("Chopping · support step 2.1", d:getStepSubtitle(2, 1))
+            for _, name in ipairs(added) do WorkflowManager[name] = nil end
+        end)
+    end)
+
+    describe("solid colour bitmaps", function()
+        -- imageSliceId="noSlice" drops baseReference's plain-colour image: the type chip drew
+        -- the whole UI atlas squeezed into 64x22 px behind "AD" / "CP"
+        it("type chip and row tint keep baseReference's plain-colour image", function()
+            local f = assert(io.open("xml/gui/guiProfiles.xml", "r"))
+            local xml = f:read("*a")
+            f:close()
+            for _, name in ipairs({ "wm_typeChip", "wm_rowTint" }) do
+                local body = xml:match('<Profile name="' .. name .. '".-</Profile>')
+                assert.is_not_nil(body)
+                assert.is_true(body:find('extends="baseReference"', 1, true) ~= nil)
+                assert.is_nil(body:find("imageSliceId", 1, true))
+                assert.is_true(body:find("imageColor", 1, true) ~= nil)
+            end
+        end)
+    end)
+
 end)

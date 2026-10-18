@@ -52,8 +52,8 @@
         <text name="wm_button_close" text="Close"/>
         <text name="wm_button_add" text="Add"/>
         <text name="wm_button_remove" text="Remove"/>
-        <text name="wm_button_up" text="Up"/>
-        <text name="wm_button_down" text="Down"/>
+        <text name="wm_button_up" text="↑"/>
+        <text name="wm_button_down" text="↓"/>
 
         <!-- Search (Milestone 7) -->
         <text name="wm_search" text="Search"/>
@@ -76,7 +76,6 @@
         <text name="wm_editor_load_target" text="Load At"/>
         <text name="wm_editor_unload_first" text="Unload"/>
         <text name="wm_editor_unload_target" text="Deliver To"/>
-        <text name="wm_editor_load_point" text="Load Point"/>
         <text name="wm_editor_return_target" text="Return To"/>
         <text name="wm_editor_fill_type" text="Fill Type"/>
         <text name="wm_editor_seed_type" text="Seed Type"/>
@@ -165,7 +164,6 @@
         <!-- HUD texts -->
         <text name="wm_hud_title" text="Workflow Manager"/>
         <text name="wm_hud_no_workflow" text="No active workflow"/>
-        <text name="wm_hud_step_format" text="Step %d/%d: %s - %s"/>
         <text name="wm_hud_cp_active" text="CP active"/>
         <text name="wm_hud_cp_active_progress" text="CP active (%d%%)"/>
         <text name="wm_hud_ad_active" text="AD active"/>
@@ -197,15 +195,13 @@
         <text name="wm_button_ad_settings"          text="AD/CP Settings"/>
         <text name="wm_adsettings_title"            text="AD / CP Settings"/>
         <text name="wm_adsettings_ad_section"       text="AutoDrive Settings"/>
-        <text name="wm_adsettings_cp_section"       text="Courseplay Settings"/>
         <text name="wm_adsettings_unload_fill"      text="Unload Fill Level"/>
         <text name="wm_adsettings_pipe_offset"      text="Pipe Offset"/>
         <text name="wm_adsettings_pre_call"         text="Pre-Call Level"/>
-        <text name="wm_adsettings_cp_placeholder"   text="No Courseplay settings yet."/>
 
         <!-- Support Steps Editor -->
         <text name="wm_editor_sup_short" text="Sup"/>
-        <text name="wm_button_add_support" text="Add Support Step"/>
+        <text name="wm_button_add_support" text="+ Support"/>
         <text name="wm_button_del_support" text="Del Support Step"/>
         <text name="wm_editor_support_select" text="Select a step to manage support sub-steps"/>
         <text name="wm_editor_support_info" text="Support steps for step %d: %d"/>
@@ -219,5 +215,24 @@
         <text name="wm_settings_showHelpKeys_tooltip" text="Lists the Workflow Manager keys in the F1 help window. The keys work either way."/>
         <text name="wm_settings_debugMode" text="Debug logging"/>
         <text name="wm_settings_debugMode_tooltip" text="Writes detailed messages to log.txt, for bug reports. Applies to this computer only."/>
+        <!-- UI review 2026-10-17 -->
+        <text name="wm_hud_step" text="Step %s/%s: %s"/>
+        <text name="wm_hud_support_step" text="Step %s · support %s/%s: %s"/>
+        <text name="wm_hud_main_vehicle" text="Main vehicle: %s"/>
+        <text name="wm_hud_supporters" text="Supporters:"/>
+        <text name="wm_hud_support_running" text="%s working"/>
+        <text name="wm_hud_support_paused" text="%s paused"/>
+        <text name="wm_hud_support_waiting_leader" text="%s waiting for leader"/>
+        <text name="wm_hud_support_waiting_main" text="%s waiting"/>
+        <text name="wm_header_support" text="Support"/>
+        <text name="wm_header_current_step" text="Current Step"/>
+        <text name="wm_editor_finish_first" text="finish first"/>
+        <text name="wm_step_subtitle" text="%s · step %s"/>
+        <text name="wm_step_subtitle_support" text="%s · support step %s"/>
+        <text name="wm_step_subtitle_new" text="%s · new step"/>
+        <text name="wm_step_selected_none" text="(none) – pick one from the list"/>
+        <text name="wm_mode_main_info" text="Drives the workflow's steps: field work and transport."/>
+        <text name="wm_mode_support_info" text="Runs the support sub-steps next to the main vehicle, e.g. unloading it."/>
+        <text name="wm_adsettings_empty_hint" text="Leave a field empty to keep AutoDrive's own setting."/>
     </texts>
 </l10n>

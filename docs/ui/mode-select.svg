@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="924" height="372" viewBox="0 0 924 372" font-family="'Nunito Sans', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif">
+<title>Run as main or support</title>
+<defs><linearGradient id="separator" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#ffffff" stop-opacity="0"/><stop offset="0.5" stop-color="#ffffff" stop-opacity="0.75"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></linearGradient></defs>
+<rect x="0" y="0" width="924" height="372" rx="10" fill="#0b0b0b"/>
+<rect x="12" y="4" width="900" height="300" rx="8" fill="#232323" stroke="#3a3a3a" stroke-width="1"/>
+<text xml:space="preserve" x="466" y="46.4" font-size="24" fill="#ffffff" font-weight="700" text-anchor="middle">GRASS CHOPPING</text>
+<rect x="76.5" y="74" width="779" height="2" fill="url(#separator)"/>
+<text xml:space="preserve" x="46" y="114.6" font-size="16" fill="#ffffff" text-anchor="start">This workflow has support steps. Choose your role:</text>
+<text xml:space="preserve" x="46" y="154.6" font-size="16" fill="#ffffff" font-weight="700" text-anchor="start">Main Vehicle</text>
+<text xml:space="preserve" x="256" y="154.6" font-size="16" fill="#ffffff" text-anchor="start">Drives the workflow's steps: field work and transport.</text>
+<text xml:space="preserve" x="46" y="194.6" font-size="16" fill="#ffffff" font-weight="700" text-anchor="start">Support Vehicle</text>
+<text xml:space="preserve" x="256" y="194.6" font-size="16" fill="#ffffff" text-anchor="start">Runs the support sub-steps next to the main vehicle, e.g. unloading it.</text>
+<rect x="182.2" y="319" width="54" height="38" rx="4" fill="#1b2617"/>
+<path d="M216.2 331 v6 h-14 m5 -5 l-5 5 l5 5" fill="none" stroke="#8cc63f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<text xml:space="preserve" x="250.2" y="344.5" font-size="18" fill="#ffffff" font-weight="700">MAIN VEHICLE</text>
+<rect x="425.4" y="320" width="1" height="36" rx="0" fill="#4a4a4a"/>
+<rect x="440.4" y="319" width="54" height="38" rx="4" fill="#1b2617"/>
+<text xml:space="preserve" x="467.4" y="345" font-size="20" fill="#8cc63f" font-weight="700" text-anchor="middle">F</text>
+<text xml:space="preserve" x="508.4" y="344.5" font-size="18" fill="#ffffff" font-weight="700">SUPPORT VEHICLE</text>
+<rect x="721.4" y="320" width="1" height="36" rx="0" fill="#4a4a4a"/>
+<rect x="736.4" y="319" width="70" height="38" rx="4" fill="#1b2617"/>
+<text xml:space="preserve" x="771.4" y="345" font-size="20" fill="#8cc63f" font-weight="700" text-anchor="middle">ESC</text>
+<text xml:space="preserve" x="820.4" y="344.5" font-size="18" fill="#ffffff" font-weight="700">CANCEL</text>
+</svg>

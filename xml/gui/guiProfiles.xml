@@ -95,6 +95,45 @@
         <textVerticalAlignment value="middle"/>
     </Profile>
 
+    <!-- Solid colour blocks inherit baseReference's plain-colour image (like wm_listItem). Never set
+         imageSliceId="noSlice": it drops that and draws the whole UI atlas squeezed into the block. -->
+    <!-- Darker band over a list row (support sub-steps in the editor); shown per cell from Lua -->
+    <Profile name="wm_rowTint" extends="baseReference" with="anchorStretchingYStretchingX">
+        <imageColor value="0 0 0 0.28"/>
+    </Profile>
+
+    <!-- Coloured AD / CP / WM chip in a list row; colour set per cell from Lua -->
+    <Profile name="wm_typeChip" extends="baseReference" with="anchorMiddleLeft">
+        <imageColor value="0.184 0.435 0.749 1"/>
+        <size value="64px 22px"/>
+        <position value="8px 0px"/>
+    </Profile>
+
+    <Profile name="wm_typeChipText" extends="baseReference" with="anchorStretchingYStretchingX">
+        <textBold value="true"/>
+        <textSize value="12px"/>
+        <textColor value="1 1 1 1"/>
+        <textAlignment value="center"/>
+        <textVerticalAlignment value="middle"/>
+    </Profile>
+
+    <!-- Selected value under a search field (step dialog); amber when nothing is selected -->
+    <Profile name="wm_selectedText" extends="baseReference">
+        <textSize value="14px"/>
+        <textColor value="1 1 1 1"/>
+        <textAlignment value="left"/>
+        <textVerticalAlignment value="middle"/>
+    </Profile>
+
+    <!-- Line under a dialog title naming what is being edited -->
+    <Profile name="wm_dialogSubtitle" extends="baseReference" with="anchorTopStretchingX">
+        <textSize value="15px"/>
+        <textColor value="0.75 0.75 0.75 1"/>
+        <textAlignment value="center"/>
+        <textVerticalAlignment value="middle"/>
+        <size value="100% 22px"/>
+    </Profile>
+
     <!-- Info text (hints) -->
     <Profile name="wm_infoText" extends="baseReference">
         <textSize value="14px"/>

@@ -32,10 +32,35 @@ function WMLeaderVehicleSelectDialog:buildVehicleList()
             local activeData = vehicle.spec_workflowManagerSpec and vehicle.spec_workflowManagerSpec.wmExecution
             local workflowName = activeData and activeData.workflow and activeData.workflow.name or "?"
             local vehicleName = vehicle.getName and vehicle:getName() or tostring(vehicle)
-            table.insert(self.vehicles, { vehicle = vehicle, name = vehicleName, workflowName = workflowName })
+            table.insert(self.vehicles, { vehicle = vehicle, name = vehicleName, workflowName = workflowName,
+                stepText = WMLeaderVehicleSelectDialog.formatCurrentStep(activeData) })
         end
     end
+    -- activeVehicles is keyed by vehicle objects: pairs() order is not stable between sessions
+    table.sort(self.vehicles, function(a, b)
+        if a.name ~= b.name then return a.name < b.name end
+        return a.workflowName < b.workflowName
+    end)
     return #self.vehicles
+end
+
+---What a leader candidate is doing right now: "2/10 · Field Work"
+---@param activeData table|nil The candidate's wmExecution
+---@return string
+function WMLeaderVehicleSelectDialog.formatCurrentStep(activeData)
+    local steps = activeData and activeData.workflow and activeData.workflow.steps
+    local index = activeData and activeData.currentStep
+    local step = steps and index and steps[index]
+    if step == nil then
+        return ""
+    end
+    local what
+    if WorkflowManager:isTargetlessStepType(step.type) then
+        what = WorkflowManager:getStepTypeLabel(step.type)
+    else
+        what = g_i18n:getText("wm_action_" .. tostring(step.action))
+    end
+    return string.format("%d/%d · %s", index, #steps, what)
 end
 
 function WMLeaderVehicleSelectDialog:onOpen()
@@ -87,6 +112,9 @@ function WMLeaderVehicleSelectDialog:populateCellForItemInSection(list, section,
 
     local wfEl = cell:getDescendantByName("leaderWorkflowName")
     if wfEl then wfEl:setText(entry.workflowName) end
+
+    local stepEl = cell:getDescendantByName("leaderCurrentStep")
+    if stepEl then stepEl:setText(entry.stepText or "") end
 end
 
 function WMLeaderVehicleSelectDialog:onListSelectionChanged(list, section, index)

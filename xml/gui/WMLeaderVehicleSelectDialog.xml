@@ -13,8 +13,9 @@
 
             <!-- Column headers -->
             <BoxLayout flowDirection="horizontal" size="760px 30px">
-                <Text profile="wm_columnHeader" text="$l10n_wm_header_vehicle"  size="380px 30px" textOffset="8px 0px"/>
-                <Text profile="wm_columnHeader" text="$l10n_wm_header_name"     size="340px 30px" textOffset="8px 0px"/>
+                <Text profile="wm_columnHeader" text="$l10n_wm_header_vehicle"  size="270px 30px" textOffset="8px 0px"/>
+                <Text profile="wm_columnHeader" text="$l10n_wm_header_name"     size="220px 30px" textOffset="8px 0px"/>
+                <Text profile="wm_columnHeader" text="$l10n_wm_header_current_step" size="230px 30px" textOffset="8px 0px"/>
                 <GuiElement size="40px 30px"/>
             </BoxLayout>
 
@@ -27,8 +28,9 @@
                             focusId="vehicleList">
                     <ListItem profile="wm_listItem" size="720px 40px">
                         <BoxLayout flowDirection="horizontal" alignmentY="middle" size="100% 100%">
-                            <Text name="leaderVehicleName"   profile="wm_listItemText" size="380px 100%"/>
-                            <Text name="leaderWorkflowName"  profile="wm_listItemText" size="340px 100%"/>
+                            <Text name="leaderVehicleName"   profile="wm_listItemText" size="270px 100%"/>
+                            <Text name="leaderWorkflowName"  profile="wm_listItemText" size="220px 100%"/>
+                            <Text name="leaderCurrentStep"   profile="wm_listItemText" size="230px 100%"/>
                         </BoxLayout>
                     </ListItem>
                 </SmoothList>

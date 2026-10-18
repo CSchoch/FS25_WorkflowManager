@@ -399,4 +399,32 @@ describe("WMLeaderVehicleSelectDialog", function()
         end)
     end)
 
+    -- UI review 2026-10-17: sorted list, current step column
+    describe("list order and current step", function()
+        it("sorts candidates by vehicle name (pairs() order is not stable)", function()
+            _G.WMExecutor = { activeVehicles = { [v3] = true, [v1] = true, [v2] = true } }
+            local d = WMLeaderVehicleSelectDialog.new()
+            d.currentVehicle = nil
+            d:buildVehicleList()
+            assert.are.equal("Tractor1", d.vehicles[1].name)
+            assert.are.equal("Tractor2", d.vehicles[2].name)
+            assert.are.equal("Tractor3", d.vehicles[3].name)
+        end)
+
+        it("formats the current step as n/m and the action, or the type for targetless steps", function()
+            _G.g_i18n = { getText = function(_, key) return key == "wm_action_fieldwork" and "Field Work" or key end }
+            _G.WorkflowManager = {
+                isTargetlessStepType = function(_, t) return t == "park" end,
+                getStepTypeLabel = function() return "Park" end,
+            }
+            local steps = { { type = "autodrive", action = "drive" }, { type = "courseplay", action = "fieldwork" },
+                            { type = "park" } }
+            local f = WMLeaderVehicleSelectDialog.formatCurrentStep
+            assert.are.equal("2/3 · Field Work", f({ workflow = { steps = steps }, currentStep = 2 }))
+            assert.are.equal("3/3 · Park", f({ workflow = { steps = steps }, currentStep = 3 }))
+            assert.are.equal("", f({ workflow = { name = "x" } }))
+            assert.are.equal("", f(nil))
+        end)
+    end)
+
 end)

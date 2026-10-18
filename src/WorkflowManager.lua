@@ -162,6 +162,29 @@ function WorkflowManager:getStepTypeShortcut(stepType)
     return "WM"
 end
 
+-- Chip colours per system, the same as the web editor and the docs (--wm-ad/--wm-cp/--wm-marker)
+WorkflowManager.STEP_COLOR_AD     = { 0.184, 0.435, 0.749, 1 }
+WorkflowManager.STEP_COLOR_CP     = { 0.184, 0.620, 0.267, 1 }
+WorkflowManager.STEP_COLOR_MARKER = { 0.710, 0.522, 0.043, 1 }
+
+---Colour of a step type's chip: AutoDrive-driven (incl. Park/Refuel/Repair), Courseplay or WM marker
+---@param stepType string Step type id
+---@return table color {r, g, b, a}
+function WorkflowManager:getStepTypeColor(stepType)
+    if self:isAutoDriveTrackedStepType(stepType) then return self.STEP_COLOR_AD end
+    if stepType == self.STEP_COURSEPLAY then return self.STEP_COLOR_CP end
+    return self.STEP_COLOR_MARKER
+end
+
+---Course name as shown to the player. Stored names are root-relative and Courseplay always puts
+---its "Singleplayer" folder under the root (in multiplayer too), so every name starts with it.
+---Display only: the stored name (and CPIntegration:findCourseEntry) keep the full path.
+---@param name string|nil Stored course name
+---@return string
+function WorkflowManager:getCourseDisplayName(name)
+    return (string.gsub(name or "", "^Singleplayer/", ""))
+end
+
 ---Initialize the WorkflowManager
 function WorkflowManager:init()
     if self.isInitialized then
@@ -498,7 +521,8 @@ end
 ---@param step table|nil Step to edit, or nil for new step
 ---@param callback function Callback when done: callback(step) or callback(nil) if cancelled
 ---@param isSupportStep boolean|nil true when adding/editing a support sub-step
-function WorkflowManager:showStepDialog(step, callback, isSupportStep)
+---@param subtitle string|nil Line under the title naming the workflow and step
+function WorkflowManager:showStepDialog(step, callback, isSupportStep, subtitle)
     if self.stepDialog == nil then
         WMLogger:warning("Step dialog not available")
         if callback then
@@ -507,7 +531,7 @@ function WorkflowManager:showStepDialog(step, callback, isSupportStep)
         return
     end
 
-    self.stepDialog:setStep(step, callback, isSupportStep)
+    self.stepDialog:setStep(step, callback, isSupportStep, subtitle)
     g_gui:showDialog("WMStepDialog")
 end
 

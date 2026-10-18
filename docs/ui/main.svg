@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1124" height="812" viewBox="0 0 1124 812" font-family="'Nunito Sans', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif">
+<title>Main dialog</title>
+<defs><linearGradient id="separator" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#ffffff" stop-opacity="0"/><stop offset="0.5" stop-color="#ffffff" stop-opacity="0.75"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></linearGradient></defs>
+<rect x="0" y="0" width="1124" height="812" rx="10" fill="#0b0b0b"/>
+<rect x="12" y="4" width="1100" height="740" rx="8" fill="#232323" stroke="#3a3a3a" stroke-width="1"/>
+<text xml:space="preserve" x="566" y="46.4" font-size="24" fill="#ffffff" font-weight="700" text-anchor="middle">WORKFLOW MANAGER</text>
+<rect x="76.5" y="74" width="979" height="2" fill="url(#separator)"/>
+<rect x="224.9" y="100" width="54" height="38" rx="4" fill="#1b2617"/>
+<text xml:space="preserve" x="251.9" y="126" font-size="20" fill="#8cc63f" font-weight="700" text-anchor="middle">N</text>
+<text xml:space="preserve" x="292.9" y="125.5" font-size="18" fill="#ffffff" font-weight="700">NEW</text>
+<rect x="350.7" y="100" width="54" height="38" rx="4" fill="#1b2617"/>
+<text xml:space="preserve" x="377.7" y="126" font-size="20" fill="#8cc63f" font-weight="700" text-anchor="middle">T</text>
+<text xml:space="preserve" x="418.7" y="125.5" font-size="18" fill="#ffffff" font-weight="700">EDIT</text>
+<rect x="489.1" y="100" width="54" height="38" rx="4" fill="#1b2617"/>
+<text xml:space="preserve" x="516.1" y="126" font-size="20" fill="#8cc63f" font-weight="700" text-anchor="middle">R</text>
+<text xml:space="preserve" x="557.1" y="125.5" font-size="18" fill="#ffffff" font-weight="700">DELETE</text>
+<rect x="652.7" y="100" width="54" height="38" rx="4" fill="#1b2617"/>
+<text xml:space="preserve" x="679.7" y="126" font-size="20" fill="#8cc63f" font-weight="700" text-anchor="middle">B</text>
+<text xml:space="preserve" x="720.7" y="125.5" font-size="18" fill="#ffffff" font-weight="700">AD/CP SETTINGS</text>
+<text xml:space="preserve" x="44" y="173.9" font-size="14" fill="#d9d9d9" font-weight="700" text-anchor="start">Workflow Name</text>
+<text xml:space="preserve" x="824" y="173.9" font-size="14" fill="#d9d9d9" font-weight="700" text-anchor="start">Support</text>
+<text xml:space="preserve" x="964" y="173.9" font-size="14" fill="#d9d9d9" font-weight="700" text-anchor="start">Steps</text>
+<clipPath id="clip1"><rect x="36" y="194" width="1020" height="490"/></clipPath>
+<g clip-path="url(#clip1)">
+<rect x="36" y="194" width="1020" height="40" rx="0" fill="#00b8e6"/>
+<text xml:space="preserve" x="44" y="218.9" font-size="14" fill="#ffffff" text-anchor="start">Threshing</text>
+<text xml:space="preserve" x="964" y="218.9" font-size="14" fill="#ffffff" text-anchor="start">20</text>
+<rect x="36" y="234" width="1020" height="40" rx="0" fill="#6b6b6b"/>
+<text xml:space="preserve" x="44" y="258.9" font-size="14" fill="#ffffff" text-anchor="start">Threshing with Support</text>
+<text xml:space="preserve" x="824" y="258.9" font-size="14" fill="#ffffff" text-anchor="start">Yes</text>
+<text xml:space="preserve" x="964" y="258.9" font-size="14" fill="#ffffff" text-anchor="start">32</text>
+<rect x="36" y="274" width="1020" height="40" rx="0" fill="#5c5c5c"/>
+<text xml:space="preserve" x="44" y="298.9" font-size="14" fill="#ffffff" text-anchor="start">Baling</text>
+<text xml:space="preserve" x="964" y="298.9" font-size="14" fill="#ffffff" text-anchor="start">32</text>
+<rect x="36" y="314" width="1020" height="40" rx="0" fill="#6b6b6b"/>
+<text xml:space="preserve" x="44" y="338.9" font-size="14" fill="#ffffff" text-anchor="start">Threshing 6m</text>
+<text xml:space="preserve" x="964" y="338.9" font-size="14" fill="#ffffff" text-anchor="start">32</text>
+<rect x="36" y="354" width="1020" height="40" rx="0" fill="#5c5c5c"/>
+<text xml:space="preserve" x="44" y="378.9" font-size="14" fill="#ffffff" text-anchor="start">Bale Collecting</text>
+<text xml:space="preserve" x="964" y="378.9" font-size="14" fill="#ffffff" text-anchor="start">32</text>
+<rect x="36" y="394" width="1020" height="40" rx="0" fill="#6b6b6b"/>
+<text xml:space="preserve" x="44" y="418.9" font-size="14" fill="#ffffff" text-anchor="start">Hoeing</text>
+<text xml:space="preserve" x="964" y="418.9" font-size="14" fill="#ffffff" text-anchor="start">32</text>
+<rect x="36" y="434" width="1020" height="40" rx="0" fill="#5c5c5c"/>
+<text xml:space="preserve" x="44" y="458.9" font-size="14" fill="#ffffff" text-anchor="start">Mowing</text>
+<text xml:space="preserve" x="964" y="458.9" font-size="14" fill="#ffffff" text-anchor="start">12</text>
+<rect x="36" y="474" width="1020" height="40" rx="0" fill="#6b6b6b"/>
+<text xml:space="preserve" x="44" y="498.9" font-size="14" fill="#4de64d" text-anchor="start">Grass Fertilizing</text>
+<text xml:space="preserve" x="964" y="498.9" font-size="14" fill="#ffffff" text-anchor="start">6/10</text>
+<rect x="36" y="514" width="1020" height="40" rx="0" fill="#5c5c5c"/>
+<text xml:space="preserve" x="44" y="538.9" font-size="14" fill="#ffffff" text-anchor="start">Grass Liming</text>
+<text xml:space="preserve" x="964" y="538.9" font-size="14" fill="#ffffff" text-anchor="start">10</text>
+<rect x="36" y="554" width="1020" height="40" rx="0" fill="#6b6b6b"/>
+<text xml:space="preserve" x="44" y="578.9" font-size="14" fill="#ffffff" text-anchor="start">Grass Tedding</text>
+<text xml:space="preserve" x="964" y="578.9" font-size="14" fill="#ffffff" text-anchor="start">12</text>
+<rect x="36" y="594" width="1020" height="40" rx="0" fill="#5c5c5c"/>
+<text xml:space="preserve" x="44" y="618.9" font-size="14" fill="#ffffff" text-anchor="start">Grass Chopping</text>
+<text xml:space="preserve" x="824" y="618.9" font-size="14" fill="#ffffff" text-anchor="start">Yes</text>
+<text xml:space="preserve" x="964" y="618.9" font-size="14" fill="#ffffff" text-anchor="start">10</text>
+<rect x="36" y="634" width="1020" height="40" rx="0" fill="#6b6b6b"/>
+<text xml:space="preserve" x="44" y="658.9" font-size="14" fill="#ffffff" text-anchor="start">Grass Bale Collecting</text>
+<text xml:space="preserve" x="964" y="658.9" font-size="14" fill="#ffffff" text-anchor="start">6</text>
+</g>
+<rect x="1060" y="194" width="6" height="490" rx="3" fill="#3a3a3a"/>
+<rect x="636.6" y="759" width="54" height="38" rx="4" fill="#1b2617"/>
+<text xml:space="preserve" x="663.6" y="785" font-size="20" fill="#8cc63f" font-weight="700" text-anchor="middle">S</text>
+<text xml:space="preserve" x="704.6" y="784.5" font-size="18" fill="#ffffff" font-weight="700">START</text>
+<rect x="791.6" y="759" width="54" height="38" rx="4" fill="#1b2617"/>
+<text xml:space="preserve" x="818.6" y="785" font-size="20" fill="#4a6328" font-weight="700" text-anchor="middle">K</text>
+<text xml:space="preserve" x="859.6" y="784.5" font-size="18" fill="#8a8a8a" font-weight="700">STOP</text>
+<rect x="934" y="760" width="1" height="36" rx="0" fill="#4a4a4a"/>
+<rect x="949" y="759" width="70" height="38" rx="4" fill="#1b2617"/>
+<text xml:space="preserve" x="984" y="785" font-size="20" fill="#8cc63f" font-weight="700" text-anchor="middle">ESC</text>
+<text xml:space="preserve" x="1033" y="784.5" font-size="18" fill="#ffffff" font-weight="700">CLOSE</text>
+</svg>

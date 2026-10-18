@@ -5,7 +5,7 @@
         <text name="action_WM_TOGGLE_GUI" text="Workflow Manager öffnen"/>
         <text name="action_WM_START_WORKFLOW" text="Workflow starten"/>
         <text name="action_WM_STOP_WORKFLOW" text="Workflow stoppen"/>
-        <text name="action_WM_GUI_DELETE" text="Loeschen"/>
+        <text name="action_WM_GUI_DELETE" text="Löschen"/>
         <text name="action_WM_GUI_START" text="Starten"/>
         <text name="action_WM_GUI_STOP" text="Stoppen"/>
         <text name="action_WM_GUI_MOVE_UP" text="Nach oben"/>
@@ -13,7 +13,7 @@
         <text name="input_WM_TOGGLE_GUI" text="Workflow Manager öffnen"/>
         <text name="input_WM_START_WORKFLOW" text="Workflow starten"/>
         <text name="input_WM_STOP_WORKFLOW" text="Workflow stoppen"/>
-        <text name="input_WM_GUI_DELETE" text="Loeschen"/>
+        <text name="input_WM_GUI_DELETE" text="Löschen"/>
         <text name="input_WM_GUI_START" text="Starten"/>
         <text name="input_WM_GUI_STOP" text="Stoppen"/>
         <text name="input_WM_GUI_MOVE_UP" text="Nach oben"/>
@@ -26,34 +26,34 @@
         <text name="input_WM_GUI_NEW" text="Neuer Schritt"/>
         <text name="action_WM_GUI_EDIT" text="Schritt bearbeiten"/>
         <text name="input_WM_GUI_EDIT" text="Schritt bearbeiten"/>
-        <text name="action_WM_GUI_ADD_SUPPORT" text="Hilfsschritt hinzufuegen"/>
-        <text name="input_WM_GUI_ADD_SUPPORT" text="Hilfsschritt hinzufuegen"/>
-        <text name="action_WM_GUI_NO_LEADER" text="Kein Anfuehrer"/>
-        <text name="input_WM_GUI_NO_LEADER" text="Kein Anfuehrer"/>
-        <text name="action_WM_GUI_RUN_SUPPORT" text="Als Unterstuetzung starten"/>
-        <text name="input_WM_GUI_RUN_SUPPORT" text="Als Unterstuetzung starten"/>
+        <text name="action_WM_GUI_ADD_SUPPORT" text="Hilfsschritt hinzufügen"/>
+        <text name="input_WM_GUI_ADD_SUPPORT" text="Hilfsschritt hinzufügen"/>
+        <text name="action_WM_GUI_NO_LEADER" text="Kein Anführer"/>
+        <text name="input_WM_GUI_NO_LEADER" text="Kein Anführer"/>
+        <text name="action_WM_GUI_RUN_SUPPORT" text="Als Unterstützung starten"/>
+        <text name="input_WM_GUI_RUN_SUPPORT" text="Als Unterstützung starten"/>
 
         <!-- GUI titles -->
         <text name="wm_title" text="Workflow Manager"/>
         <text name="wm_editor_title" text="Workflow bearbeiten"/>
-        <text name="wm_dialog_add_step" text="Schritt hinzufuegen"/>
+        <text name="wm_dialog_add_step" text="Schritt hinzufügen"/>
         <text name="wm_dialog_edit_step" text="Schritt bearbeiten"/>
 
         <!-- Buttons -->
         <text name="wm_button_new" text="Neu"/>
         <text name="wm_button_edit" text="Bearbeiten"/>
-        <text name="wm_button_delete" text="Loeschen"/>
+        <text name="wm_button_delete" text="Löschen"/>
         <text name="wm_button_start" text="Starten"/>
         <text name="wm_button_stop" text="Stoppen"/>
         <text name="wm_button_pause" text="Pausieren"/>
         <text name="wm_button_resume" text="Fortsetzen"/>
         <text name="wm_button_save" text="Speichern"/>
         <text name="wm_button_cancel" text="Abbrechen"/>
-        <text name="wm_button_close" text="Schliessen"/>
+        <text name="wm_button_close" text="Schließen"/>
         <text name="wm_button_add" text="Hinzu"/>
         <text name="wm_button_remove" text="Entfernen"/>
-        <text name="wm_button_up" text="Hoch"/>
-        <text name="wm_button_down" text="Runter"/>
+        <text name="wm_button_up" text="↑"/>
+        <text name="wm_button_down" text="↓"/>
 
         <!-- Search (Milestone 7) -->
         <text name="wm_search" text="Suchen"/>
@@ -76,25 +76,24 @@
         <text name="wm_editor_load_target" text="Beladen bei"/>
         <text name="wm_editor_unload_first" text="Entladen"/>
         <text name="wm_editor_unload_target" text="Liefern an"/>
-        <text name="wm_editor_load_point" text="Ladepunkt"/>
-        <text name="wm_editor_return_target" text="Zurueck zu"/>
-        <text name="wm_editor_fill_type" text="Fuelltyp"/>
+        <text name="wm_editor_return_target" text="Zurück zu"/>
+        <text name="wm_editor_fill_type" text="Fülltyp"/>
         <text name="wm_editor_seed_type" text="Saatgut"/>
-        <text name="wm_editor_finish_before_switch" text="Vor dem Wechsel abschliessen"/>
+        <text name="wm_editor_finish_before_switch" text="Vor dem Wechsel abschließen"/>
         <text name="wm_option_no" text="Nein"/>
         <text name="wm_option_yes" text="Ja"/>
-        <text name="wm_editor_no_steps" text="Keine Schritte definiert. Klicken Sie +, um einen Schritt hinzuzufuegen."/>
+        <text name="wm_editor_no_steps" text="Keine Schritte definiert. Klicken Sie +, um einen Schritt hinzuzufügen."/>
 
         <!-- Tooltips -->
         <text name="wm_tooltip_moveup" text="Schritt nach oben"/>
         <text name="wm_tooltip_movedown" text="Schritt nach unten"/>
-        <text name="wm_tooltip_addstep" text="Neuen Schritt hinzufuegen"/>
-        <text name="wm_tooltip_removestep" text="Ausgewaehlten Schritt entfernen"/>
+        <text name="wm_tooltip_addstep" text="Neuen Schritt hinzufügen"/>
+        <text name="wm_tooltip_removestep" text="Ausgewählten Schritt entfernen"/>
 
         <!-- Step types -->
         <text name="wm_type_autodrive" text="AutoDrive"/>
         <text name="wm_type_courseplay" text="Courseplay"/>
-        <text name="wm_type_wait_for_leader" text="Auf Anfuehrer warten"/>
+        <text name="wm_type_wait_for_leader" text="Auf Anführer warten"/>
         <text name="wm_type_unlock_follower" text="Folger freigeben"/>
         <text name="wm_type_park" text="Parken"/>
         <text name="wm_type_refuel" text="Auftanken"/>
@@ -113,7 +112,7 @@
 
         <!-- Status texts -->
         <text name="wm_status_ready" text="Bereit"/>
-        <text name="wm_status_running" text="Laeuft"/>
+        <text name="wm_status_running" text="Läuft"/>
         <text name="wm_status_paused" text="Pausiert"/>
         <text name="wm_status_completed" text="Abgeschlossen"/>
         <text name="wm_status_error" text="Fehler"/>
@@ -130,16 +129,16 @@
         <text name="wm_workflows_count" text="%d Workflow(s)"/>
         <text name="wm_new_workflow_name" text="Neuer Workflow"/>
         <text name="wm_unnamed" text="Unbenannt"/>
-        <text name="wm_confirm_delete" text="Workflow '%s' loeschen?"/>
+        <text name="wm_confirm_delete" text="Workflow '%s' löschen?"/>
         <text name="wm_tab_title" text="Workflows"/>
 
         <text name="wm_none" text="(keins)"/>
 
         <!-- Warnings -->
         <text name="wm_warning_no_vehicle" text="Steigen Sie in ein Fahrzeug, um den Workflow zu starten"/>
-        <text name="wm_warning_incompatible_vehicle" text="Fahrzeug '%s' benoetigt AutoDrive + Courseplay"/>
-        <text name="wm_warning_incompatible_vehicle_cp" text="Fahrzeug '%s' benoetigt Courseplay"/>
-        <text name="wm_warning_vehicle_busy" text="Fahrzeug fuehrt bereits einen Workflow aus"/>
+        <text name="wm_warning_incompatible_vehicle" text="Fahrzeug '%s' benötigt AutoDrive + Courseplay"/>
+        <text name="wm_warning_incompatible_vehicle_cp" text="Fahrzeug '%s' benötigt Courseplay"/>
+        <text name="wm_warning_vehicle_busy" text="Fahrzeug führt bereits einen Workflow aus"/>
         <text name="wm_warning_workflow_not_found" text="Workflow nicht gefunden - eventuell wurde er aus der Datei entfernt"/>
         <text name="wm_warning_no_steps" text="Workflow '%s' hat keine Schritte"/>
         <text name="wm_info_workflow_removed" text="Workflow '%s' wurde aus der Datei entfernt und gestoppt"/>
@@ -148,27 +147,26 @@
         <text name="wm_error_step_failed" text="%s: Workflow-Schritt fehlgeschlagen - siehe log.txt"/>
         <text name="wm_error_ad_target_not_found" text="%s: AutoDrive-Ziel '%s' nicht gefunden"/>
         <text name="wm_error_ad_start_failed" text="%s: AutoDrive konnte nicht gestartet werden"/>
-        <text name="wm_error_no_park_position" text="%s: keine AutoDrive-Parkposition fuer Fahrzeug oder Anbaugeraete gesetzt"/>
+        <text name="wm_error_no_park_position" text="%s: keine AutoDrive-Parkposition für Fahrzeug oder Anbaugeräte gesetzt"/>
         <text name="wm_error_no_repair_station" text="%s: keine Werkstatt per AutoDrive erreichbar"/>
-        <text name="wm_error_seed_type" text="%s: Saatgut '%s' kann an der angehaengten Saemaschine nicht eingestellt werden"/>
+        <text name="wm_error_seed_type" text="%s: Saatgut '%s' kann an der angehängten Sämaschine nicht eingestellt werden"/>
         <text name="wm_error_cp_course_load" text="%s: Courseplay-Kurs '%s' konnte nicht geladen werden"/>
         <text name="wm_error_cp_start_failed" text="%s: Courseplay-Feldarbeit konnte nicht gestartet werden"/>
         <text name="wm_error_unknown_step_type" text="%s: unbekannter Schritttyp '%s'"/>
         <text name="wm_warning_ad_unload_not_found" text="%s: Abladeziel '%s' nicht gefunden - AutoDrive nutzt seine Voreinstellung"/>
-        <text name="wm_warning_cp_course_ambiguous" text="%s: mehrere Kurse heissen '%s' - verwendet wird der in '%s'"/>
-        <text name="wm_info_seed_locked" text="%s: Saatgut ist durch einen Auftrag gesperrt - nicht geaendert"/>
-        <text name="wm_warning_cp_no_resume_waypoint" text="%s: kein gespeicherter Courseplay-Wegpunkt - Workflow bleibt pausiert, bitte Weiter druecken"/>
-        <text name="wm_warning_no_target" text="Bitte zuerst ein Ziel auswaehlen"/>
+        <text name="wm_warning_cp_course_ambiguous" text="%s: mehrere Kurse heißen '%s' - verwendet wird der in '%s'"/>
+        <text name="wm_info_seed_locked" text="%s: Saatgut ist durch einen Auftrag gesperrt - nicht geändert"/>
+        <text name="wm_warning_cp_no_resume_waypoint" text="%s: kein gespeicherter Courseplay-Wegpunkt - Workflow bleibt pausiert, bitte Weiter drücken"/>
+        <text name="wm_warning_no_target" text="Bitte zuerst ein Ziel auswählen"/>
 
         <!-- HUD texts -->
         <text name="wm_hud_title" text="Workflow Manager"/>
         <text name="wm_hud_no_workflow" text="Kein aktiver Workflow"/>
-        <text name="wm_hud_step_format" text="Schritt %d/%d: %s - %s"/>
         <text name="wm_hud_cp_active" text="CP aktiv"/>
         <text name="wm_hud_cp_active_progress" text="CP aktiv (%d%%)"/>
         <text name="wm_hud_ad_active" text="AD aktiv"/>
         <text name="wm_hud_paused" text="Pausiert"/>
-        <text name="wm_hud_waiting_for_leader" text="Wartet auf Anfuehrer"/>
+        <text name="wm_hud_waiting_for_leader" text="Wartet auf Anführer"/>
         <text name="wm_hud_waiting_for_main" text="Wartet auf Hauptfahrzeug"/>
         <text name="wm_hud_idle" text="Leerlauf"/>
         <text name="wm_hud_no_vehicle" text="Kein Fahrzeug"/>
@@ -176,18 +174,18 @@
         <text name="wm_hud_tooltip_pause" text="Pausieren"/>
         <text name="wm_hud_tooltip_resume" text="Fortsetzen"/>
         <text name="wm_hud_tooltip_stop" text="Stoppen"/>
-        <text name="wm_hud_tooltip_next" text="Naechster Schritt"/>
+        <text name="wm_hud_tooltip_next" text="Nächster Schritt"/>
         <text name="wm_hud_tooltip_switch_vehicle" text="Klicken zum Fahrzeugwechsel"/>
-        <text name="wm_step_selected" text="Ausgewaehlt"/>
+        <text name="wm_step_selected" text="Ausgewählt"/>
 
         <!-- Anfuehrerfahrzeug-Dialog -->
-        <text name="wm_leader_select_title" text="Anfuehrerfahrzeug waehlen"/>
-        <text name="wm_button_select"       text="Auswaehlen"/>
-        <text name="wm_button_no_leader"    text="Kein Anfuehrer"/>
+        <text name="wm_leader_select_title" text="Anführerfahrzeug wählen"/>
+        <text name="wm_button_select"       text="Auswählen"/>
+        <text name="wm_button_no_leader"    text="Kein Anführer"/>
 
         <!-- Rollenwahl-Dialog -->
-        <text name="wm_mode_select_title" text="Rolle waehlen"/>
-        <text name="wm_mode_select_description" text="Dieser Workflow hat Unterstuetzungsschritte. Rolle waehlen:"/>
+        <text name="wm_mode_select_title" text="Rolle wählen"/>
+        <text name="wm_mode_select_description" text="Dieser Workflow hat Unterstützungsschritte. Rolle wählen:"/>
         <text name="wm_button_run_as_main" text="Hauptfahrzeug"/>
         <text name="wm_button_run_as_support" text="Hilfsfahrzeug"/>
 
@@ -195,27 +193,44 @@
         <text name="wm_button_ad_settings"          text="AD/CP Einstellungen"/>
         <text name="wm_adsettings_title"            text="AD / CP Einstellungen"/>
         <text name="wm_adsettings_ad_section"       text="AutoDrive Einstellungen"/>
-        <text name="wm_adsettings_cp_section"       text="Courseplay Einstellungen"/>
         <text name="wm_adsettings_unload_fill"      text="Abladen ab Level"/>
         <text name="wm_adsettings_pipe_offset"      text="Offset Rohr"/>
-        <text name="wm_adsettings_pre_call"         text="Frueher rufen ab"/>
-        <text name="wm_adsettings_cp_placeholder"   text="Noch keine Courseplay-Einstellungen."/>
+        <text name="wm_adsettings_pre_call"         text="Früher rufen ab"/>
 
         <!-- Unterstuetzungsschritte -->
         <text name="wm_editor_sup_short" text="Unt"/>
-        <text name="wm_button_add_support" text="Unterstuetzungsschritt hinzufuegen"/>
-        <text name="wm_button_del_support" text="Unterstuetzungsschritt loeschen"/>
-        <text name="wm_editor_support_select" text="Schritt auswaehlen zum Verwalten der Unterstuetzungsschritte"/>
-        <text name="wm_editor_support_info" text="Unterstuetzungsschritte fuer Schritt %d: %d"/>
-        <text name="wm_editor_support_step" text="  Unterstuetzungsschritt %d von Hauptschritt %d (Bearbeiten oder Loeschen)"/>
+        <text name="wm_button_add_support" text="+ Unterstützung"/>
+        <text name="wm_button_del_support" text="Unterstützungsschritt löschen"/>
+        <text name="wm_editor_support_select" text="Schritt auswählen zum Verwalten der Unterstützungsschritte"/>
+        <text name="wm_editor_support_info" text="Unterstützungsschritte für Schritt %d: %d"/>
+        <text name="wm_editor_support_step" text="  Unterstützungsschritt %d von Hauptschritt %d (Bearbeiten oder Löschen)"/>
 
         <!-- Spieleinstellungen (ESC -> Einstellungen -> Allgemein) -->
         <text name="wm_settings_title" text="Workflow Manager"/>
         <text name="wm_settings_cpAutoResume" text="Courseplay nach dem Laden fortsetzen"/>
-        <text name="wm_settings_cpAutoResume_tooltip" text="Setzt die Courseplay-Feldarbeit nach dem Laden eines Spielstands am gespeicherten Wegpunkt fort. Wenn aus, bleibt der Workflow pausiert, bis du Weiter drueckst. Gespeichert auf diesem Computer; im Mehrspieler gilt die Einstellung des Hosts."/>
+        <text name="wm_settings_cpAutoResume_tooltip" text="Setzt die Courseplay-Feldarbeit nach dem Laden eines Spielstands am gespeicherten Wegpunkt fort. Wenn aus, bleibt der Workflow pausiert, bis du Weiter drückst. Gespeichert auf diesem Computer; im Mehrspieler gilt die Einstellung des Hosts."/>
         <text name="wm_settings_showHelpKeys" text="Tasten im Hilfefenster anzeigen"/>
         <text name="wm_settings_showHelpKeys_tooltip" text="Zeigt die Workflow-Manager-Tasten im F1-Hilfefenster. Die Tasten funktionieren in jedem Fall."/>
         <text name="wm_settings_debugMode" text="Debug-Protokoll"/>
-        <text name="wm_settings_debugMode_tooltip" text="Schreibt ausfuehrliche Meldungen in die log.txt, fuer Fehlerberichte. Gilt nur fuer diesen Computer."/>
+        <text name="wm_settings_debugMode_tooltip" text="Schreibt ausführliche Meldungen in die log.txt, für Fehlerberichte. Gilt nur für diesen Computer."/>
+        <!-- UI review 2026-10-17 -->
+        <text name="wm_hud_step" text="Schritt %s/%s: %s"/>
+        <text name="wm_hud_support_step" text="Schritt %s · Unterstützung %s/%s: %s"/>
+        <text name="wm_hud_main_vehicle" text="Hauptfahrzeug: %s"/>
+        <text name="wm_hud_supporters" text="Unterstützer:"/>
+        <text name="wm_hud_support_running" text="%s aktiv"/>
+        <text name="wm_hud_support_paused" text="%s pausiert"/>
+        <text name="wm_hud_support_waiting_leader" text="%s wartet auf Anführer"/>
+        <text name="wm_hud_support_waiting_main" text="%s wartet"/>
+        <text name="wm_header_support" text="Unterstützung"/>
+        <text name="wm_header_current_step" text="Aktueller Schritt"/>
+        <text name="wm_editor_finish_first" text="zuerst abschließen"/>
+        <text name="wm_step_subtitle" text="%s · Schritt %s"/>
+        <text name="wm_step_subtitle_support" text="%s · Unterstützungsschritt %s"/>
+        <text name="wm_step_subtitle_new" text="%s · neuer Schritt"/>
+        <text name="wm_step_selected_none" text="(keins) – bitte aus der Liste wählen"/>
+        <text name="wm_mode_main_info" text="Fährt die Schritte des Workflows: Feldarbeit und Transport."/>
+        <text name="wm_mode_support_info" text="Fährt die Unterstützungsschritte neben dem Hauptfahrzeug, z. B. das Abfahren."/>
+        <text name="wm_adsettings_empty_hint" text="Feld leer lassen, um die AutoDrive-Einstellung zu behalten."/>
     </texts>
 </l10n>

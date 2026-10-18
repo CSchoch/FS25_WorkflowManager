@@ -13,35 +13,35 @@
             <Text profile="wm_dialogTitle" id="titleElement" text="$l10n_wm_title"/>
             <ThreePartBitmap profile="wm_dialogTitleLineSeparator"/>
 
-            <!-- Action Buttons Row -->
+            <!-- List actions; Start/Stop act on the vehicle and sit in the footer -->
             <BoxLayout profile="wm_hBox" size="1060px 50px">
                 <Button profile="buttonOK" id="newButton" text="$l10n_wm_button_new" onClick="onClickNew" size="100px 40px" focusId="newBtn"/>
                 <Button profile="buttonActivate" id="editButton" text="$l10n_wm_button_edit" onClick="onClickEdit" size="100px 40px" focusId="editBtn"/>
                 <Button profile="buttonActivate" id="deleteButton" text="$l10n_wm_button_delete" onClick="onClickDelete" size="100px 40px" focusId="deleteBtn"/>
-                <Button profile="buttonActivate" id="startButton" text="$l10n_wm_button_start" onClick="onClickStart" size="100px 40px" focusId="startBtn"/>
-                <Button profile="buttonActivate" id="stopButton" text="$l10n_wm_button_stop" onClick="onClickStop" size="100px 40px" focusId="stopBtn"/>
                 <Button profile="buttonActivate" id="adSettingsButton" text="$l10n_wm_button_ad_settings" onClick="onClickADSettings" size="200px 40px" focusId="adSettingsBtn"/>
             </BoxLayout>
 
             <!-- Column Headers -->
-            <!-- 1060px = 950 name + 50 steps + 20 row gap + 40 slider -->
+            <!-- 1060px = 780 name + 140 support + 80 steps + 20 row gap + 40 slider -->
             <BoxLayout flowDirection="horizontal" size="1060px 30px">
-                <Text profile="wm_columnHeader" text="$l10n_wm_header_name" size="950px 30px" textOffset="8px 0px"/>
-                <Text profile="wm_columnHeader" text="$l10n_wm_header_steps" size="50px 30px" textOffset="8px 0px"/>
+                <Text profile="wm_columnHeader" text="$l10n_wm_header_name" size="780px 30px" textOffset="8px 0px"/>
+                <Text profile="wm_columnHeader" text="$l10n_wm_header_support" size="140px 30px" textOffset="8px 0px"/>
+                <Text profile="wm_columnHeader" text="$l10n_wm_header_steps" size="80px 30px" textOffset="8px 0px"/>
                 <GuiElement size="60px 30px"/>
             </BoxLayout>
 
             <!-- Workflow List -->
-            <BoxLayout flowDirection="horizontal" size="1060px 420px" margin="0 0 0 10px">
+            <BoxLayout flowDirection="horizontal" size="1060px 490px" margin="0 0 0 10px">
                 <SmoothList profile="wm_list" id="workflowList"
                             onSelectionChanged="onListSelectionChanged"
                             onDoubleClick="onListDoubleClick"
-                            size="1020px 420px"
+                            size="1020px 490px"
                             focusId="workflowList">
                     <ListItem profile="wm_listItem" size="1020px 40px">
                         <BoxLayout flowDirection="horizontal" alignmentY="middle" size="100% 100%">
-                            <Text name="workflowName" profile="wm_listItemText" size="950px 100%"/>
-                            <Text name="workflowSteps" profile="wm_listItemText" size="50px 100%"/>
+                            <Text name="workflowName" profile="wm_listItemText" size="780px 100%"/>
+                            <Text name="workflowSupport" profile="wm_listItemText" size="140px 100%"/>
+                            <Text name="workflowSteps" profile="wm_listItemText" size="80px 100%"/>
                         </BoxLayout>
                     </ListItem>
                 </SmoothList>
@@ -57,6 +57,9 @@
 
         <!-- Bottom Buttons -->
         <BoxLayout profile="wm_dialogButtonBoxBottom">
+            <Button profile="buttonActivate" id="startButton" text="$l10n_wm_button_start" onClick="onClickStart" focusId="startBtn"/>
+            <Button profile="buttonActivate" id="stopButton" text="$l10n_wm_button_stop" onClick="onClickStop" focusId="stopBtn"/>
+            <Bitmap profile="fs25_dialogButtonBoxSeparator"/>
             <Button profile="buttonBack" id="closeButton" text="$l10n_wm_button_close" onClick="onClickClose" focusId="closeBtn"/>
         </BoxLayout>
     </GuiElement>

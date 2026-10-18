@@ -69,6 +69,7 @@ Individual runners: `tests\run_executor_spec.lua`, `tests\run_storage_spec.lua`,
 | `ModDescInputBindings_spec.lua` | modDesc hotkey defaults: Edit is KEY_t, Stop is KEY_k; no `WM_GUI_*` action on a confirmed menu-owned key (Q/E/X) |
 | `WMUserMessageEvent_spec.lua` | Server -> client farm message event: stream round trip, ignored on the server |
 | `Translations_spec.lua` | Every `wm_` key in en and de, equal `%s` counts, all player-message keys present |
+| `RenderUiPreview_spec.lua` | `tools/render_ui_preview.lua`: every UI scenario renders (en + de) from the real dialog Lua / `WMHud:draw`, no globals leak |
 
 **Courseplay resume after savegame load:** Courseplay never auto-resumes — it overwrites the
 base-game `AIFieldWorker#isActive` to `false` at save time on purpose. It also only writes its own
@@ -90,7 +91,7 @@ start instead of "monitoring" and skipping the step) and `deferredStartAtSave` (
 when the auto-resume window expires). `CPIntegration:resumeCourse` must stay guarded on
 `isRunning`: CP's `unfreezeCp` indexes the drive strategy unguarded and crashes with no job.
 
-Current total: **961**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
+Current total: **992**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
 or they will not run.
 
 **Mod options (game settings):** `WMSettings` holds the player-facing options
@@ -181,6 +182,23 @@ leaves no trace — do not "simplify" it back to `createWorkflow`. `commitToSour
 `registerWorkflow` on every Save, which also re-adds a workflow removed from the file meanwhile.
 
 **Test framework note**: `run_tests.lua` snapshots and restores **all of `_G`** around every spec file — globals a spec adds are removed, globals it replaces are restored. Every spec must therefore own its stubs (never rely on a module or stub leaked by an earlier spec file). Loading real modules via `dofile` in `setup()` is fine; mutating the *insides* of a shared mock table still leaks, so restore those in the spec itself.
+
+**UI previews:** `& "C:\Program Files (x86)\Lua\5.1\lua.exe" tools\render_ui_preview.lua` writes
+`docs/ui/*.svg` (outside the release whitelist). Dialog layout comes from `xml/gui/*.xml`; the real
+dialog Lua runs against fake elements (one per XML `id`, recorded state under the real FS25 field
+names such as `selectedIndex`, every other method a no-op), and the HUD is the real `WMHud:draw()`
+against recording `renderText`/`Overlay` stubs. Vanilla FS25 look is approximated in its `FS25`
+table. Re-run after changing `xml/gui`, `src/gui` or translations; `M.render(name, "de")` renders German.
+
+**FS25 font has no ✓ ↳ ▲ ▼ • ● └** (only `shared/font/defaultFont.font` exists; its glyph table is
+28-byte records starting with a uint32 code point). Available: umlauts, ß, · – × → ↑ ↓ ». Check any
+new non-ASCII character in a UI string against that table before using it.
+
+**Step dialog, Load:** AutoDrive's LoadMode drives to the *second* marker (`unloadTarget`, "Load At")
+first, so the dialog shows that block first. While the action is Load, `stepTarget` and
+`stepUnloadTarget` hold each other's values (`WMStepDialog:isLoadOrder` / `swapRouteFields`):
+swapped in `setStep` and `onActionChanged`, swapped back in `onClickConfirm`. The saved step keeps
+the usual meaning.
 
 ## Resources
 

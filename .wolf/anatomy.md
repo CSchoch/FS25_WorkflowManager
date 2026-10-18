@@ -1,10 +1,11 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-10-16T22:33:27.005Z
-> Files: 10 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-10-18T19:32:53.369Z
+> Files: 33 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
+- `somehow-in-vehicle-sync-spicy-sutherland.md` — Plan: FS25-style renders of the WM UI with design-improvement proposals (~2318 tok)
 
 ## ../../../../../.claude/projects/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/memory/
 
@@ -32,6 +33,22 @@
 
 ## ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/cf0cd88e-1fb2-4e57-8d56-7a5d7bf9a788/scratchpad/shot/
 
+
+## ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/d56930fa-4909-4eed-a87e-36e514f99657/scratchpad/
+
+- `shoot.sh` — Screenshots every docs/ui/*.svg (or the given names) at its own size into the scratchpad (~249 tok)
+
+## ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/d56930fa-4909-4eed-a87e-36e514f99657/scratchpad/review/
+
+- `index.html` — WM UI Review (~15599 tok)
+
+## ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/d56930fa-4909-4eed-a87e-36e514f99657/scratchpad/specs/
+
+- `editor.lua` — UI review 2026-10-17: support rows, type chips, course names, step dialog subtitle (~992 tok)
+- `hud.lua` — UI review 2026-10-17: progress bar, support summary, step-line target names (~720 tok)
+- `leader.lua` — UI review 2026-10-17: sorted list, current step column (~427 tok)
+- `lifecycle.lua` — UI review 2026-10-17: chip colours and course display names (real module) (~319 tok)
+- `main.lua` — UI review 2026-10-17: Support column instead of "[+S]" in the name (~407 tok)
 
 ## ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/e5a90252-f238-4c13-964c-df2cbdb9b392/scratchpad/
 
@@ -77,6 +94,7 @@
 ## src/
 
 - `WorkflowExecutor.lua` — init, startWorkflow, stopWorkflow, buildSyncMaps, onWorkflowDefinitionsChanged (~24838 tok)
+- `WorkflowManager.lua` — getStepTypeLabel, isMarkerStepType, isTargetlessStepType, isAutoDriveTrackedStepType, getStepTypeSho (~15619 tok)
 - `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad (~8632 tok)
 
 ## src/dev/
@@ -84,6 +102,11 @@
 
 ## src/gui/
 
+- `WMEditorDialog.lua` — deepCopy, new, onCreate, onOpen, showStatus (~7512 tok)
+- `WMHud.lua` — ensureOverlays, colorOverlay, createIconOverlays, updateOverlayPositions, init (~11649 tok)
+- `WMLeaderVehicleSelectDialog.lua` — new, onCreate, buildVehicleList, formatCurrentStep, onOpen (~1846 tok)
+- `WMMainDialog.lua` — new, onCreate, onOpen, showStatus, onClose (~4466 tok)
+- `WMStepDialog.lua` — new, onCreate, onOpen, showStatus, update (~10902 tok)
 
 ## src/integration/
 
@@ -101,6 +124,7 @@
 
 ## tests/
 
+- `run_tests.lua` — local, assert, describe, it, before_each (~2396 tok)
 
 ## tests/fixtures/
 
@@ -112,6 +136,10 @@
 
 - `AutoDriveIntegration_spec.lua` — makeImplement, makeVehicle (~6308 tok)
 - `CourseplayIntegration_spec.lua` — file, folder, view, makeStorage, makeVehicle (~7980 tok)
+- `RenderUiPreview_spec.lua` — has (~1059 tok)
+- `RenderUiPreview_spec.lua` — has (~786 tok)
+- `WMEditorDialog_spec.lua` — makeWorkflow, makeDialog (~10761 tok)
+- `WMHud_spec.lua` — makeVehicle (~6099 tok)
 - `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport, makeLeaderWF (~42855 tok)
 - `WorkflowManagerSpec_spec.lua` — makeVehicle, makeSavegameXML (~15011 tok)
 
@@ -120,6 +148,7 @@
 
 ## tools/
 
+- `render_ui_preview.lua` — readFile, noop, esc, utf8Len, textWidth (~13394 tok)
 
 ## translations/
 
@@ -192,3 +221,6 @@
 
 ## xml/gui/
 
+- `guiProfiles.xml` (~1625 tok)
+- `WMModeSelectDialog.xml` (~632 tok)
+- `WMStepDialog.xml` — dropdown: Section (~2848 tok)

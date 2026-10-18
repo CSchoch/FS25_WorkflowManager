@@ -2288,3 +2288,100 @@ No WM dialog defines an Enter handler. Needs a 2-second in-game check: open the 
 | 00:33 | Edited README.md | 2→6 lines | ~32 |
 | 00:33 | Added MIT LICENSE (2026 Christian Schoch) + README license badge/section | LICENSE, README.md | done | ~1k |
 | 00:33 | Session end: 4 writes across 2 files (README.md, LICENSE) | 1 reads | ~2329 tok |
+
+## Session: 2026-10-16 00:46
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 00:49 | Created ../../../../../.claude/plans/somehow-in-vehicle-sync-spicy-sutherland.md | — | ~1583 |
+| 00:52 | Edited ../../../../../.claude/plans/somehow-in-vehicle-sync-spicy-sutherland.md | expanded (+38 lines) | ~1119 |
+| 00:52 | Edited ../../../../../.claude/plans/somehow-in-vehicle-sync-spicy-sutherland.md | 2→2 lines | ~54 |
+| 00:52 | Edited ../../../../../.claude/plans/somehow-in-vehicle-sync-spicy-sutherland.md | 2→3 lines | ~75 |
+| 00:52 | Edited ../../../../../.claude/plans/somehow-in-vehicle-sync-spicy-sutherland.md | inline fix | ~24 |
+| 00:52 | Edited ../../../../../.claude/plans/somehow-in-vehicle-sync-spicy-sutherland.md | 2→3 lines | ~66 |
+| 00:52 | Edited ../../../../../.claude/plans/somehow-in-vehicle-sync-spicy-sutherland.md | inline fix | ~15 |
+| 00:52 | Edited ../../../../../.claude/plans/somehow-in-vehicle-sync-spicy-sutherland.md | "translation_de.xml" → "translation_en.xml" | ~24 |
+| 01:01 | Created tools/render_ui_preview.lua | — | ~12355 |
+| 01:01 | Edited tools/render_ui_preview.lua | 2→3 lines | ~32 |
+| 01:02 | Edited tools/render_ui_preview.lua | 2→3 lines | ~31 |
+| 01:03 | Edited tools/render_ui_preview.lua | expanded (+7 lines) | ~92 |
+| 01:03 | Edited tools/render_ui_preview.lua | 6→9 lines | ~81 |
+| 01:03 | Created ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/d56930fa-4909-4eed-a87e-36e514f99657/scratchpad/shoot.sh | — | ~249 |
+| 01:05 | Created tests/specs/RenderUiPreview_spec.lua | — | ~775 |
+| 01:05 | Edited tests/run_tests.lua | 2→3 lines | ~23 |
+| 01:06 | Edited tools/render_ui_preview.lua | 2→3 lines | ~36 |
+| 01:06 | Edited tests/specs/RenderUiPreview_spec.lua | inline fix | ~23 |
+| 01:06 | Edited tests/specs/RenderUiPreview_spec.lua | 9→10 lines | ~94 |
+| 01:12 | Created ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/d56930fa-4909-4eed-a87e-36e514f99657/scratchpad/review/index.html | — | ~15083 |
+| 01:12 | Edited ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/d56930fa-4909-4eed-a87e-36e514f99657/scratchpad/review/index.html | 2→2 lines | ~79 |
+| 01:13 | Edited ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/d56930fa-4909-4eed-a87e-36e514f99657/scratchpad/review/index.html | inline fix | ~17 |
+| 01:15 | UI renders: tools/render_ui_preview.lua + spec (968 tests green), docs/ui/*.svg, review artifact https://claude.ai/artifact/UMPiaahM5NZNa41vqcpQbv (22 ranked proposals) | tools/, tests/specs/, docs/ui/, CLAUDE.md | done | ~60k |
+| 01:14 | Session end: 22 writes across 6 files (somehow-in-vehicle-sync-spicy-sutherland.md, render_ui_preview.lua, shoot.sh, RenderUiPreview_spec.lua, run_tests.lua) | 21 reads | ~34209 tok |
+| 01:24 | Edited ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/d56930fa-4909-4eed-a87e-36e514f99657/scratchpad/review/index.html | 4→4 lines | ~161 |
+| 01:24 | Edited ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/d56930fa-4909-4eed-a87e-36e514f99657/scratchpad/review/index.html | inline fix | ~34 |
+| 01:24 | Edited ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/d56930fa-4909-4eed-a87e-36e514f99657/scratchpad/review/index.html | expanded (+35 lines) | ~638 |
+| 01:24 | Edited ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/d56930fa-4909-4eed-a87e-36e514f99657/scratchpad/review/index.html | inline fix | ~44 |
+| 01:25 | Session end: 26 writes across 6 files (somehow-in-vehicle-sync-spicy-sutherland.md, render_ui_preview.lua, shoot.sh, RenderUiPreview_spec.lua, run_tests.lua) | 21 reads | ~35148 tok |
+
+## Session: 2026-10-17 21:59
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-10-17 22:02
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 22:08 | Edited src/WorkflowManager.lua | modified WorkflowManager() | ~336 |
+| 22:08 | Edited src/gui/WMHud.lua | 2→2 lines | ~40 |
+| 22:08 | Edited src/gui/WMHud.lua | modified colorOverlay() | ~210 |
+| 22:10 | Edited src/gui/WMHud.lua | expanded (+15 lines) | ~248 |
+| 22:10 | Edited src/gui/WMHud.lua | modified WMHud() | ~1019 |
+| 22:10 | Edited src/gui/WMHud.lua | inline fix | ~15 |
+| 22:11 | Edited xml/gui/guiProfiles.xml | expanded (+39 lines) | ~445 |
+| 22:11 | Edited src/gui/WMMainDialog.lua | 8→11 lines | ~142 |
+| 22:11 | Edited src/gui/WMEditorDialog.lua | expanded (+26 lines) | ~616 |
+| 22:13 | Created xml/gui/WMStepDialog.xml | — | ~2848 |
+| 22:14 | Edited src/gui/WMStepDialog.lua | inline fix | ~12 |
+| 22:14 | Edited src/gui/WMStepDialog.lua | inline fix | ~26 |
+| 22:14 | Created xml/gui/WMModeSelectDialog.xml | — | ~632 |
+| 22:14 | Edited src/gui/WMLeaderVehicleSelectDialog.lua | modified WMLeaderVehicleSelectDialog() | ~355 |
+| 22:14 | Edited src/gui/WMLeaderVehicleSelectDialog.lua | 2→5 lines | ~65 |
+| 22:16 | Edited tools/render_ui_preview.lua | 14→18 lines | ~249 |
+| 22:19 | Created ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/d56930fa-4909-4eed-a87e-36e514f99657/scratchpad/specs/hud.lua | — | ~720 |
+| 22:19 | Created ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/d56930fa-4909-4eed-a87e-36e514f99657/scratchpad/specs/lifecycle.lua | — | ~319 |
+| 22:19 | Created ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/d56930fa-4909-4eed-a87e-36e514f99657/scratchpad/specs/leader.lua | — | ~427 |
+| 22:19 | Created ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/d56930fa-4909-4eed-a87e-36e514f99657/scratchpad/specs/main.lua | — | ~407 |
+| 22:19 | Created ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/d56930fa-4909-4eed-a87e-36e514f99657/scratchpad/specs/editor.lua | — | ~992 |
+| 01:50 | Implemented all 22 UI review proposals (HUD chip/bar/support line/tooltip fix + i18n, main footer+Support column, editor chips/tint/arrows, step dialog Load order/subtitle/(none)/row order, mode select 900px+roles, leader sort+step column, AD settings hint, German umlauts); 987 tests green | src/gui, xml/gui, translations, tests | done | ~120k |
+| 22:20 | Session end: 21 writes across 15 files (WorkflowManager.lua, WMHud.lua, guiProfiles.xml, WMMainDialog.lua, WMEditorDialog.lua) | 12 reads | ~23475 tok |
+
+## Session: 2026-10-18 20:25
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 20:42 | Edited tests/specs/WMEditorDialog_spec.lua | expanded (+17 lines) | ~265 |
+| 20:42 | Fixed garbled AD/CP type chip in editor (removed imageSliceId noSlice from wm_typeChip/wm_rowTint), preview tool + regression test | xml/gui/guiProfiles.xml, tools/render_ui_preview.lua, tests/specs/WMEditorDialog_spec.lua | 988 tests pass | ~6k |
+| 20:43 | Session end: 1 writes across 1 files (WMEditorDialog_spec.lua) | 0 reads | ~284 tok |
+| 20:59 | Edited src/gui/WMHud.lua | 2→2 lines | ~16 |
+| 20:59 | Edited tests/specs/WMHud_spec.lua | expanded (+22 lines) | ~352 |
+| 20:59 | HUD step chip label (AD/CP/WM) drawn black instead of white, per user request; test in WMHud_spec | src/gui/WMHud.lua, tests/specs/WMHud_spec.lua | 989 tests pass | ~3k |
+| 20:59 | Session end: 3 writes across 3 files (WMEditorDialog_spec.lua, WMHud.lua, WMHud_spec.lua) | 0 reads | ~679 tok |
+| 21:26 | Edited src/gui/WMHud.lua | expanded (+6 lines) | ~102 |
+| 21:27 | Edited src/gui/WMHud.lua | 280 → 320 | ~15 |
+| 21:27 | Edited tests/specs/RenderUiPreview_spec.lua | 2→7 lines | ~83 |
+| 21:27 | HUD support summary prefixed with "Supporters:"/"Unterstützer:" (wm_hud_supporters), HUD width 280->320px so German fits; preview test | src/gui/WMHud.lua, translations/*.xml, tests/specs/RenderUiPreview_spec.lua | 990 tests pass | ~6k |
+| 21:27 | Session end: 6 writes across 4 files (WMEditorDialog_spec.lua, WMHud.lua, WMHud_spec.lua, RenderUiPreview_spec.lua) | 0 reads | ~893 tok |
+| 21:29 | User rejected HUD widening: reverted to 280px; wm_hud_support_waiting_main shortened to "%s waiting"/"%s wartet" | src/gui/WMHud.lua, translations/*.xml, tests/specs/WMHud_spec.lua, tests/specs/RenderUiPreview_spec.lua | 990 tests pass | ~3k |
+| 21:29 | Session end: 6 writes across 4 files (WMEditorDialog_spec.lua, WMHud.lua, WMHud_spec.lua, RenderUiPreview_spec.lua) | 0 reads | ~893 tok |
+| 21:32 | Edited src/gui/WMHud.lua | expanded (+9 lines) | ~238 |
+| 21:32 | Edited tools/render_ui_preview.lua | expanded (+9 lines) | ~152 |
+| 21:32 | Edited tests/specs/RenderUiPreview_spec.lua | expanded (+7 lines) | ~132 |
+| 21:32 | Edited tests/specs/WMHud_spec.lua | expanded (+16 lines) | ~214 |
+| 21:33 | Support HUD "Main vehicle: <name>": name now clickable (mainName bounds, hover colour + tooltip) to switch into the main vehicle; preview scenario hud-support-switch + tests | src/gui/WMHud.lua, tools/render_ui_preview.lua, tests/specs/WMHud_spec.lua, tests/specs/RenderUiPreview_spec.lua | 992 tests pass | ~5k |
+| 21:33 | Session end: 10 writes across 5 files (WMEditorDialog_spec.lua, WMHud.lua, WMHud_spec.lua, RenderUiPreview_spec.lua, render_ui_preview.lua) | 0 reads | ~1682 tok |
+
+## Session: 2026-10-18 21:35
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|

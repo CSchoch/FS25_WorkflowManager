@@ -436,4 +436,88 @@ describe("WMHud", function()
             assert.is_false(WMHud.isDragging)
         end)
     end)
+
+    describe("main vehicle name on a support vehicle's HUD", function()
+        it("switches the player into the main vehicle when the name is clicked", function()
+            local entered
+            _G.g_localPlayer = { requestToEnterVehicle = function(_, v) entered = v end }
+            local hud = setmetatable({
+                x = 0, y = 0, w = 1, h = 1, headerH = 0.1, marginX = 0.01,
+                buttonBounds = { mainName = { x = 0.2, y = 0.3, w = 0.2, h = 0.05 } },
+                nameClickVehicles = { mainName = vehicle1 },
+            }, { __index = WMHud })
+
+            assert.is_true(hud:handleClick(0.3, 0.32))
+            assert.are.equal(vehicle1, entered)
+        end)
+    end)
+
+    -- UI review 2026-10-17: progress bar, support summary, step-line target names
+    describe("step line helpers", function()
+        before_each(function()
+            _G.g_i18n = { getText = function(_, key)
+                local texts = {
+                    wm_hud_support_running = "%s working",
+                    wm_hud_support_paused = "%s paused",
+                    wm_hud_support_waiting_leader = "%s waiting for leader",
+                    wm_hud_support_waiting_main = "%s waiting",
+                }
+                return texts[key] or key
+            end }
+            WorkflowManager.STEP_COURSEPLAY = "courseplay"
+            WorkflowManager.isTargetlessStepType = function(_, t) return t == "park" or t == "wait_for_leader" end
+            WorkflowManager.getStepTypeLabel = function(_, t) return "label:" .. t end
+            WorkflowManager.getCourseDisplayName = function(_, n) return (string.gsub(n or "", "^Singleplayer/", "")) end
+        end)
+
+        it("computes progress from finished steps plus the current step's share", function()
+            assert.are.equal(0, WMHud.computeProgress(1, 10, 0))
+            assert.are.equal(0.127, math.floor(WMHud.computeProgress(2, 10, 0.27) * 1000 + 0.5) / 1000)
+            assert.are.equal(1, WMHud.computeProgress(10, 10, 1))
+            assert.are.equal(0.3, WMHud.computeProgress(3, 10, 5))   -- share is clamped to one step
+            assert.is_nil(WMHud.computeProgress(nil, 10, 0))
+            assert.is_nil(WMHud.computeProgress(1, 0, 0))
+        end)
+
+        it("counts support vehicles per state, in a fixed order, leaving out empty states", function()
+            local segments = WMHud.getSupportSummary({
+                { status = "waiting_for_main" }, { status = "running" }, { status = "running" },
+            })
+            assert.are.equal(2, #segments)
+            assert.are.equal("2 working", segments[1].text)
+            assert.are.equal("1 waiting", segments[2].text)
+            assert.are.equal(0, #WMHud.getSupportSummary({}))
+        end)
+
+        it("names the target: type label, course without Singleplayer/, last AD path part on support lines", function()
+            assert.are.equal("label:park", WMHud:getHudTargetName({ type = "park" }, false))
+            assert.are.equal("F49/Chopping",
+                WMHud:getHudTargetName({ type = "courseplay", target = "Singleplayer/F49/Chopping" }, true))
+            assert.are.equal("Farm 1/Silage", WMHud:getHudTargetName({ type = "autodrive", target = "Farm 1/Silage" }, false))
+            assert.are.equal("Silage", WMHud:getHudTargetName({ type = "autodrive", target = "Farm 1/Silage" }, true))
+        end)
+
+        it("draws the step chip label in black on the type colour", function()
+            WorkflowManager.getStepTypeShortcut = function() return "CP" end
+            WorkflowManager.getStepTypeColor = function() return { 0.184, 0.620, 0.267, 1 } end
+            local color, drawn
+            _G.setTextBold = function() end
+            _G.setTextAlignment = function() end
+            _G.RenderText = { ALIGN_CENTER = 1, ALIGN_LEFT = 0 }
+            _G.getTextWidth = function(size, text) return size * #text end
+            _G.setTextColor = function(r, g, b, a) color = { r, g, b, a } end
+            _G.renderText = function(_, _, _, text) drawn = { text = text, color = color } end
+            local hud = setmetatable({
+                smallSize = 0.01, marginX = 0.004, marginY = 0.004,
+                chipOverlay = { setPosition = function() end, setDimension = function() end,
+                                setColor = function() end, render = function() end },
+            }, { __index = WMHud })
+
+            hud:drawStepChip("courseplay", 0, 0)
+
+            assert.are.equal("CP", drawn.text)
+            assert.are.same({ 0, 0, 0, 1 }, drawn.color)
+        end)
+    end)
+
 end)

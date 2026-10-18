@@ -51,8 +51,8 @@ function WMHud:ensureOverlays()
         return
     end
 
-    -- Calculate size from pixel values
-    local pw, ph = getNormalizedScreenValues(280, 140)
+    -- Calculate size from pixel values (name, step, progress bar, status, extra line, buttons)
+    local pw, ph = getNormalizedScreenValues(280, 168)
     self.w = pw
     self.h = ph
 
@@ -87,6 +87,22 @@ function WMHud:ensureOverlays()
     local marginX, marginY = getNormalizedScreenValues(8, 6)
     self.marginX = marginX
     self.marginY = marginY
+
+    -- Plain colour blocks, positioned and coloured per frame: step type chip, progress bar
+    -- (track + fill) and the backing box of the vehicle-name tooltip
+    local function colorOverlay()
+        local overlay = Overlay.new(g_baseUIFilename, 0, 0, 0, 0)
+        overlay:setUVs(g_colorBgUVs)
+        return overlay
+    end
+    self.chipOverlay = colorOverlay()
+    self.barBgOverlay = colorOverlay()
+    self.barBgOverlay:setColor(1, 1, 1, 0.15)
+    self.barFillOverlay = colorOverlay()
+    self.tipBgOverlay = colorOverlay()
+    self.tipBgOverlay:setColor(0.1, 0.1, 0.1, 0.95)
+    local _, barH = getNormalizedScreenValues(0, 4)
+    self.barH = barH
 
     -- Create icon overlays
     self:createIconOverlays()
@@ -417,49 +433,17 @@ function WMHud:draw()
     -- === Content area ===
     local lineY = y + h - self.headerH - my - self.textSize
 
-    -- Workflow name; append compact support badge if support vehicles exist
+    -- Workflow name
     setTextColor(1, 1, 1, 1)
     local displayName = workflow and workflow.name or (g_i18n:getText("wm_hud_no_workflow") or "No workflow")
-    if workflow and activeData and activeData.isMainVehicle ~= false then
-        local supportList = WMExecutor:getSupportActiveDataListForWorkflow(workflow.id)
-        if #supportList > 0 then
-            local running, paused, waiting = 0, 0, 0
-            for _, sd in ipairs(supportList) do
-                if sd.status == WorkflowManager.STATUS_WAITING_FOR_LEADER then waiting = waiting + 1
-                elseif sd.status == WorkflowManager.STATUS_RUNNING then running = running + 1
-                elseif sd.status == WorkflowManager.STATUS_PAUSED then paused = paused + 1
-                end
-            end
-            -- Append colored badge-style count (rendered as a second text segment)
-            renderText(x + mx, lineY, self.textSize, displayName)
-            -- Draw support count badge to the right of the name
-            local nameW = getTextWidth(self.textSize, displayName)
-            if waiting > 0 then
-                setTextColor(1, 0.85, 0, 1)
-            elseif running > 0 then
-                setTextColor(0.3, 0.9, 0.3, 1)
-            elseif paused > 0 then
-                setTextColor(1, 0.6, 0, 1)
-            else
-                setTextColor(0.5, 0.5, 0.5, 1)
-            end
-            local badgeText = waiting > 0
-                and string.format("[%dS·%dW]", #supportList, waiting)
-                or  string.format("[%dS]", #supportList)
-            renderText(x + mx + nameW + mx * 0.5, lineY, self.smallSize, badgeText)
-            setTextColor(1, 1, 1, 1)
-        else
-            renderText(x + mx, lineY, self.textSize, displayName)
-        end
-    else
-        renderText(x + mx, lineY, self.textSize, displayName)
-    end
+    renderText(x + mx, lineY, self.textSize, displayName)
 
-    -- Step info: full type names, em dash separator
+    -- Step line: coloured type chip, then "Step n/m: target"
     lineY = lineY - self.textSize - my
-    setTextColor(0.9, 0.9, 0.3, 1)
+    local progress, progressColor
     if workflow and activeData and workflow.steps then
         local ts = #workflow.steps
+        local chipStep, stepText
         if activeData.isMainVehicle == false then
             -- Support vehicle
             local mainData = WMExecutor:getMainActiveDataForWorkflow(workflow.id)
@@ -468,31 +452,53 @@ function WMHud:draw()
             local mainStep = mainIndex and workflow.steps[mainIndex]
             local supSteps = mainStep and mainStep.support or {}
             local css = activeData.currentSupportStep or 1
-            local tss = #supSteps
             local supStep = supSteps[css]
             if supStep then
-                renderText(x + mx, lineY, self.smallSize,
-                    string.format("[%s] Step %s.%d/%d: %s",
-                        WorkflowManager:getStepTypeShortcut(supStep.type),
-                        mainIndex and tostring(mainIndex) or "?",
-                        css, tss, supStep.target or "?"))
+                chipStep = supStep
+                stepText = string.format(g_i18n:getText("wm_hud_support_step"),
+                    tostring(mainIndex), tostring(css), tostring(#supSteps), self:getHudTargetName(supStep, true))
+                progress = WMHud.computeProgress(mainIndex, ts, (css - 1) / #supSteps)
             end
         else
             -- Main vehicle
             local cs = activeData.currentStep or 1
             local step = workflow.steps[cs]
             if step then
-                local desc = WorkflowManager:isTargetlessStepType(step.type)
-                    and WorkflowManager:getStepTypeLabel(step.type)
-                    or (step.target or "?")
-                renderText(x + mx, lineY, self.smallSize,
-                    string.format("[%s] Step %d/%d: %s", WorkflowManager:getStepTypeShortcut(step.type), cs, ts, desc))
+                chipStep = step
+                stepText = string.format(g_i18n:getText("wm_hud_step"),
+                    tostring(cs), tostring(ts), self:getHudTargetName(step, false))
+                local partial = 0
+                if step.type == WorkflowManager.STEP_COURSEPLAY and activeData.vehicle
+                and CPIntegration:isRunning(activeData.vehicle) then
+                    partial = CPIntegration:getProgress(activeData.vehicle) or 0
+                end
+                progress = WMHud.computeProgress(cs, ts, partial)
             end
+        end
+        if chipStep then
+            local chipW = self:drawStepChip(chipStep.type, x + mx, lineY)
+            setTextColor(0.9, 0.9, 0.3, 1)
+            renderText(x + mx + chipW, lineY, self.smallSize, stepText)
+            progressColor = WorkflowManager:getStepTypeColor(chipStep.type)
+        end
+    end
+
+    -- Progress bar: finished steps plus the share of the current one
+    lineY = lineY - my * 0.5 - self.barH
+    if progress ~= nil then
+        self.barBgOverlay:setPosition(x + mx, lineY)
+        self.barBgOverlay:setDimension(w - 2 * mx, self.barH)
+        self.barBgOverlay:render()
+        if progress > 0 then
+            self.barFillOverlay:setPosition(x + mx, lineY)
+            self.barFillOverlay:setDimension((w - 2 * mx) * progress, self.barH)
+            self.barFillOverlay:setColor(unpack(progressColor))
+            self.barFillOverlay:render()
         end
     end
 
     -- Vehicle state
-    lineY = lineY - self.smallSize - my
+    lineY = lineY - my - self.smallSize
     self.buttonBounds.leaderName = nil
     self.buttonBounds.mainName = nil
     self.nameClickVehicles = self.nameClickVehicles or {}
@@ -576,6 +582,49 @@ function WMHud:draw()
         renderText(x + mx, lineY, self.smallSize, g_i18n:getText("wm_hud_no_vehicle"))
     end
 
+    -- Extra line: the support vehicles' states on a main vehicle, the main vehicle on a support vehicle
+    lineY = lineY - my - self.smallSize
+    if workflow and activeData then
+        if activeData.isMainVehicle ~= false then
+            local segments = WMHud.getSupportSummary(WMExecutor:getSupportActiveDataListForWorkflow(workflow.id))
+            local segX = x + mx
+            if #segments > 0 then
+                local label = g_i18n:getText("wm_hud_supporters") .. " "
+                setTextColor(0.6, 0.6, 0.6, 1)
+                renderText(segX, lineY, self.smallSize, label)
+                segX = segX + getTextWidth(self.smallSize, label)
+            end
+            for i, segment in ipairs(segments) do
+                if i > 1 then
+                    setTextColor(0.6, 0.6, 0.6, 1)
+                    renderText(segX, lineY, self.smallSize, " · ")
+                    segX = segX + getTextWidth(self.smallSize, " · ")
+                end
+                setTextColor(unpack(segment.color))
+                renderText(segX, lineY, self.smallSize, segment.text)
+                segX = segX + getTextWidth(self.smallSize, segment.text)
+            end
+        elseif activeData.status ~= WorkflowManager.STATUS_WAITING_FOR_MAIN then
+            -- (while waiting for main, the status line above already names it)
+            local mainData = WMExecutor:getMainActiveDataForWorkflow(workflow.id)
+            local mainVehicle = mainData and mainData.vehicle
+            if mainVehicle and mainVehicle.getName then
+                -- "Main vehicle: <name>", the name clickable to switch to it (like the waiting line)
+                local prefix = string.format(g_i18n:getText("wm_hud_main_vehicle"), "")
+                local name = mainVehicle:getName()
+                setTextColor(0.6, 0.6, 0.6, 1)
+                renderText(x + mx, lineY, self.smallSize, prefix)
+                local nameX = x + mx + getTextWidth(self.smallSize, prefix)
+                if self.hoveredButton == "mainName" then
+                    setTextColor(0.165, 0.757, 0.929, 1)
+                end
+                renderText(nameX, lineY, self.smallSize, name)
+                self.buttonBounds.mainName = { x = nameX, y = lineY, w = getTextWidth(self.smallSize, name), h = self.smallSize }
+                self.nameClickVehicles.mainName = mainVehicle
+            end
+        end
+    end
+
     -- === Button row (icons) ===
     self:drawIconButtons(activeData)
 
@@ -586,6 +635,90 @@ function WMHud:draw()
     setTextColor(1, 1, 1, 1)
     setTextBold(false)
     setTextAlignment(RenderText.ALIGN_LEFT)
+end
+
+---Share of a workflow that is done: the finished steps plus the share of the current one
+---@param stepIndex number|nil Current step (1-based)
+---@param stepCount number Number of steps
+---@param partial number|nil Share of the current step that is done (0..1)
+---@return number|nil progress 0..1, nil without steps
+function WMHud.computeProgress(stepIndex, stepCount, partial)
+    if stepIndex == nil or stepCount == nil or stepCount <= 0 then
+        return nil
+    end
+    local share = math.max(0, math.min(1, partial or 0))
+    return math.max(0, math.min(1, (stepIndex - 1 + share) / stepCount))
+end
+
+---The support vehicles of a workflow counted per state, as coloured text segments
+---("1 working", "1 waiting"); states nobody is in are left out
+---@param supportList table List of support activeData
+---@return table segments { {text = string, color = {r, g, b, a}}, ... }
+function WMHud.getSupportSummary(supportList)
+    local states = {
+        { status = WorkflowManager.STATUS_RUNNING, key = "wm_hud_support_running", color = { 0.3, 0.9, 0.3, 1 } },
+        { status = WorkflowManager.STATUS_PAUSED, key = "wm_hud_support_paused", color = { 1, 0.6, 0, 1 } },
+        { status = WorkflowManager.STATUS_WAITING_FOR_LEADER, key = "wm_hud_support_waiting_leader", color = { 1, 0.85, 0, 1 } },
+        { status = WorkflowManager.STATUS_WAITING_FOR_MAIN, key = "wm_hud_support_waiting_main", color = { 1, 0.85, 0, 1 } },
+    }
+    local counts = {}
+    for _, data in ipairs(supportList or {}) do
+        counts[data.status] = (counts[data.status] or 0) + 1
+    end
+    local segments = {}
+    for _, state in ipairs(states) do
+        if counts[state.status] then
+            table.insert(segments, {
+                text = string.format(g_i18n:getText(state.key), tostring(counts[state.status])),
+                color = state.color,
+            })
+        end
+    end
+    return segments
+end
+
+---Target as shown on the step line: the type label for steps without a target, course names
+---without "Singleplayer/". Support lines are shorter, so they keep only the last part of an
+---AutoDrive path (the group stays visible in the dialogs).
+---@param step table Step definition
+---@param lastPartOnly boolean
+---@return string
+function WMHud:getHudTargetName(step, lastPartOnly)
+    if WorkflowManager:isTargetlessStepType(step.type) then
+        return WorkflowManager:getStepTypeLabel(step.type)
+    end
+    if step.type == WorkflowManager.STEP_COURSEPLAY then
+        return WorkflowManager:getCourseDisplayName(step.target)
+    end
+    local target = step.target or "?"
+    if lastPartOnly then
+        return target:match("[^/]+$") or target
+    end
+    return target
+end
+
+---Draw the coloured AD/CP/WM chip at the start of the step line
+---@param stepType string
+---@param chipX number Left edge (normalized)
+---@param baselineY number Text line (normalized)
+---@return number width Chip width plus the gap to the text after it
+function WMHud:drawStepChip(stepType, chipX, baselineY)
+    local label = WorkflowManager:getStepTypeShortcut(stepType)
+    local chipTextSize = self.smallSize * 0.85
+    setTextBold(true)
+    local padX = self.marginX * 0.5
+    local chipW = getTextWidth(chipTextSize, label) + 2 * padX
+    local chipH = self.smallSize + self.marginY * 0.5
+    self.chipOverlay:setPosition(chipX, baselineY - self.marginY * 0.4)
+    self.chipOverlay:setDimension(chipW, chipH)
+    self.chipOverlay:setColor(unpack(WorkflowManager:getStepTypeColor(stepType)))
+    self.chipOverlay:render()
+    setTextColor(0, 0, 0, 1)
+    setTextAlignment(RenderText.ALIGN_CENTER)
+    renderText(chipX + chipW * 0.5, baselineY, chipTextSize, label)
+    setTextAlignment(RenderText.ALIGN_LEFT)
+    setTextBold(false)
+    return chipW + padX
 end
 
 ---Draw a tooltip label above the currently hovered button
@@ -613,6 +746,21 @@ function WMHud:drawButtonTooltip(activeData)
     end
 
     if not tooltipText then return end
+
+    if self.hoveredButton == "leaderName" or self.hoveredButton == "mainName" then
+        -- The names sit on the status line, with the step line right above: draw the hint below
+        -- the name, on its own box, kept inside the HUD
+        local tipW = getTextWidth(self.smallSize, tooltipText) + self.marginX
+        local tipH = self.smallSize + self.marginY * 0.5
+        local tipX = math.max(self.x, math.min(bounds.x, self.x + self.w - tipW - self.marginX * 0.5))
+        local tipY = bounds.y - self.marginY * 0.5 - tipH
+        self.tipBgOverlay:setPosition(tipX, tipY)
+        self.tipBgOverlay:setDimension(tipW, tipH)
+        self.tipBgOverlay:render()
+        setTextColor(0.9, 0.9, 0.9, 0.95)
+        renderText(tipX + self.marginX * 0.5, tipY + self.marginY * 0.4, self.smallSize, tooltipText)
+        return
+    end
 
     -- Render tooltip text centered above the button
     local tipY = bounds.y + bounds.h + self.marginY * 0.5
