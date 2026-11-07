@@ -538,7 +538,8 @@ function WMStepDialog:populateCellForItemInSection(list, section, index, cell)
                 for _, name in ipairs(self.selectedFillTypes) do
                     if name == item.name then isSelected = true; break end
                 end
-                textElement:setText((isSelected and "✓ " or "  ") .. item.display)
+                -- "»", not "✓": the FS25 font has no ✓ glyph and drops it (log: Character '10003' not found)
+                textElement:setText((isSelected and "» " or "  ") .. item.display)
                 if isSelected then
                     textElement:setTextColor(0.0, 0.85, 0.17, 1)
                 else

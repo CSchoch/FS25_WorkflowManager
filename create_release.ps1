@@ -4,7 +4,7 @@ param(
 )
 
 $include = @('modDesc.xml', 'icon_WorkflowManager.dds', 'src', 'textures', 'translations', 'xml')
-$exclude = @('src/DevConfig.lua')
+$exclude = @('src/DevConfig.lua', 'src/dev/WMDocScreenshots.lua')
 $srcLen  = $Src.Length
 
 Add-Type -Assembly 'System.IO.Compression.FileSystem'

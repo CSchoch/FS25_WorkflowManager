@@ -6341,6 +6341,318 @@
       ],
       "occurrences": 1,
       "last_seen": "2026-10-18T22:00:00"
+    },
+    {
+      "id": "bug-382",
+      "timestamp": "2026-11-07T22:37:27.567Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/docs/ui/step-dialog.md",
+      "root_cause": "12 lines replaced/restructured",
+      "fix": "Rewrote 14→15 lines (12 removed) | Also: - The current choice is shown in the **Selected** ; Courseplay courses appear as folder-qualified path | Also: - Die aktuelle Auswahl steht in der Zeile **Ausgew; Courseplay-Kurse erscheinen als Pfade mit Ordneran | Also: | Aktion | Zweites Ziel | Fülltyp | Saatgut |; |--------|---------------|-----------|-----------|",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 4,
+      "last_seen": "2026-11-07T22:40:57.408Z"
+    },
+    {
+      "id": "bug-383",
+      "timestamp": "2026-11-07T22:37:43.182Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/docs/ui/leader-select-dialog.md",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 4→6 lines (3 removed) | Also: | Fahrzeugname | Der Name des Fahrzeugs im Spiel |; Beim Öffnen des Dialogs ist der erste Eintrag ausg",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-11-07T22:40:45.263Z"
+    },
+    {
+      "id": "bug-384",
+      "timestamp": "2026-11-07T22:39:49.998Z",
+      "error_message": "Significant refactor of ",
+      "file": "../../../../../AppData/Local/Temp/claude/9b3320669b89cd34/bdf9355e-4b06-4196-987f-ab520c206866/scratchpad/desync/RULES.md",
+      "root_cause": "7 lines replaced/restructured",
+      "fix": "Rewrote 7→4 lines (7 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-11-07T22:39:49.998Z"
+    },
+    {
+      "id": "bug-385",
+      "timestamp": "2026-11-07T22:40:45.842Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/i18n/de/docusaurus-plugin-content-docs/current/workflows/executing-workflows.md",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 5→6 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-11-07T22:40:45.842Z"
+    },
+    {
+      "id": "bug-386",
+      "timestamp": "2026-11-07T22:40:47.814Z",
+      "error_message": "Incorrect value in code",
+      "file": "website/i18n/de/docusaurus-plugin-content-docs/current/ui/mode-dialog.md",
+      "root_cause": "Had `Schritt 2.1/2`",
+      "fix": "Changed to `Schritt 2 · Unterstützung 1/2`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-11-07T22:40:47.814Z"
+    },
+    {
+      "id": "bug-387",
+      "timestamp": "2026-11-07T22:40:48.273Z",
+      "error_message": "Incorrect value in code",
+      "file": "website/i18n/de/docusaurus-plugin-content-docs/current/workflows/creating-workflows.md",
+      "root_cause": "Had `N.M`",
+      "fix": "Changed to `→ N.M`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-11-07T22:40:48.273Z"
+    },
+    {
+      "id": "bug-388",
+      "timestamp": "2026-11-07T22:40:52.249Z",
+      "error_message": "Incorrect value in code",
+      "file": "website/i18n/de/docusaurus-plugin-content-docs/current/workflows/linked-workflows.md",
+      "root_cause": "Had `N.M`",
+      "fix": "Changed to `→ N.M`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-11-07T22:40:55.116Z"
+    },
+    {
+      "id": "bug-389",
+      "timestamp": "2026-11-07T22:40:52.900Z",
+      "error_message": "Incorrect value in code",
+      "file": "website/i18n/de/docusaurus-plugin-content-docs/current/ui/editor-dialog.md",
+      "root_cause": "Had `N.M`",
+      "fix": "Changed to `→ N.M`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-11-07T22:40:57.608Z"
+    },
+    {
+      "id": "bug-390",
+      "timestamp": "2026-11-07T22:40:53.813Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/i18n/de/docusaurus-plugin-content-docs/current/ui/editor-dialog.md",
+      "root_cause": "8 lines replaced/restructured",
+      "fix": "Rewrote 10→8 lines (8 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-11-07T22:40:53.813Z"
+    },
+    {
+      "id": "bug-391",
+      "timestamp": "2026-11-07T22:40:54.148Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/i18n/de/docusaurus-plugin-content-docs/current/workflows/linked-workflows.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 3→3 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-11-07T22:40:54.148Z"
+    },
+    {
+      "id": "bug-392",
+      "timestamp": "2026-11-07T22:40:56.622Z",
+      "error_message": "Wrong reference: tzungsschritt should be tzung",
+      "file": "website/i18n/de/docusaurus-plugin-content-docs/current/ui/editor-dialog.md",
+      "root_cause": "Used \"tzungsschritt\" instead of \"tzung\"",
+      "fix": "Changed tzungsschritt → tzung",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-11-07T22:40:56.622Z"
+    },
+    {
+      "id": "bug-393",
+      "timestamp": "2026-11-07T22:41:03.014Z",
+      "error_message": "Incorrect value in code",
+      "file": "website/i18n/de/docusaurus-plugin-content-docs/current/ui/hud-controls.md",
+      "root_cause": "Had `[NS]`",
+      "fix": "Changed to `Unterstützer: 1 aktiv · 1 wartet`",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-11-07T22:41:04.950Z"
+    },
+    {
+      "id": "bug-394",
+      "timestamp": "2026-11-07T22:41:05.889Z",
+      "error_message": "Significant refactor of ",
+      "file": "website/i18n/de/docusaurus-plugin-content-docs/current/ui/hud-controls.md",
+      "root_cause": "6 lines replaced/restructured",
+      "fix": "Rewrote 8→20 lines (6 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-11-07T22:41:05.889Z"
+    },
+    {
+      "id": "bug-395",
+      "timestamp": "2026-11-07T23:05:17.156Z",
+      "error_message": "Missing error handling in WMDocScreenshots",
+      "file": "src/dev/WMDocScreenshots.lua",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-11-07T23:05:17.156Z"
+    },
+    {
+      "id": "bug-396",
+      "timestamp": "2026-11-07T23:05:19.048Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/dev/WMDocScreenshots.lua",
+      "root_cause": "5 lines replaced/restructured",
+      "fix": "Rewrote 7→12 lines (5 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-11-07T23:05:19.048Z"
+    },
+    {
+      "id": "bug-397",
+      "timestamp": "2026-11-08T00:05:00",
+      "error_message": "During wmDocScreenshots: 'AutoDrive destination not found: Felder 41-60/Feld 48' - real workflows Pressen and Saeen skipped CP steps and were stopped (reset to step 1)",
+      "file": "src/dev/WMDocScreenshots.lua",
+      "root_cause": "Staging overrode ADIntegration/CPIntegration isRunning + getDestinations globally while WMExecutor:update kept running: 'CP not running' for other vehicles completed their field work steps, and the next real AD step looked its target up in the demo destination list",
+      "fix": "Override WMExecutor.update with a noop for the whole run (AD/CP keep driving, runner catches up after) and delegate isRunning/getProgress/getVehicleWorkflowState to the real functions for every vehicle except the player's own; regression tests in WMDocScreenshots_spec",
+      "tags": [
+        "dev-tool",
+        "screenshots",
+        "overrides",
+        "executor",
+        "global-state"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-11-08T00:05:00"
+    },
+    {
+      "id": "bug-398",
+      "timestamp": "2026-11-07T23:09:20.330Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/gui/WMStepDialog.lua",
+      "root_cause": "Had \"✓ \"",
+      "fix": "Changed to \", not \"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-11-07T23:09:20.330Z"
+    },
+    {
+      "id": "bug-399",
+      "timestamp": "2026-11-08T00:30:00",
+      "error_message": "Warning: Character '10003' not found in texture font (✓ Weizen) - selected fill types in the step dialog had no mark",
+      "file": "src/gui/WMStepDialog.lua",
+      "root_cause": "Fill-type list prefixed selected entries with U+2713 ✓, which the FS25 defaultFont has no glyph for",
+      "fix": "Prefix '» ' instead (in the font); new FontGlyphs_spec checks every displayed non-ASCII character against a verified glyph set; docs EN+DE updated",
+      "tags": [
+        "font",
+        "glyph",
+        "ui",
+        "fill-type",
+        "step-dialog"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-11-08T00:30:00"
+    },
+    {
+      "id": "bug-400",
+      "timestamp": "2026-11-08T00:50:00",
+      "error_message": "Selected + highlighted fill type row unreadable: green '» Wheat' on the cyan selection bar",
+      "file": "xml/gui/guiProfiles.xml",
+      "root_cause": "Cells recolour textColor per row; profile wm_listItemText had no textSelectedColor, and TextElement:getTextColor falls back to textColor for a selected row",
+      "fix": "textSelectedColor 1 1 1 1 on wm_listItemText (also covers the green/orange running workflow in the main dialog); profile test in WMStepDialog_spec",
+      "tags": [
+        "ui",
+        "gui-profile",
+        "contrast",
+        "step-dialog",
+        "list"
+      ],
+      "related_bugs": [
+        "bug-399"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-11-08T00:50:00"
     }
   ]
 }

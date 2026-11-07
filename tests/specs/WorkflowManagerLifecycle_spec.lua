@@ -60,6 +60,26 @@ describe("WorkflowManager lifecycle", function()
         end)
     end)
 
+    describe("doc screenshot command", function()
+        it("is not sourced when the file is absent (release zip)", function()
+            loadModule(false)
+            assert.is_false(wasSourced("src/dev/WMDocScreenshots.lua"))
+        end)
+
+        it("is sourced when the file exists (development checkout)", function()
+            loadModule(true)
+            assert.is_true(wasSourced("src/dev/WMDocScreenshots.lua"))
+        end)
+
+        it("is excluded from the release zip", function()
+            local file = assert(io.open("create_release.ps1", "r"))
+            local script = file:read("*a")
+            file:close()
+            local exclude = script:match("%$exclude%s*=%s*@%((.-)%)")
+            assert.is_truthy(exclude and exclude:find("'src/dev/WMDocScreenshots.lua'", 1, true))
+        end)
+    end)
+
     describe("loadDialog", function()
         local WM
 

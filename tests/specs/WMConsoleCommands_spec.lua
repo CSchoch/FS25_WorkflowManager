@@ -60,6 +60,24 @@ describe("WMConsoleCommands", function()
             assert.is_nil(registered["wmPrintStateAll"])
             assert.is_nil(registered["wmPrintWorkflow"])
         end)
+
+        it("registers no screenshot command when WMDocScreenshots is absent (release zip)", function()
+            _G.WMDocScreenshots = nil
+            WMConsoleCommands:init()
+            assert.is_nil(registered["wmDocScreenshots"])
+        end)
+
+        it("passes init / delete on to WMDocScreenshots when it is loaded", function()
+            local calls = {}
+            _G.WMDocScreenshots = {
+                init = function() table.insert(calls, "init") end,
+                delete = function() table.insert(calls, "delete") end,
+            }
+            WMConsoleCommands:init()
+            WMConsoleCommands:delete()
+            _G.WMDocScreenshots = nil
+            assert.are.same({ "init", "delete" }, calls)
+        end)
     end)
 
     -- =========================================================================

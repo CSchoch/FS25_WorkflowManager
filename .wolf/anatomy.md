@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-11-07T22:28:05.488Z
-> Files: 35 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-11-07T23:15:56.490Z
+> Files: 61 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -9,6 +9,10 @@
 
 ## ../../../../../.claude/projects/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/memory/
 
+
+## ../../../../../AppData/Local/Temp/claude/9b3320669b89cd34/bdf9355e-4b06-4196-987f-ab520c206866/scratchpad/desync/
+
+- `RULES.md` — Syncing German docs with updated English docs (~1000 tok)
 
 ## ../../../../../AppData/Local/Temp/claude/c--Users-Chef-Documents-My-Games-FarmingSimulator2025-mods-FS25-WorkflowManager/0e008aae-1437-47ea-92bf-f55f7ab67d82/scratchpad/
 
@@ -67,6 +71,7 @@
 
 ## ./
 
+- `create_release.ps1` (~270 tok)
 - `LICENSE` (~287 tok)
 - `modDesc.xml` — Declares per (~4332 tok)
 - `README.md` — Project documentation (~1710 tok)
@@ -95,11 +100,13 @@
 ## src/
 
 - `WorkflowExecutor.lua` — init, startWorkflow, stopWorkflow, buildSyncMaps, onWorkflowDefinitionsChanged (~24838 tok)
-- `WorkflowManager.lua` — getStepTypeLabel, isMarkerStepType, isTargetlessStepType, isAutoDriveTrackedStepType, getStepTypeSho (~15619 tok)
+- `WorkflowManager.lua` — getStepTypeLabel, isMarkerStepType, isTargetlessStepType, isAutoDriveTrackedStepType, getStepTypeSho (~15336 tok)
 - `WorkflowManagerSpec.lua` — prerequisitesPresent, registerEventListeners, onLoad, onPostLoad (~8632 tok)
 
 ## src/dev/
 
+- `WMConsoleCommands.lua` — -@class WMConsoleCommands (~2954 tok)
+- `WMDocScreenshots.lua` — ============================================================ (~5732 tok)
 
 ## src/gui/
 
@@ -107,7 +114,7 @@
 - `WMHud.lua` — ensureOverlays, colorOverlay, createIconOverlays, updateOverlayPositions, init (~11649 tok)
 - `WMLeaderVehicleSelectDialog.lua` — new, onCreate, buildVehicleList, formatCurrentStep, onOpen (~1846 tok)
 - `WMMainDialog.lua` — new, onCreate, onOpen, showStatus, onClose (~4466 tok)
-- `WMStepDialog.lua` — new, onCreate, onOpen, showStatus, update (~11078 tok)
+- `WMStepDialog.lua` — new, onCreate, onOpen, showStatus, update (~11108 tok)
 
 ## src/integration/
 
@@ -125,7 +132,7 @@
 
 ## tests/
 
-- `run_tests.lua` — local, assert, describe, it, before_each (~2396 tok)
+- `run_tests.lua` — local, assert, describe, it, before_each (~2408 tok)
 
 ## tests/fixtures/
 
@@ -137,12 +144,16 @@
 
 - `AutoDriveIntegration_spec.lua` — makeImplement, makeVehicle (~6308 tok)
 - `CourseplayIntegration_spec.lua` — file, folder, view, makeStorage, makeVehicle (~7980 tok)
+- `FontGlyphs_spec.lua` — chars, readFile, listFiles, stripLuaComments, missingIn (~984 tok)
 - `RenderUiPreview_spec.lua` — has (~1059 tok)
 - `RenderUiPreview_spec.lua` — has (~786 tok)
+- `WMConsoleCommands_spec.lua` — captureOutput, makeVehicle (~1628 tok)
+- `WMDocScreenshots_spec.lua` — noop, newDialog, installStubs, setString, setFloat (~4327 tok)
 - `WMEditorDialog_spec.lua` — makeWorkflow, makeDialog (~10761 tok)
 - `WMHud_spec.lua` — makeVehicle (~6099 tok)
 - `WMStepDialog_spec.lua` — makeDialog, dropdownDialog, makeStubDialog (~13040 tok)
 - `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport, makeLeaderWF (~42855 tok)
+- `WorkflowManagerLifecycle_spec.lua` — loadModule, wasSourced, activeVehicle (~7528 tok)
 - `WorkflowManagerSpec_spec.lua` — makeVehicle, makeSavegameXML (~15011 tok)
 
 ## textures/
@@ -150,6 +161,7 @@
 
 ## tools/
 
+- `crop_screenshots.py` — Crop the in-game captures of `wmDocScreenshots` into the website's screenshot folder. (~889 tok)
 - `render_ui_preview.lua` — readFile, noop, esc, utf8Len, textWidth (~13394 tok)
 
 ## translations/
@@ -193,6 +205,12 @@
 
 ## website/docs/ui/
 
+- `ad-settings-dialog.md` — AD/CP Settings Dialog (~526 tok)
+- `editor-dialog.md` — Editor Dialog (~1307 tok)
+- `leader-select-dialog.md` — Leader Vehicle Select Dialog (~721 tok)
+- `main-dialog.md` — Main Dialog (~1269 tok)
+- `mode-dialog.md` — Mode Select Dialog (~655 tok)
+- `step-dialog.md` — Step Dialog (~1744 tok)
 
 ## website/docs/workflows/
 
@@ -205,9 +223,20 @@
 
 ## website/i18n/de/docusaurus-plugin-content-docs/current/ui/
 
+- `ad-settings-dialog.md` — Dialog „AD/CP Einstellungen“ (~621 tok)
+- `editor-dialog.md` — Editor-Dialog (~1624 tok)
+- `hud-controls.md` — HUD-Steuerung (~2290 tok)
+- `leader-select-dialog.md` — Dialog „Anführerfahrzeug wählen“ (~834 tok)
+- `main-dialog.md` — Hauptdialog (~1478 tok)
+- `mode-dialog.md` — Rollen-Dialog (~756 tok)
+- `step-dialog.md` — Schritt-Dialog (~2002 tok)
 
 ## website/i18n/de/docusaurus-plugin-content-docs/current/workflows/
 
+- `creating-workflows.md` — Workflows erstellen (~2193 tok)
+- `executing-workflows.md` — Workflows ausführen (~2743 tok)
+- `linked-workflows.md` — Workflows mit mehreren Fahrzeugen (~2191 tok)
+- `step-types.md` — Schritttypen (~2944 tok)
 
 ## website/src/components/HomepageFeatures/
 
@@ -223,6 +252,6 @@
 
 ## xml/gui/
 
-- `guiProfiles.xml` (~1625 tok)
+- `guiProfiles.xml` (~1682 tok)
 - `WMModeSelectDialog.xml` (~632 tok)
 - `WMStepDialog.xml` — dropdown: Section (~2848 tok)

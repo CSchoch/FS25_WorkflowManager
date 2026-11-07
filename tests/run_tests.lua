@@ -216,10 +216,12 @@ local testFiles = {
     "tests/specs/CourseplayIntegration_spec.lua",
     "tests/specs/CourseplayCoursesLoader_spec.lua",
     "tests/specs/WMConsoleCommands_spec.lua",
+    "tests/specs/WMDocScreenshots_spec.lua",
     "tests/specs/WMGameSettings_spec.lua",
     "tests/specs/ModDescInputBindings_spec.lua",
     "tests/specs/WMUserMessageEvent_spec.lua",
     "tests/specs/Translations_spec.lua",
+    "tests/specs/FontGlyphs_spec.lua",
     "tests/specs/RenderUiPreview_spec.lua"
 }
 

@@ -91,6 +91,9 @@
         <textOffset value="8px 0px"/>
         <textSize value="14px"/>
         <textColor value="1 1 1 1"/>
+        <!-- Rows recolour textColor per cell (green selected fill type, green/orange running workflow);
+             without this the highlighted row falls back to that colour on the cyan bar -->
+        <textSelectedColor value="1 1 1 1"/>
         <textAlignment value="left"/>
         <textVerticalAlignment value="middle"/>
     </Profile>

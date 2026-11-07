@@ -59,15 +59,17 @@ Individual runners: `tests\run_executor_spec.lua`, `tests\run_storage_spec.lua`,
 | `WMHud_spec.lua` | HUD button handlers, vehicle targeting |
 | `WMLeaderVehicleSelectDialog_spec.lua` | Leader candidate list building, No-Leader hotkey |
 | `WMModeSelectDialog_spec.lua` | Main/Support/Cancel tri-state callback, Run-as-Support hotkey |
-| `WMStepDialog_spec.lua` | Step type/action branching, confirm payloads, support-step type restrictions |
+| `WMStepDialog_spec.lua` | Step type/action branching, confirm payloads, support-step type restrictions, white text on the highlighted list row (`wm_listItemText` textSelectedColor) |
 | `WMEditorDialog_spec.lua` | Edit-buffer contract: Save commits to the live workflow, Cancel discards; new-workflow registration |
 | `WMMainDialog_spec.lua` | New/Edit entry points: New hands the editor an unregistered workflow |
 | `CourseplayIntegration_spec.lua` | Course entry resolution from the root view, legacy-name fallback, folder navigation, seed type selection |
 | `CourseplayCoursesLoader_spec.lua` | Course enumeration from the root view, root-relative names |
-| `WMConsoleCommands_spec.lua` | Console command registration/removal; wmPrintState reports the executor's real sync gate |
+| `WMConsoleCommands_spec.lua` | Console command registration/removal; wmPrintState reports the executor's real sync gate; WMDocScreenshots init/delete only when loaded |
+| `WMDocScreenshots_spec.lua` | Dev-only `wmDocScreenshots`: refuses outside a vehicle, open → prepare → capture → close per scenario, staged demo data, crops.xml, every override restored (also on delete mid-run) |
 | `WMGameSettings_spec.lua` | Settings-row injection: clones the vanilla row/header (one row per option), focus ids, controls list, MP read-only for server-only options, hook-once, delete |
 | `ModDescInputBindings_spec.lua` | modDesc hotkey defaults: Edit is KEY_t, Stop is KEY_k; no `WM_GUI_*` action on a confirmed menu-owned key (Q/E/X) |
 | `WMUserMessageEvent_spec.lua` | Server -> client farm message event: stream round trip, ignored on the server |
+| `FontGlyphs_spec.lua` | Every non-ASCII character the mod can show (Lua outside comments, translations, GUI XML, modDesc) is in the verified FS25 font glyph set |
 | `Translations_spec.lua` | Every `wm_` key in en and de, equal `%s` counts, all player-message keys present |
 | `RenderUiPreview_spec.lua` | `tools/render_ui_preview.lua`: every UI scenario renders (en + de) from the real dialog Lua / `WMHud:draw`, no globals leak |
 
@@ -91,7 +93,7 @@ start instead of "monitoring" and skipping the step) and `deferredStartAtSave` (
 when the auto-resume window expires). `CPIntegration:resumeCourse` must stay guarded on
 `isRunning`: CP's `unfreezeCp` indexes the drive strategy unguarded and crashes with no job.
 
-Current total: **994**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
+Current total: **1027**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
 or they will not run.
 
 **Mod options (game settings):** `WMSettings` holds the player-facing options
@@ -190,9 +192,17 @@ names such as `selectedIndex`, every other method a no-op), and the HUD is the r
 against recording `renderText`/`Overlay` stubs. Vanilla FS25 look is approximated in its `FS25`
 table. Re-run after changing `xml/gui`, `src/gui` or translations; `M.render(name, "de")` renders German.
 
-**FS25 font has no ✓ ↳ ▲ ▼ • ● └** (only `shared/font/defaultFont.font` exists; its glyph table is
-28-byte records starting with a uint32 code point). Available: umlauts, ß, · – × → ↑ ↓ ». Check any
-new non-ASCII character in a UI string against that table before using it.
+**Website screenshots (in-game):** `src/dev/WMDocScreenshots.lua` is **dev-only** — excluded in
+`create_release.ps1` and sourced only if present (like `DevConfig.lua`). In the game, sit in any
+vehicle and run the console command `wmDocScreenshots`. It overrides the WM read functions
+(workflow list, executor lookups, AD/CP queries, `WMHud:getActiveWorkflow`) with demo data, opens
+every dialog/HUD state the website uses, calls the engine's `saveScreenshot` into
+`<profile>/screenshots/wm_docs/<language>/` plus `crops.xml` (normalized, origin bottom-left), then
+restores every override. Saving/reloading are no-ops during the run, and **`WMExecutor.update` is a no-op too** — the swapped AD/CP queries would otherwise drive real workflows (it once completed running CP steps and stopped two workflows); AD/CP-state overrides answer only for the own vehicle. The run waits 5 s first so the console can be closed. Then
+`python tools/crop_screenshots.py` cuts them into `website/static/img/screenshots/`. Scenario name =
+website file name; add new ones in `buildScenarios` (currently the ten existing images plus `leader-select-dialog`).
+
+**FS25 font has no ✓ ↳ ▲ ▼ • ● └** (only `shared/font/defaultFont.font` exists: uint32 glyph count at byte 8, then 28-byte records from byte 12, each starting with a uint32 code point). A missing glyph is dropped silently with `Character 'N' not found in texture font` in the log (the fill-type list's ✓ vanished that way; it is `»` now). `FontGlyphs_spec` fails on any non-ASCII character outside its verified `ALLOWED` set (·ÄÖÜßäöü–—„“←↑→↓»×) — look a new one up in the font before adding it there.
 
 **Step dialog, Load:** AutoDrive's LoadMode drives to the *second* marker (`unloadTarget`, "Load At")
 first, so the dialog shows that block first. While the action is Load, `stepTarget` and

@@ -68,6 +68,11 @@ source(Utils.getFilename("src/gui/WMHud.lua", g_currentModDirectory))
 
 -- 7. Developer console commands
 source(Utils.getFilename("src/dev/WMConsoleCommands.lua", g_currentModDirectory))
+-- Website screenshot capture (optional - omitted in release builds, like DevConfig)
+local docScreenshotsPath = Utils.getFilename("src/dev/WMDocScreenshots.lua", g_currentModDirectory)
+if fileExists(docScreenshotsPath) then
+    source(docScreenshotsPath)
+end
 
 -- Initialize logger from dev config immediately after loading
 WMLogger:initFromDevConfig()

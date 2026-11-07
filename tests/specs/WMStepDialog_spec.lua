@@ -1080,4 +1080,25 @@ describe("WMStepDialog", function()
         end)
     end)
 
+    describe("list row text on the highlight bar", function()
+        -- Rows recolour textColor per cell (selected fill type green). TextElement falls back to
+        -- textColor for a selected row when the profile has no textSelectedColor, which drew
+        -- "» Wheat" green on the cyan bar (unreadable, seen in the 2026-11-08 screenshots).
+        it("wm_listItemText draws the highlighted row white", function()
+            local f = assert(io.open("xml/gui/guiProfiles.xml", "r"))
+            local xml = f:read("*a")
+            f:close()
+            local body = xml:match('<Profile name="wm_listItemText".-</Profile>')
+            assert.is_not_nil(body)
+            assert.is_truthy(body:find('<textSelectedColor value="1 1 1 1"/>', 1, true))
+        end)
+
+        it("the fill type list uses that profile", function()
+            local f = assert(io.open("xml/gui/WMStepDialog.xml", "r"))
+            local xml = f:read("*a")
+            f:close()
+            assert.is_truthy(xml:find('name="fillTypeText" profile="wm_listItemText"', 1, true))
+        end)
+    end)
+
 end)

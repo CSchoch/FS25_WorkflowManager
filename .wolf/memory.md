@@ -2422,3 +2422,102 @@ No WM dialog defines an Enter handler. Needs a 2-second in-game check: open the 
 | 23:28 | Edited modDesc.xml | expanded (+14 lines) | ~377 |
 | 23:40 | v1.3.0 changelog (EN+DE, from commits/memory since tag V1.2.0), version 1.3.0.0 in modDesc + WorkflowManager.lua; user had set descVersion 116; 994 tests pass, TestRunner 0.9.24 PASS | modDesc.xml, src/WorkflowManager.lua | done | ~8000 |
 | 23:28 | Session end: 2 writes across 1 files (modDesc.xml) | 0 reads | ~760 tok |
+| 23:37 | Edited website/docs/ui/main-dialog.md | 2→3 lines | ~72 |
+| 23:37 | Edited website/docs/ui/editor-dialog.md | 33→31 lines | ~439 |
+| 23:37 | Edited website/docs/ui/editor-dialog.md | inline fix | ~9 |
+| 23:37 | Edited website/docs/ui/step-dialog.md | 5→8 lines | ~92 |
+| 23:37 | Edited website/docs/ui/step-dialog.md | inline fix | ~15 |
+| 23:37 | Edited website/docs/ui/step-dialog.md | 14→15 lines | ~199 |
+| 23:37 | Edited website/docs/ui/step-dialog.md | 5→8 lines | ~137 |
+| 23:37 | Edited website/docs/ui/ad-settings-dialog.md | inline fix | ~26 |
+| 23:37 | Edited website/docs/ui/mode-dialog.md | 3→5 lines | ~35 |
+| 23:37 | Edited website/docs/ui/mode-dialog.md | 3→4 lines | ~86 |
+| 23:37 | Edited website/docs/ui/leader-select-dialog.md | 4→6 lines | ~104 |
+| 23:39 | Created ../../../../../AppData/Local/Temp/claude/9b3320669b89cd34/bdf9355e-4b06-4196-987f-ab520c206866/scratchpad/desync/RULES.md | — | ~1159 |
+| 23:39 | Edited ../../../../../AppData/Local/Temp/claude/9b3320669b89cd34/bdf9355e-4b06-4196-987f-ab520c206866/scratchpad/desync/RULES.md | 7→4 lines | ~92 |
+| 23:40 | Session end: 15 writes across 8 files (modDesc.xml, main-dialog.md, editor-dialog.md, step-dialog.md, ad-settings-dialog.md) | 26 reads | ~23260 tok |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/ad-settings-dialog.md | inline fix | ~41 |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/workflows/step-types.md | 2→4 lines | ~62 |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/main-dialog.md | 1→2 lines | ~82 |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/leader-select-dialog.md | 5→7 lines | ~141 |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/workflows/executing-workflows.md | 5→6 lines | ~155 |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/mode-dialog.md | 3→5 lines | ~34 |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/workflows/creating-workflows.md | inline fix | ~16 |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/mode-dialog.md | 3→3 lines | ~86 |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/workflows/creating-workflows.md | "N.M" → "→ N.M" | ~32 |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/workflows/creating-workflows.md | inline fix | ~8 |
+| 23:40 | Session end: 25 writes across 11 files (modDesc.xml, main-dialog.md, editor-dialog.md, step-dialog.md, ad-settings-dialog.md) | 26 reads | ~23962 tok |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/workflows/linked-workflows.md | inline fix | ~16 |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/workflows/linked-workflows.md | "N.M" → "→ N.M" | ~35 |
+| 23:40 | Session end: 27 writes across 12 files (modDesc.xml, main-dialog.md, editor-dialog.md, step-dialog.md, ad-settings-dialog.md) | 26 reads | ~24017 tok |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/editor-dialog.md | "N.M" → "→ N.M" | ~38 |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/workflows/linked-workflows.md | 2→2 lines | ~59 |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/step-dialog.md | inline fix | ~15 |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/editor-dialog.md | 10→8 lines | ~210 |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/workflows/linked-workflows.md | modified auf() | ~39 |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/step-dialog.md | inline fix | ~15 |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/editor-dialog.md | 4→4 lines | ~28 |
+| 23:40 | Session end: 34 writes across 12 files (modDesc.xml, main-dialog.md, editor-dialog.md, step-dialog.md, ad-settings-dialog.md) | 26 reads | ~24448 tok |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/workflows/linked-workflows.md | "Schritt 2.1/2" → "Schritt 2 · Unterstützung" | ~59 |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/step-dialog.md | 1→4 lines | ~58 |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/editor-dialog.md | 3→3 lines | ~7 |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/step-dialog.md | 4→7 lines | ~130 |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/editor-dialog.md | inline fix | ~9 |
+| 23:40 | Session end: 39 writes across 12 files (modDesc.xml, main-dialog.md, editor-dialog.md, step-dialog.md, ad-settings-dialog.md) | 26 reads | ~24730 tok |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/step-dialog.md | 14→15 lines | ~210 |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/editor-dialog.md | "N.M" → "→ N.M" | ~28 |
+| 23:40 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/editor-dialog.md | inline fix | ~10 |
+| 23:40 | Session end: 42 writes across 12 files (modDesc.xml, main-dialog.md, editor-dialog.md, step-dialog.md, ad-settings-dialog.md) | 26 reads | ~24995 tok |
+| 23:41 | Session end: 42 writes across 12 files (modDesc.xml, main-dialog.md, editor-dialog.md, step-dialog.md, ad-settings-dialog.md) | 26 reads | ~24995 tok |
+| 23:41 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/hud-controls.md | inline fix | ~34 |
+| 23:41 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/hud-controls.md | 3→3 lines | ~90 |
+| 23:41 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/hud-controls.md | inline fix | ~39 |
+| 23:41 | Session end: 45 writes across 13 files (modDesc.xml, main-dialog.md, editor-dialog.md, step-dialog.md, ad-settings-dialog.md) | 26 reads | ~25168 tok |
+| 23:41 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/hud-controls.md | "Schritt 2.1/2" → "Schritt 2 · Unterstützung" | ~103 |
+| 23:41 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/hud-controls.md | expanded (+12 lines) | ~339 |
+| 23:41 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/hud-controls.md | inline fix | ~39 |
+| 23:41 | Session end: 48 writes across 13 files (modDesc.xml, main-dialog.md, editor-dialog.md, step-dialog.md, ad-settings-dialog.md) | 26 reads | ~25685 tok |
+| 23:41 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/hud-controls.md | inline fix | ~36 |
+| 23:41 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/hud-controls.md | inline fix | ~22 |
+| 23:41 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/hud-controls.md | inline fix | ~27 |
+| 23:41 | Session end: 51 writes across 13 files (modDesc.xml, main-dialog.md, editor-dialog.md, step-dialog.md, ad-settings-dialog.md) | 26 reads | ~25776 tok |
+| 00:20 | Website: EN UI docs synced with 2026-10-18 UI refresh (HUD chip/progress/Supporters line/X, main Support column, editor chips/→N.M/+Support/arrows, step subtitle/Load order/(none), leader Current Step+sort, mode role text, AD hint); new changelog page EN+DE (from modDesc) in sidebar; DE synced by 11 parallel agents w/ glossary; fixed "Anfuehrer" in modDesc DE changelog; npm build en+de OK | website/docs/*, website/i18n/de/*, website/sidebars.ts, modDesc.xml | done | ~60k |
+| 23:42 | Session end: 51 writes across 13 files (modDesc.xml, main-dialog.md, editor-dialog.md, step-dialog.md, ad-settings-dialog.md) | 26 reads | ~25776 tok |
+| 23:57 | Created src/dev/WMDocScreenshots.lua | — | ~5224 |
+| 23:57 | Edited src/dev/WMDocScreenshots.lua | 8→7 lines | ~96 |
+| 23:57 | Edited src/dev/WMDocScreenshots.lua | 2→2 lines | ~16 |
+| 23:57 | Edited src/dev/WMDocScreenshots.lua | 3→4 lines | ~30 |
+| 23:57 | Edited src/WorkflowManager.lua | 2→7 lines | ~91 |
+| 23:57 | Edited src/dev/WMConsoleCommands.lua | modified WMConsoleCommands() | ~145 |
+| 23:57 | Edited create_release.ps1 | inline fix | ~18 |
+| 23:57 | Created tools/crop_screenshots.py | — | ~889 |
+| 23:58 | Edited tests/specs/WorkflowManagerLifecycle_spec.lua | expanded (+20 lines) | ~271 |
+| 23:58 | Edited tests/specs/WMConsoleCommands_spec.lua | expanded (+18 lines) | ~234 |
+| 23:59 | Created tests/specs/WMDocScreenshots_spec.lua | — | ~4327 |
+| 23:59 | Edited tests/run_tests.lua | 1→2 lines | ~24 |
+| 00:55 | In-game screenshot automation: dev-only src/dev/WMDocScreenshots.lua (wmDocScreenshots console cmd, staged demo data via restorable overrides, saveScreenshot + crops.xml), excluded in create_release.ps1, sourced only if present; tools/crop_screenshots.py; 23 new tests (1017 pass); zip excludes it, TestRunner PASS; not yet run in-game | src/dev/WMDocScreenshots.lua, src/WorkflowManager.lua, src/dev/WMConsoleCommands.lua, create_release.ps1, tools/crop_screenshots.py, tests/*, CLAUDE.md | done, untested in game | ~40k |
+| 00:00 | Session end: 63 writes across 22 files (modDesc.xml, main-dialog.md, editor-dialog.md, step-dialog.md, ad-settings-dialog.md) | 27 reads | ~51283 tok |
+| 00:01 | Edited src/dev/WMDocScreenshots.lua | expanded (+12 lines) | ~251 |
+| 00:02 | Edited website/docs/ui/leader-select-dialog.md | 2→4 lines | ~37 |
+| 00:02 | Edited website/i18n/de/docusaurus-plugin-content-docs/current/ui/leader-select-dialog.md | 2→4 lines | ~45 |
+| 09:10 | Added leader-select-dialog scenario to wmDocScreenshots (swaps WMExecutor.activeVehicles only during the synchronous showLeaderSelectDialog call) + spec (1018 pass); website leader page EN+DE shows /img/screenshots/leader-select-dialog.png, placeholder rendered from docs/ui/leader-select.svg via headless Chrome until the in-game capture; build en+de OK | src/dev/WMDocScreenshots.lua, tests/specs/WMDocScreenshots_spec.lua, website/*, CLAUDE.md | done | ~8k |
+| 00:02 | Session end: 66 writes across 22 files (modDesc.xml, main-dialog.md, editor-dialog.md, step-dialog.md, ad-settings-dialog.md) | 28 reads | ~51639 tok |
+| 00:05 | Edited src/dev/WMDocScreenshots.lua | modified WMDocScreenshots() | ~306 |
+| 00:05 | Edited src/dev/WMDocScreenshots.lua | 2→5 lines | ~88 |
+| 00:05 | Edited src/dev/WMDocScreenshots.lua | 7→12 lines | ~155 |
+| 00:05 | Edited src/dev/WMDocScreenshots.lua | 1→2 lines | ~46 |
+| 00:05 | Edited src/dev/WMDocScreenshots.lua | 7→7 lines | ~86 |
+| 00:15 | First in-game wmDocScreenshots run (game in German, old build without leader shot): crops OK, editor support selection OK; BUG: overrides drove real workflows (Pressen/Saeen CP steps skipped, then stopped) -> executor update paused + per-vehicle delegation; console overlay on first shot -> 5 s start delay; confirmed ✓ glyph missing in FS25 font (fill-type list); 1021 tests | src/dev/WMDocScreenshots.lua, tests/specs/WMDocScreenshots_spec.lua, CLAUDE.md, .wolf/buglog.json | fixed | ~25k |
+| 00:07 | Session end: 71 writes across 22 files (modDesc.xml, main-dialog.md, editor-dialog.md, step-dialog.md, ad-settings-dialog.md) | 31 reads | ~52368 tok |
+| 00:09 | Edited src/gui/WMStepDialog.lua | 1→2 lines | ~52 |
+| 00:09 | Created tests/specs/FontGlyphs_spec.lua | — | ~984 |
+| 00:30 | Fixed missing ✓ glyph in step dialog fill-type list (-> »); FontGlyphs_spec scans src/translations/xml/modDesc for non-ASCII outside verified font set (verified it fails on ✓); docs EN+DE + SVG preview updated; 1025 tests | src/gui/WMStepDialog.lua, tests/specs/FontGlyphs_spec.lua, tests/run_tests.lua, website/docs/*, website/i18n/de/*, docs/ui/step-autodrive-load.svg, CLAUDE.md | fixed (bug-399) | ~10k |
+| 00:10 | Session end: 73 writes across 24 files (modDesc.xml, main-dialog.md, editor-dialog.md, step-dialog.md, ad-settings-dialog.md) | 32 reads | ~64555 tok |
+| 00:40 | Second in-game wmDocScreenshots run (English, 11 shots): clean log, no workflow changes; all 11 cropped into website/static/img/screenshots (replaces old + leader stand-in), build en+de OK. Seen in shots: selected+focused fill type row = green text on cyan (unreadable); user's own Stop binding is KEY_a (inputBinding.xml) so shots show "A STOP" while docs say K | website/static/img/screenshots/* | done | ~6k |
+| 00:14 | Session end: 73 writes across 24 files (modDesc.xml, main-dialog.md, editor-dialog.md, step-dialog.md, ad-settings-dialog.md) | 40 reads | ~64555 tok |
+| 00:15 | Edited xml/gui/guiProfiles.xml | 6→9 lines | ~110 |
+| 00:55 | Fix: highlighted list row white (wm_listItemText textSelectedColor, covers fill types + running workflow row) + profile test (1027); user's inputBinding.xml WM_GUI_STOP KEY_a -> KEY_k (backup inputBinding.xml.wm-backup-20261108, game closed) | xml/gui/guiProfiles.xml, tests/specs/WMStepDialog_spec.lua, CLAUDE.md, ~/inputBinding.xml | done, screenshots need re-capture | ~6k |
+| 00:16 | Session end: 74 writes across 25 files (modDesc.xml, main-dialog.md, editor-dialog.md, step-dialog.md, ad-settings-dialog.md) | 40 reads | ~64672 tok |
+| 00:20 | Session end: 74 writes across 25 files (modDesc.xml, main-dialog.md, editor-dialog.md, step-dialog.md, ad-settings-dialog.md) | 41 reads | ~64672 tok |
+| 01:00 | User chose white highlighted row (keep textSelectedColor); third in-game run (K STOP, white » Wheat) cropped into website/static/img/screenshots, build en+de OK | website/static/img/screenshots/* | done | ~2k |
+| 00:21 | Session end: 74 writes across 25 files (modDesc.xml, main-dialog.md, editor-dialog.md, step-dialog.md, ad-settings-dialog.md) | 41 reads | ~64672 tok |

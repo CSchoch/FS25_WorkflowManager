@@ -57,9 +57,9 @@
 <clipPath id="clip3"><rect x="331" y="742" width="500" height="120"/></clipPath>
 <g clip-path="url(#clip3)">
 <rect x="331" y="742" width="500" height="30" rx="0" fill="#5c5c5c"/>
-<text xml:space="preserve" x="339" y="761.9" font-size="14" fill="#00d92b" text-anchor="start">✓ Wheat</text>
+<text xml:space="preserve" x="339" y="761.9" font-size="14" fill="#00d92b" text-anchor="start">» Wheat</text>
 <rect x="331" y="772" width="500" height="30" rx="0" fill="#6b6b6b"/>
-<text xml:space="preserve" x="339" y="791.9" font-size="14" fill="#00d92b" text-anchor="start">✓ Barley</text>
+<text xml:space="preserve" x="339" y="791.9" font-size="14" fill="#00d92b" text-anchor="start">» Barley</text>
 <rect x="331" y="802" width="500" height="30" rx="0" fill="#5c5c5c"/>
 <text xml:space="preserve" x="339" y="821.9" font-size="14" fill="#ffffff" text-anchor="start">  Canola</text>
 <rect x="331" y="832" width="500" height="30" rx="0" fill="#6b6b6b"/>

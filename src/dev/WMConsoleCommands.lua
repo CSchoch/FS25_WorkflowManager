@@ -5,12 +5,19 @@ function WMConsoleCommands:init()
     addConsoleCommand("wmPrintState", "Print WorkflowManager execution state for the controlled vehicle", "wmPrintState", self)
     addConsoleCommand("wmPrintStateAll", "Print WorkflowManager execution state for all WM vehicles", "wmPrintStateAll", self)
     addConsoleCommand("wmPrintWorkflow", "Print annotated workflow steps with sync ordinals for the controlled vehicle (+ leader)", "wmPrintWorkflow", self)
+    -- Dev builds only: the file is not in the release zip
+    if WMDocScreenshots ~= nil then
+        WMDocScreenshots:init()
+    end
 end
 
 function WMConsoleCommands:delete()
     removeConsoleCommand("wmPrintState")
     removeConsoleCommand("wmPrintStateAll")
     removeConsoleCommand("wmPrintWorkflow")
+    if WMDocScreenshots ~= nil then
+        WMDocScreenshots:delete()
+    end
 end
 
 function WMConsoleCommands:printVehicleState(vehicle)
