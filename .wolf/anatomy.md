@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-10-18T19:32:53.369Z
-> Files: 33 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-10-18T19:43:29.636Z
+> Files: 34 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -106,7 +106,7 @@
 - `WMHud.lua` — ensureOverlays, colorOverlay, createIconOverlays, updateOverlayPositions, init (~11649 tok)
 - `WMLeaderVehicleSelectDialog.lua` — new, onCreate, buildVehicleList, formatCurrentStep, onOpen (~1846 tok)
 - `WMMainDialog.lua` — new, onCreate, onOpen, showStatus, onClose (~4466 tok)
-- `WMStepDialog.lua` — new, onCreate, onOpen, showStatus, update (~10902 tok)
+- `WMStepDialog.lua` — new, onCreate, onOpen, showStatus, update (~11078 tok)
 
 ## src/integration/
 
@@ -140,6 +140,7 @@
 - `RenderUiPreview_spec.lua` — has (~786 tok)
 - `WMEditorDialog_spec.lua` — makeWorkflow, makeDialog (~10761 tok)
 - `WMHud_spec.lua` — makeVehicle (~6099 tok)
+- `WMStepDialog_spec.lua` — makeDialog, dropdownDialog, makeStubDialog (~13040 tok)
 - `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport, makeLeaderWF (~42855 tok)
 - `WorkflowManagerSpec_spec.lua` — makeVehicle, makeSavegameXML (~15011 tok)
 

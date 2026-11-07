@@ -878,6 +878,90 @@ describe("WMStepDialog", function()
     end)
 
     -- =========================================================================
+    -- Regression: a route list reloaded while hidden showed the PREVIOUS step's target
+    -- =========================================================================
+    describe("reopening after a list was hidden", function()
+        -- The parts of FS25's SmoothListElement that matter here: reloadData on a hidden list
+        -- stores the old selection (setNextOpenIndex), the list's own onOpen - which runs AFTER
+        -- the dialog's onOpen - re-applies it, and onFocusEnter re-announces the selection.
+        local function makeEngineList(container, dialog)
+            local list = { selectedIndex = 1 }
+            list.setDataSource = function() end
+            list.setCallback = function() end
+            list.reloadData = function(self)
+                if container.visible == false then
+                    self.setNextOpenIndex = self.selectedIndex
+                    self.setNextOpenSectionIndex = 1
+                end
+            end
+            list.setSelectedIndex = function(self, i) self.selectedIndex = i end
+            list.onOpen = function(self)
+                if self.setNextOpenIndex ~= nil then
+                    self.selectedIndex = self.setNextOpenIndex
+                    self.setNextOpenIndex = nil
+                end
+            end
+            list.onFocusEnter = function(self) dialog:onListSelectionChanged(self, 1, self.selectedIndex) end
+            return list
+        end
+
+        local function container()
+            return { setVisible = function(self, v) self.visible = v end }
+        end
+
+        local function makeOpenableDialog()
+            _G.WMLogger = { debug = function() end }
+            _G.WMHud = { onDialogOpened = function() end }
+            WorkflowManager.editorDialog = {
+                getFillTypes = function() return {} end,
+                getADDestinations = function() return { "Farm", "Silo" } end,
+                getCPCourses = function() return {} end,
+            }
+            local d = makeDialog()
+            d.targetDropdownContainer, d.unloadTargetDropdownContainer = container(), container()
+            d.targetList = makeEngineList(d.targetDropdownContainer, d)
+            d.unloadTargetList = makeEngineList(d.unloadTargetDropdownContainer, d)
+            return d
+        end
+
+        -- showDialog: the dialog's onOpen, then the lists' onOpen, then the first update
+        local function open(d, step)
+            d:setStep(step, function() end)
+            d:onOpen()
+            d.targetList:onOpen()
+            d.unloadTargetList:onOpen()
+            d:update(0)
+        end
+
+        before_each(function()
+            superStub.onOpen = function() end
+            WorkflowManager.editorDialog = nil
+        end)
+
+        it("keeps the unload target when the previous step hid the unload list", function()
+            local d = makeOpenableDialog()
+            open(d, { type = "autodrive", action = "unload", target = "Farm", unloadTarget = "Silo" })
+            open(d, { type = "autodrive", action = "drive", target = "Silo" })
+            open(d, { type = "autodrive", action = "unload", target = "Silo", unloadTarget = "Farm" })
+
+            assert.are.equal(1, d.unloadTargetList.selectedIndex)
+            d.unloadTargetList:onFocusEnter()
+            assert.are.equal("Farm", d.stepUnloadTarget)
+        end)
+
+        it("keeps the target when the previous step hid the target list", function()
+            local d = makeOpenableDialog()
+            open(d, { type = "autodrive", action = "drive", target = "Silo" })
+            open(d, { type = "park" })
+            open(d, { type = "autodrive", action = "drive", target = "Farm" })
+
+            assert.are.equal(1, d.targetList.selectedIndex)
+            d.targetList:onFocusEnter()
+            assert.are.equal("Farm", d.stepTarget)
+        end)
+    end)
+
+    -- =========================================================================
     -- UI review 2026-10-17: Load in driving order, subtitle, "(none)" line, course names
     -- =========================================================================
     describe("Load shows the route in driving order", function()

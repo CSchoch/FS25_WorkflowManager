@@ -549,6 +549,16 @@ function WMStepDialog:populateCellForItemInSection(list, section, index, cell)
     end
 end
 
+---A SmoothList reloaded while hidden keeps its OLD selection and re-applies it in its own onOpen
+---(SmoothListElement:buildSectionInfo -> setNextOpenIndex). The lists' onOpen runs after this
+---dialog's onOpen, so it would replace the selection made here with the previous step's target,
+---which a later focus enter then writes back into the step. The selection here is always explicit.
+---@param list table SmoothList
+local function dropPendingOpenSelection(list)
+    list.setNextOpenIndex = nil
+    list.setNextOpenSectionIndex = nil
+end
+
 ---Refresh target list display
 function WMStepDialog:refreshTargetDisplay()
     -- Set flag to ignore selection callbacks during refresh
@@ -571,6 +581,7 @@ function WMStepDialog:refreshTargetDisplay()
         if self.selectedTargetIndex == 0 then
             self:updateSelectedLabel("target", nil)
         end
+        dropPendingOpenSelection(self.targetList)
     end
 
     -- Refresh unload target list
@@ -590,6 +601,7 @@ function WMStepDialog:refreshTargetDisplay()
         if self.selectedUnloadTargetIndex == 0 then
             self:updateSelectedLabel("unloadTarget", nil)
         end
+        dropPendingOpenSelection(self.unloadTargetList)
     end
 
     -- Refresh fill type list (multi-select: checkmarks in populateCellForItemInSection)

@@ -2385,3 +2385,10 @@ No WM dialog defines an Enter handler. Needs a 2-second in-game check: open the 
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+| 21:42 | Edited tests/specs/WMStepDialog_spec.lua | modified makeEngineList() | ~1095 |
+| 21:43 | Edited tests/specs/WMStepDialog_spec.lua | 8→6 lines | ~47 |
+| 21:43 | Edited src/gui/WMStepDialog.lua | modified dropPendingOpenSelection() | ~166 |
+| 21:43 | Edited src/gui/WMStepDialog.lua | 4→5 lines | ~45 |
+| 21:43 | Edited src/gui/WMStepDialog.lua | 4→5 lines | ~50 |
+| 21:43 | Fixed step dialog showing the previous step's AD target/unload target (SmoothList setNextOpenIndex re-applied after dialog onOpen); 2 regression tests, 994 pass | src/gui/WMStepDialog.lua, tests/specs/WMStepDialog_spec.lua, CLAUDE.md | done (bug-381) | ~25k |
+| 21:44 | Session end: 5 writes across 2 files (WMStepDialog_spec.lua, WMStepDialog.lua) | 3 reads | ~19915 tok |

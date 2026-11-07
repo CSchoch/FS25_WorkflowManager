@@ -91,7 +91,7 @@ start instead of "monitoring" and skipping the step) and `deferredStartAtSave` (
 when the auto-resume window expires). `CPIntegration:resumeCourse` must stay guarded on
 `isRunning`: CP's `unfreezeCp` indexes the drive strategy unguarded and crashes with no job.
 
-Current total: **992**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
+Current total: **994**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
 or they will not run.
 
 **Mod options (game settings):** `WMSettings` holds the player-facing options

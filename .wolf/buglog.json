@@ -6320,6 +6320,27 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-10-18T19:32:33.946Z"
+    },
+    {
+      "id": "bug-381",
+      "timestamp": "2026-10-18T22:00:00",
+      "error_message": "Opening the step editor sometimes shows AD targets that are not the edited step's (the previous step's target)",
+      "file": "src/gui/WMStepDialog.lua",
+      "root_cause": "FS25 SmoothListElement:buildSectionInfo (via reloadData) on a HIDDEN list stores the old selection in setNextOpenIndex and re-applies it (forced change event) in the list's own onOpen. The GUI root raises the dialog's onOpen callback BEFORE its children's onOpen, so a target/unload list that was hidden when refreshTargetDisplay reloaded it (previous step was Drive / Park / Refuel / Repair / CP) jumped back to the previous step's row after the dialog had selected the right one. The event itself was swallowed by isOpening, but the list kept the stale index and onFocusEnter re-announced it via onListSelectionChanged, writing it into stepTarget / stepUnloadTarget.",
+      "fix": "refreshTargetDisplay clears setNextOpenIndex / setNextOpenSectionIndex on targetList and unloadTargetList after its explicit selection (local dropPendingOpenSelection). 2 regression tests in WMStepDialog_spec 'reopening after a list was hidden' with a fake list modelling the engine behaviour.",
+      "tags": [
+        "gui",
+        "SmoothList",
+        "setNextOpenIndex",
+        "dialog-reuse",
+        "WMStepDialog",
+        "targets"
+      ],
+      "related_bugs": [
+        "bug-315"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-10-18T22:00:00"
     }
   ]
 }
