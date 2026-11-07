@@ -2392,3 +2392,33 @@ No WM dialog defines an Enter handler. Needs a 2-second in-game check: open the 
 | 21:43 | Edited src/gui/WMStepDialog.lua | 4→5 lines | ~50 |
 | 21:43 | Fixed step dialog showing the previous step's AD target/unload target (SmoothList setNextOpenIndex re-applied after dialog onOpen); 2 regression tests, 994 pass | src/gui/WMStepDialog.lua, tests/specs/WMStepDialog_spec.lua, CLAUDE.md | done (bug-381) | ~25k |
 | 21:44 | Session end: 5 writes across 2 files (WMStepDialog_spec.lua, WMStepDialog.lua) | 3 reads | ~19915 tok |
+
+## Session: 2026-10-20 21:13
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-10-21 11:21
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-11-07 21:27
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-11-07 22:01
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-11-07 23:17
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 23:19 | Ran GIANTS TestRunner 0.9.24 (build 2026-11-03) on release zip: FAIL only ModDescCheck - descVersion 113, now requires 116 (min=max). All other 13 groups PASS (PublicLuaCheck, ObsoleteFiles, DXT/MipMap OK). No edits. | modDesc.xml | report | ~4000 |
+| 23:28 | Edited modDesc.xml | expanded (+14 lines) | ~332 |
+| 23:28 | Edited modDesc.xml | expanded (+14 lines) | ~377 |
+| 23:40 | v1.3.0 changelog (EN+DE, from commits/memory since tag V1.2.0), version 1.3.0.0 in modDesc + WorkflowManager.lua; user had set descVersion 116; 994 tests pass, TestRunner 0.9.24 PASS | modDesc.xml, src/WorkflowManager.lua | done | ~8000 |
+| 23:28 | Session end: 2 writes across 1 files (modDesc.xml) | 0 reads | ~760 tok |

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
-<modDesc descVersion="113">
+<modDesc descVersion="116">
     <author>C.Schoch</author>
     <title>
         <en>Workflow Manager</en>
@@ -64,6 +64,20 @@ DOCUMENTATION: https://cschoch.github.io/FS25_WorkflowManagerDocs/
 REQUIREMENTS: Courseplay. AutoDrive is optional - it is only needed for workflows that contain AutoDrive, Park, Refuel or Repair steps. Pure Courseplay workflows run without it.
 
 CHANGELOG:
+v1.3.0 (2026-11-07)
+- New support step option "Finish before switching": the support vehicle completes its current task before it follows the main vehicle to the next step
+- Workflows can now be edited while they are running
+- Changes made in the web editor while the game is running are picked up when you open Workflow Manager
+- Mod options are now saved per player instead of in the savegame
+- New options in the General settings: show the Workflow Manager keys in the F1 help window, and debug logging for bug reports
+- Errors and hints are shown directly in the open dialog; configuration errors are reported to every player of the farm
+- Refreshed dialogs and HUD: coloured AD / CP step markers, support vehicle info, and on a support vehicle a click on the main vehicle name switches to it
+- Fixed: workflows could be lost when saving twice in one session
+- Fixed: deleting a workflow now stops every vehicle running it
+- Fixed: AutoDrive, Refuel and Repair steps did not restart after loading a savegame
+- Fixed: a step was skipped after loading when the game was saved right between two steps
+- Fixed: the step dialog sometimes showed the previous step's destinations or reset the fill types
+
 v1.2.0 (2026-09-23)
 - New step types: Park, Refuel and Repair (via AutoDrive)
 - Leader and follower vehicles: a follower waits at a "Wait for Leader" step until its leader releases it with "Unlock Follower"
@@ -149,6 +163,20 @@ DOKUMENTATION: https://cschoch.github.io/FS25_WorkflowManagerDocs/
 VORAUSSETZUNGEN: Courseplay. AutoDrive ist optional - es wird nur fuer Workflows mit AutoDrive-, Park-, Tank- oder Reparatur-Schritten benoetigt. Reine Courseplay-Workflows laufen auch ohne.
 
 CHANGELOG:
+v1.3.0 (2026-11-07)
+- Neue Option „Vor dem Wechsel abschließen" für Hilfsschritte: das Hilfsfahrzeug beendet seine aktuelle Aufgabe, bevor es dem Hauptfahrzeug zum nächsten Schritt folgt
+- Workflows lassen sich jetzt auch während der Ausführung bearbeiten
+- Änderungen aus dem Web-Editor bei laufendem Spiel werden beim Öffnen des Workflow Managers übernommen
+- Mod-Optionen werden jetzt pro Spieler gespeichert statt im Spielstand
+- Neue Optionen in den allgemeinen Einstellungen: Workflow-Manager-Tasten im F1-Hilfefenster anzeigen und Debug-Protokoll für Fehlerberichte
+- Fehler und Hinweise erscheinen direkt im geöffneten Dialog; Konfigurationsfehler werden allen Spielern des Hofs gemeldet
+- Überarbeitete Dialoge und HUD: farbige AD- / CP-Schrittmarken, Infos zu Hilfsfahrzeugen, und im Hilfsfahrzeug wechselt ein Klick auf den Namen des Hauptfahrzeugs zu diesem
+- Behoben: Workflows konnten beim zweiten Speichern in einer Sitzung verloren gehen
+- Behoben: Löschen eines Workflows stoppt jetzt alle Fahrzeuge, die ihn ausführen
+- Behoben: AutoDrive-, Tank- und Reparatur-Schritte starteten nach dem Laden eines Spielstands nicht neu
+- Behoben: ein Schritt wurde nach dem Laden übersprungen, wenn genau zwischen zwei Schritten gespeichert wurde
+- Behoben: der Schrittdialog zeigte manchmal die Ziele des vorherigen Schritts oder setzte die Fülltypen zurück
+
 v1.2.0 (2026-09-23)
 - Neue Schritttypen: Parken, Auftanken und Reparieren (über AutoDrive)
 - Anführer- und Folgefahrzeuge: ein Folgefahrzeug wartet bei einem Schritt „Auf Anfuehrer warten", bis sein Anführer es mit „Folger freigeben" weiterschickt
@@ -176,7 +204,7 @@ v1.0.0 (2026-03-11)
 ]]>
         </de>
     </description>
-    <version>1.2.0.0</version>
+    <version>1.3.0.0</version>
     <multiplayer supported="true" />
     <iconFilename>icon_WorkflowManager.dds</iconFilename>
 

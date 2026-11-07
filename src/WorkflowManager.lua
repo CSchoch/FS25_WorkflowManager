@@ -3,7 +3,7 @@
     Combines AutoDrive and Courseplay for automated field workflows
 
     Author: CSchoch
-    Version: 1.2.0.0
+    Version: 1.3.0.0
 ]]
 
 -- Source all required files (order matters for dependencies)
@@ -74,7 +74,7 @@ WMLogger:initFromDevConfig()
 
 ---@class WorkflowManager
 WorkflowManager = {}
-WorkflowManager.version = "1.2.0.0"
+WorkflowManager.version = "1.3.0.0"
 WorkflowManager.modName = g_currentModName
 WorkflowManager.modDirectory = g_currentModDirectory
 
