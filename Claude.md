@@ -59,7 +59,7 @@ Individual runners: `tests\run_executor_spec.lua`, `tests\run_storage_spec.lua`,
 | `WMHud_spec.lua` | HUD button handlers, vehicle targeting |
 | `WMLeaderVehicleSelectDialog_spec.lua` | Leader candidate list building, No-Leader hotkey |
 | `WMModeSelectDialog_spec.lua` | Main/Support/Cancel tri-state callback, Run-as-Support hotkey |
-| `WMStepDialog_spec.lua` | Step type/action branching, confirm payloads, support-step type restrictions, white text on the highlighted list row (`wm_listItemText` textSelectedColor) |
+| `WMStepDialog_spec.lua` | Step type/action branching, confirm payloads, support-step type restrictions, target search ranks name matches before folder matches, white text on the highlighted list row (`wm_listItemText` textSelectedColor) |
 | `WMEditorDialog_spec.lua` | Edit-buffer contract: Save commits to the live workflow, Cancel discards; new-workflow registration |
 | `WMMainDialog_spec.lua` | New/Edit entry points: New hands the editor an unregistered workflow |
 | `CourseplayIntegration_spec.lua` | Course entry resolution from the root view, legacy-name fallback, folder navigation, seed type selection |
@@ -93,7 +93,7 @@ start instead of "monitoring" and skipping the step) and `deferredStartAtSave` (
 when the auto-resume window expires). `CPIntegration:resumeCourse` must stay guarded on
 `isRunning`: CP's `unfreezeCp` indexes the drive strategy unguarded and crashes with no job.
 
-Current total: **1027**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
+Current total: **1032**. New spec files must be added to the `testFiles` list in `tests/run_tests.lua`
 or they will not run.
 
 **Mod options (game settings):** `WMSettings` holds the player-facing options

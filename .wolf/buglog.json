@@ -6653,6 +6653,54 @@
       ],
       "occurrences": 1,
       "last_seen": "2026-11-08T00:50:00"
+    },
+    {
+      "id": "bug-401",
+      "timestamp": "2026-11-08T08:00:19.320Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/gui/WMStepDialog.lua",
+      "root_cause": "6 lines replaced/restructured",
+      "fix": "Rewrote 14→31 lines (6 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "lua"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-11-08T08:00:19.320Z"
+    },
+    {
+      "id": "bug-402",
+      "timestamp": "2026-11-08T08:02:27.133Z",
+      "error_message": "Missing guard clause",
+      "file": "webeditor/app.js",
+      "root_cause": "No early return/throw for edge case: !q",
+      "fix": "Added guard clause: if (!q)",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "js"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-11-08T08:02:27.134Z"
+    },
+    {
+      "id": "bug-403",
+      "timestamp": "2026-11-08T08:02:58.984Z",
+      "error_message": "Wrong reference: and should be the",
+      "file": "webeditor/README.md",
+      "root_cause": "Used \"and\" instead of \"the\"",
+      "fix": "Changed and → the",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-11-08T08:02:58.984Z"
     }
   ]
 }

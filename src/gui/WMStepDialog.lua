@@ -706,20 +706,37 @@ function WMStepDialog:actionNeedsSeedType()
     return self.stepType == WorkflowManager.STEP_COURSEPLAY and self.stepAction == "fieldwork"
 end
 
----Filter target list by search text
-function WMStepDialog:filterTargets(searchText)
+---Filter "folder/name" items (CP courses, AD destinations) by search text. Items whose own
+---name (the part after the last "/") matches come first; items that match only through
+---their folder path follow. Each group keeps the original list order.
+---@param items table List of {name, display}
+---@param searchText string|nil
+---@return table filtered
+function WMStepDialog:filterPathItems(items, searchText)
     searchText = string.lower(searchText or "")
-    self.filteredTargetItems = {}
-
     if searchText == "" then
-        self.filteredTargetItems = self.targetItems
-    else
-        for _, item in ipairs(self.targetItems) do
-            if string.find(string.lower(item.display), searchText, 1, true) then
-                table.insert(self.filteredTargetItems, item)
-            end
+        return items
+    end
+
+    local nameMatches, folderMatches = {}, {}
+    for _, item in ipairs(items) do
+        local display = string.lower(item.display)
+        local baseName = string.match(display, "([^/]*)$") or display
+        if string.find(baseName, searchText, 1, true) then
+            table.insert(nameMatches, item)
+        elseif string.find(display, searchText, 1, true) then
+            table.insert(folderMatches, item)
         end
     end
+    for _, item in ipairs(folderMatches) do
+        table.insert(nameMatches, item)
+    end
+    return nameMatches
+end
+
+---Filter target list by search text
+function WMStepDialog:filterTargets(searchText)
+    self.filteredTargetItems = self:filterPathItems(self.targetItems, searchText)
 
     -- Reload list
     self.isFiltering = true
@@ -739,18 +756,7 @@ end
 
 ---Filter unload target list by search text
 function WMStepDialog:filterUnloadTargets(searchText)
-    searchText = string.lower(searchText or "")
-    self.filteredUnloadTargetItems = {}
-
-    if searchText == "" then
-        self.filteredUnloadTargetItems = self.unloadTargetItems
-    else
-        for _, item in ipairs(self.unloadTargetItems) do
-            if string.find(string.lower(item.display), searchText, 1, true) then
-                table.insert(self.filteredUnloadTargetItems, item)
-            end
-        end
-    end
+    self.filteredUnloadTargetItems = self:filterPathItems(self.unloadTargetItems, searchText)
 
     -- Reload list
     self.isFiltering = true

@@ -2521,3 +2521,21 @@ No WM dialog defines an Enter handler. Needs a 2-second in-game check: open the 
 | 00:20 | Session end: 74 writes across 25 files (modDesc.xml, main-dialog.md, editor-dialog.md, step-dialog.md, ad-settings-dialog.md) | 41 reads | ~64672 tok |
 | 01:00 | User chose white highlighted row (keep textSelectedColor); third in-game run (K STOP, white » Wheat) cropped into website/static/img/screenshots, build en+de OK | website/static/img/screenshots/* | done | ~2k |
 | 00:21 | Session end: 74 writes across 25 files (modDesc.xml, main-dialog.md, editor-dialog.md, step-dialog.md, ad-settings-dialog.md) | 41 reads | ~64672 tok |
+
+## Session: 2026-11-08 08:52
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 09:00 | Edited src/gui/WMStepDialog.lua | modified WMStepDialog() | ~328 |
+| 09:00 | Edited src/gui/WMStepDialog.lua | reduced (-11 lines) | ~25 |
+| 09:00 | Edited src/gui/WMStepDialog.lua | inline fix | ~19 |
+| 09:00 | Edited tests/specs/WMStepDialog_spec.lua | modified items() | ~680 |
+| 09:00 | Step dialog search: course/target name matches listed before folder-only matches (filterPathItems) + 5 tests | src/gui/WMStepDialog.lua, tests/specs/WMStepDialog_spec.lua | 1032 pass | ~4k |
+| 09:01 | Session end: 4 writes across 2 files (WMStepDialog.lua, WMStepDialog_spec.lua) | 3 reads | ~37210 tok |
+| 09:02 | Edited webeditor/app.js | added 3 condition(s) | ~206 |
+| 09:02 | Edited webeditor/app.js | inline fix | ~18 |
+| 09:02 | Edited webeditor/app.js | inline fix | ~12 |
+| 09:02 | Edited webeditor/app.js | inline fix | ~20 |
+| 09:02 | Edited webeditor/README.md | 1→2 lines | ~49 |
+| 09:03 | Web editor step-dialog target combobox: name matches before folder matches (filterPathNames); Targets list unchanged (regroups by folder) | webeditor/app.js, webeditor/README.md | node check ok | ~3k |
+| 09:03 | Session end: 9 writes across 4 files (WMStepDialog.lua, WMStepDialog_spec.lua, app.js, README.md) | 5 reads | ~73120 tok |

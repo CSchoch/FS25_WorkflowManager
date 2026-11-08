@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-11-07T23:15:56.490Z
-> Files: 61 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-11-08T08:02:58.944Z
+> Files: 63 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../../../.claude/plans/
 
@@ -114,7 +114,7 @@
 - `WMHud.lua` — ensureOverlays, colorOverlay, createIconOverlays, updateOverlayPositions, init (~11649 tok)
 - `WMLeaderVehicleSelectDialog.lua` — new, onCreate, buildVehicleList, formatCurrentStep, onOpen (~1846 tok)
 - `WMMainDialog.lua` — new, onCreate, onOpen, showStatus, onClose (~4466 tok)
-- `WMStepDialog.lua` — new, onCreate, onOpen, showStatus, update (~11108 tok)
+- `WMStepDialog.lua` — new, onCreate, onOpen, showStatus, update (~10922 tok)
 
 ## src/integration/
 
@@ -151,7 +151,7 @@
 - `WMDocScreenshots_spec.lua` — noop, newDialog, installStubs, setString, setFloat (~4327 tok)
 - `WMEditorDialog_spec.lua` — makeWorkflow, makeDialog (~10761 tok)
 - `WMHud_spec.lua` — makeVehicle (~6099 tok)
-- `WMStepDialog_spec.lua` — makeDialog, dropdownDialog, makeStubDialog (~13040 tok)
+- `WMStepDialog_spec.lua` — makeDialog, dropdownDialog, makeStubDialog (~13995 tok)
 - `WorkflowExecutor_spec.lua` — makeVehicle, activeData, makeWorkflow, makeWorkflowWithSupport, makeLeaderWF (~42855 tok)
 - `WorkflowManagerLifecycle_spec.lua` — loadModule, wasSourced, activeVehicle (~7528 tok)
 - `WorkflowManagerSpec_spec.lua` — makeVehicle, makeSavegameXML (~15011 tok)
@@ -169,6 +169,8 @@
 
 ## webeditor/
 
+- `app.js` — Declares STEP_AUTODRIVE (~33899 tok)
+- `README.md` — Project documentation (~1083 tok)
 
 ## webeditor/.github/workflows/
 

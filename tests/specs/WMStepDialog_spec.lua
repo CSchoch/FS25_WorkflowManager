@@ -1101,4 +1101,60 @@ describe("WMStepDialog", function()
         end)
     end)
 
+    describe("search lists name matches before folder matches", function()
+        local function items(...)
+            local list = {}
+            for _, display in ipairs({...}) do
+                table.insert(list, { name = "Singleplayer/" .. display, display = display })
+            end
+            return list
+        end
+
+        local function displays(list)
+            local out = {}
+            for _, item in ipairs(list) do table.insert(out, item.display) end
+            return out
+        end
+
+        it("puts courses named like the search ahead of courses in a matching folder", function()
+            local d = makeDialog()
+            d.targetItems = items("Kalken/F01", "Kalken/F02", "F34/Kalken", "F09/Pflügen")
+            d:filterTargets("kalk")
+            assert.are.same({ "F34/Kalken", "Kalken/F01", "Kalken/F02" }, displays(d.filteredTargetItems))
+        end)
+
+        it("keeps the list order inside each group", function()
+            local d = makeDialog()
+            d.targetItems = items("F09/Kalken", "F34/Kalken", "Kalken/A", "Kalken/B")
+            d:filterTargets("KALKEN")
+            assert.are.same({ "F09/Kalken", "F34/Kalken", "Kalken/A", "Kalken/B" }, displays(d.filteredTargetItems))
+        end)
+
+        it("still finds a search that spans folder and name", function()
+            local d = makeDialog()
+            d.targetItems = items("F09/Kalken", "F34/Kalken")
+            d:filterTargets("f34/kal")
+            assert.are.same({ "F34/Kalken" }, displays(d.filteredTargetItems))
+            assert.are.equal("Singleplayer/F34/Kalken", d.stepTarget)
+        end)
+
+        it("orders AD destinations in groups the same way, also for the unload list", function()
+            local d = makeDialog()
+            d.unloadTargetItems = {
+                { name = "Silo/North", display = "Silo/North" },
+                { name = "Hof Silo", display = "Hof Silo" },
+                { name = "Field 3", display = "Field 3" },
+            }
+            d:filterUnloadTargets("silo")
+            assert.are.same({ "Hof Silo", "Silo/North" }, displays(d.filteredUnloadTargetItems))
+        end)
+
+        it("returns the full list for an empty search", function()
+            local d = makeDialog()
+            d.targetItems = items("Kalken/F01", "F34/Kalken")
+            d:filterTargets("")
+            assert.are.equal(d.targetItems, d.filteredTargetItems)
+        end)
+    end)
+
 end)
